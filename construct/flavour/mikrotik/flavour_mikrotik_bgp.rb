@@ -24,9 +24,9 @@ module Mikrotik
     end
     def set_routing_bgp_instance(cfg)
       default = {
-        "name" => nil,
-        "as" => nil,
-        "router-id"=> nil,
+        "name" => Schema.required,
+        "as" => Schema.required.key,
+        "router-id"=> Schema.required,
         "redistribute-connected" => "yes",
         "redistribute-static" => "yes", 
         "redistribute-rip" => "yes",
@@ -59,12 +59,12 @@ module Mikrotik
 
     def set_routing_bgp_peer(cfg)
       default = {
-        "name" => nil,
-        "instance" => nil,
-        "remote-address" => nil,
-        "remote-as" => nil,
-        "in-filter" => nil,
-        "out-filter" => nil,
+        "name" => Schema.required.key,
+        "instance" => Schema.required,
+        "remote-address" => Schema.required,
+        "remote-as" => Schema.required,
+        "in-filter" => Schema.required,
+        "out-filter" => Schema.required,
         "tcp-md5-key" => "\"\"",
         "nexthop-choice" => "force-self",
         "multihop" => "no",

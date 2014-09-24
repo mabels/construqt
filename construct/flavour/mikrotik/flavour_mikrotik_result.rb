@@ -12,72 +12,52 @@ module Mikrotik
 			not @result[name]
 		end
     def render_mikrotik_set_direct(default, cfg, *path)
-      result = {}
-      cfg.each do |key, val|
-        result[key] = val
-      end
-      required = {}
-      default.each do |key, val| 
-        required[key] = result[key] unless val
-        result[key] ||= val 
-        throw "required key:#{key} not set" unless result[key]
-      end
-      assigned = result.map{|k,v| "#{k}=#{v.to_s}"}.sort
-      add("set #{assigned.join(' ')}", nil, *path)
+      prepared = prepare(default, cfg)
+      add("set #{prepared.add_line}", nil, *path)
     end
     def render_mikrotik_set_by_key(default, cfg, *path)
-      result = {}
-      keys = []
-      default.each do |key,val|
-        if val.nil?
-          keys << "#{key}=#{cfg[key].to_s}"
-          throw "required key:#{key} not set" unless cfg[key]
-        else
-          result[key] = cfg[key] || default[key]
-        end
-      end
-
-      assigned = result.map{|k,v| "#{k}=#{v.to_s}"}.sort
-      add("set [ find #{keys.join(" && ")} ] #{assigned.join(' ')}", nil, *path)
+      prepared = prepare(default, cfg)
+      add("set [ find #{prepared.key} ] #{prepared.add_line}", nil, *path)
     end
-    def render_mikrotik(default, cfg, *path) 
-      black_list = {
-        "interface bonding" => { "mode" => true }
-      }[path.join(" ")]
+    def prepare(default, cfg)
       result = {}
       cfg.each do |key, val|
         result[key] = val
       end
-      required = {}
+      keys = {}
       default.each do |key, val| 
-        required[key] = result[key] unless val
-        result[key] ||= val 
-        throw "required key:#{key} not set" unless result[key]
+        if val.kind_of?(Schema)
+          throw "required key:#{key} not set" if val.required? and (result[key].nil? or result[key].to_s.empty?)
+          keys[key] = result[key] if val.key?
+        else
+          result[key] ||= val 
+        end
       end
-      plain_assigned = result.select{|k,v| !(v.to_s.empty? || black_list && black_list[k]) }.map{|k,v| "#{k}=#{v.to_s}"}.sort
-      add_line = plain_assigned.join(" ")
-      digest = Digest::MD5.hexdigest(add_line)
-      result['comment'] = digest
       result['disabled'] = 'no'
-      assigned = result.select{|k,v| !(v.to_s.empty?) }.map{|k,v| "#{k}=#{v.to_s}"}.sort
-      add_line = assigned.join(" ")
-
+      OpenStruct.new( 
+        :key => keys.map{|k,v| "#{k}=#{v.inspect}"}.sort.join(" && "), 
+        :result => result,
+        :add_line => result.select{|k,v| !(v.to_s.empty?) }.map{|k,v| "#{k}=#{v.to_s}"}.sort.join(" ")
+      )
+    end
+    def render_mikrotik(default, cfg, *path) 
+      prepared = prepare(default, cfg)
       ret = ["{"] 
-      ret << "  :local found [find "+plain_assigned.join(" && ")+"]"
+      ret << "  :local found [find "+prepared.key+"]"
       ret << "  :if ($found = \"\") do={"
-      ret << "    :put "+"/#{path.join(' ')} add #{assigned.join(" ")}".inspect
-      ret << "    add #{add_line}"
+      ret << "    :put "+"/#{path.join(' ')} add #{prepared.add_line}".inspect
+      ret << "    add #{prepared.add_line}"
       ret << "  } else={"
-      ret << "    :put "+"/#{path.join(' ')} set #{assigned.join(" ")}".inspect
+      ret << "    :put "+"/#{path.join(' ')} set #{prepared.add_line}".inspect
       ret << "    :set found [get $found]"
-      result.keys.sort.each do |key|
-        val = result[key]
+      prepared.result.keys.sort.each do |key|
+        val = prepared.result[key]
+        next if val.to_s.empty?
         ret << "    :if (($found->#{key.inspect})!=#{val.inspect}) do={ set $found #{key}=#{val.inspect} }"
       end
       ret << "  }" 
       ret << "}" 
-      ret = ret.join("\n")
-      add(ret, digest, *path)  
+      add(ret.join("\n"), prepared.key, *path)  
     end
 		def add(block, digest, *path)
 			key = File.join(*path)
@@ -94,7 +74,7 @@ module Mikrotik
         sorted[key] = Util.write_str([ 
             "/#{key}",
             blocks.map{|i|i.block}.join("\n"),
-            digests.empty? ? "" : ("remove [find "+digests.map{|i| "comment!=#{i.digest}"}.join(" && ")+"]"),
+            digests.empty? ? "" : ("remove [find !("+digests.map{|i| "(#{i.digest})"}.join(" || ")+")]"),
             ""
           ].join("\n"), File.join(@host.name, "#{path}.rsc"))
       end

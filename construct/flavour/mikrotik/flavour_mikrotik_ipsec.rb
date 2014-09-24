@@ -9,8 +9,8 @@ module Mikrotik
 		end
     def set_ip_ipsec_peer(cfg)
       default = {
-        "address" => nil,
-        "secret" => nil,
+        "address" => Schema.required.key,
+        "secret" => Schema.required,
         "local-address" => "0.0.0.0",
         "passive" => "no",
         "port" => "500",
@@ -33,10 +33,10 @@ module Mikrotik
     end
     def set_ip_ipsec_policy(cfg)
       default = {
-        "sa-src-address" => nil,
-        "sa-dst-address" => nil,
-        "src-address" => nil,
-        "dst-address" => nil,
+        "sa-src-address" => Schema.required.key,
+        "sa-dst-address" => Schema.required.key,
+        "src-address" => Schema.required,
+        "dst-address" => Schema.required,
         "src-port" => "any",
         "dst-port" => "any",
         "protocol" => "all",
