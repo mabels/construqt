@@ -12,6 +12,39 @@ module Flavour
 
 module Mikrotik
 
+  class Schema
+
+    def initialize
+      @required = false
+      @key = false
+    end
+
+    def required
+      @required = true
+      self
+    end
+    def key
+      @key = true
+      self
+    end
+
+    def key?
+      @key
+    end
+
+    def required?
+      @required
+    end
+
+    def self.key
+      Schema.new.key
+    end
+
+    def self.required
+      Schema.new.required
+    end
+  end
+
   def self.name
     'mikrotik'
   end
@@ -25,7 +58,7 @@ module Mikrotik
         "l2mtu" => 1590,
         "mtu" => 1500,
         "name" => "dummy",
-        "default-name" => nil
+        "default-name" => Schema.required.key
       }
       host.result.render_mikrotik_set_by_key(default, {
         "l2mtu" => iface.mtu,
@@ -41,11 +74,11 @@ module Mikrotik
     end
 		def self.build_config(host, iface)
       default = {
-        "interface" => nil,
-        "name" => nil,
-        "priority" => nil,
-        "v3-protocol" => nil,
-        "vrid" => nil
+        "interface" => Schema.required,
+        "name" => Schema.key.required,
+        "priority" => Schema.required,
+        "v3-protocol" => Schema.required,
+        "vrid" => Schema.required
       }
       host.result.render_mikrotik(default, {
         "interface" => iface.interface.name,
@@ -63,9 +96,9 @@ module Mikrotik
 		def self.build_config(host, iface)
       default = {
         "mode" => "active-backup",
-        "mtu" => nil,
-        "name" => nil,
-        "slaves" => nil,
+        "mtu" => Schema.required,
+        "name" => Schema.required.key,
+        "slaves" => Schema.required,
       }
       host.result.render_mikrotik(default, {
         "mtu" => iface.mtu,
@@ -80,16 +113,16 @@ module Mikrotik
     end
 		def self.build_config(host, iface)
       default = {
-        "interface" => nil,
-        "mtu" => nil,
-        "name" => nil,
-        "vlan-id" => nil,
+        "interface" => Schema.required,
+        "mtu" => Schema.required,
+        "name" => Schema.required.key,
+        "vlan-id" => Schema.required,
       }
       host.result.render_mikrotik(default, {
         "interface" => iface.interface.name,
         "mtu" => iface.mtu,
         "name" => iface.name,
-        "vlan-id" => iface.vlan_id,
+        "vlan-id" => iface.vlan_id
       }, "interface", "vlan")
 		end
 	end
@@ -100,8 +133,8 @@ module Mikrotik
 		def self.build_config(host, iface)
       default = {
         "auto-mac" => "yes",
-        "mtu" => nil,
-        "name" => nil,
+        "mtu" => Schema.required,
+        "name" => Schema.required.key,
       }
       host.result.render_mikrotik(default, {
         "mtu" => iface.mtu,
@@ -109,8 +142,8 @@ module Mikrotik
       }, "interface", "bridge")
 			iface.interfaces.each do |port|
         host.result.render_mikrotik({
-            "bridge" => nil,
-            "interface" => nil
+          "bridge" => Schema.required.key,
+          "interface" => Schema.required
         }, {
           "interface" => port.name,
           "bridge" => iface.name,
@@ -121,7 +154,7 @@ module Mikrotik
 
 	module Host
     def self.once(host)
-      host.result.render_mikrotik_set_direct({ "name"=> nil }, { "name" => host.name }, "system", "identity")
+      host.result.render_mikrotik_set_direct({ "name"=> Schema.required.key }, { "name" => host.name }, "system", "identity")
       host.result.add("set [ find name!=ssh && name!=www-ssl ] disabled=yes", nil, "ip", "service")
       host.result.add("set [ find ] address=#{host.id.first_ipv6.first_ipv6}", nil, "ip", "service")
       host.result.add("set [ find name=admin] disable=yes", nil, "user")
@@ -156,9 +189,9 @@ OUT
     end
     def self.set_interface_gre(host, cfg) 
       default = {
-        "name"=>nil,
-        "local-address"=>nil,
-        "remote-address"=>nil,
+        "name"=>Schema.required.key,
+        "local-address"=>Schema.required,
+        "remote-address"=>Schema.required,
         "dscp"=>"inherit",
         "mtu"=>"1476",
         "l2mtu"=>"65535"
@@ -167,9 +200,9 @@ OUT
     end
     def self.set_interface_gre6(host, cfg) 
       default = {
-        "name"=>nil,
-        "local-address"=>nil,
-        "remote-address"=>nil,
+        "name"=>Schema.required.key,
+        "local-address"=>Schema.required,
+        "remote-address"=>Schema.required,
         "mtu"=>"1456",
         "l2mtu"=>"65535"
       }
@@ -187,10 +220,12 @@ OUT
 	end
   def self.set_ipv6_address(host, cfg)
     default = {
-      "address"=>nil,
-      "interface"=>nil,
+      "address"=>Schema.required,
+      "interface"=>Schema.required,
+      "comment" => Schema.required.key,
       "advertise"=>"no"
     }
+    cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}"
     host.result.render_mikrotik(default, cfg, "ipv6", "address")
   end
   def self.pre_clazzes(&block)

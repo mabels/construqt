@@ -13,16 +13,20 @@ module Mikrotik
       }
       if ip.ipv6? 
         default = {
-            "address" => nil,
-            "interface" => nil,
-            "advertise" => "no"
+          "address" => Schema.required,
+          "interface" => Schema.required,
+          "advertise" => "no",
+          "comment" => Schema.required.key
         }
+        cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}"
         self.host.result.render_mikrotik(default, cfg, "ipv6", "address")
       else
         default = {
-            "address" => nil,
-            "interface" => nil,
+          "address" => Schema.required,
+          "interface" => Schema.required,
+          "comment" => Schema.required.key
         }
+        cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}"
         self.host.result.render_mikrotik(default, cfg, "ip", "address")
       end
 		end
@@ -30,12 +34,14 @@ module Mikrotik
       throw "dst via mismatch" unless rt.dst.ipv6? == rt.via.ipv6? or rt.dst.ipv4? == rt.via.ipv4?
       cfg = {
         "dst-address" => rt.dst.to_string,
-        "gateway" => rt.via.to_s
+        "gateway" => rt.via.to_s,
       }
       default = {
-          "dst-address" => nil,
-          "gateway" => nil,
+        "dst-address" => Schema.required,
+        "gateway" => Schema.required,
+        "comment" => Schema.required.key
       }
+      cfg['comment'] = "#{cfg['dst-address']} via #{cfg['gateway']}"
       if rt.dst.ipv6? 
         self.host.result.render_mikrotik(default, cfg, "ipv6", "route")
       else
