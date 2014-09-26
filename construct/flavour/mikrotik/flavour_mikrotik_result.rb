@@ -15,20 +15,23 @@ module Mikrotik
     def prepare(default, cfg, enable = true)
       result = {}
       cfg.each do |key, val|
-        result[key] = val
+        throw "cfg unknown key:#{key}" unless default[key]
+        result[key] = default[key].type.serialize(val)
       end
       keys = {}
       default.each do |key, val| 
         if val.kind_of?(Schema)
+          throw "type must set of #{key}" unless val.type
           throw "required key:#{key} not set" if val.required? and (result[key].nil? or result[key].to_s.empty?)
+          result[key] = val.type.serialize(val.get_default) if val.get_default && !result[key]
           keys[key] = result[key] if val.key?
         else
-          result[key] ||= val 
+          throw "default type has to be a schema #{val}" 
         end
       end
       result['disabled'] = 'no' if enable
       OpenStruct.new( 
-        :key => keys.map{|k,v| "#{k}=#{v.inspect}"}.sort.join(" && "), 
+        :key => keys.map{|k,v| "#{k}=#{v}"}.sort.join(" && "), 
         :result => result,
         :add_line => result.select{ |k,v| 
           if default[k].kind_of?(Schema) && default[k].noset?
@@ -36,7 +39,7 @@ module Mikrotik
           else
               !(v.to_s.empty?) 
           end
-        }.map{|k,v| "#{k}=#{v.to_s}"}.sort.join(" ")
+        }.map{|k,v| "#{k}=#{v}"}.sort.join(" ")
       )
     end
     def render_mikrotik_set_direct(default, cfg, *path)

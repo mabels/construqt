@@ -25,18 +25,18 @@ module Mikrotik
     end
     def set_routing_bgp_instance(cfg)
       default = {
-        "name" => Schema.required,
-        "as" => Schema.required.key,
-        "router-id"=> Schema.required,
-        "redistribute-connected" => "yes",
-        "redistribute-static" => "yes", 
-        "redistribute-rip" => "yes",
-        "redistribute-ospf" => "yes",
-        "redistribute-other-bgp" => "no",
-        "out-filter"=>"", 
-        "client-to-client-reflection"=>"yes",
-        "ignore-as-path-len"=>"no",
-        "routing-table"=>""
+        "name" => Schema.identifier.required,
+        "as" => Schema.int.required.key,
+        "router-id"=> Schema.address.required,
+        "redistribute-connected" => Schema.identifier.default("yes"),
+        "redistribute-static" => Schema.identifier.default("yes"), 
+        "redistribute-rip" => Schema.identifier.default("no"),
+        "redistribute-ospf" => Schema.identifier.default("no"),
+        "redistribute-other-bgp" => Schema.identifier.default("no"),
+        "out-filter"=>Schema.identifier.default(nil), 
+        "client-to-client-reflection"=>Schema.identifier.default("yes"),
+        "ignore-as-path-len"=>Schema.identifier.default("no"),
+        "routing-table"=>Schema.identifier.default(nil)
       }
       self.host.result.render_mikrotik(default, cfg, "routing", "bgp", "instance")
     end
@@ -64,24 +64,24 @@ module Mikrotik
 
     def set_routing_bgp_peer(cfg)
       default = {
-        "name" => Schema.required.key,
-        "instance" => Schema.required,
-        "remote-address" => Schema.required,
-        "remote-as" => Schema.required,
-        "in-filter" => Schema.required,
-        "out-filter" => Schema.required,
-        "tcp-md5-key" => "\"\"",
-        "nexthop-choice" => "force-self",
-        "multihop" => "no",
-        "route-reflect" => "no",
-        "hold-time" => "3m",
-        "ttl" => "default",
-        "address-families" => "ipv6",
-        "default-originate" => "never",
-        "remove-private-as" => "no",
-        "as-override" => "no",
-        "passive" => "no",
-        "use-bfd" => "yes",
+        "name" => Schema.identifier.required.key,
+        "instance" => Schema.identifier.required,
+        "remote-address" => Schema.address.required,
+        "remote-as" => Schema.int.required,
+        "in-filter" => Schema.identifier.required,
+        "out-filter" => Schema.identifier.required,
+        "tcp-md5-key" => Schema.string.default(""),
+        "nexthop-choice" => Schema.identifier.default("force-self"),
+        "multihop" => Schema.identifier.default("no"),
+        "route-reflect" => Schema.identifier.default("no"),
+        "hold-time" => Schema.identifier.default("3m"),
+        "ttl" => Schema.identifier.default("default"),
+        "address-families" => Schema.identifier.default("ipv6"),
+        "default-originate" => Schema.identifier.default("never"),
+        "remove-private-as" => Schema.identifier.default("no"),
+        "as-override" => Schema.identifier.default("no"),
+        "passive" => Schema.identifier.default("no"),
+        "use-bfd" => Schema.identifier.default("yes")
       }
       self.host.result.render_mikrotik(default, cfg, "routing", "bgp", "peer")
     end

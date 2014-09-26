@@ -86,6 +86,14 @@ module Ubuntu
 				ret << "up ip route add #{route.dst.to_string} via #{route.via.to_s}"
 				ret << "down ip route del #{route.dst.to_string} via #{route.via.to_s}"
 			end
+      ret << "  up iptables -t raw -A PREROUTING -i #{iface.name} -j NOTRACK"
+      ret << "  up iptables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK"
+      ret << "  down iptables -t raw -D PREROUTING -i #{iface.name} -j NOTRACK"
+      ret << "  down iptables -t raw -D OUTPUT -o #{iface.name} -j NOTRACK"
+      ret << "  up ip6tables -t raw -A PREROUTING -i #{iface.name} -j NOTRACK"
+      ret << "  up ip6tables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK"
+      ret << "  down ip6tables -t raw -D PREROUTING -i #{iface.name} -j NOTRACK"
+      ret << "  down ip6tables -t raw -D OUTPUT -o #{iface.name} -j NOTRACK"
 			host.result.add(self, ret.join("\n"), Ubuntu.root, "etc", "network", "interfaces")
 		end
 	end
@@ -144,7 +152,7 @@ net.ipv6.conf.all.autoconf=0
 net.ipv6.conf.all.accept_ra=0
 net.ipv6.conf.all.forwarding=1
 SCTL
-      host.result.add(self, host.name, "etc", "hostname")
+      host.result.add(self, host.name, host.name, "etc", "hostname")
       host.result.add(self, "# WTF resolvconf", host.name, "etc", "resolvconf", "resolv.conf.d", "orignal");
       host.result.add(self, <<RESOLVCONF,  host.name, "etc", "resolv.conf")
 nameserver 2001:4860:4860::8844
