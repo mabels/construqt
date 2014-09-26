@@ -18,7 +18,7 @@ module Mikrotik
           "advertise" => "no",
           "comment" => Schema.required.key
         }
-        cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}"
+        cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}-CONSTRUCT"
         self.host.result.render_mikrotik(default, cfg, "ipv6", "address")
       else
         default = {
@@ -26,7 +26,7 @@ module Mikrotik
           "interface" => Schema.required,
           "comment" => Schema.required.key
         }
-        cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}"
+        cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}-CONSTRUCT"
         self.host.result.render_mikrotik(default, cfg, "ip", "address")
       end
 		end
@@ -41,7 +41,7 @@ module Mikrotik
         "gateway" => Schema.required,
         "comment" => Schema.required.key
       }
-      cfg['comment'] = "#{cfg['dst-address']} via #{cfg['gateway']}"
+      cfg['comment'] = "#{cfg['dst-address']} via #{cfg['gateway']} CONSTRUCT"
       if rt.dst.ipv6? 
         self.host.result.render_mikrotik(default, cfg, "ipv6", "route")
       else
