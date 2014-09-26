@@ -15,7 +15,7 @@ path pre_shared_key "/etc/racoon/psk.txt";
 path certificate "/etc/racoon/certs";
 log info;
 listen {
-  isakmp #{self.remote.to_s} [500];
+  isakmp #{self.remote.first_ipv6.to_s} [500];
   strict_address;
 }
 HEADER

@@ -22,8 +22,8 @@ module Mikrotik
         "nat-traversal" => "yes",
         "proposal-check" => "obey",
         "hash-algorithm" => "sha1",
-        "enc-algorithm" => "3des,aes-128",
-        "dh-group" => "modp1024",
+        "enc-algorithm" => "aes-256",
+        "dh-group" => "modp1536",
         "lifetime" => "1d",
         "lifebytes" => "0",
         "dpd-interval" => "2m",
@@ -44,20 +44,16 @@ module Mikrotik
         "level" => "require",
         "ipsec-protocols" => "esp",
         "tunnel" => "yes",
-        "proposal" => "default",
+        "proposal" => "s2b-proposal",
         "priority" => "0"
       }
       puts "#{cfg['sa-src-address'].class.name}=>#{cfg['sa-dst-address'].class.name} #{cfg['src-address'].class.name}=>#{cfg['dst-address'].class.name} #{cfg.keys}"
       self.host.result.render_mikrotik(default, cfg, "ip", "ipsec", "policy")
     end
-    def build_ipsec_config()
-#      binding.pry
+		def build_config()
       set_ip_ipsec_peer("address" => self.other.remote.first_ipv6.to_s, "secret" => Util.password(self.cfg.password))
       set_ip_ipsec_policy("src-address" => self.my.first_ipv6.to_string, "sa-src-address" => self.remote.first_ipv6.to_s,
                           "dst-address" => self.other.my.first_ipv6.to_string, "sa-dst-address" => self.other.remote.first_ipv6.to_s)
-    end
-		def build_config()
-      build_ipsec_config()
 		end
 	end
 end

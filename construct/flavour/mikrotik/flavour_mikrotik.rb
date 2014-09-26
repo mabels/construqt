@@ -17,27 +17,39 @@ module Mikrotik
     def initialize
       @required = false
       @key = false
+      @noset = false
     end
 
     def required
       @required = true
       self
     end
-    def key
-      @key = true
-      self
-    end
-
-    def key?
-      @key
-    end
-
     def required?
       @required
     end
 
+    def key
+      @key = true
+      self
+    end
+    def key?
+      @key
+    end
+
+    def noset
+      @noset = true
+      self
+    end
+    def noset?
+      @noset
+    end
+
     def self.key
       Schema.new.key
+    end
+
+    def self.noset
+      Schema.new.noset
     end
 
     def self.required
@@ -58,7 +70,7 @@ module Mikrotik
         "l2mtu" => 1590,
         "mtu" => 1500,
         "name" => "dummy",
-        "default-name" => Schema.required.key
+        "default-name" => Schema.required.key.noset
       }
       host.result.render_mikrotik_set_by_key(default, {
         "l2mtu" => iface.mtu,
@@ -157,12 +169,25 @@ module Mikrotik
       host.result.render_mikrotik_set_direct({ "name"=> Schema.required.key }, { "name" => host.name }, "system", "identity")
       host.result.add("set [ find name!=ssh && name!=www-ssl ] disabled=yes", nil, "ip", "service")
       host.result.add("set [ find ] address=#{host.id.first_ipv6.first_ipv6}", nil, "ip", "service")
-      host.result.add("set [ find name=admin] disable=yes", nil, "user")
       host.result.add("set [ find name!=admin ] comment=REMOVE", nil, "user")
+
+      host.result.render_mikrotik({
+        "name" => Schema.required.key,
+        "enc-algorithms" => "aes-256-cbc",
+        "lifetime" => "1h",
+         "pfs-group"=> "modp15360"
+      }, {"name" => "s2b-proposal"}, "ip", "ipsec", "proposal")
+      host.result.add("", "default=yes", "ip", "ipsec", "proposal")
+      host.result.add("", "template=yes", "ip", "ipsec", "policy")
+      host.result.add("", "name=default", "routing", "bgp", "instance")
+      host.result.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ip", "address")
+      host.result.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ip", "route")
+      host.result.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ipv6", "address")
+      host.result.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ipv6", "route")
       Users.users.each do |u|
         host.result.add(<<OUT, nil, "user")
 {
-   :local found [find "name" = #{u.name.inspect} ]
+   :local found [find name=#{u.name.inspect} ]
    :if ($found = "") do={
        add comment=#{u.full_name.inspect} name=#{u.name} password=#{Construct::Hosts::default_password} group=full
    } else={
@@ -172,6 +197,7 @@ module Mikrotik
 OUT
       end
       host.result.add("remove [find comment=REMOVE ]", nil, "user" )
+      host.result.add("set [ find name=admin] disable=yes", nil, "user")
     end
 		def self.build_config(host)
 			ret = ["# host"]
