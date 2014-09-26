@@ -13,18 +13,19 @@ module Mikrotik
       }
       if ip.ipv6? 
         default = {
-          "address" => Schema.required,
-          "interface" => Schema.required,
-          "advertise" => "no",
-          "comment" => Schema.required.key
+          "address" => Schema.address.required,
+          "interface" => Schema.identifier.required,
+          "advertise" => Schema.identifier.default("no"),
+          "comment" => Schema.string.required.key
         }
         cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}-CONSTRUCT"
+        puts ">>>>>>>> #{cfg.inspect}"
         self.host.result.render_mikrotik(default, cfg, "ipv6", "address")
       else
         default = {
-          "address" => Schema.required,
-          "interface" => Schema.required,
-          "comment" => Schema.required.key
+          "address" => Schema.address.required,
+          "interface" => Schema.identifier.required,
+          "comment" => Schema.string.required.key
         }
         cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}-CONSTRUCT"
         self.host.result.render_mikrotik(default, cfg, "ip", "address")
@@ -37,9 +38,9 @@ module Mikrotik
         "gateway" => rt.via.to_s,
       }
       default = {
-        "dst-address" => Schema.required,
-        "gateway" => Schema.required,
-        "comment" => Schema.required.key
+        "dst-address" => Schema.address.required,
+        "gateway" => Schema.address.required,
+        "comment" => Schema.string.required.key
       }
       cfg['comment'] = "#{cfg['dst-address']} via #{cfg['gateway']} CONSTRUCT"
       if rt.dst.ipv6? 

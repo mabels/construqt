@@ -9,43 +9,43 @@ module Mikrotik
 		end
     def set_ip_ipsec_peer(cfg)
       default = {
-        "address" => Schema.required.key,
-        "secret" => Schema.required,
-        "local-address" => "0.0.0.0",
-        "passive" => "no",
-        "port" => "500",
-        "auth-method" => "pre-shared-key",
-        "generate-policy" => "no",
-        "policy-group" => "default",
-        "exchange-mode" => "main",
-        "send-initial-contact" => "yes",
-        "nat-traversal" => "yes",
-        "proposal-check" => "obey",
-        "hash-algorithm" => "sha1",
-        "enc-algorithm" => "aes-256",
-        "dh-group" => "modp1536",
-        "lifetime" => "1d",
-        "lifebytes" => "0",
-        "dpd-interval" => "2m",
-        "dpd-maximum-failures" => "5"
+        "address" => Schema.address.required.key,
+        "secret" => Schema.string.required,
+        "local-address" => Schema.address.default("0.0.0.0"),
+        "passive" => Schema.identifier.default("no"),
+        "port" => Schema.int.default(500),
+        "auth-method" => Schema.identifier.default("pre-shared-key"),
+        "generate-policy" => Schema.identifier.default("no"),
+        "policy-group" => Schema.identifier.default("default"),
+        "exchange-mode" => Schema.identifier.default("main"),
+        "send-initial-contact" => Schema.identifier.default("yes"),
+        "nat-traversal" => Schema.identifier.default("yes"),
+        "proposal-check" => Schema.identifier.default("obey"),
+        "hash-algorithm" => Schema.identifier.default("sha1"),
+        "enc-algorithm" => Schema.identifier.default("aes-256"),
+        "dh-group" => Schema.identifier.default("modp1536"),
+        "lifetime" => Schema.identifier.default("1d"),
+        "lifebytes" => Schema.int.default(0),
+        "dpd-interval" => Schema.identifier.default("2m"),
+        "dpd-maximum-failures" => Schema.int.default(5)
       }
       self.host.result.render_mikrotik(default, cfg, "ip", "ipsec", "peer")
     end
     def set_ip_ipsec_policy(cfg)
       default = {
-        "sa-src-address" => Schema.required.key,
-        "sa-dst-address" => Schema.required.key,
-        "src-address" => Schema.required,
-        "dst-address" => Schema.required,
-        "src-port" => "any",
-        "dst-port" => "any",
-        "protocol" => "all",
-        "action" => "encrypt",
-        "level" => "require",
-        "ipsec-protocols" => "esp",
-        "tunnel" => "yes",
-        "proposal" => "s2b-proposal",
-        "priority" => "0"
+        "sa-src-address" => Schema.address.required.key,
+        "sa-dst-address" => Schema.address.required.key,
+        "src-address" => Schema.address.required,
+        "dst-address" => Schema.address.required,
+        "src-port" => Schema.identifier.default("any"),
+        "dst-port" => Schema.identifier.default("any"),
+        "protocol" => Schema.identifier.default("all"),
+        "action" => Schema.identifier.default("encrypt"),
+        "level" => Schema.identifier.default("require"),
+        "ipsec-protocols" => Schema.identifier.default("esp"),
+        "tunnel" => Schema.identifier.default("yes"),
+        "proposal" => Schema.identifier.default("s2b-proposal"),
+        "priority" => Schema.int.default(0)
       }
       puts "#{cfg['sa-src-address'].class.name}=>#{cfg['sa-dst-address'].class.name} #{cfg['src-address'].class.name}=>#{cfg['dst-address'].class.name} #{cfg.keys}"
       self.host.result.render_mikrotik(default, cfg, "ip", "ipsec", "policy")

@@ -18,6 +18,12 @@ module Mikrotik
       @required = false
       @key = false
       @noset = false
+      @type = nil
+      @default = nil
+    end
+
+    def type
+      @type
     end
 
     def required
@@ -44,6 +50,95 @@ module Mikrotik
       @noset
     end
 
+    class Int
+      def self.serialize(val)
+        throw "only 0-9 are allowed [#{val}]" unless val.to_s.match(/^[0-9]+$/)
+        return val.to_i
+      end
+    end
+    def int
+      @type = Int
+      self
+    end
+
+    class String
+      def self.serialize(val)
+        val = val.strip
+        return '""' if val.nil? || val.empty?
+        return val.to_s.inspect.gsub('$', '\\$')
+      end
+    end
+    def string
+      @type = String
+      self
+    end
+
+    class Identifier
+      def self.serialize(val)
+        throw "only a-zA-Z0-9_- are allowed [#{val}]" unless val.match(/^[a-zA-Z0-9\-_]+$/)
+        return val.to_s
+      end
+    end
+    def identifier
+      @type = Identifier
+      self
+    end
+
+    class Identifiers
+      def self.serialize(val)
+        val.split(',').map{|i| Identifier.serialize(i) }.join(',').to_s
+      end
+    end
+    def identifiers
+      @type = Identifiers
+      self
+    end
+
+    class Address
+      def self.serialize(val)
+        throw "only 0-9:\.\/ are allowed #{val}" unless val.match(/^[a-fA-F0-9:\.\/]+$/)
+        return val.to_s
+      end
+    end
+    def address
+      @type = Address
+      self
+    end
+
+    def get_default
+      @default
+    end
+
+    def default(val)
+      @default = val
+      self
+    end
+
+    def self.default(val)
+      Schema.new.default(val)
+    end
+
+    def self.int
+      Schema.new.int
+    end
+
+    def self.string
+      Schema.new.string
+    end
+
+    def self.identifier
+      Schema.new.identifier
+    end
+
+    def self.identifiers
+      Schema.new.identifiers
+    end
+
+    def self.address
+      Schema.new.address
+    end
+
+
     def self.key
       Schema.new.key
     end
@@ -67,10 +162,10 @@ module Mikrotik
     end
 		def self.build_config(host, iface)
       default = {
-        "l2mtu" => 1590,
-        "mtu" => 1500,
-        "name" => "dummy",
-        "default-name" => Schema.required.key.noset
+        "l2mtu" => Schema.int.default(1590),
+        "mtu" => Schema.int.default(1500),
+        "name" => Schema.identifier.default("dummy"),
+        "default-name" => Schema.identifier.required.key.noset
       }
       host.result.render_mikrotik_set_by_key(default, {
         "l2mtu" => iface.mtu,
@@ -86,11 +181,11 @@ module Mikrotik
     end
 		def self.build_config(host, iface)
       default = {
-        "interface" => Schema.required,
-        "name" => Schema.key.required,
-        "priority" => Schema.required,
-        "v3-protocol" => Schema.required,
-        "vrid" => Schema.required
+        "interface" => Schema.identifier.required,
+        "name" => Schema.identifier.key.required,
+        "priority" => Schema.int.required,
+        "v3-protocol" => Schema.identifier.required,
+        "vrid" => Schema.int.required
       }
       host.result.render_mikrotik(default, {
         "interface" => iface.interface.name,
@@ -107,10 +202,10 @@ module Mikrotik
     end
 		def self.build_config(host, iface)
       default = {
-        "mode" => "active-backup",
-        "mtu" => Schema.required,
-        "name" => Schema.required.key,
-        "slaves" => Schema.required,
+        "mode" => Schema.identifier.default("active-backup"),
+        "mtu" => Schema.int.required,
+        "name" => Schema.identifier.required.key,
+        "slaves" => Schema.identifiers.required,
       }
       host.result.render_mikrotik(default, {
         "mtu" => iface.mtu,
@@ -125,10 +220,10 @@ module Mikrotik
     end
 		def self.build_config(host, iface)
       default = {
-        "interface" => Schema.required,
-        "mtu" => Schema.required,
-        "name" => Schema.required.key,
-        "vlan-id" => Schema.required,
+        "interface" => Schema.identifier.required,
+        "mtu" => Schema.int.required,
+        "name" => Schema.identifier.required.key,
+        "vlan-id" => Schema.int.required,
       }
       host.result.render_mikrotik(default, {
         "interface" => iface.interface.name,
@@ -144,9 +239,9 @@ module Mikrotik
     end
 		def self.build_config(host, iface)
       default = {
-        "auto-mac" => "yes",
-        "mtu" => Schema.required,
-        "name" => Schema.required.key,
+        "auto-mac" => Schema.identifier.default("yes"),
+        "mtu" => Schema.int.required,
+        "name" => Schema.identifier.required.key,
       }
       host.result.render_mikrotik(default, {
         "mtu" => iface.mtu,
@@ -154,8 +249,8 @@ module Mikrotik
       }, "interface", "bridge")
 			iface.interfaces.each do |port|
         host.result.render_mikrotik({
-          "bridge" => Schema.required.key,
-          "interface" => Schema.required
+          "bridge" => Schema.identifier.required.key,
+          "interface" => Schema.identifier.required
         }, {
           "interface" => port.name,
           "bridge" => iface.name,
@@ -166,16 +261,16 @@ module Mikrotik
 
 	module Host
     def self.once(host)
-      host.result.render_mikrotik_set_direct({ "name"=> Schema.required.key }, { "name" => host.name }, "system", "identity")
+      host.result.render_mikrotik_set_direct({ "name"=> Schema.identifier.required.key }, { "name" => host.name }, "system", "identity")
       host.result.add("set [ find name!=ssh && name!=www-ssl ] disabled=yes", nil, "ip", "service")
       host.result.add("set [ find ] address=#{host.id.first_ipv6.first_ipv6}", nil, "ip", "service")
       host.result.add("set [ find name!=admin ] comment=REMOVE", nil, "user")
 
       host.result.render_mikrotik({
-        "name" => Schema.required.key,
-        "enc-algorithms" => "aes-256-cbc",
-        "lifetime" => "1h",
-         "pfs-group"=> "modp15360"
+        "name" => Schema.identifier.required.key,
+        "enc-algorithms" => Schema.identifier.default("aes-256-cbc"),
+        "lifetime" => Schema.identifier.default("1h"),
+        "pfs-group"=> Schema.identifier.default("modp1536")
       }, {"name" => "s2b-proposal"}, "ip", "ipsec", "proposal")
       host.result.add("", "default=yes", "ip", "ipsec", "proposal")
       host.result.add("", "template=yes", "ip", "ipsec", "policy")
@@ -215,27 +310,27 @@ OUT
     end
     def self.set_interface_gre(host, cfg) 
       default = {
-        "name"=>Schema.required.key,
-        "local-address"=>Schema.required,
-        "remote-address"=>Schema.required,
-        "dscp"=>"inherit",
-        "mtu"=>"1476",
-        "l2mtu"=>"65535"
+        "name"=>Schema.identifier.required.key,
+        "local-address"=>Schema.address.required,
+        "remote-address"=>Schema.address.required,
+        "dscp"=>Schema.identifier.default("inherit"),
+        "mtu"=>Schema.int.default(1476),
+        "l2mtu"=>Scheme.int.default(65535)
       }
       host.result.render_mikrotik(default, cfg, "interface", "gre")
     end
     def self.set_interface_gre6(host, cfg) 
       default = {
-        "name"=>Schema.required.key,
-        "local-address"=>Schema.required,
-        "remote-address"=>Schema.required,
-        "mtu"=>"1456",
-        "l2mtu"=>"65535"
+        "name"=>Schema.identifier.required.key,
+        "local-address"=>Schema.address.required,
+        "remote-address"=>Schema.address.required,
+        "mtu"=>Schema.int.default(1456),
+        "l2mtu"=>Schema.int.default(65535)
       }
       host.result.render_mikrotik(default, cfg, "interface", "gre6")
     end
 		def self.build_config(host, iface)
-      puts "iface.name=>#{iface.name}"
+      #puts "iface.name=>#{iface.name}"
       #binding.pry
       #iname = Util.clean_if("gre6", "#{iface.name}")
       set_interface_gre6(host, "name"=> iface.name, 
@@ -246,10 +341,10 @@ OUT
 	end
   def self.set_ipv6_address(host, cfg)
     default = {
-      "address"=>Schema.required,
-      "interface"=>Schema.required,
-      "comment" => Schema.required.key,
-      "advertise"=>"no"
+      "address"=>Schema.address.required,
+      "interface"=>Schema.identifier.required,
+      "comment" => Schema.string.required.key,
+      "advertise"=>Schema.identifier.default("no")
     }
     cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}"
     host.result.render_mikrotik(default, cfg, "ipv6", "address")
