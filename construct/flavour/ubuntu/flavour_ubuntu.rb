@@ -77,7 +77,7 @@ module Ubuntu
 			return if iface.address.ips.empty?
 			ret = ["auto #{iface.name}", "iface #{iface.name} inet manual"]
 			ret << "up ip link set mtu #{iface.mtu} dev #{iface.name} up"
-			ret << "down ip link set down"
+      ret << "down ip link set dev #{iface.name} down"
 			iface.address.ips.each do |ip|
 				ret << "up ip addr add #{ip.to_string} dev #{iface.name}"
 				ret << "down ip addr del #{ip.to_string} dev #{iface.name}"
