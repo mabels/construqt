@@ -11,7 +11,7 @@ module Mikrotik
       default = {
         "address" => Schema.address.required.key,
         "secret" => Schema.string.required,
-        "local-address" => Schema.address.default("0.0.0.0"),
+        "local-address" => Schema.required.address,
         "passive" => Schema.identifier.default("no"),
         "port" => Schema.int.default(500),
         "auth-method" => Schema.identifier.default("pre-shared-key"),
@@ -51,9 +51,11 @@ module Mikrotik
       self.host.result.render_mikrotik(default, cfg, "ip", "ipsec", "policy")
     end
 		def build_config()
-      set_ip_ipsec_peer("address" => self.other.remote.first_ipv6.to_s, "secret" => Util.password(self.cfg.password))
-      set_ip_ipsec_policy("src-address" => self.my.first_ipv6.to_string, "sa-src-address" => self.remote.first_ipv6.to_s,
-                          "dst-address" => self.other.my.first_ipv6.to_string, "sa-dst-address" => self.other.remote.first_ipv6.to_s)
+      set_ip_ipsec_peer("address" => self.other.remote.first_ipv6.to_s, 
+                        "local-address" => self.remote.first_ipv6.to_s,
+                        "secret" => Util.password(self.cfg.password))
+      set_ip_ipsec_policy("src-address" => self.my.first_ipv6.to_s, "sa-src-address" => self.remote.first_ipv6.to_s,
+                          "dst-address" => self.other.my.first_ipv6.to_s, "sa-dst-address" => self.other.remote.first_ipv6.to_s)
 		end
 	end
 end

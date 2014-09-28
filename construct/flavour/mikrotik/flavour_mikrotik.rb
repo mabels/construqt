@@ -52,6 +52,7 @@ module Mikrotik
 
     class Int
       def self.serialize(val)
+        return val if val.nil?
         throw "only 0-9 are allowed [#{val}]" unless val.to_s.match(/^[0-9]+$/)
         return val.to_i
       end
@@ -105,6 +106,16 @@ module Mikrotik
       self
     end
 
+    class Addresses
+      def self.serialize(val)
+        val.split(',').map{|i| Address.serialize(i) }.join(',').to_s
+      end
+    end
+    def addresses
+      @type = Addresses
+      self
+    end
+
     def get_default
       @default
     end
@@ -132,6 +143,10 @@ module Mikrotik
 
     def self.identifiers
       Schema.new.identifiers
+    end
+
+    def self.addresses
+      Schema.new.addresses
     end
 
     def self.address
@@ -241,16 +256,18 @@ module Mikrotik
       default = {
         "auto-mac" => Schema.identifier.default("yes"),
         "mtu" => Schema.int.required,
+        "priority" => Schema.int.default(57344),
         "name" => Schema.identifier.required.key,
       }
       host.result.render_mikrotik(default, {
         "mtu" => iface.mtu,
         "name" => iface.name,
+        "priority" => iface.priority,
       }, "interface", "bridge")
 			iface.interfaces.each do |port|
         host.result.render_mikrotik({
           "bridge" => Schema.identifier.required.key,
-          "interface" => Schema.identifier.required
+          "interface" => Schema.identifier.required.key
         }, {
           "interface" => port.name,
           "bridge" => iface.name,
@@ -262,6 +279,8 @@ module Mikrotik
 	module Host
     def self.once(host)
       host.result.render_mikrotik_set_direct({ "name"=> Schema.identifier.required.key }, { "name" => host.name }, "system", "identity")
+      host.result.render_mikrotik_set_direct({"servers"=>Schema.addresses.required.key}, { "servers"=> "2001:4860:4860::8844,2001:4860:4860::8888"}, "ip", "dns")
+
       host.result.add("set [ find name!=ssh && name!=www-ssl ] disabled=yes", nil, "ip", "service")
       host.result.add("set [ find ] address=#{host.id.first_ipv6.first_ipv6}", nil, "ip", "service")
       host.result.add("set [ find name!=admin ] comment=REMOVE", nil, "user")
