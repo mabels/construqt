@@ -60,9 +60,18 @@ module Hosts
 		@hosts[name].result = @hosts[name].flavour.clazz('result').new(@hosts[name])
 
     block.call(@hosts[name])
-    
     throw "id is required" unless @hosts[name].id.kind_of? HostId
     throw "configip is required" unless @hosts[name].configip.kind_of? HostId
+  
+    adr = nil
+    if @hosts[name].id.first_ipv4
+      adr = (adr || Construct::Addresses).add_ip(@hosts[name].id.first_ipv4.first_ipv4.to_s).set_name(@hosts[name].name)
+    end
+    if @hosts[name].id.first_ipv6
+      adr = (adr || Construct::Addresses).add_ip(@hosts[name].id.first_ipv6.first_ipv6.to_s).set_name(@hosts[name].name)
+    end
+    adr.host = @hosts[name] if adr
+puts "HALLO=> #{adr}"
 		@hosts[name]
 	end
 	def self.find(name) 

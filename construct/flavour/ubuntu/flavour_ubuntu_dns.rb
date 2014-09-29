@@ -21,11 +21,15 @@ $TTL 86400      ; 1 day
 OUT
     	  Hosts.get_hosts.each do |host|
 	          	next unless host.dns_server
-              ret << "#{domain}. 3600 IN NS #{host.id.first_ipv6.fqdn}." 
-		      	if (domain == Addresses.domain) 
-              ret << "#{host.id.first_ipv6.fqdn}.  3600 IN A #{host.id.first_ipv4}" if host.id.first_ipv4 
-              ret << "#{host.id.first_ipv6.fqdn}.  3600 IN AAAA #{host.id.first_ipv6}" if host.id.first_ipv6
-		      	end
+              plain_adr = Addresses.all.find{|i| i.name == host.name }
+              unless plain_adr
+                plain_adr = host.id.first_ipv6
+              end
+              ret << "#{domain}. 3600 IN NS #{plain_adr.fqdn}." 
+		      	#if (domain == Addresses.domain) 
+            #  ret << "#{host.id.first_ipv6.fqdn}.  3600 IN A #{host.id.first_ipv4}" if host.id.first_ipv4 
+            #  ret << "#{host.id.first_ipv6.fqdn}.  3600 IN AAAA #{host.id.first_ipv6}" if host.id.first_ipv6
+		      	#end
 	      end
 	      ret << ""
 	      ret.join("\n")
@@ -38,6 +42,7 @@ OUT
         domain = address.domain
 				forward[domain] ||= []
 				address.ips.each do |ip|	
+          next if ip.to_i == ip.network.to_i && ((ip.ipv6? && ip.prefix < 128) || (ip.ipv4? && ip.prefix < 32))
 					forward[domain] << "#{"%-42s" % "#{name}."} 3600 IN #{ip.ipv4? ? 'A' : 'AAAA'} #{ip.to_s}"	
           network = Addresses.to_network(ip.network)
 					reverse[network] ||= {}
