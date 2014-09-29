@@ -85,9 +85,21 @@ module Mikrotik
       self
     end
 
+    class Port
+      def self.serialize(val)
+        val = '0' if val == 'any'
+        throw "only 0-9 are allowed [#{val}]" unless val.match(/^([Z0-9]+)$/)
+        return val.to_s
+      end
+    end
+    def port
+      @type = Port
+      self
+    end
+
     class Identifiers
       def self.serialize(val)
-        val.split(',').map{|i| Identifier.serialize(i) }.join(',').to_s
+        '"'+val.split(',').map{|i| Identifier.serialize(i) }.join(',').to_s+'"'
       end
     end
     def identifiers
@@ -135,6 +147,10 @@ module Mikrotik
 
     def self.string
       Schema.new.string
+    end
+
+    def self.port
+      Schema.new.port
     end
 
     def self.identifier
