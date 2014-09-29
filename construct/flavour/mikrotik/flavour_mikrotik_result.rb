@@ -63,7 +63,7 @@ module Mikrotik
       prepared.result.keys.sort.each do |key|
         val = prepared.result[key]
         next if val.to_s.empty?
-        ret << "    :if (($found->#{key.inspect})!=#{val.inspect}) do={ set $found #{key}=#{val.inspect} }"
+        ret << "    :if (($found->#{key.inspect})!=#{val}) do={ set $found #{key}=#{val} }"
       end
       ret << "  }" 
       ret << "}" 

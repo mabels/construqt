@@ -15,6 +15,7 @@ module Addresses
     ret
   end
 
+
   @domain = "construct.org"
   def self.set_domain(domain)
     @domain = domain
@@ -60,7 +61,7 @@ module Addresses
       fqdn[fqdn.index('.')+1..-1]
     end
     def fqdn
-        _name = self.name
+        _name = self.name.gsub('_', '-')
 				return "#{_name}.#{Addresses.domain}" unless _name.include?('.')
         return _name
     end
@@ -89,7 +90,7 @@ module Addresses
 			self
 		end
     def to_s
-      "<Address:Address #{self.ips.map{|i| i.to_s}.inspect}>"
+      "<Address:Address #{self.name}=>#{self.ips.map{|i| i.to_s}.inspect}>"
     end
 	end
 	def self.add_ip(ip, region = "")
