@@ -11,18 +11,11 @@ puts ">>>>>>> #{dev_name} #{host.name}"
 		host.interfaces[dev_name].address.interface = host.interfaces[dev_name] if host.interfaces[dev_name].address
 		host.interfaces[dev_name]
 	end
-  @templates = []
-  class Template < OpenStruct
-    def initialize(cfg)
-      super(cfg)
-    end
-  end
   def self.add_template(host, name, cfg) 
+		cfg['clazz'] = host.flavour.clazz("template")
     cfg['host'] = host
     cfg['name'] = name
-    template = Template.new(cfg)
-    @templates << template
-    template
+    self.add_device(host,name, cfg)
   end
 	def self.add_openvpn(host, name, cfg) 
 		cfg['clazz'] = host.flavour.clazz("opvn")
