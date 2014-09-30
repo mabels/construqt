@@ -88,7 +88,7 @@ module Mikrotik
 
     def build_config()
       #binding.pry
-      puts "as=>#{self.as} #{self.other.my.host.name}"
+      #puts "as=>#{self.as} #{self.other.my.host.name}"
       set_routing_bgp_peer("name"=> "v6-#{self.other.my.host.name}" , 
                            "instance" => "AS#{self.as}" , 
                            "remote-as" => self.other.as, 

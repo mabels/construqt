@@ -40,9 +40,8 @@ module Bgps
   def self.build_config()
     #binding.pry
     hosts = {}
-    @bgps.each do |name, bgp|
-puts ">>>>BGPS>>>>>>>> #{name}"
-      bgp.build_config()
+		@bgps.each do |name, bgp|
+			bgp.build_config()
       hosts[bgp.left.host.name] = bgp.left
       hosts[bgp.right.host.name] = bgp.right
     end

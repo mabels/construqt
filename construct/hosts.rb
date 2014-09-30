@@ -71,21 +71,20 @@ module Hosts
       adr = (adr || Construct::Addresses).add_ip(@hosts[name].id.first_ipv6.first_ipv6.to_s).set_name(@hosts[name].name)
     end
     adr.host = @hosts[name] if adr
-puts "HALLO=> #{adr}"
-    @hosts[name]
-  end
-  def self.find(name) 
-    ret = @hosts[name]
-    throw "host not found #{name}" unless ret
-    ret
-  end
-  def self.dump()
-    puts @hosts.inspect
-  end
-  def self.build_config()
-    @hosts.each do |name, host|
-      host.flavour.clazz('host').build_config(host)  
-    end
-  end
+		@hosts[name]
+	end
+	def self.find(name) 
+		ret = @hosts[name]
+		throw "host not found #{name}" unless ret
+		ret
+	end
+	def self.dump()
+		puts @hosts.inspect
+	end
+	def self.build_config()
+		@hosts.each do |name, host|
+			host.flavour.clazz('host').build_config(host)	
+		end
+	end
 end
 end
