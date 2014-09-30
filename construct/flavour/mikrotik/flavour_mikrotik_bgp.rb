@@ -3,10 +3,10 @@ module Construct
 module Flavour
 module Mikrotik
 
-	class Bgp < OpenStruct
-		def initialize(cfg)
-			super(cfg)
-		end
+  class Bgp < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
     
     def write_filter(host)
       Bgps.filters.each do |filter|
@@ -86,7 +86,7 @@ module Mikrotik
       self.host.result.render_mikrotik(default, cfg, "routing", "bgp", "peer")
     end
 
-		def build_config()
+    def build_config()
       #binding.pry
       puts "as=>#{self.as} #{self.other.my.host.name}"
       set_routing_bgp_peer("name"=> "v6-#{self.other.my.host.name}" , 
@@ -96,8 +96,8 @@ module Mikrotik
                            "tcp-md5-key" => self.cfg.password, 
                            "in-filter" => self.filter['in'].name,
                            "out-filter" => self.filter['out'].name)
-		end
-	end
+    end
+  end
 
 end
 end

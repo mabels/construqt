@@ -186,12 +186,12 @@ module Mikrotik
   def self.name
     'mikrotik'
   end
-	Flavour.add(self)		
+  Flavour.add(self)    
 
-	module Device
+  module Device
     def self.once(host)
     end
-		def self.build_config(host, iface)
+    def self.build_config(host, iface)
       default = {
         "l2mtu" => Schema.int.default(1590),
         "mtu" => Schema.int.default(1500),
@@ -204,13 +204,13 @@ module Mikrotik
         "name" => iface.name,
         "default-name" => iface.default_name
       }, "interface")
-		end
-	end
+    end
+  end
 
-	module Vrrp
+  module Vrrp
     def self.once(host)
     end
-		def self.build_config(host, iface)
+    def self.build_config(host, iface)
       default = {
         "interface" => Schema.identifier.required,
         "name" => Schema.identifier.key.required,
@@ -225,13 +225,13 @@ module Mikrotik
         "v3-protocol" => "ipv6",
         "vrid" => iface.vrid
       }, "interface", "vrrp")
-		end
-	end
+    end
+  end
 
-	module Bond
+  module Bond
     def self.once(host)
     end
-		def self.build_config(host, iface)
+    def self.build_config(host, iface)
       default = {
         "mode" => Schema.identifier.default("active-backup"),
         "mtu" => Schema.int.required,
@@ -243,13 +243,13 @@ module Mikrotik
         "name" => iface.name,
         "slaves" => iface.interfaces.map{|iface| iface.name}.join(',')
       }, "interface", "bonding")
-		end
-	end
+    end
+  end
 
-	module Vlan
+  module Vlan
     def self.once(host)
     end
-		def self.build_config(host, iface)
+    def self.build_config(host, iface)
       default = {
         "interface" => Schema.identifier.required,
         "mtu" => Schema.int.required,
@@ -262,13 +262,13 @@ module Mikrotik
         "name" => iface.name,
         "vlan-id" => iface.vlan_id
       }, "interface", "vlan")
-		end
-	end
+    end
+  end
 
-	module Bridge
+  module Bridge
     def self.once(host)
     end
-		def self.build_config(host, iface)
+    def self.build_config(host, iface)
       default = {
         "auto-mac" => Schema.identifier.default("yes"),
         "mtu" => Schema.int.required,
@@ -280,7 +280,7 @@ module Mikrotik
         "name" => iface.name,
         "priority" => iface.priority,
       }, "interface", "bridge")
-			iface.interfaces.each do |port|
+      iface.interfaces.each do |port|
         host.result.render_mikrotik({
           "bridge" => Schema.identifier.required.key,
           "interface" => Schema.identifier.required.key
@@ -288,11 +288,11 @@ module Mikrotik
           "interface" => port.name,
           "bridge" => iface.name,
         }, "interface", "bridge", "port")
-			end
-		end
-	end
+      end
+    end
+  end
 
-	module Host
+  module Host
     def self.once(host)
       host.result.render_mikrotik_set_direct({ "name"=> Schema.identifier.required.key }, { "name" => host.name }, "system", "identity")
       host.result.render_mikrotik_set_direct({"servers"=>Schema.addresses.required.key}, { "servers"=> "2001:4860:4860::8844,2001:4860:4860::8888"}, "ip", "dns")
@@ -329,18 +329,18 @@ OUT
       host.result.add("remove [find comment=REMOVE ]", nil, "user" )
       host.result.add("set [ find name=admin] disable=yes", nil, "user")
     end
-		def self.build_config(host)
-			ret = ["# host"]
-		end
-	end
-	module Ovpn
+    def self.build_config(host)
+      ret = ["# host"]
+    end
+  end
+  module Ovpn
     def self.once(host)
     end
-		def self.build_config(host, iface)
-			throw "ovpn not impl"
-		end
-	end
-	module Gre
+    def self.build_config(host, iface)
+      throw "ovpn not impl"
+    end
+  end
+  module Gre
     def self.once(host)
     end
     def self.set_interface_gre(host, cfg) 
@@ -364,7 +364,7 @@ OUT
       }
       host.result.render_mikrotik(default, cfg, "interface", "gre6")
     end
-		def self.build_config(host, iface)
+    def self.build_config(host, iface)
       #puts "iface.name=>#{iface.name}"
       #binding.pry
       #iname = Util.clean_if("gre6", "#{iface.name}")
@@ -372,8 +372,8 @@ OUT
                          "local-address"=>iface.local.to_s,
                          "remote-address"=>iface.remote.to_s)
       #Mikrotik.set_ipv6_address(host, "address"=>iface.address.first_ipv6.to_string, "interface" => iname)
-		end
-	end
+    end
+  end
   def self.set_ipv6_address(host, cfg)
     default = {
       "address"=>Schema.address.required,
@@ -390,35 +390,35 @@ OUT
     end
   end
   def self.clazzes
-		ret = {
-			"opvn" => Ovpn, 
-			"gre" => Gre, 
-			"host" => Host, 
-			"device"=> Device, 
-			"vrrp" => Vrrp, 
-			"bridge" => Bridge,
-			"bond" => Bond, 
-			"vlan" => Vlan,
-			"result" => Result
-	  }
+    ret = {
+      "opvn" => Ovpn, 
+      "gre" => Gre, 
+      "host" => Host, 
+      "device"=> Device, 
+      "vrrp" => Vrrp, 
+      "bridge" => Bridge,
+      "bond" => Bond, 
+      "vlan" => Vlan,
+      "result" => Result
+    }
   end
-	def self.clazz(name)
+  def self.clazz(name)
     ret = self.clazzes[name]
-		throw "class not found #{name}" unless ret
-		ret
-	end
-	def self.create_interface(name, cfg)
-		cfg['name'] = name
-		iface = Interface.new(cfg)
-		iface
-	end
+    throw "class not found #{name}" unless ret
+    ret
+  end
+  def self.create_interface(name, cfg)
+    cfg['name'] = name
+    iface = Interface.new(cfg)
+    iface
+  end
 
-	def self.create_bgp(cfg)
-		Bgp.new(cfg)
-	end
-	def self.create_ipsec(cfg)
-		Ipsec.new(cfg)
-	end
+  def self.create_bgp(cfg)
+    Bgp.new(cfg)
+  end
+  def self.create_ipsec(cfg)
+    Ipsec.new(cfg)
+  end
 end
 end
 end

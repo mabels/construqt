@@ -32,18 +32,18 @@ module Addresses
     @contact
   end
 
-	@Addresses = []
-	class Address
-		attr_accessor :host
-		attr_accessor :interface
-		attr_accessor :ips
-		def initialize()
-			self.ips = []
-			self.host = nil
-			self.interface = nil
-			self.routes = []
-			@name = nil
-		end
+  @Addresses = []
+  class Address
+    attr_accessor :host
+    attr_accessor :interface
+    attr_accessor :ips
+    def initialize()
+      self.ips = []
+      self.host = nil
+      self.interface = nil
+      self.routes = []
+      @name = nil
+    end
     def first_ipv4
       self.ips.find{|ip| ip.ipv4? }
     end
@@ -54,52 +54,52 @@ module Addresses
       @name = name
       self
     end
-		def name=(name)
-			@name = name
-		end
+    def name=(name)
+      @name = name
+    end
     def domain
       fqdn[fqdn.index('.')+1..-1]
     end
     def fqdn
         _name = self.name.gsub('_', '-')
-				return "#{_name}.#{Addresses.domain}" unless _name.include?('.')
+        return "#{_name}.#{Addresses.domain}" unless _name.include?('.')
         return _name
     end
-		def name
-			return @name if @name
-			return "#{interface.name}-#{interface.host.name}" if interface
-			return host.name if host
-			throw "unreferenced address #{self.inspect}"	
-		end
-		def add_ip(ip, region = "")
+    def name
+      return @name if @name
+      return "#{interface.name}-#{interface.host.name}" if interface
+      return host.name if host
+      throw "unreferenced address #{self.inspect}"  
+    end
+    def add_ip(ip, region = "")
       ip = IPAddress.parse(ip)
-			self.ips << ip
-			self
-		end
-		@nameservers = []
-		def add_nameserver(ip)
-			@nameservers << IPAddress.parse(ip)
-			self
-		end
-		attr_accessor :routes
-		def add_route(dst, via)
-			dst = IPAddress.parse(dst)
-			via = IPAddress.parse(via)
-			throw "different type #{dst} #{via}" unless dst.ipv4? == via.ipv4? && dst.ipv6? == via.ipv6?
-			self.routes << OpenStruct.new("dst" => dst, "via" => via)
-			self
-		end
+      self.ips << ip
+      self
+    end
+    @nameservers = []
+    def add_nameserver(ip)
+      @nameservers << IPAddress.parse(ip)
+      self
+    end
+    attr_accessor :routes
+    def add_route(dst, via)
+      dst = IPAddress.parse(dst)
+      via = IPAddress.parse(via)
+      throw "different type #{dst} #{via}" unless dst.ipv4? == via.ipv4? && dst.ipv6? == via.ipv6?
+      self.routes << OpenStruct.new("dst" => dst, "via" => via)
+      self
+    end
     def to_s
       "<Address:Address #{self.name}=>#{self.ips.map{|i| i.to_s}.inspect}>"
     end
-	end
-	def self.add_ip(ip, region = "")
-		ret = Address.new().add_ip(ip, region)
-		@Addresses << ret
-		ret
-	end
-	def self.all
-		@Addresses
-	end
+  end
+  def self.add_ip(ip, region = "")
+    ret = Address.new().add_ip(ip, region)
+    @Addresses << ret
+    ret
+  end
+  def self.all
+    @Addresses
+  end
 end
 end

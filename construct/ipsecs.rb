@@ -1,28 +1,28 @@
 
 module Construct
 module Ipsecs
-	class Ipsec < OpenStruct
-		def initialize(cfg)
-			super(cfg)
-		end
-		def build_config()
-			self.left.build_config()	
-			self.right.build_config()	
-		end
-	end
-	@ipsecs = {}
+  class Ipsec < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+    def build_config()
+      self.left.build_config()  
+      self.right.build_config()  
+    end
+  end
+  @ipsecs = {}
   def self.add_connection(cfg, id, to_id, iname)
-		throw "my not found #{cfg[id].inspect}" unless cfg[id]['my']
-		throw "host not found #{cfg[id].inspect}" unless cfg[id]['host']
-		throw "remote not found #{cfg[id].inspect}" unless cfg[id]['remote']
-		cfg[id]['other'] = nil
-		cfg[id]['cfg'] = nil
+    throw "my not found #{cfg[id].inspect}" unless cfg[id]['my']
+    throw "host not found #{cfg[id].inspect}" unless cfg[id]['host']
+    throw "remote not found #{cfg[id].inspect}" unless cfg[id]['remote']
+    cfg[id]['other'] = nil
+    cfg[id]['cfg'] = nil
     cfg[id]['my'].host = cfg[id]['host']  
     cfg[id]['my'].name = "#{iname}-#{cfg[id]['host'].name}"
     cfg[id]['interface'] = nil
-		cfg[id] = cfg[id]['host'].flavour.create_ipsec(cfg[id])
+    cfg[id] = cfg[id]['host'].flavour.create_ipsec(cfg[id])
   end
-	def self.connection(name, cfg)
+  def self.connection(name, cfg)
     add_connection(cfg, 'left', 'right', Util.add_gre_prefix(cfg['right']['host'].name))
     add_connection(cfg, 'right', 'left', Util.add_gre_prefix(cfg['left']['host'].name))
     cfg['name'] = name
@@ -45,12 +45,12 @@ module Ipsecs
                                           )
     #binding.pry
     cfg
-	end
-	def self.build_config()
-		@ipsecs.each do |name, ipsec|
-			ipsec.build_config()
-		end
-	end
-	
+  end
+  def self.build_config()
+    @ipsecs.each do |name, ipsec|
+      ipsec.build_config()
+    end
+  end
+  
 end
 end

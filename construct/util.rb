@@ -1,12 +1,12 @@
 module Construct
 module Util
-	def self.write_str(str, *path)
-		path = File.join("cfgs", *path)
-		FileUtils.mkdir_p(File.dirname(path))
-		File.open(path, 'w') {|f| f.write(str) }
-		puts "Write:#{path}"
+  def self.write_str(str, *path)
+    path = File.join("cfgs", *path)
+    FileUtils.mkdir_p(File.dirname(path))
+    File.open(path, 'w') {|f| f.write(str) }
+    puts "Write:#{path}"
     return str
-	end
+  end
    def self.password(a)
       a
    end

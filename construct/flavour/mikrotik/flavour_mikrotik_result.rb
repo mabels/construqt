@@ -1,17 +1,17 @@
 module Construct
 module Flavour
 module Mikrotik
-	class Result
-		def initialize(host)
+  class Result
+    def initialize(host)
       @remove_pre_condition = {}
-			@host = host
-			@result = {}
-		end
+      @host = host
+      @result = {}
+    end
     def self.once(host)
     end
-		def empty?(name)
-			not @result[name]
-		end
+    def empty?(name)
+      not @result[name]
+    end
     def prepare(default, cfg, enable = true)
       result = {}
       cfg.each do |key, val|
@@ -69,12 +69,12 @@ module Mikrotik
       ret << "}" 
       add(ret.join("\n"), prepared.key, *path)  
     end
-		def add(block, digest, *path)
-			key = File.join(*path)
+    def add(block, digest, *path)
+      key = File.join(*path)
       @result[key] ||= []
-			@result[key] << OpenStruct.new(:digest => digest, :block => block, :path => path)
+      @result[key] << OpenStruct.new(:digest => digest, :block => block, :path => path)
       @result[key]
-		end
+    end
     def add_remove_pre_condition(condition, *path)
       @remove_pre_condition[path.join(' ')] = condition
     end
@@ -92,7 +92,7 @@ module Mikrotik
       term.empty? ? "" : "remove [ find #{term} ]"
     end
 
-		def commit
+    def commit
       sorted = {}
       @host.flavour.pre_clazzes { |clazz| clazz.once(@host) }
       @result.map do |path, blocks|
@@ -134,8 +134,8 @@ module Mikrotik
         end
       end.join("\n")
       Util.write_str(all, File.join(@host.name, "all.rsc"))
-		end
-	end
+    end
+  end
 end
 end
 end
