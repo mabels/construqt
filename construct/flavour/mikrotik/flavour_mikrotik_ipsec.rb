@@ -3,10 +3,10 @@ require 'digest/md5'
 module Construct
 module Flavour
 module Mikrotik
-	class Ipsec < OpenStruct
-		def initialize(cfg)
-			super(cfg)
-		end
+  class Ipsec < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
     def set_ip_ipsec_peer(cfg)
       default = {
         "address" => Schema.address.required.key,
@@ -50,14 +50,14 @@ module Mikrotik
       puts "#{cfg['sa-src-address'].class.name}=>#{cfg['sa-dst-address'].class.name} #{cfg['src-address'].class.name}=>#{cfg['dst-address'].class.name} #{cfg.keys}"
       self.host.result.render_mikrotik(default, cfg, "ip", "ipsec", "policy")
     end
-		def build_config()
+    def build_config()
       set_ip_ipsec_peer("address" => self.other.remote.first_ipv6.to_s, 
                         "local-address" => self.remote.first_ipv6.to_s,
                         "secret" => Util.password(self.cfg.password))
       set_ip_ipsec_policy("src-address" => self.my.first_ipv6.to_s, "sa-src-address" => self.remote.first_ipv6.to_s,
                           "dst-address" => self.other.my.first_ipv6.to_s, "sa-dst-address" => self.other.remote.first_ipv6.to_s)
-		end
-	end
+    end
+  end
 end
 end
 end

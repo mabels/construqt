@@ -2,13 +2,13 @@ module Construct
 module Flavour
   module Ubuntu
 
-	class Bgp < OpenStruct
-		def initialize(cfg)
-			super(cfg)
-		end
+  class Bgp < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
     def once(host) 
     end
-		def header(path)
+    def header(path)
 #      binding.pry
       ret = <<BGP
 log syslog { debug, trace, info, remote, warning, error, auth, fatal, bug };
@@ -45,14 +45,14 @@ BGP
 
     def build_bird_conf
       if self.my.address.first_ipv4 && self.other.my.address.first_ipv4
-	 		  self.my.host.result.add(self, "# bgp bird ipv4 #{self.my.host.name}", Ubuntu.root, "etc", "bird", "bird.conf")
+         self.my.host.result.add(self, "# bgp bird ipv4 #{self.my.host.name}", Ubuntu.root, "etc", "bird", "bird.conf")
       end
     end
 
     def build_bird6_conf
 #      binding.pry
       if self.my.address.first_ipv6 && self.other.my.address.first_ipv6
-	 		  self.my.host.result.add(self, <<BGP, Ubuntu.root, "etc", "bird", "bird6.conf")
+         self.my.host.result.add(self, <<BGP, Ubuntu.root, "etc", "bird", "bird6.conf")
 protocol bgp #{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)} {
         description "#{self.my.host.name} <=> #{self.other.host.name}";
         direct;
@@ -68,11 +68,11 @@ BGP
       end
     end
 
-		def build_config()
+    def build_config()
       build_bird_conf 
       build_bird6_conf 
-		end
-	end
+    end
+  end
   end
 end
 end

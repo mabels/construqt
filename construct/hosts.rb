@@ -1,10 +1,10 @@
 require 'construct/interfaces.rb'
 module Construct
 module Hosts
-	@hosts = {}
-	def self.commit
-		@hosts.values.each { |h| h.result.commit }
-	end
+  @hosts = {}
+  def self.commit
+    @hosts.values.each { |h| h.result.commit }
+  end
 
   @default_pwd = SecureRandom.urlsafe_base64(24)
   def self.set_default_password(pwd)
@@ -35,29 +35,29 @@ module Hosts
         throw "first_ipv4 failed #{self.interfaces.first.host.name}" 
       end
   end
-	class Host < OpenStruct
-		def initialize(cfg)
-			super(cfg)
-		end
-	end
-	def self.get_hosts()
-		@hosts.values
-	end
-	def self.add(name, cfg, &block)
+  class Host < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+  end
+  def self.get_hosts()
+    @hosts.values
+  end
+  def self.add(name, cfg, &block)
     throw "id is not allowed" if cfg['id']
     throw "configip is not allowed" if cfg['configip']
-		cfg['interfaces'] = {}
-		cfg['id'] ||=nil
-		cfg['configip'] ||=nil
+    cfg['interfaces'] = {}
+    cfg['id'] ||=nil
+    cfg['configip'] ||=nil
 
-		cfg['name'] = name
-		cfg['dns_server'] ||= false
-		cfg['result'] =nil
-		cfg['shadow'] ||=nil
-		cfg['flavour'] = Flavour.find(cfg['flavour'] || 'ubuntu')
-		throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
-		@hosts[name] = Host.new(cfg)
-		@hosts[name].result = @hosts[name].flavour.clazz('result').new(@hosts[name])
+    cfg['name'] = name
+    cfg['dns_server'] ||= false
+    cfg['result'] =nil
+    cfg['shadow'] ||=nil
+    cfg['flavour'] = Flavour.find(cfg['flavour'] || 'ubuntu')
+    throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
+    @hosts[name] = Host.new(cfg)
+    @hosts[name].result = @hosts[name].flavour.clazz('result').new(@hosts[name])
 
     block.call(@hosts[name])
     throw "id is required" unless @hosts[name].id.kind_of? HostId
@@ -72,20 +72,20 @@ module Hosts
     end
     adr.host = @hosts[name] if adr
 puts "HALLO=> #{adr}"
-		@hosts[name]
-	end
-	def self.find(name) 
-		ret = @hosts[name]
-		throw "host not found #{name}" unless ret
-		ret
-	end
-	def self.dump()
-		puts @hosts.inspect
-	end
-	def self.build_config()
-		@hosts.each do |name, host|
-			host.flavour.clazz('host').build_config(host)	
-		end
-	end
+    @hosts[name]
+  end
+  def self.find(name) 
+    ret = @hosts[name]
+    throw "host not found #{name}" unless ret
+    ret
+  end
+  def self.dump()
+    puts @hosts.inspect
+  end
+  def self.build_config()
+    @hosts.each do |name, host|
+      host.flavour.clazz('host').build_config(host)  
+    end
+  end
 end
 end

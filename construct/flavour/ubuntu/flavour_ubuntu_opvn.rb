@@ -2,14 +2,14 @@
 module Construct
 module Flavour
 module Ubuntu
-	module Opvn
-		def self.header(path)
-			"# this is a generated file do not edit!!!!!"
-		end
-		def self.build_config(host, iface)
+  module Opvn
+    def self.header(path)
+      "# this is a generated file do not edit!!!!!"
+    end
+    def self.build_config(host, iface)
       local = iface.ipv6 ? host.id.first_ipv6.first_ipv6 : host.id.first_ipv4.first_ipv4
       return unless local
-			host.result.add(self, <<OPVN, Ubuntu.root, "etc", "openvpn", "#{iface.name}.conf")
+      host.result.add(self, <<OPVN, Ubuntu.root, "etc", "openvpn", "#{iface.name}.conf")
 daemon
 local #{local}
 proto udp#{local.ipv6? ? '6' : ''}
@@ -43,8 +43,8 @@ plugin /usr/lib/openvpn/openvpn-plugin-auth-pam.so openvpn
 client-cert-not-required
 script-security 2
 OPVN
-		end
-	end
+    end
+  end
 end
 end
 end
