@@ -73,18 +73,15 @@ module Ubuntu
 		def self.header(path)
 			"# this is a generated file do not edit!!!!!"
 		end
-		def self.build_config(host, iface)
-			return if iface.address.ips.empty?
-			ret = ["auto #{iface.name}", "iface #{iface.name} inet manual"]
-			ret << "up ip link set mtu #{iface.mtu} dev #{iface.name} up"
-      ret << "down ip link set dev #{iface.name} down"
+    def self.add_address(host, iface)
+      ret = []
 			iface.address.ips.each do |ip|
-				ret << "up ip addr add #{ip.to_string} dev #{iface.name}"
-				ret << "down ip addr del #{ip.to_string} dev #{iface.name}"
+				ret << "  up ip addr add #{ip.to_string} dev #{iface.name}"
+				ret << "  down ip addr del #{ip.to_string} dev #{iface.name}"
 			end
 			iface.address.routes.each do |route|
-				ret << "up ip route add #{route.dst.to_string} via #{route.via.to_s}"
-				ret << "down ip route del #{route.dst.to_string} via #{route.via.to_s}"
+				ret << "  up ip route add #{route.dst.to_string} via #{route.via.to_s}"
+				ret << "  down ip route del #{route.dst.to_string} via #{route.via.to_s}"
 			end
       ret << "  up iptables -t raw -A PREROUTING -i #{iface.name} -j NOTRACK"
       ret << "  up iptables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK"
@@ -94,6 +91,13 @@ module Ubuntu
       ret << "  up ip6tables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK"
       ret << "  down ip6tables -t raw -D PREROUTING -i #{iface.name} -j NOTRACK"
       ret << "  down ip6tables -t raw -D OUTPUT -o #{iface.name} -j NOTRACK"
+      ret
+    end
+		def self.build_config(host, iface)
+			ret = ["auto #{iface.name}", "iface #{iface.name} inet manual"]
+			ret << "  up ip link set mtu #{iface.mtu} dev #{iface.name} up"
+      ret << "  down ip link set dev #{iface.name} down"
+      ret += add_address(host, iface) unless iface.address.nil? || iface.address.ips.empty?
 			host.result.add(self, ret.join("\n"), Ubuntu.root, "etc", "network", "interfaces")
 		end
 	end
@@ -132,7 +136,12 @@ module Ubuntu
 	end
 	module Vlan
 		def self.build_config(host, iface)
-			throw "not implemented vlan on ubuntu"
+      vlan = iface.name.split('.')
+      throw "vlan name not valid if.# => #{iface.name}" if vlan.length != 2 || 
+                                                        !vlan.first.match(/^[0-9a-zA-Z]+$/) || 
+                                                        !vlan.last.match(/^[0-9]+/) ||
+                                                        !(1 <= vlan.last.to_i && vlan.last.to_i < 4096)
+		  Device.build_config(host, iface)
 		end
 	end
 	module Bridge

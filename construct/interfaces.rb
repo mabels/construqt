@@ -85,6 +85,7 @@ puts ">>>>>>> #{dev_name} #{host.name}"
 			["host", "device", "vlan", "bond", "bridge", "vrrp", "gre", "bgp", "opvn", "ipsec"].each do |key|
 				next unless by_clazz[key]
 				by_clazz[key].each do |interface|
+          puts "Interface:#{interface.name}"
 					interface.build_config(host)
 				end
 			end
