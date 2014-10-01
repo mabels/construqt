@@ -38,7 +38,7 @@ module Mikrotik
         "ignore-as-path-len"=>Schema.identifier.default("no"),
         "routing-table"=>Schema.identifier.default(nil)
       }
-      self.host.result.render_mikrotik(default, cfg, "routing", "bgp", "instance")
+      self.host.result.delegate.render_mikrotik(default, cfg, "routing", "bgp", "instance")
     end
     def write_peer(host)
       as_s = {}
@@ -57,7 +57,8 @@ module Mikrotik
       end
       puts ">>>>>> #{as_s.keys}"
     end
-    def once(host)
+    def header(host)
+      #binding.pry if host.name == "s2b-l3-r01"
       write_peer(host)
       write_filter(host)
     end
@@ -83,10 +84,10 @@ module Mikrotik
         "passive" => Schema.identifier.default("no"),
         "use-bfd" => Schema.identifier.default("yes")
       }
-      self.host.result.render_mikrotik(default, cfg, "routing", "bgp", "peer")
+      self.host.result.delegate.render_mikrotik(default, cfg, "routing", "bgp", "peer")
     end
 
-    def build_config()
+    def build_config(unused, unused1)
       #binding.pry
       #puts "as=>#{self.as} #{self.other.my.host.name}"
       set_routing_bgp_peer("name"=> "v6-#{self.other.my.host.name}" , 

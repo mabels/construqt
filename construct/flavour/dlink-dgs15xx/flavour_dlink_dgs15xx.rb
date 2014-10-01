@@ -27,6 +27,9 @@ module DlinkDgs15xx
 			@host = host
 			@result = {}
 		end
+    def host
+      @host
+    end
 		def empty?(name)
 			not @result[name]
 		end
@@ -61,7 +64,7 @@ module DlinkDgs15xx
 		def initialize(cfg)
 			super(cfg)
 		end
-		def build_config(host)
+		def build_config(host, unused)
 			self.clazz.build_config(host, self)
 		end
 	end
@@ -129,7 +132,7 @@ module DlinkDgs15xx
 		def self.header(path)
 			"# this is a generated file do not edit!!!!!"
 		end
-		def self.build_config(host)
+		def self.build_config(host, unused)
       host.interfaces.values.each do |interface|
         puts "interface=>#{host.name} #{interface.name}"
       end
@@ -154,6 +157,9 @@ module DlinkDgs15xx
     end
 	end
 
+  module Template
+  end
+
 	def self.clazz(name)
 		ret = {
 			"opvn" => Opvn, 
@@ -162,6 +168,7 @@ module DlinkDgs15xx
 			"device"=> Device, 
 			"vrrp" => Vrrp, 
 			"bridge" => Bridge,
+			"template" => Template,
 			"bond" => Bond, 
 			"vlan" => Vlan,
 			"result" => Result

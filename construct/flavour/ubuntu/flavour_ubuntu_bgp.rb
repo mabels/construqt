@@ -6,8 +6,6 @@ module Flavour
     def initialize(cfg)
       super(cfg)
     end
-    def once(host) 
-    end
     def header(path)
 #      binding.pry
       ret = <<BGP
@@ -68,7 +66,7 @@ BGP
       end
     end
 
-    def build_config()
+    def build_config(unused, unused1)
       build_bird_conf 
       build_bird6_conf 
     end
