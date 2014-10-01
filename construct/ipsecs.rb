@@ -6,8 +6,8 @@ module Ipsecs
       super(cfg)
     end
     def build_config()
-      self.left.build_config()  
-      self.right.build_config()  
+      self.left.build_config(nil, nil)  
+      self.right.build_config(nil, nil)  
     end
   end
   @ipsecs = {}
@@ -23,8 +23,9 @@ module Ipsecs
     cfg[id] = cfg[id]['host'].flavour.create_ipsec(cfg[id])
   end
   def self.connection(name, cfg)
+#    binding.pry
     add_connection(cfg, 'left', 'right', Util.add_gre_prefix(cfg['right']['host'].name))
-    add_connection(cfg, 'right', 'left', Util.add_gre_prefix(cfg['left']['host'].name))
+    add_connection(cfg, 'right', 'left', Util.add_gre_prefix(cfg['left'].host.name))
     cfg['name'] = name
     cfg = @ipsecs[name] = Ipsec.new(cfg)
     cfg.left.other = cfg.right

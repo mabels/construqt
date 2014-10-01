@@ -20,7 +20,7 @@ module Mikrotik
         }
         cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}-CONSTRUCT"
         puts ">>>>>>>> #{cfg.inspect}"
-        self.host.result.render_mikrotik(default, cfg, "ipv6", "address")
+        self.host.result.delegate.render_mikrotik(default, cfg, "ipv6", "address")
       else
         default = {
           "address" => Schema.address.required,
@@ -28,7 +28,7 @@ module Mikrotik
           "comment" => Schema.string.required.key
         }
         cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}-CONSTRUCT"
-        self.host.result.render_mikrotik(default, cfg, "ip", "address")
+        self.host.result.delegate.render_mikrotik(default, cfg, "ip", "address")
       end
     end
     def add_route(rt)
@@ -44,12 +44,12 @@ module Mikrotik
       }
       cfg['comment'] = "#{cfg['dst-address']} via #{cfg['gateway']} CONSTRUCT"
       if rt.dst.ipv6? 
-        self.host.result.render_mikrotik(default, cfg, "ipv6", "route")
+        self.host.result.delegate.render_mikrotik(default, cfg, "ipv6", "route")
       else
-        self.host.result.render_mikrotik(default, cfg, "ip", "route")
+        self.host.result.delegate.render_mikrotik(default, cfg, "ip", "route")
       end
     end
-    def build_config(host)
+    def build_config(host, unused)
       name = File.join(host.name, "interface", "device")
       ret = []
       ret += self.clazz.build_config(host, self)  

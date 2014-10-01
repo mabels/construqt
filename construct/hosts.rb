@@ -3,7 +3,7 @@ module Construct
 module Hosts
   @hosts = {}
   def self.commit
-    @hosts.values.each { |h| h.result.commit }
+    @hosts.values.each { |h| h.commit }
   end
 
   @default_pwd = SecureRandom.urlsafe_base64(24)
@@ -39,6 +39,20 @@ module Hosts
     def initialize(cfg)
       super(cfg)
     end
+    def commit
+      clazzes = {}
+      self.flavour.pre_clazzes { |key, clazz| clazzes[key] = self.flavour.clazz(key) }
+      clazzes.each do |key, clazz| 
+        Flavour.call_aspects("#{key}.header", self, nil)
+        clazz.header(self)
+      end
+      Flavour.call_aspects("host.commit", nil, @result)
+      self.result.commit
+      clazzes.each do |key, clazz| 
+        Flavour.call_aspects("#{key}.footer", self, nil)
+        clazz.footer(self)
+      end
+    end
   end
   def self.get_hosts()
     @hosts.values
@@ -57,7 +71,7 @@ module Hosts
     cfg['flavour'] = Flavour.find(cfg['flavour'] || 'ubuntu')
     throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
     @hosts[name] = Host.new(cfg)
-    @hosts[name].result = @hosts[name].flavour.clazz('result').new(@hosts[name])
+    @hosts[name].result = @hosts[name].flavour.clazz('result').create(@hosts[name])
 
     block.call(@hosts[name])
     throw "id is required" unless @hosts[name].id.kind_of? HostId
@@ -83,7 +97,7 @@ module Hosts
 	end
 	def self.build_config()
 		@hosts.each do |name, host|
-			host.flavour.clazz('host').build_config(host)	
+			host.flavour.clazz('host').build_config(host, nil)	
 		end
 	end
 end

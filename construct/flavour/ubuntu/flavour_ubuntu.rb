@@ -31,6 +31,9 @@ module Ubuntu
       @host = host
       @result = {}
     end
+    def host
+      @host
+    end
     def empty?(name)
       not @result[name]
     end
@@ -65,7 +68,7 @@ module Ubuntu
     def initialize(cfg)
       super(cfg)
     end
-    def build_config(host)
+    def build_config(host, unused)
       self.clazz.build_config(host, self)
     end
   end
@@ -153,7 +156,7 @@ module Ubuntu
     def self.header(path)
       "# this is a generated file do not edit!!!!!"
     end
-    def self.build_config(host)
+    def self.build_config(host, unused)
       host.result.add(self, <<SCTL, Ubuntu.root, "etc", "sysctl.conf")
 net.ipv4.vs.pmtu_disc=1
 
@@ -221,7 +224,15 @@ PAM
       "# this is a generated file do not edit!!!!!"
     end
     def self.build_config(host, iface)
-      end
+    end
+  end
+
+  module Template
+    def self.header(path)
+      "# this is a generated file do not edit!!!!!"
+    end
+    def self.build_config(host, iface)
+    end
   end
 
   def self.clazz(name)
@@ -234,7 +245,8 @@ PAM
       "bridge" => Bridge,
       "bond" => Bond, 
       "vlan" => Vlan,
-      "result" => Result
+      "result" => Result,
+      "template" => Template
            }[name]
     throw "class not found #{name}" unless ret
     ret

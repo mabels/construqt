@@ -77,7 +77,7 @@ RACOON
       self.host.result.add(self, ret, Ubuntu.root, "etc", "racoon", "racoon.conf")
     end
 
-    def build_config()
+    def build_config(unused, unused2)
       #binding.pry
       build_gre_config()
       build_racoon_config()

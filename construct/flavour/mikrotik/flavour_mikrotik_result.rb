@@ -7,7 +7,8 @@ module Mikrotik
       @host = host
       @result = {}
     end
-    def self.once(host)
+    def host
+      @host
     end
     def empty?(name)
       not @result[name]
@@ -94,7 +95,6 @@ module Mikrotik
 
     def commit
       sorted = {}
-      @host.flavour.pre_clazzes { |clazz| clazz.once(@host) }
       @result.map do |path, blocks|
         key = blocks.first.path.join(' ')
         digests = blocks.select{|i| i.digest }

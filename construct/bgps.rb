@@ -5,8 +5,8 @@ module Bgps
       super(cfg)
     end
     def build_config()
-      self.left.build_config()  
-      self.right.build_config()  
+      self.left.build_config(nil, nil)  
+      self.right.build_config(nil, nil)  
     end
   end
   @bgps = {}
@@ -46,7 +46,9 @@ module Bgps
       hosts[bgp.right.host.name] = bgp.right
     end
     hosts.values.each do |flavour_bgp|
-      flavour_bgp.once(flavour_bgp.host)
+       
+      flavour_bgp.header(flavour_bgp.host)
+      flavour_bgp.footer(flavour_bgp.host)
     end
   end
   @filters = {}

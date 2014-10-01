@@ -29,7 +29,7 @@ module Mikrotik
         "dpd-interval" => Schema.identifier.default("2m"),
         "dpd-maximum-failures" => Schema.int.default(5)
       }
-      self.host.result.render_mikrotik(default, cfg, "ip", "ipsec", "peer")
+      self.host.result.delegate.render_mikrotik(default, cfg, "ip", "ipsec", "peer")
     end
     def set_ip_ipsec_policy(cfg)
       default = {
@@ -48,9 +48,9 @@ module Mikrotik
         "priority" => Schema.int.default(0)
       }
       puts "#{cfg['sa-src-address'].class.name}=>#{cfg['sa-dst-address'].class.name} #{cfg['src-address'].class.name}=>#{cfg['dst-address'].class.name} #{cfg.keys}"
-      self.host.result.render_mikrotik(default, cfg, "ip", "ipsec", "policy")
+      self.host.result.delegate.render_mikrotik(default, cfg, "ip", "ipsec", "policy")
     end
-    def build_config()
+    def build_config(unused, unused2)
       set_ip_ipsec_peer("address" => self.other.remote.first_ipv6.to_s, 
                         "local-address" => self.remote.first_ipv6.to_s,
                         "secret" => Util.password(self.cfg.password))

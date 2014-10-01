@@ -83,6 +83,7 @@ puts ">>>>>>> #{dev_name} #{host.name}"
       by_clazz = {}
       host.interfaces.values.each do |interface|
         throw "class less interface #{interface.inspect}" unless interface.clazz
+        throw "no clazz defined in interface #{interface.clazz}" unless interface.clazz.name
         name = interface.clazz.name[interface.clazz.name.rindex(':')+1..-1].downcase
         #puts "<<<<<<< #{name}"
         by_clazz[name] ||= []  
@@ -92,7 +93,7 @@ puts ">>>>>>> #{dev_name} #{host.name}"
         next unless by_clazz[key]
         by_clazz[key].each do |interface|
           puts "Interface:#{interface.name}"
-          interface.build_config(host)
+          interface.build_config(host, nil)
         end
       end
     end

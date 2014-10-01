@@ -189,8 +189,6 @@ module Mikrotik
   Flavour.add(self)    
 
   module Device
-    def self.once(host)
-    end
     def self.build_config(host, iface)
       default = {
         "l2mtu" => Schema.int.default(1590),
@@ -198,7 +196,7 @@ module Mikrotik
         "name" => Schema.identifier.default("dummy"),
         "default-name" => Schema.identifier.required.key.noset
       }
-      host.result.render_mikrotik_set_by_key(default, {
+      host.result.delegate.render_mikrotik_set_by_key(default, {
         "l2mtu" => iface.mtu,
         "mtu" => iface.mtu,
         "name" => iface.name,
@@ -208,8 +206,6 @@ module Mikrotik
   end
 
   module Vrrp
-    def self.once(host)
-    end
     def self.build_config(host, iface)
       default = {
         "interface" => Schema.identifier.required,
@@ -218,7 +214,7 @@ module Mikrotik
         "v3-protocol" => Schema.identifier.required,
         "vrid" => Schema.int.required
       }
-      host.result.render_mikrotik(default, {
+      host.result.delegate.render_mikrotik(default, {
         "interface" => iface.interface.name,
         "name" => iface.name,
         "priority" => iface.interface.priority,
@@ -229,8 +225,6 @@ module Mikrotik
   end
 
   module Bond
-    def self.once(host)
-    end
     def self.build_config(host, iface)
       default = {
         "mode" => Schema.identifier.default("active-backup"),
@@ -238,7 +232,7 @@ module Mikrotik
         "name" => Schema.identifier.required.key,
         "slaves" => Schema.identifiers.required,
       }
-      host.result.render_mikrotik(default, {
+      host.result.delegate.render_mikrotik(default, {
         "mtu" => iface.mtu,
         "name" => iface.name,
         "slaves" => iface.interfaces.map{|iface| iface.name}.join(',')
@@ -247,8 +241,6 @@ module Mikrotik
   end
 
   module Vlan
-    def self.once(host)
-    end
     def self.build_config(host, iface)
       default = {
         "interface" => Schema.identifier.required,
@@ -256,7 +248,7 @@ module Mikrotik
         "name" => Schema.identifier.required.key,
         "vlan-id" => Schema.int.required,
       }
-      host.result.render_mikrotik(default, {
+      host.result.delegate.render_mikrotik(default, {
         "interface" => iface.interface.name,
         "mtu" => iface.mtu,
         "name" => iface.name,
@@ -266,8 +258,6 @@ module Mikrotik
   end
 
   module Bridge
-    def self.once(host)
-    end
     def self.build_config(host, iface)
       default = {
         "auto-mac" => Schema.identifier.default("yes"),
@@ -275,13 +265,13 @@ module Mikrotik
         "priority" => Schema.int.default(57344),
         "name" => Schema.identifier.required.key,
       }
-      host.result.render_mikrotik(default, {
+      host.result.delegate.render_mikrotik(default, {
         "mtu" => iface.mtu,
         "name" => iface.name,
         "priority" => iface.priority,
       }, "interface", "bridge")
       iface.interfaces.each do |port|
-        host.result.render_mikrotik({
+        host.result.delegate.render_mikrotik({
           "bridge" => Schema.identifier.required.key,
           "interface" => Schema.identifier.required.key
         }, {
@@ -293,15 +283,15 @@ module Mikrotik
   end
 
   module Host
-    def self.once(host)
-      host.result.render_mikrotik_set_direct({ "name"=> Schema.identifier.required.key }, { "name" => host.name }, "system", "identity")
-      host.result.render_mikrotik_set_direct({"servers"=>Schema.addresses.required.key}, { "servers"=> "2001:4860:4860::8844,2001:4860:4860::8888"}, "ip", "dns")
+    def self.header(host)
+      host.result.delegate.render_mikrotik_set_direct({ "name"=> Schema.identifier.required.key }, { "name" => host.name }, "system", "identity")
+      host.result.delegate.render_mikrotik_set_direct({"servers"=>Schema.addresses.required.key}, { "servers"=> "2001:4860:4860::8844,2001:4860:4860::8888"}, "ip", "dns")
 
       host.result.add("set [ find name!=ssh && name!=www-ssl ] disabled=yes", nil, "ip", "service")
       host.result.add("set [ find ] address=#{host.id.first_ipv6.first_ipv6}", nil, "ip", "service")
       host.result.add("set [ find name!=admin ] comment=REMOVE", nil, "user")
 
-      host.result.render_mikrotik({
+      host.result.delegate.render_mikrotik({
         "name" => Schema.identifier.required.key,
         "enc-algorithms" => Schema.identifier.default("aes-256-cbc"),
         "lifetime" => Schema.identifier.default("1h"),
@@ -310,10 +300,10 @@ module Mikrotik
       host.result.add("", "default=yes", "ip", "ipsec", "proposal")
       host.result.add("", "template=yes", "ip", "ipsec", "policy")
       host.result.add("", "name=default", "routing", "bgp", "instance")
-      host.result.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ip", "address")
-      host.result.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ip", "route")
-      host.result.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ipv6", "address")
-      host.result.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ipv6", "route")
+      host.result.delegate.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ip", "address")
+      host.result.delegate.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ip", "route")
+      host.result.delegate.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ipv6", "address")
+      host.result.delegate.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ipv6", "route")
       Users.users.each do |u|
         host.result.add(<<OUT, nil, "user")
 {
@@ -329,20 +319,16 @@ OUT
       host.result.add("remove [find comment=REMOVE ]", nil, "user" )
       host.result.add("set [ find name=admin] disable=yes", nil, "user")
     end
-    def self.build_config(host)
+    def self.build_config(host, unused)
       ret = ["# host"]
     end
   end
   module Ovpn
-    def self.once(host)
-    end
     def self.build_config(host, iface)
       throw "ovpn not impl"
     end
   end
   module Gre
-    def self.once(host)
-    end
     def self.set_interface_gre(host, cfg) 
       default = {
         "name"=>Schema.identifier.required.key,
@@ -352,7 +338,7 @@ OUT
         "mtu"=>Schema.int.default(1476),
         "l2mtu"=>Scheme.int.default(65535)
       }
-      host.result.render_mikrotik(default, cfg, "interface", "gre")
+      host.result.delegate.render_mikrotik(default, cfg, "interface", "gre")
     end
     def self.set_interface_gre6(host, cfg) 
       default = {
@@ -362,7 +348,7 @@ OUT
         "mtu"=>Schema.int.default(1456),
         "l2mtu"=>Schema.int.default(65535)
       }
-      host.result.render_mikrotik(default, cfg, "interface", "gre6")
+      host.result.delegate.render_mikrotik(default, cfg, "interface", "gre6")
     end
     def self.build_config(host, iface)
       #puts "iface.name=>#{iface.name}"
@@ -382,28 +368,26 @@ OUT
       "advertise"=>Schema.identifier.default("no")
     }
     cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}"
-    host.result.render_mikrotik(default, cfg, "ipv6", "address")
+    host.result.delegate.render_mikrotik(default, cfg, "ipv6", "address")
   end
-  def self.pre_clazzes(&block)
-    self.clazzes.values.each do |clazz|
-        block.call(clazz)
+  module Template
+    def self.build_config(host, iface)
+      throw "template not impl"
     end
   end
-  def self.clazzes
-    ret = {
-      "opvn" => Ovpn, 
-      "gre" => Gre, 
-      "host" => Host, 
-      "device"=> Device, 
-      "vrrp" => Vrrp, 
-      "bridge" => Bridge,
-      "bond" => Bond, 
-      "vlan" => Vlan,
-      "result" => Result
-    }
-  end
   def self.clazz(name)
-    ret = self.clazzes[name]
+    ret = {
+      "opvn" => Ovpn,
+      "gre" => Gre,
+      "host" => Host,
+      "device"=> Device,
+      "vrrp" => Vrrp,
+      "bridge" => Bridge,
+      "bond" => Bond,
+      "vlan" => Vlan,
+      "result" => Result,
+      "template" => Template
+    }[name]
     throw "class not found #{name}" unless ret
     ret
   end
