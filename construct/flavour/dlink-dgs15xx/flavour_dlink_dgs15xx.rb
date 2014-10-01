@@ -1,14 +1,11 @@
 
-require 'ostruct'
-require 'construct/flavour/flavour.rb'
-
 module Construct
 module Flavour
 module DlinkDgs15xx
   def self.name
     'dlink-dgs15xx'
   end
-  Flavour.add(self)		
+  Construct::Flavour.add(self)		
 
   def self.root
     OpenStruct.new :right => "0644", :owner => 'root'
@@ -134,7 +131,7 @@ module DlinkDgs15xx
 		end
 		def self.build_config(host, unused)
       host.interfaces.values.each do |interface|
-        puts "interface=>#{host.name} #{interface.name}"
+        #puts "interface=>#{host.name} #{interface.name}"
       end
 		end
 	end

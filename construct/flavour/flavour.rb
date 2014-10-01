@@ -1,4 +1,5 @@
-require 'construct/flavour/delegates.rb'
+
+
 module Construct
 module Flavour
   @flavours = {}
@@ -49,7 +50,7 @@ module Flavour
 
 
   def self.add(flavour)
-    puts "setup flavour #{flavour.name}"
+    Construct.logger.info "setup flavour #{flavour.name}"
     @flavours[flavour.name.downcase] = FlavourDelegate.new(flavour)
   end
 

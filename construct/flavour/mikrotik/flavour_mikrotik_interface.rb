@@ -19,7 +19,7 @@ module Mikrotik
           "comment" => Schema.string.required.key
         }
         cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}-CONSTRUCT"
-        puts ">>>>>>>> #{cfg.inspect}"
+        #puts ">>>>>>>> #{cfg.inspect}"
         self.host.result.delegate.render_mikrotik(default, cfg, "ipv6", "address")
       else
         default = {

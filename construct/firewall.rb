@@ -1,12 +1,13 @@
 module Construct
 
 module Firewalls
+
   @firewalls = {}
   class Firewall
     attr_accessor :name
     class Raw
       @rules = []
-      class Notrack << OpenStruct
+      class Notrack < OpenStruct
         def initialize(cfg)
           super(cfg)
         end
@@ -46,7 +47,7 @@ module Firewalls
       @rules = []
       def all(cfg)
         @rules << All.new(cfg)
-      en
+      end
     end
     def initialize(name)
       self.name = name
@@ -59,5 +60,6 @@ module Firewalls
     block.call(fw)
     fw
   end
+
 end
 end

@@ -1,3 +1,4 @@
+require 'securerandom'
 require 'construct/flavour/flavour.rb'
 require 'construct/flavour/mikrotik/flavour_mikrotik_schema.rb'
 require 'construct/flavour/mikrotik/flavour_mikrotik_ipsec.rb'

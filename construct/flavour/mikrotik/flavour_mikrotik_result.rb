@@ -129,7 +129,7 @@ module Mikrotik
         if sorted[path] 
           sorted[path]
         else
-          puts "WARNING [#{path}] not found #{sorted.keys.join('-')}" unless sorted[path]
+          Construct.logger.warn "WARNING [#{path}] not found #{sorted.keys.join('-')}" unless sorted[path]
           ""
         end
       end.join("\n")

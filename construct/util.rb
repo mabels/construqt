@@ -4,7 +4,7 @@ module Util
     path = File.join("cfgs", *path)
     FileUtils.mkdir_p(File.dirname(path))
     File.open(path, 'w') {|f| f.write(str) }
-    puts "Write:#{path}"
+    Construct.logger.info "Write:#{path}"
     return str
   end
    def self.password(a)
