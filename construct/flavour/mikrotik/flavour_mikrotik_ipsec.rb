@@ -47,7 +47,7 @@ module Mikrotik
         "proposal" => Schema.identifier.default("s2b-proposal"),
         "priority" => Schema.int.default(0)
       }
-      puts "#{cfg['sa-src-address'].class.name}=>#{cfg['sa-dst-address'].class.name} #{cfg['src-address'].class.name}=>#{cfg['dst-address'].class.name} #{cfg.keys}"
+      #puts "#{cfg['sa-src-address'].class.name}=>#{cfg['sa-dst-address'].class.name} #{cfg['src-address'].class.name}=>#{cfg['dst-address'].class.name} #{cfg.keys}"
       self.host.result.delegate.render_mikrotik(default, cfg, "ip", "ipsec", "policy")
     end
     def build_config(unused, unused2)

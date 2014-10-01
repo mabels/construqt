@@ -41,7 +41,7 @@ module Flavour
       include Delegate
       def initialize(host)
         #binding.pry
-        puts "HostDelegate.new(#{host.name})"
+        #Construct.logger.debug "HostDelegate.new(#{host.name})"
         self.delegate = host
       end
     end
@@ -176,7 +176,7 @@ module Flavour
       class Result
         include Delegate
         def initialize(result)
-puts "Result=>#{self.class.name} #{result}"
+          #puts "Result=>#{self.class.name} #{result}"
           self.delegate = result
         end
         def add(*args)

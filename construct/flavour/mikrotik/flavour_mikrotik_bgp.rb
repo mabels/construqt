@@ -47,7 +47,7 @@ module Mikrotik
         as_s[bgp.right.as] ||= host if bgp.right.my.host == host
       end
       as_s.each do |as, host|
-        puts "****** #{host.name} #{"%x"%host.id.first_ipv4.first_ipv4.to_i} #{"%x"%as.to_i} #{"%x"%(host.id.first_ipv4.first_ipv4.to_i | as.to_i)}"
+        #puts "****** #{host.name} #{"%x"%host.id.first_ipv4.first_ipv4.to_i} #{"%x"%as.to_i} #{"%x"%(host.id.first_ipv4.first_ipv4.to_i | as.to_i)}"
         digest=Digest::SHA256.hexdigest("#{host.name} #{host.id.first_ipv4.first_ipv4.to_s} #{as}")  
         net = host.id.first_ipv4.first_ipv4.to_s.split('.')[0..1] 
         net.push(digest[0..1].to_i(16).to_s)
@@ -55,7 +55,7 @@ module Mikrotik
         router_id = net.join('.') # hack ..... achtung
         set_routing_bgp_instance("name"=>"AS#{as}", "as" => as.to_s, "router-id" => router_id)   
       end
-      puts ">>>>>> #{as_s.keys}"
+      #puts ">>>>>> #{as_s.keys}"
     end
     def header(host)
       #binding.pry if host.name == "s2b-l3-r01"

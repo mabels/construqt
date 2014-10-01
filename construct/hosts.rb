@@ -1,9 +1,12 @@
 require 'construct/interfaces.rb'
+require 'securerandom'
+
 module Construct
 module Hosts
   @hosts = {}
   def self.commit
     @hosts.values.each { |h| h.commit }
+    Flavour.call_aspects("completed", nil, nil)
   end
 
   @default_pwd = SecureRandom.urlsafe_base64(24)
@@ -46,7 +49,7 @@ module Hosts
         Flavour.call_aspects("#{key}.header", self, nil)
         clazz.header(self)
       end
-      Flavour.call_aspects("host.commit", nil, @result)
+      Flavour.call_aspects("host.commit", self, nil)
       self.result.commit
       clazzes.each do |key, clazz| 
         Flavour.call_aspects("#{key}.footer", self, nil)
@@ -91,9 +94,6 @@ module Hosts
 		ret = @hosts[name]
 		throw "host not found #{name}" unless ret
 		ret
-	end
-	def self.dump()
-		puts @hosts.inspect
 	end
 	def self.build_config()
 		@hosts.each do |name, host|

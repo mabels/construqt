@@ -6,7 +6,7 @@ module Interfaces
     cfg['host'] = host
     cfg['mtu'] ||= 1500
     cfg['clazz'] ||= host.flavour.clazz("device")
-puts ">>>>>>> #{dev_name} #{host.name}"
+    #puts ">>>>>>> #{dev_name} #{host.name}"
 		host.interfaces[dev_name] = host.flavour.create_interface(dev_name, cfg)
 		host.interfaces[dev_name].address.interface = host.interfaces[dev_name] if host.interfaces[dev_name].address
 		host.interfaces[dev_name]
@@ -92,7 +92,7 @@ puts ">>>>>>> #{dev_name} #{host.name}"
       ["host", "device", "vlan", "bond", "bridge", "vrrp", "gre", "bgp", "opvn", "ipsec"].each do |key|
         next unless by_clazz[key]
         by_clazz[key].each do |interface|
-          puts "Interface:#{interface.name}"
+          Construct.logger.debug "Interface:#{interface.name}"
           interface.build_config(host, nil)
         end
       end
