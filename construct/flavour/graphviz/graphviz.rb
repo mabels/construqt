@@ -94,22 +94,22 @@ module Graphviz
 
   def self.draw(node, rows, level)
     #binding.pry if node.interface.name == "sw10"
-    return if node.drawed!
+    return 0 if node.drawed!
     rows.add_col(level, node)
+    ret = 0
     node.in_links.each do |in_link|
       #next if in_link.drawed
       #rows.add_col(in_link)
-      draw(in_link, rows, level-1)
+      ret = [ret, draw(in_link, rows, level-1)].max
     end
-    ret = 0
     node.out_links.each do |out_link|
       #next if out_link.drawed
       #rows.add_col(out_link)
-      ret = [ret, Mathdraw(out_link, rows, level+1)].max
+      ret = [ret, draw(out_link, rows, level+1)].max
     end
     #if node.out_links.empty?
     #end
-    [ret, node.out_links].max 
+    [ret, node.out_links.length].max 
   end
 
   def self.call(type, *args)
