@@ -1,7 +1,8 @@
-
+require 'construct/construct.rb'
 
 module Construct
 module Flavour
+
   @flavours = {}
 
   class FlavourDelegate
@@ -67,5 +68,6 @@ module Flavour
     throw "flavour #{name} not found" unless ret
     ret
   end
+
 end
 end

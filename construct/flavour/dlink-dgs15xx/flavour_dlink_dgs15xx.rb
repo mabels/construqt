@@ -1,3 +1,4 @@
+require 'construct/flavour/flavour.rb'
 
 module Construct
 module Flavour
