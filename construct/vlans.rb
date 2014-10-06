@@ -5,6 +5,22 @@ module Construct
     class Vlan < OpenStruct
       def initialize(cfg)
         super(cfg)
+        @tagged = true
+        @untagged = false
+      end
+      def tagged?
+        @tagged
+      end
+      def tagged
+        @tagged = true
+        self
+      end
+      def untagged?
+        @untagged
+      end
+      def untagged
+        @untagged = true
+        self
       end
     end
     def self.add(vlan, description)
