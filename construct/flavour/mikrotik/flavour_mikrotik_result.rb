@@ -14,25 +14,31 @@ module Mikrotik
       not @result[name]
     end
     def prepare(default, cfg, enable = true)
+      if enable
+        default['disabled'] = Schema.boolean.default(false)
+      end
       result = {}
       cfg.each do |key, val|
-        throw "cfg unknown key:#{key}" unless default[key]
-        result[key] = default[key].type.serialize(val)
+        unless default[key]
+          Construct.logger.warn("cfg unknown key:#{key}") 
+        else
+          result[key] = val
+        end
       end
       keys = {}
       default.each do |key, val| 
         if val.kind_of?(Schema)
-          throw "type must set of #{key}" unless val.type
+          val.field_name = key
+          throw "type must set of #{key}" unless val.type?
           throw "required key:#{key} not set" if val.required? and (result[key].nil? or result[key].to_s.empty?)
-          result[key] = val.type.serialize(val.get_default) if val.get_default && !result[key]
+          result[key] = val.get_default if !val.get_default.nil? && result[key].nil? 
           keys[key] = result[key] if val.key?
         else
           throw "default type has to be a schema #{val}" 
         end
       end
-      result['disabled'] = 'no' if enable
       OpenStruct.new( 
-        :key => keys.map{|k,v| "#{k}=#{v}"}.sort.join(" && "), 
+        :key => keys.map{|k,v| "#{k}=#{default[k].serialize(v)}"}.sort.join(" && "), 
         :result => result,
         :add_line => result.select{ |k,v| 
           if default[k].kind_of?(Schema) && default[k].noset?
@@ -40,7 +46,7 @@ module Mikrotik
           else
               !(v.to_s.empty?) 
           end
-        }.map{|k,v| "#{k}=#{v}"}.sort.join(" ")
+        }.map{|k,v| "#{k}=#{default[k].serialize(v)}"}.sort.join(" ")
       )
     end
     def render_mikrotik_set_direct(default, cfg, *path)
@@ -52,7 +58,9 @@ module Mikrotik
       add("set [ find #{prepared.key} ] #{prepared.add_line}", nil, *path)
     end
     def render_mikrotik(default, cfg, *path) 
-      prepared = prepare(default, cfg)
+      enable = !cfg['no_auto_disable'] # HACK
+      cfg.delete("no_auto_disable")
+      prepared = prepare(default, cfg, enable)
       ret = ["{"] 
       ret << "  :local found [find "+prepared.key+"]"
       ret << "  :if ($found = \"\") do={"
@@ -60,11 +68,19 @@ module Mikrotik
       ret << "    add #{prepared.add_line}"
       ret << "  } else={"
       ret << "    :put "+"/#{path.join(' ')} set #{prepared.add_line}".inspect
-      ret << "    :set found [get $found]"
+      ret << "    :local record [get $found]"
       prepared.result.keys.sort.each do |key|
-        val = prepared.result[key]
+        val = default[key].serialize(prepared.result[key])
         next if val.to_s.empty?
-        ret << "    :if (($found->#{key.inspect})!=#{val}) do={ set $found #{key}=#{val} }"
+        compare_val = default[key].serialize_compare(prepared.result[key])
+        if compare_val
+          ret << "    :if (($record->#{key.inspect})!=#{compare_val}) do={"
+          ret << "       :put "+"set [find #{prepared.key} ] #{key}=#{val}".inspect
+          ret << "       set $found #{key}=#{val}"
+          ret << "    }"
+        else
+          ret << "    set $found #{key}=#{val}"
+        end
       end
       ret << "  }" 
       ret << "}" 
@@ -107,6 +123,8 @@ module Mikrotik
           ].join("\n"), File.join(@host.name, "#{path}.rsc"))
       end
       all=["system identity",
+      "system script",
+      "system scheduler",
       "user",
       "interface",
       "interface bonding",

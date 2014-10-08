@@ -6,14 +6,14 @@ module Mikrotik
     def initialize(cfg)
       super(cfg)
     end
-    def add_ip(ip)
+    def render_ip(ip)
       cfg = {
-        "address" => ip.to_string,
+        "address" => ip,
         "interface" => self.name
       }
       if ip.ipv6? 
         default = {
-          "address" => Schema.address.required,
+          "address" => Schema.network.required,
           "interface" => Schema.identifier.required,
           "advertise" => Schema.identifier.default("no"),
           "comment" => Schema.string.required.key
@@ -23,7 +23,7 @@ module Mikrotik
         self.host.result.delegate.render_mikrotik(default, cfg, "ipv6", "address")
       else
         default = {
-          "address" => Schema.address.required,
+          "address" => Schema.network.required,
           "interface" => Schema.identifier.required,
           "comment" => Schema.string.required.key
         }
@@ -31,14 +31,14 @@ module Mikrotik
         self.host.result.delegate.render_mikrotik(default, cfg, "ip", "address")
       end
     end
-    def add_route(rt)
+    def render_route(rt)
       throw "dst via mismatch" unless rt.dst.ipv6? == rt.via.ipv6? or rt.dst.ipv4? == rt.via.ipv4?
       cfg = {
-        "dst-address" => rt.dst.to_string,
-        "gateway" => rt.via.to_s,
+        "dst-address" => rt.dst,
+        "gateway" => rt.via,
       }
       default = {
-        "dst-address" => Schema.address.required,
+        "dst-address" => Schema.network.required,
         "gateway" => Schema.address.required,
         "comment" => Schema.string.required.key
       }
@@ -54,11 +54,12 @@ module Mikrotik
       ret = []
       ret += self.clazz.build_config(host, self)  
       if !(self.address.nil? || self.address.ips.empty?)
+        #binding.pry
         self.address.ips.each do |ip|
-          ret += add_ip(ip)
+          ret += render_ip(ip)
         end
         self.address.routes.each do |rt|
-          ret += add_route(rt)
+          ret += render_route(rt)
         end
       end
       ret

@@ -19,6 +19,9 @@ module Flavour
       def name
         self.delegate.name
       end
+      def simple_name
+        self.name[self.name.rindex(':')+1..-1]
+      end
       def build_config(host, my)
         #binding.pry
         Flavour.call_aspects("#{self.class.name[self.class.name.rindex(':')+1..-1]}.build_config", host, self.delegate)
