@@ -3,7 +3,7 @@ module Flavour
 
 module Ubuntu
   module Dns
-    def self.header(path)
+    def self.prefix(path)
     end
 
     def self.write_header(domain)

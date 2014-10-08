@@ -47,7 +47,7 @@ module Ubuntu
       path = File.join(@host.name, *path)
       unless @result[path]
         @result[path] = ArrayWithRight.new(right)
-        @result[path] << [clazz.header(path)]
+        @result[path] << [clazz.prefix(path)]
       end
       @result[path] << block+"\n"
     end
@@ -73,7 +73,7 @@ module Ubuntu
     end
   end
   module Device
-    def self.header(path)
+    def self.prefix(path)
       "# this is a generated file do not edit!!!!!"
     end
     def self.add_address(host, iface)
@@ -105,7 +105,7 @@ module Ubuntu
     end
   end
   module Vrrp
-    def self.header(path)
+    def self.prefix(path)
       "# this is a generated file do not edit!!!!!"
     end
     def self.build_config(host, iface)
@@ -153,7 +153,7 @@ module Ubuntu
     end
   end
   module Host
-    def self.header(path)
+    def self.prefix(path)
       "# this is a generated file do not edit!!!!!"
     end
     def self.build_config(host, unused)
@@ -220,7 +220,7 @@ PAM
   end
   
   module Gre
-    def self.header(path)
+    def self.prefix(path)
       "# this is a generated file do not edit!!!!!"
     end
     def self.build_config(host, iface)
@@ -228,7 +228,7 @@ PAM
   end
 
   module Template
-    def self.header(path)
+    def self.prefix(path)
       "# this is a generated file do not edit!!!!!"
     end
     def self.build_config(host, iface)

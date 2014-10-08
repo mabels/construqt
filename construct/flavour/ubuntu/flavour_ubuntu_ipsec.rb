@@ -7,7 +7,7 @@ module Ubuntu
     def initialize(cfg)
       super(cfg)
     end
-    def header(path)
+    def prefix(path)
       if File.basename(path) == "racoon.conf"
         return <<HEADER
 # do not edit generated filed #{path}

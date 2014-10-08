@@ -52,11 +52,18 @@ module Interfaces
     dev
   end
   def self.add_vrrp(name, cfg)
+    nets = {}
+    cfg['address'].ips.each do |adr|
+      throw "only host ip's are allowed #{adr.to_s}" if adr.ipv4? && adr.prefix != 32
+      throw "only host ip's are allowed #{adr.to_s}" if adr.ipv6? && adr.prefix != 128
+      nets[adr.network.to_s] = true
+    end
     cfg['interfaces'].each do |interface|
       throw "interface need priority #{interface}" unless interface.priority
       throw "interface not found:#{name}" unless interface
       cfg['clazz'] = interface.host.flavour.clazz("vrrp")
       cfg['interface'] = interface
+      throw "vrrp interface does not have within the same network" if nets.length == interface.address.ips.select { |adr| nets[adr.network.to_s] }.length
       dev = add_device(interface.host, name, cfg)
       dev.address.interface = nil
       dev.address.host = nil

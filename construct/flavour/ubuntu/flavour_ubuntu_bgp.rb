@@ -6,7 +6,7 @@ module Flavour
     def initialize(cfg)
       super(cfg)
     end
-    def header(path)
+    def prefix(path)
 #      binding.pry
       ret = <<BGP
 log syslog { debug, trace, info, remote, warning, error, auth, fatal, bug };
@@ -25,10 +25,13 @@ protocol static {
 }
 
 BGP
+#binding.pry unless path.kind_of?(String)
+      ipv6 = path.include?("bird6.conf")
       Bgps.filters.each do |filter|
         ret = ret + "filter filter_#{filter.name} {\n"
         filter.list.each do |rule|
           rule['network'].ips.each do |ip|
+            next unless ip.ipv6? == ipv6
             ip_str = ip.to_string 
             if rule['prefix_length']
               ip_str = "#{ip.to_string}{#{rule['prefix_length'].first},#{rule['prefix_length'].last}}" 
@@ -43,7 +46,19 @@ BGP
 
     def build_bird_conf
       if self.my.address.first_ipv4 && self.other.my.address.first_ipv4
-         self.my.host.result.add(self, "# bgp bird ipv4 #{self.my.host.name}", Ubuntu.root, "etc", "bird", "bird.conf")
+         self.my.host.result.add(self, <<BGP, Ubuntu.root, "etc", "bird", "bird.conf")
+protocol bgp #{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)} {
+        description "#{self.my.host.name} <=> #{self.other.host.name}";
+        direct;
+        next hop self;
+        #{self.as == self.other.as ? '' : '#'}rr client;
+        local as #{self.as.num};
+        neighbor #{self.other.my.address.first_ipv4}  as #{self.other.as.num};
+        password "#{Util.password(self.cfg.password)}";
+        import #{self.filter['in'] ? "filter filter_"+self.filter['in'].name : "all"};
+        export #{self.filter['out'] ? "filter filter_"+self.filter['out'].name : "all"};
+}
+BGP
       end
     end
 
@@ -56,8 +71,8 @@ protocol bgp #{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.ho
         direct;
         next hop self;
         #{self.as == self.other.as ? '' : '#'}rr client;
-        local as #{self.as};
-        neighbor #{self.other.my.address.first_ipv6}  as #{self.other.as};
+        local as #{self.as.num};
+        neighbor #{self.other.my.address.first_ipv6}  as #{self.other.as.num};
         password "#{Util.password(self.cfg.password)}";
         import #{self.filter['in'] ? "filter filter_"+self.filter['in'].name : "all"};
         export #{self.filter['out'] ? "filter filter_"+self.filter['out'].name : "all"};

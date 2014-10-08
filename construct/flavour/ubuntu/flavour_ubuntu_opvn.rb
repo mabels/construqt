@@ -3,7 +3,7 @@ module Construct
 module Flavour
 module Ubuntu
   module Opvn
-    def self.header(path)
+    def self.prefix(path)
       "# this is a generated file do not edit!!!!!"
     end
     def self.build_config(host, iface)

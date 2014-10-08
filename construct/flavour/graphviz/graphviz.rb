@@ -130,7 +130,7 @@ module Graphviz
           tree[key][v.name] = Node.new(key,v)
         end
         tree.each do |k,ifaces|
-          puts "K=>#{k}"
+#          puts "K=>#{k}"
           ifaces.each do |name, iface|
 #            binding.pry if k == 'Bond'
             { 
