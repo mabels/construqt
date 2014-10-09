@@ -52,7 +52,7 @@ protocol bgp #{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.ho
         direct;
         next hop self;
         #{self.as == self.other.as ? '' : '#'}rr client;
-        local as #{self.as.num};
+        local #{self.my.address.first_ipv4} as #{self.as.num};
         neighbor #{self.other.my.address.first_ipv4}  as #{self.other.as.num};
         password "#{Util.password(self.cfg.password)}";
         import #{self.filter['in'] ? "filter filter_"+self.filter['in'].name : "all"};

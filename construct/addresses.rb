@@ -1,3 +1,4 @@
+
 module Construct
 module Addresses
   @networks = []
@@ -91,21 +92,23 @@ module Addresses
       self
     end
     attr_accessor :routes
-    def add_routes(addr, via)
-      addr.ips.each {|i| add_route(i.to_string, via) }
+    def add_routes(addr, via, options = {})
+      addr.ips.each {|i| add_route(i.to_string, via, options) }
       self
     end
-    def add_route(dst, via)
+    def add_route(dst, via, option = {})
+      puts "DST => "+dst.class.name+":"+dst.to_s
       dst = IPAddress.parse(dst)
+      metric = option['metric']
       if via == UNREACHABLE
         via = nil
-        type = 'unrechable'
+        type = 'unreachable'
       else
         via = IPAddress.parse(via) 
         type = nil
         throw "different type #{dst} #{via}" unless dst.ipv4? == via.ipv4? && dst.ipv6? == via.ipv6?
       end
-      self.routes << OpenStruct.new("dst" => dst, "via" => via, "type" => type)
+      self.routes << OpenStruct.new("dst" => dst, "via" => via, "type" => type, "metric" => metric)
       self
     end
     def to_s

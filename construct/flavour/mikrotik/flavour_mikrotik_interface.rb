@@ -32,7 +32,7 @@ module Mikrotik
       end
     end
     def render_route(rt)
-      throw "dst via mismatch #{rt}" unless !rt.type.nil? and (rt.dst.ipv6? == rt.via.ipv6? or rt.dst.ipv4? == rt.via.ipv4?)
+      throw "dst via mismatch #{rt}" if rt.type.nil? and !(rt.dst.ipv6? == rt.via.ipv6? or rt.dst.ipv4? == rt.via.ipv4?)
       cfg = {
         "dst-address" => rt.dst,
         "gateway" => rt.via,
@@ -42,10 +42,12 @@ module Mikrotik
       else
         cfg['type'] = rt.type
       end
+      cfg['distance'] = rt.metric if rt.metric
       default = {
         "dst-address" => Schema.network.required,
         "gateway" => Schema.address,
         "type" => Schema.identifier,
+        "distance" => Schema.int,
         "comment" => Schema.string.required.key
       }
       cfg['comment'] = "#{cfg['dst-address']} via #{cfg['gateway']} CONSTRUCT"
