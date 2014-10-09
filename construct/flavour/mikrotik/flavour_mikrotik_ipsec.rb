@@ -9,7 +9,7 @@ module Mikrotik
     end
     def set_ip_ipsec_peer(cfg)
       default = {
-        "address" => Schema.address.required.key,
+        "address" => Schema.network.required.key,
         "secret" => Schema.string.required,
         "local-address" => Schema.required.address,
         "passive" => Schema.boolean.default(false),
@@ -35,8 +35,8 @@ module Mikrotik
       default = {
         "sa-src-address" => Schema.address.required.key,
         "sa-dst-address" => Schema.address.required.key,
-        "src-address" => Schema.address.required,
-        "dst-address" => Schema.address.required,
+        "src-address" => Schema.network.required,
+        "dst-address" => Schema.network.required,
         "src-port" => Schema.port.default("any"),
         "dst-port" => Schema.port.default("any"),
         "protocol" => Schema.identifier.default("all"),
@@ -51,7 +51,7 @@ module Mikrotik
       self.host.result.delegate.render_mikrotik(default, cfg, "ip", "ipsec", "policy")
     end
     def build_config(unused, unused2)
-      set_ip_ipsec_peer("address" => self.other.remote.first_ipv6, 
+      set_ip_ipsec_peer("address" => IPAddress.parse("#{self.other.remote.first_ipv6.to_s}/128"),
                         "local-address" => self.remote.first_ipv6,
                         "secret" => Util.password(self.cfg.password))
       set_ip_ipsec_policy("src-address" => self.my.first_ipv6, "sa-src-address" => self.remote.first_ipv6,

@@ -10,17 +10,18 @@ module Mikrotik
     
     def write_filter(host)
       Bgps.filters.each do |filter|
-        host.result.add("set [ find chain=#{filter.name.inspect} ] comment=to_remove", nil, "routing", "filter")
+        host.result.add("set [ find chain=v4-#{filter.name.inspect} ] comment=to_remove", nil, "routing", "filter")
+        host.result.add("set [ find chain=v6-#{filter.name.inspect} ] comment=to_remove", nil, "routing", "filter")
         filter.list.each do |rule|
           rule['network'].ips.each do |ip|
             prefix_len = ""
             if rule['prefix_length']
               prefix_len = "prefix-length=#{rule['prefix_length'].first}-#{rule['prefix_length'].last}"
             end
-            host.result.add("add action=#{rule['rule']} chain=#{filter.name} prefix=#{ip.to_string} #{prefix_len}", nil, "routing", "filter")
+            host.result.add("add action=#{rule['rule']} chain=v#{ip.ipv4? ? '4':'6'}-#{filter.name} prefix=#{ip.to_string} #{prefix_len}", nil, "routing", "filter")
           end
         end
-        host.result.add("remove [ find comment=to_remove && chain=#{filter.name.inspect} ]", nil, "routing", "filter")
+        host.result.add("remove [ find comment=to_remove && (chain=v4-#{filter.name.inspect} || chain=v6-#{filter.name.inspect}) ]", nil, "routing", "filter")
       end
     end
     def set_routing_bgp_instance(cfg)
@@ -85,7 +86,8 @@ module Mikrotik
         "remove-private-as" => Schema.boolean.default(false),
         "as-override" => Schema.boolean.default(false),
         "passive" => Schema.boolean.default(false),
-        "use-bfd" => Schema.boolean.default(true)
+        "use-bfd" => Schema.boolean.default(true),
+        "comment" => Schema.string.null
       }
       self.host.result.delegate.render_mikrotik(default, cfg, "routing", "bgp", "peer")
     end
@@ -93,22 +95,24 @@ module Mikrotik
     def build_config(unused, unused1)
       #binding.pry
       #puts "as=>#{self.as} #{self.other.my.host.name}"
-      self.other.my.address.first_ipv4 && set_routing_bgp_peer("name"=> "v4-#{self.other.my.host.name}" , 
+      self.other.my.address.first_ipv4 && set_routing_bgp_peer("name"=> "v4-#{self.other.my.host.name}",
+                           "comment" => "v4-#{self.other.my.host.name}",
                            "instance" => "#{self.as.name}", 
                            "remote-as" => self.other.as.num, 
                            "address-families" => "ip",
                            "remote-address" => self.other.my.address.first_ipv4,
                            "tcp-md5-key" => self.cfg.password, 
-                           "in-filter" => self.filter['in'].name,
-                           "out-filter" => self.filter['out'].name)
+                           "in-filter" => "v4-"+self.filter['in'].name,
+                           "out-filter" => "v4-"+self.filter['out'].name)
       self.other.my.address.first_ipv6 && set_routing_bgp_peer("name"=> "v6-#{self.other.my.host.name}" , 
+                           "comment" => "v6-#{self.other.my.host.name}",
                            "instance" => "#{self.as.name}", 
                            "remote-as" => self.other.as.num, 
                            "address-families" => "ipv6",
                            "remote-address" => self.other.my.address.first_ipv6,
                            "tcp-md5-key" => self.cfg.password, 
-                           "in-filter" => self.filter['in'].name,
-                           "out-filter" => self.filter['out'].name)
+                           "in-filter" => "v6-"+self.filter['in'].name,
+                           "out-filter" => "v6-"+self.filter['out'].name)
     end
   end
 

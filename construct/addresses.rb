@@ -2,6 +2,8 @@ module Construct
 module Addresses
   @networks = []
 
+  UNREACHABLE = :unreachable
+
   def self.add_network(*nets)
     nets.each do |net|
       @networks << IPAddress.parse(net) 
@@ -44,12 +46,19 @@ module Addresses
       self.routes = []
       @name = nil
     end
+    def v6s
+      self.ips.select{|ip| ip.ipv6? }
+    end
+    def v4s
+      self.ips.select{|ip| ip.ipv4? }
+    end
     def first_ipv4
-      self.ips.find{|ip| ip.ipv4? }
+      v4s.first
     end
     def first_ipv6
-      self.ips.find{|ip| ip.ipv6? }
+      v6s.first
     end
+
     def set_name(name)
       @name = name
       self
@@ -61,7 +70,7 @@ module Addresses
       fqdn[fqdn.index('.')+1..-1]
     end
     def fqdn
-        _name = self.name.gsub('_', '-')
+        _name = self.name.gsub(/[\s_]+/, '-')
         return "#{_name}.#{Addresses.domain}" unless _name.include?('.')
         return _name
     end
@@ -82,11 +91,21 @@ module Addresses
       self
     end
     attr_accessor :routes
+    def add_routes(addr, via)
+      addr.ips.each {|i| add_route(i.to_string, via) }
+      self
+    end
     def add_route(dst, via)
       dst = IPAddress.parse(dst)
-      via = IPAddress.parse(via)
-      throw "different type #{dst} #{via}" unless dst.ipv4? == via.ipv4? && dst.ipv6? == via.ipv6?
-      self.routes << OpenStruct.new("dst" => dst, "via" => via)
+      if via == UNREACHABLE
+        via = nil
+        type = 'unrechable'
+      else
+        via = IPAddress.parse(via) 
+        type = nil
+        throw "different type #{dst} #{via}" unless dst.ipv4? == via.ipv4? && dst.ipv6? == via.ipv6?
+      end
+      self.routes << OpenStruct.new("dst" => dst, "via" => via, "type" => type)
       self
     end
     def to_s
@@ -95,6 +114,11 @@ module Addresses
   end
   def self.add_ip(ip, region = "")
     ret = Address.new().add_ip(ip, region)
+    @Addresses << ret
+    ret
+  end
+  def self.set_name(name)
+    ret = Address.new().set_name(name)
     @Addresses << ret
     ret
   end
