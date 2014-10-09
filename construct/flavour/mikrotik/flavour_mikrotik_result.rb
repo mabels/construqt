@@ -70,7 +70,8 @@ module Mikrotik
       #ret << "    :put "+"/#{path.join(' ')} set #{prepared.add_line}".inspect
       ret << "    :local record [get $found]"
       prepared.result.keys.sort.each do |key|
-        val = default[key].serialize(prepared.result[key])
+        next if prepared.result[key].nil?
+        val = default[key].serialize(prepared.result[key]) 
         next if val.to_s.empty?
         compare_val = default[key].serialize_compare(prepared.result[key])
         if compare_val

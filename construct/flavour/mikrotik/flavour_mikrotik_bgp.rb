@@ -10,8 +10,10 @@ module Mikrotik
     
     def write_filter(host)
       Bgps.filters.each do |filter|
-        host.result.add("set [ find chain=v4-#{filter.name.inspect} ] comment=to_remove", nil, "routing", "filter")
-        host.result.add("set [ find chain=v6-#{filter.name.inspect} ] comment=to_remove", nil, "routing", "filter")
+        v4_name="v4-#{filter.name}"
+        v6_name="v6-#{filter.name}"
+        host.result.add("set [ find chain=#{v4_name.inspect} ] comment=to_remove", nil, "routing", "filter")
+        host.result.add("set [ find chain=#{v6_name.inspect} ] comment=to_remove", nil, "routing", "filter")
         filter.list.each do |rule|
           rule['network'].ips.each do |ip|
             prefix_len = ""
@@ -21,7 +23,7 @@ module Mikrotik
             host.result.add("add action=#{rule['rule']} chain=v#{ip.ipv4? ? '4':'6'}-#{filter.name} prefix=#{ip.to_string} #{prefix_len}", nil, "routing", "filter")
           end
         end
-        host.result.add("remove [ find comment=to_remove && (chain=v4-#{filter.name.inspect} || chain=v6-#{filter.name.inspect}) ]", nil, "routing", "filter")
+        host.result.add("remove [ find comment=to_remove && (chain=#{v4_name.inspect} || chain=#{v6_name.inspect}) ]", nil, "routing", "filter")
       end
     end
     def set_routing_bgp_instance(cfg)
@@ -55,7 +57,11 @@ module Mikrotik
         net.push(digest[0..1].to_i(16).to_s)
         net.push(digest[-2..-1].to_i(16).to_s)
         router_id = IPAddress.parse(net.join('.')) # hack ..... achtung
-        cfg = as.to_h.merge("comment" => as.description, "name"=>"#{as.name}", "as" => as.num, "router-id" => router_id).inject({}) {|r,p| r[p.first.to_s] = p.last; r}
+        cfg = as.to_h.merge({
+          "comment" => as.description, 
+          "name"=>"#{as.name}", 
+          "as" => as.num, 
+          "router-id" => router_id}).inject({}) {|r,p| r[p.first.to_s] = p.last; r}
         #puts ">>>#{cfg.inspect}"
         set_routing_bgp_instance(cfg)
       end
@@ -95,17 +101,18 @@ module Mikrotik
     def build_config(unused, unused1)
       #binding.pry
       #puts "as=>#{self.as} #{self.other.my.host.name}"
-      self.other.my.address.first_ipv4 && set_routing_bgp_peer("name"=> "v4-#{self.other.my.host.name}",
-                           "comment" => "v4-#{self.other.my.host.name}",
+      self.other.my.address.first_ipv4 && set_routing_bgp_peer("name"=> "v4-#{self.other.my.host.name}-#{self.as.name}",
+                           "comment" => "v4-#{self.other.my.host.name}-#{self.as.name}",
                            "instance" => "#{self.as.name}", 
                            "remote-as" => self.other.as.num, 
                            "address-families" => "ip",
+                           "default-originate" => self.default_originate,
                            "remote-address" => self.other.my.address.first_ipv4,
                            "tcp-md5-key" => self.cfg.password, 
                            "in-filter" => "v4-"+self.filter['in'].name,
                            "out-filter" => "v4-"+self.filter['out'].name)
-      self.other.my.address.first_ipv6 && set_routing_bgp_peer("name"=> "v6-#{self.other.my.host.name}" , 
-                           "comment" => "v6-#{self.other.my.host.name}",
+      self.other.my.address.first_ipv6 && set_routing_bgp_peer("name"=> "v6-#{self.other.my.host.name}-#{self.as.name}", 
+                           "comment" => "v6-#{self.other.my.host.name}-#{self.as.name}",
                            "instance" => "#{self.as.name}", 
                            "remote-as" => self.other.as.num, 
                            "address-families" => "ipv6",

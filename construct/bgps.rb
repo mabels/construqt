@@ -64,13 +64,36 @@ module Bgps
     def name
       @name
     end
+    def addr_v_(cfg)
+      [{:code=>4, :is? => lambda {|i| i.ipv4? }, :max_prefix=>32}, 
+       {:code=>6, :is? => lambda {|i| i.ipv6? }, :max_prefix=>128}].map{|i| OpenStruct.new(i) }.each do |family|
+        addr_v_ = cfg["addr_v#{family.code}"]
+        next unless addr_v_
+        cfg.delete("addr_v#{family.code}")
+        addr_sub_prefix = cfg['addr_sub_prefix'] 
+        cfg.delete('addr_sub_prefix')
+        addr_v_.ips.each do |net| 
+          next unless family.is?.call(net)
+          network = Construct::Addresses::Address.new 
+          network.add_ip(net.to_string)
+          cfg = { 'network' => network }.merge(cfg)
+          cfg['prefix_length'] = [net.prefix,family.max_prefix] if addr_sub_prefix
+          @list << cfg
+        end
+        nil
+      end
+    end
     def accept(cfg)
+      cfg = {}.merge(cfg)
       cfg['rule'] = 'accept'
-      @list << cfg
+      addr_v_(cfg)
+      @list << cfg if cfg['network']
     end
     def reject(cfg)
+      cfg = {}.merge(cfg)
       cfg['rule'] = 'reject'
-      @list << cfg
+      addr_v_(cfg)
+      @list << cfg if cfg['network']
     end
   end
 
