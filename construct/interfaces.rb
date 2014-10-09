@@ -78,6 +78,7 @@ module Interfaces
     cfg['clazz'] = host.flavour.clazz("bridge")
     dev = add_device(host, name, cfg)
     dev.address.interface = host.interfaces[name] if dev.address
+    dev
   end
   def self.find(host, iface)
     host.interfaces[iface]

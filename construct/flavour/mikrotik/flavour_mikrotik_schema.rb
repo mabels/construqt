@@ -79,24 +79,6 @@ module Mikrotik
         '"'+val.split(',').map{|i| Identifier.serialize(schema, i) }.join(joiner).to_s+'"'
       end
     end
-    def self.compress_address(val)
-      return val.compressed if val.ipv4?
-      found = 0
-      str = val.groups.map{|i| 
-        if found > 0 && i != 0
-          found = -1
-        end
-        if found == 0 && i == 0
-          found += 1
-          ""
-        elsif found > 0 && i == 0
-          found += 1
-          nil
-        else
-          i.to_s 16
-        end
-      }.compact.join ":"
-    end
     module Address
       def self.serialize_compare(schema, val)
         self.serialize(schema, val).inspect
@@ -104,17 +86,27 @@ module Mikrotik
       def self.serialize(schema, val)
         throw "Address:val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
 #        throw "only 0-9:\.\/ are allowed #{val}" unless val.match(/^[a-fA-F0-9:\.\/]+$/)
-        return Schema.compress_address(val)
+        return Flavour::Mikrotik.compress_address(val)
       end
     end
-    module Network
+    module AddrPrefix
       def self.serialize_compare(schema, val)
         self.serialize(schema, val).inspect
       end
       def self.serialize(schema, val)
+        throw "Address:val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+#        throw "only 0-9:\.\/ are allowed #{val}" unless val.match(/^[a-fA-F0-9:\.\/]+$/)
+        return "#{Flavour::Mikrotik.compress_address(val)}/#{val.prefix}"
+      end
+    end
+    module Network
+      def self.serialize_compare(schema, val)
+        self.serialize(schema, val.network).inspect
+      end
+      def self.serialize(schema, val)
         throw "Network::val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
         #throw "only 0-9:\.\/ are allowed #{val}" unless val.match(/^[a-fA-F0-9:\.\/]+$/)
-        return "#{Schema.compress_address(val)}/#{val.prefix}"
+        return "#{Flavour::Mikrotik.compress_address(val)}/#{val.prefix}"
       end
     end
     module Addresses
@@ -239,6 +231,11 @@ module Mikrotik
       self
     end
 
+    def addrprefix
+      @type = AddrPrefix
+      self
+    end
+
     def address
       @type = Address
       self
@@ -300,6 +297,10 @@ module Mikrotik
 
     def self.addresses
       Schema.new.addresses
+    end
+
+    def self.addrprefix
+      Schema.new.addrprefix
     end
 
     def self.address

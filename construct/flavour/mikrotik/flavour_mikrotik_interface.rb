@@ -13,9 +13,9 @@ module Mikrotik
       }
       if ip.ipv6? 
         default = {
-          "address" => Schema.network.required,
+          "address" => Schema.addrprefix.required,
           "interface" => Schema.identifier.required,
-          "advertise" => Schema.identifier.default("no"),
+          "advertise" => Schema.boolean.default(false),
           "comment" => Schema.string.required.key
         }
         cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}-CONSTRUCT"
@@ -23,7 +23,7 @@ module Mikrotik
         self.host.result.delegate.render_mikrotik(default, cfg, "ipv6", "address")
       else
         default = {
-          "address" => Schema.network.required,
+          "address" => Schema.addrprefix.required,
           "interface" => Schema.identifier.required,
           "comment" => Schema.string.required.key
         }
@@ -32,14 +32,20 @@ module Mikrotik
       end
     end
     def render_route(rt)
-      throw "dst via mismatch" unless rt.dst.ipv6? == rt.via.ipv6? or rt.dst.ipv4? == rt.via.ipv4?
+      throw "dst via mismatch #{rt}" unless !rt.type.nil? and (rt.dst.ipv6? == rt.via.ipv6? or rt.dst.ipv4? == rt.via.ipv4?)
       cfg = {
         "dst-address" => rt.dst,
         "gateway" => rt.via,
       }
+      if rt.type.nil?
+        cfg['gateway'] = rt.via 
+      else
+        cfg['type'] = rt.type
+      end
       default = {
         "dst-address" => Schema.network.required,
-        "gateway" => Schema.address.required,
+        "gateway" => Schema.address,
+        "type" => Schema.identifier,
         "comment" => Schema.string.required.key
       }
       cfg['comment'] = "#{cfg['dst-address']} via #{cfg['gateway']} CONSTRUCT"

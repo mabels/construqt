@@ -248,7 +248,7 @@ OUT
       "address"=>Schema.network.required,
       "interface"=>Schema.identifier.required,
       "comment" => Schema.string.required.key,
-      "advertise"=>Schema.identifier.default("no")
+      "advertise"=>Schema.boolean.default(false)
     }
     cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}"
     host.result.delegate.render_mikrotik(default, cfg, "ipv6", "address")
@@ -257,6 +257,24 @@ OUT
     def self.build_config(host, iface)
       throw "template not impl"
     end
+  end
+  def self.compress_address(val)
+    return val.compressed if val.ipv4?
+    found = 0
+    val.groups.map do |i| 
+      if found > 0 && i != 0
+        found = -1
+      end
+      if found == 0 && i == 0
+        found += 1
+        ""
+      elsif found > 0 && i == 0
+        found += 1
+        nil
+      else
+        i.to_s 16
+      end
+    end.compact.join(":").sub(/:+$/, '::')
   end
   def self.clazz(name)
     ret = {
