@@ -5,6 +5,7 @@ require 'construct/flavour/ubuntu/flavour_ubuntu_dns.rb'
 require 'construct/flavour/ubuntu/flavour_ubuntu_ipsec.rb'
 require 'construct/flavour/ubuntu/flavour_ubuntu_bgp.rb'
 require 'construct/flavour/ubuntu/flavour_ubuntu_opvn.rb'
+require 'rubygems/package'
 
 module Construct
 module Flavour
@@ -20,6 +21,10 @@ module Ubuntu
 
   def self.root_600
     OpenStruct.new :right => "0600", :owner => 'root'
+  end
+
+  def self.root_644
+    OpenStruct.new :right => "0644", :owner => 'root'
   end
 
   def self.root_755
@@ -45,6 +50,7 @@ module Ubuntu
     end
     def add(clazz, block, right, *path)
       path = File.join(@host.name, *path)
+      throw "not a right #{path}" unless right.respond_to?('right') && right.respond_to?('owner')
       unless @result[path]
         @result[path] = ArrayWithRight.new(right)
         @result[path] << [clazz.prefix(path)]
@@ -52,16 +58,18 @@ module Ubuntu
       @result[path] << block+"\n"
     end
     def commit
-#      Net::SSH.start( HOST, USER, :password => PASS ) do|ssh| 
-      @result.each do |name, block|
-        #ssh = "ssh root@#{@host.configip.first_ipv4 || @host.configip.first_ipv6}"
-        Util.write_str(block.join("\n"), name)
-        #out << " mkdir -p #{File.dirname(name)}"
-        #out << "scp #{name} "
-        #out << "chown #{block.right.owner} #{name}"
-        #out << "chmod #{block.right.right} #{name}"
+      File.new(File.join(@host.name, "deployer.tar"), File::CREAT|File::TRUNC|File::RDWR, 0644) do |io|
+      Gem::Package::TarWriter.new(io) do |tar|
+        out = ["apt-get -q -y install aptitude traceroute vlan bridge-utils tcpdump mtr-tiny bird keepalived strace iptables conntrack"]
+        out += @result.map do |name, block|
+          tar.add_file(name, block.right.right)
+          tar.write(block.join("\n"))
+#          Util.write_str(block.join("\n"), name)
+          ["chown #{block.right.owner} #{name.sub(@host.name,'')}", "chmod #{block.right.right} #{name.sub(@host.name,'')}"]
+        end
+        Util.write_str(out.flatten.join("\n"), @host.name, "deployer.sh")
       end
-      #Util.write_str(out.join("\n"), @name, "deployer.sh")
+      end
     end
   end
   class Interface < OpenStruct
@@ -164,9 +172,9 @@ net.ipv6.conf.all.autoconf=0
 net.ipv6.conf.all.accept_ra=0
 net.ipv6.conf.all.forwarding=1
 SCTL
-      host.result.add(self, host.name, host.name, "etc", "hostname")
-      host.result.add(self, "# WTF resolvconf", host.name, "etc", "resolvconf", "resolv.conf.d", "orignal");
-      host.result.add(self, <<RESOLVCONF,  host.name, "etc", "resolv.conf")
+      host.result.add(self, host.name, Ubuntu.root_644, "etc", "hostname")
+      host.result.add(self, "# WTF resolvconf", Ubuntu.root_644, "etc", "resolvconf", "resolv.conf.d", "orignal");
+      host.result.add(self, <<RESOLVCONF,  Ubuntu.root_644, "etc", "resolv.conf")
 nameserver 2001:4860:4860::8844
 nameserver 2001:4860:4860::8888
 search bb.s2betrieb.de
@@ -182,9 +190,99 @@ RESOLVCONF
       end
       host.result.add(self, skeys.join(), Ubuntu.root_600, "etc", "shadow.merge")
       host.result.add(self, akeys.join(), Ubuntu.root_600, "root", ".ssh", "authorized_keys")
-      host.result.add(self, ykeys.join("\n"), Ubuntu.root_600, "etc", "yubikey_mappings")
+      host.result.add(self, ykeys.join("\n"), Ubuntu.root_644, "etc", "yubikey_mappings")
 
-      host.result.add(self, <<PAM , Ubuntu.root_600, "etc", "pam.d", "common-auth")
+      host.result.add(self, <<SSH , Ubuntu.root_644, "etc", "ssh", "sshd_config")
+# Package generated configuration file
+# See the sshd_config(5) manpage for details
+
+# What ports, IPs and protocols we listen for
+Port 22
+# Use these options to restrict which interfaces/protocols sshd will bind to
+#ListenAddress ::
+#ListenAddress 0.0.0.0
+Protocol 2
+# HostKeys for protocol version 2
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_dsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+#Privilege Separation is turned on for security
+UsePrivilegeSeparation yes
+
+# Lifetime and size of ephemeral version 1 server key
+KeyRegenerationInterval 3600
+ServerKeyBits 1024
+
+# Logging
+SyslogFacility AUTH
+LogLevel INFO
+
+# Authentication:
+LoginGraceTime 120
+PermitRootLogin without-password
+StrictModes yes
+
+RSAAuthentication yes
+PubkeyAuthentication yes
+#AuthorizedKeysFile	%h/.ssh/authorized_keys
+
+# Don't read the user's ~/.rhosts and ~/.shosts files
+IgnoreRhosts yes
+# For this to work you will also need host keys in /etc/ssh_known_hosts
+RhostsRSAAuthentication no
+# similar for protocol version 2
+HostbasedAuthentication no
+# Uncomment if you don't trust ~/.ssh/known_hosts for RhostsRSAAuthentication
+#IgnoreUserKnownHosts yes
+
+# To enable empty passwords, change to yes (NOT RECOMMENDED)
+PermitEmptyPasswords no
+
+# Change to yes to enable challenge-response passwords (beware issues with
+# some PAM modules and threads)
+ChallengeResponseAuthentication no
+
+# Change to no to disable tunnelled clear text passwords
+PasswordAuthentication no
+
+# Kerberos options
+#KerberosAuthentication no
+#KerberosGetAFSToken no
+#KerberosOrLocalPasswd yes
+#KerberosTicketCleanup yes
+
+# GSSAPI options
+#GSSAPIAuthentication no
+#GSSAPICleanupCredentials yes
+
+X11Forwarding yes
+X11DisplayOffset 10
+PrintMotd no
+PrintLastLog yes
+TCPKeepAlive yes
+#UseLogin no
+
+#MaxStartups 10:30:60
+#Banner /etc/issue.net
+
+# Allow client to pass locale environment variables
+AcceptEnv LANG LC_*
+
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+# Set this to 'yes' to enable PAM authentication, account processing,
+# and session processing. If this is enabled, PAM authentication will
+# be allowed through the ChallengeResponseAuthentication and
+# PasswordAuthentication.  Depending on your PAM configuration,
+# PAM authentication via ChallengeResponseAuthentication may bypass
+# the setting of "PermitRootLogin without-password".
+# If you just want the PAM account and session checks to run without
+# PAM authentication, then enable this but set PasswordAuthentication
+# and ChallengeResponseAuthentication to 'no'.
+UsePAM yes
+SSH
+      host.result.add(self, <<PAM , Ubuntu.root_644, "etc", "pam.d", "common-auth")
 #
 # /etc/pam.d/common-auth - authentication settings common to all services
 #
