@@ -47,11 +47,12 @@ module Mikrotik
     def write_peer(host)
       as_s = {}
       Bgps.connections.each do |bgp|
-        as_s[bgp.left.as] ||= host if bgp.left.my.host == host
-        as_s[bgp.right.as] ||= host if bgp.right.my.host == host
+        as_s[bgp.left.as] ||= OpenStruct.new(:host => host) if bgp.left.my.host == host
+        as_s[bgp.right.as] ||= OpenStruct.new(:host => host) if bgp.right.my.host == host
       end
-      as_s.each do |as, host|
-        #puts "****** #{host.name} #{"%x"%host.id.first_ipv4.first_ipv4.to_i} #{"%x"%as.to_i} #{"%x"%(host.id.first_ipv4.first_ipv4.to_i | as.to_i)}"
+      as_s.each do |as, val|
+        host = val.host
+        puts "****** #{host.name}" 
         digest=Digest::SHA256.hexdigest("#{host.name} #{host.id.first_ipv4.first_ipv4.to_s} #{as}")  
         net = host.id.first_ipv4.first_ipv4.to_s.split('.')[0..1] 
         net.push(digest[0..1].to_i(16).to_s)

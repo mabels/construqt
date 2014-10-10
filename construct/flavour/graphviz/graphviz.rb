@@ -213,7 +213,7 @@ module Graphviz
     if action
       action.call(type, *args)
     else
-      Construct.logger.debug "Graphviz:#{type}" 
+      #Construct.logger.debug "Graphviz:#{type}" 
     end
   end
 
