@@ -82,8 +82,10 @@ module Addresses
       throw "unreferenced address #{self.inspect}"  
     end
     def add_ip(ip, region = "")
-      ip = IPAddress.parse(ip)
-      self.ips << ip
+      if ip
+        ip = IPAddress.parse(ip)
+        self.ips << ip
+      end
       self
     end
     @nameservers = []
