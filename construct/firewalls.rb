@@ -4,7 +4,7 @@ module Firewalls
 
   @firewalls = {}
   class Firewall
-    attr_accessor :name
+    attr_accessor :name,:raw,:input
     class Raw
       @rules = []
       class Notrack < OpenStruct
@@ -56,9 +56,15 @@ module Firewalls
     end
   end
   def self.add(name, &block)
+    throw "firewall with this name exists #{name}" if @firewalls[name]
     fw = @firewalls[name] = Firewall.new(name)
     block.call(fw)
     fw
+  end
+  def self.find(name)
+    ret = @firewalls[name]
+    throw "firewall with this name #{name} not found" unless @firewalls[name]
+    ret
   end
 
 end

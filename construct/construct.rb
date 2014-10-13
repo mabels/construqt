@@ -21,7 +21,7 @@ module Construct
   require 'construct/addresses.rb'
   require 'construct/bgps.rb'
   require 'construct/users.rb'
-  require 'construct/firewall.rb'
+  require 'construct/firewalls.rb'
   require 'construct/flavour/delegates.rb'
   require 'construct/hosts.rb'
   require 'construct/interfaces.rb'

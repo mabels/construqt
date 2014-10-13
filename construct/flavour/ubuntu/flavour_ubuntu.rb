@@ -128,6 +128,8 @@ module Ubuntu
     def self.prefix(path)
       "# this is a generated file do not edit!!!!!"
     end
+    def self.create_firewall(iface)
+    end
     def self.add_address(host, iface)
       ret = []
       iface.address.ips.each do |ip|
@@ -138,6 +140,7 @@ module Ubuntu
         ret << "  up ip route add #{route.dst.to_string} via #{route.via.to_s}"
         ret << "  down ip route del #{route.dst.to_string} via #{route.via.to_s}"
       end
+      create_firewall(iface)   
       ret << "  up iptables -t raw -A PREROUTING -i #{iface.name} -j NOTRACK"
       ret << "  up iptables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK"
       ret << "  down iptables -t raw -D PREROUTING -i #{iface.name} -j NOTRACK"
