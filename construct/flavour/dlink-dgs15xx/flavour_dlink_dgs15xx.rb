@@ -8,6 +8,87 @@ module DlinkDgs15xx
   end
   Construct::Flavour.add(self)		
 
+# interface ethernet1/0/3
+#  description na-l3
+#   flowcontrol off
+#    max-rcv-frame-size 9216
+#     no speed auto-downgrade
+#      snmp trap link-status
+#       end
+  #
+#
+#
+  #
+# configure terminal
+# vlan 666,901,1300,1700,1703,1718-1720,1724-1725,1802-1803
+# exit
+# vlan 666
+# name tra-l3-r0102-v4
+# exit
+# vlan 901
+# name na-l3-intern
+# exit
+# 
+# configure terminal
+# interface ethernet 1/0/3
+# switchport mode trunk
+# switchport trunk native vlan 901
+# switchport trunk allowed vlan 901,1802-1803
+# end
+# interface port-channel 12
+# switchport mode trunk
+# switchport trunk native vlan 666
+# switchport trunk allowed vlan 1-1299,1301-4094
+# end
+# 
+# configure terminal
+#  ip ssh server
+#   ssh user root authentication-method password
+# end
+# 
+# configure terminal
+# ip telnet server
+# ip telnet service-port 23
+# end
+# 
+# configure terminal
+# no interface vlan 1
+# interface vlan 1300
+# ipv6 enable
+# ipv6 address FD00:BACC:B0EE:13::12:1/64
+# exit
+# end
+# 
+# configure terminal
+# no snmp-server
+# no snmp-server enable traps
+# snmp-server name sw12-1
+# snmp-server location L3-HAM
+# snmp-server contact meno.abels@sinnerschrader.com
+# exit
+# 
+# configure terminal
+# clock timezone + 0  0
+# no clock summer-time
+# sntp interval 720
+# no sntp enable
+# exit
+# 
+
+
+#configure terminal
+#spanning-tree mode mstp
+#spanning-tree mst configuration
+#instance 16 vlans 1300
+#exit
+#end
+#configure terminal
+  #spanning-tree guard root
+  #spanning-tree tcnfilter
+#interface ethernet 1/0/1
+#spanning-tree mst hello-time 2
+#end
+
   def self.root
     OpenStruct.new :right => "0644", :owner => 'root'
   end
@@ -107,8 +188,17 @@ module DlinkDgs15xx
 		end
 	end
 	module Bond
+    def self.header(path)
+    end
 		def self.build_config(host, iface)
-			throw "not implemented bond on ubuntu"
+      throw "need template" unless iface.template
+      throw "need intefaces" unless iface.interfaces
+      iface.interfaces.each do |i|
+        host.result.add(self, <<BOND, Ubuntu.root, "bond.cfg") 
+interface #{iface.name}
+channel-group #{i.name} mode active
+BOND
+      end
 		end
 	end
 	module Vlan
