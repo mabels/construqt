@@ -27,6 +27,7 @@ module Construct
   require 'construct/interfaces.rb'
   require 'construct/ipsecs.rb'
   require 'construct/templates.rb'
+  require 'construct/regions.rb'
   require 'construct/vlans.rb'
   require 'construct/flavour/flavour.rb'
 

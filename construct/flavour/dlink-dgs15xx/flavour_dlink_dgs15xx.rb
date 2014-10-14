@@ -112,25 +112,17 @@ module DlinkDgs15xx
 		def empty?(name)
 			not @result[name]
 		end
-    class ArrayWithRight < Array
-      attr_accessor :right
-      def initialize(right)
-        self.right = right
-      end
-    end
-		def add(clazz, block, right, *path)
-			path = File.join(@host.name, *path)
-			unless @result[path]
-				@result[path] = ArrayWithRight.new(right)
-        @result[path] << [clazz.header(path)]
+		def add(block, clazz)
+			unless @result[clazz]
+        @result[clazz] = []
 			end
-			@result[path] << block+"\n"
+			@result[clazz] << block+"\n"
 		end
 		def commit
 #      Net::SSH.start( HOST, USER, :password => PASS ) do|ssh| 
-			@result.each do |name, block|
+			@result.each do |clazz, block|
         #ssh = "ssh root@#{@host.configip.first_ipv4 || @host.configip.first_ipv6}"
-				Util.write_str(block.join("\n"), name)
+        Util.write_str(block.join("\n"), File.join(@host.name, "#{clazz}.cfg"))
         #out << " mkdir -p #{File.dirname(name)}"
         #out << "scp #{name} "
         #out << "chown #{block.right.owner} #{name}"
@@ -151,32 +143,52 @@ module DlinkDgs15xx
 		def self.header(path)
 			"# this is a generated file do not edit!!!!!"
 		end
-    def self.add_address(host, iface)
-      ret = []
-			iface.address.ips.each do |ip|
-				ret << "  up ip addr add #{ip.to_string} dev #{iface.name}"
-				ret << "  down ip addr del #{ip.to_string} dev #{iface.name}"
-			end
-			iface.address.routes.each do |route|
-				ret << "  up ip route add #{route.dst.to_string} via #{route.via.to_s}"
-				ret << "  down ip route del #{route.dst.to_string} via #{route.via.to_s}"
-			end
-      ret << "  up iptables -t raw -A PREROUTING -i #{iface.name} -j NOTRACK"
-      ret << "  up iptables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK"
-      ret << "  down iptables -t raw -D PREROUTING -i #{iface.name} -j NOTRACK"
-      ret << "  down iptables -t raw -D OUTPUT -o #{iface.name} -j NOTRACK"
-      ret << "  up ip6tables -t raw -A PREROUTING -i #{iface.name} -j NOTRACK"
-      ret << "  up ip6tables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK"
-      ret << "  down ip6tables -t raw -D PREROUTING -i #{iface.name} -j NOTRACK"
-      ret << "  down ip6tables -t raw -D OUTPUT -o #{iface.name} -j NOTRACK"
-      ret
+    def self.untagged(template)
+      return "" if template.nil? 
+      return "" if template.vlans.nil?
+      untagged = template.vlans.select{|i| i.untagged? }
+      throw "multiple untagged not allowed" if untagged.length > 1
+      if untagged.length == 1
+        "switchport trunk native vlan #{untagged.first.vlan_id}"
+      else
+        ""
+      end
     end
+
+    def self.tagged(template)
+      return "" if template.nil? 
+      return "" if template.vlans.nil?
+      range = []
+      vlan_ids = template.vlans.select{|i| i.tagged? }.map{|i| i.vlan_id}.sort{|a,b| a<=>b }
+      vlan_ids.each_with_index do |vlan_id, idx|
+#        binding.pry
+        if idx == 0
+          range << [vlan_id, vlan_id]
+        elsif range.last.last == vlan_id-1 # last pushed range last vlan_id see line before
+          range.last[1] = vlan_id 
+        else 
+          range << [vlan_id, vlan_id]
+        end
+      end
+      if range.length
+        range_str = range.map{|i| i.first == i.last ? i.first.to_s : "#{i.first}-#{i.last}" }.join(',')
+        "switchport trunk allowed vlan #{range_str}"
+      else
+        ""
+      end
+    end
+
 		def self.build_config(host, iface)
-			ret = ["auto #{iface.name}", "iface #{iface.name} inet manual"]
-			ret << "  up ip link set mtu #{iface.mtu} dev #{iface.name} up"
-      ret << "  down ip link set dev #{iface.name} down"
-      ret += add_address(host, iface) unless iface.address.nil? || iface.address.ips.empty?
-			host.result.add(self, ret.join("\n"), Ubuntu.root, "etc", "network", "interfaces")
+        host.result.add(<<DEVICE, "device") 
+interface #{iface.name}
+   flowcontrol off
+   max-rcv-frame-size #{iface.mtu || 9126}
+   snmp trap link-status
+   switchport mode trunk
+   #{untagged(iface.template)}
+   #{tagged(iface.template)}
+end
+DEVICE
 		end
 	end
 	module Vrrp
@@ -194,11 +206,13 @@ module DlinkDgs15xx
       throw "need template" unless iface.template
       throw "need intefaces" unless iface.interfaces
       iface.interfaces.each do |i|
-        host.result.add(self, <<BOND, Ubuntu.root, "bond.cfg") 
+        host.result.add(<<BOND, "bond") 
 interface #{iface.name}
 channel-group #{i.name} mode active
+end
 BOND
       end
+		  Device.build_config(host, iface)
 		end
 	end
 	module Vlan
