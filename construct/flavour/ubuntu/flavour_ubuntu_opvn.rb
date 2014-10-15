@@ -4,15 +4,19 @@ module Flavour
 module Ubuntu
   module Opvn
     def self.prefix(path)
-      "# this is a generated file do not edit!!!!!"
+      nil
     end
     def self.build_config(host, iface)
       local = iface.ipv6 ? host.id.first_ipv6.first_ipv6 : host.id.first_ipv4.first_ipv4
       return unless local
       push_routes = ""
       if iface.push_routes
-        iface.push_routes.routes.map{|route| "push \"route #{route.dst.to_string}\"" }.join("\n")
+        push_routes = iface.push_routes.routes.map{|route| "push \"route #{route.dst.to_string}\"" }.join("\n")
       end  
+      host.result.add(self, iface.cacert, Ubuntu.root , "etc", "openvpn", "ssl", "#{iface.name}-cacert")
+      host.result.add(self, iface.hostcert, Ubuntu.root , "etc", "openvpn", "ssl", "#{iface.name}-hostcert")
+      host.result.add(self, iface.hostkey, Ubuntu.root_600 , "etc", "openvpn", "ssl", "#{iface.name}-hostkey")
+      host.result.add(self, iface.dh1024, Ubuntu.root , "etc", "openvpn", "ssl", "#{iface.name}-dh1024")
       host.result.add(self, <<OPVN, Ubuntu.root, "etc", "openvpn", "#{iface.name}.conf")
 daemon
 local #{local}
@@ -21,10 +25,10 @@ port 1194
 mode server
 tls-server
 dev #{iface.name}
-ca   /etc/openvpn/ssl/cacert.pem
-cert /etc/openvpn/ssl/hostcert.pem
-key  /etc/openvpn/ssl/hostkey.pem
-dh   /etc/openvpn/ssl/dh1024.pem
+ca   /etc/openvpn/ssl/#{iface.name}-cacert.pem
+cert /etc/openvpn/ssl/#{iface.name}-hostcert.pem
+key  /etc/openvpn/ssl/#{iface.name}-hostkey.pem
+dh   /etc/openvpn/ssl/#{iface.name}-dh1024.pem
 server #{iface.network.first_ipv4.to_s} #{iface.network.first_ipv4.netmask}
 server-ipv6 #{iface.network.first_ipv6.to_string}
 client-to-client

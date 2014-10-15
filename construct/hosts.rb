@@ -4,8 +4,8 @@ require 'securerandom'
 module Construct
 module Hosts
   @hosts = {}
-  def self.commit
-    @hosts.values.each { |h| h.commit }
+  def self.commit(hosts = nil)
+    (hosts || @hosts).values.each { |h| h.commit }
     Flavour.call_aspects("completed", nil, nil)
   end
 
@@ -110,8 +110,8 @@ module Hosts
 		throw "host not found #{name}" unless ret
 		ret
 	end
-	def self.build_config()
-		@hosts.each do |name, host|
+	def self.build_config(hosts = nil)
+		(hosts || @hosts).each do |name, host|
 			host.flavour.clazz('host').build_config(host, nil)	
 		end
 	end

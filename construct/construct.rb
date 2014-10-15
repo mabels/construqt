@@ -31,17 +31,20 @@ module Construct
   require 'construct/vlans.rb'
   require 'construct/flavour/flavour.rb'
 
+  require 'construct/flavour/unknown/flavour_unknown.rb'
   require 'construct/flavour/dlink-dgs15xx/flavour_dlink_dgs15xx.rb'
   require 'construct/flavour/graphviz/graphviz.rb'
   require 'construct/flavour/mikrotik/flavour_mikrotik.rb'
   require 'construct/flavour/ubuntu/flavour_ubuntu.rb'
 
-  def self.produce(hosts = [])
-    Construct::Hosts.build_config()
-    Construct::Interfaces.build_config()
+  def self.produce(hosts = Hosts.get_hosts)
+    hash_hosts = hosts.inject({}){|r, host| r[host.name] = host; r }
+    hash_hosts = nil if hash_hosts.empty?
+    Construct::Hosts.build_config(hash_hosts)
+    Construct::Interfaces.build_config(hosts)
     Construct::Ipsecs.build_config()
     Construct::Bgps.build_config()
-    Construct::Hosts.commit()
+    Construct::Hosts.commit(hash_hosts)
   end
 
 end

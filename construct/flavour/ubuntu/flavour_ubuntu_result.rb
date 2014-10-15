@@ -66,7 +66,7 @@ module Ubuntu
            "fi",
           ]
     out += @result.map do |fname, block|
-      text = block.join("\n")
+      text = block.compact.join("\n")
       next if text.strip.empty?
       Util.write_str(text, @host.name, fname)
 #          binding.pry
