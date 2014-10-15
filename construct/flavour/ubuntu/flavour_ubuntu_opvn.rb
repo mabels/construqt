@@ -9,6 +9,10 @@ module Ubuntu
     def self.build_config(host, iface)
       local = iface.ipv6 ? host.id.first_ipv6.first_ipv6 : host.id.first_ipv4.first_ipv4
       return unless local
+      push_routes = ""
+      if iface.push_routes
+        iface.push_routes.routes.map{|route| "push \"route #{route.dst.to_string}\"" }.join("\n")
+      end  
       host.result.add(self, <<OPVN, Ubuntu.root, "etc", "openvpn", "#{iface.name}.conf")
 daemon
 local #{local}
@@ -36,9 +40,8 @@ persist-tun
 status /etc/openvpn/status
 log-append  /var/log/openvpn-#{iface.name}.log
 mute 20
-push "route fd00:bacc::/32" 
-mssfix 1348
-#plugin /usr/lib/openvpn/openvpn-auth-ldap.so /etc/openvpn/auth-xx.cfg
+#{push_routes}
+mssfix #{iface.mtu||1348}
 plugin /usr/lib/openvpn/openvpn-plugin-auth-pam.so openvpn
 client-cert-not-required
 script-security 2

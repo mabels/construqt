@@ -4,6 +4,8 @@ module Addresses
   @networks = []
 
   UNREACHABLE = :unreachable
+  DHCPV4 = :dhcpv4
+  DHCPV6 = :dhcpv6
 
   def self.add_network(*nets)
     nets.each do |net|
@@ -40,11 +42,18 @@ module Addresses
     attr_accessor :host
     attr_accessor :interface
     attr_accessor :ips
+    def dhcpv4?
+      @dhcpv4
+    end
+    def dhcpv6?
+      @dhcpv6
+    end
     def initialize()
       self.ips = []
       self.host = nil
       self.interface = nil
       self.routes = []
+      @dhcpv4 = @dhcpv6 = false
       @name = nil
     end
     def v6s
@@ -82,9 +91,17 @@ module Addresses
       throw "unreferenced address #{self.inspect}"  
     end
     def add_ip(ip, region = "")
+      throw "please give a ip #{ip}" unless ip 
       if ip
-        ip = IPAddress.parse(ip)
-        self.ips << ip
+puts ">>>>> #{ip} #{ip.class.name}"
+        if DHCPV4 == ip
+          @dhcpv4 = true
+        elsif DHCPV6 == ip
+          @dhcpv6 = true
+        else
+          ip = IPAddress.parse(ip)
+          self.ips << ip
+        end
       end
       self
     end
@@ -106,9 +123,13 @@ module Addresses
         via = nil
         type = 'unreachable'
       else
-        via = IPAddress.parse(via) 
+        if via.nil?
+          via = nil
+        else
+          via = IPAddress.parse(via) 
+          throw "different type #{dst} #{via}" unless dst.ipv4? == via.ipv4? && dst.ipv6? == via.ipv6?
+        end
         type = nil
-        throw "different type #{dst} #{via}" unless dst.ipv4? == via.ipv4? && dst.ipv6? == via.ipv6?
       end
       self.routes << OpenStruct.new("dst" => dst, "via" => via, "type" => type, "metric" => metric)
       self
@@ -119,6 +140,11 @@ module Addresses
   end
   def self.add_ip(ip, region = "")
     ret = Address.new().add_ip(ip, region)
+    @Addresses << ret
+    ret
+  end
+  def self.add_route(dest, via = nil)
+    ret = Address.new().add_route(dest, via)
     @Addresses << ret
     ret
   end
