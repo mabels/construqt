@@ -92,11 +92,11 @@ module Ubuntu
     def self.build_config(host, iface)
       iface.interfaces.each do |i|
 
-        host.result.add(<<BOND, "bond") 
-interface #{iface.name}
-channel-group #{i.name} mode active
-end
-BOND
+#        host.result.add(<<BOND, "bond") 
+#interface #{iface.name}
+#channel-group #{i.name} mode active
+#end
+#BOND
       end
 		  Device.build_config(host, iface)
     end
@@ -113,7 +113,7 @@ BOND
   end
   module Bridge
     def self.build_config(host, iface)
-      throw "not implemented bridge on ubuntu"
+      Device.build_config(host, iface)
     end
   end
   module Host
