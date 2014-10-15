@@ -36,7 +36,7 @@ module Construct
   require 'construct/flavour/mikrotik/flavour_mikrotik.rb'
   require 'construct/flavour/ubuntu/flavour_ubuntu.rb'
 
-  def self.produce
+  def self.produce(hosts = [])
     Construct::Hosts.build_config()
     Construct::Interfaces.build_config()
     Construct::Ipsecs.build_config()

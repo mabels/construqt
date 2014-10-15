@@ -25,17 +25,27 @@ module Hosts
         block.call(a)
         return a
       end
-      def first_ipv6
+      def first_ipv6!
         self.interfaces.each do |i| 
           return i.address if i.address.first_ipv6
         end
-        throw "first_ipv6 failed #{self.interfaces.first.host.name}"
+        nil
       end
-      def first_ipv4
+      def first_ipv6
+        ret = first_ipv6!
+        throw "first_ipv6 failed #{self.interfaces.first.host.name}" unless ret
+        ret
+      end
+      def first_ipv4!
         self.interfaces.each do |i| 
           return i.address if i.address.first_ipv4
         end
-        throw "first_ipv4 failed #{self.interfaces.first.host.name}" 
+        nil
+      end
+      def first_ipv4
+        ret = first_ipv4!
+        throw "first_ipv4 failed #{self.interfaces.first.host.name}" unless ret
+        ret
       end
   end
   class Host < OpenStruct
@@ -77,17 +87,22 @@ module Hosts
     @hosts[name].result = @hosts[name].flavour.clazz('result').create(@hosts[name])
 
     block.call(@hosts[name])
-    throw "id is required" unless @hosts[name].id.kind_of? HostId
-    throw "configip is required" unless @hosts[name].configip.kind_of? HostId
+    throw "host attribute id is required" unless @hosts[name].id.kind_of? HostId
+    throw "host attribute configip is required" unless @hosts[name].configip.kind_of? HostId
   
-    adr = nil
-    if @hosts[name].id.first_ipv4
-      adr = (adr || Construct::Addresses).add_ip(@hosts[name].id.first_ipv4.first_ipv4.to_s).set_name(@hosts[name].name)
+#binding.pry
+    if (@hosts[name].id.first_ipv4! && !@hosts[name].id.first_ipv4!.dhcpv4?) ||
+       (@hosts[name].id.first_ipv6! && !@hosts[name].id.first_ipv6!.dhcpv6?)
+      adr = nil
+      if @hosts[name].id.first_ipv4!
+        adr = (adr || Construct::Addresses).add_ip(@hosts[name].id.first_ipv4.first_ipv4.to_s).set_name(@hosts[name].name)
+      end
+      if @hosts[name].id.first_ipv6!
+        adr = (adr || Construct::Addresses).add_ip(@hosts[name].id.first_ipv6.first_ipv6.to_s).set_name(@hosts[name].name)
+      end
+      adr = Construct::Addresses::Addresss.new unless adr
+      adr.host = @hosts[name] if adr
     end
-    if @hosts[name].id.first_ipv6
-      adr = (adr || Construct::Addresses).add_ip(@hosts[name].id.first_ipv6.first_ipv6.to_s).set_name(@hosts[name].name)
-    end
-    adr.host = @hosts[name] if adr
 		@hosts[name]
 	end
 	def self.find(name) 
