@@ -14,7 +14,7 @@ module Flavour
     end
     def clazzes
       ret = {
-        "opvn" => OvpnDelegate, 
+        "opvn" => OpvnDelegate, 
         "gre" => GreDelegate, 
         "host" => HostDelegate, 
         "device"=> DeviceDelegate, 

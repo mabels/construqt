@@ -93,7 +93,7 @@ module Addresses
     def add_ip(ip, region = "")
       throw "please give a ip #{ip}" unless ip 
       if ip
-puts ">>>>> #{ip} #{ip.class.name}"
+#puts ">>>>> #{ip} #{ip.class.name}"
         if DHCPV4 == ip
           @dhcpv4 = true
         elsif DHCPV6 == ip
@@ -116,7 +116,7 @@ puts ">>>>> #{ip} #{ip.class.name}"
       self
     end
     def add_route(dst, via, option = {})
-      puts "DST => "+dst.class.name+":"+dst.to_s
+      #puts "DST => "+dst.class.name+":"+dst.to_s
       dst = IPAddress.parse(dst)
       metric = option['metric']
       if via == UNREACHABLE

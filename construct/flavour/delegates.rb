@@ -28,10 +28,10 @@ module Flavour
         self.delegate.build_config(host, my)
       end
     end
-    class OvpnDelegate
+    class OpvnDelegate
       include Delegate
-      def initialize(ovpn)
-        self.delegate = ovpn
+      def initialize(opvn)
+        self.delegate = opvn
       end
     end
     class GreDelegate

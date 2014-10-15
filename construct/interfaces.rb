@@ -86,8 +86,8 @@ module Interfaces
   def self.dump()
     Hosts.dump()
   end  
-  def self.build_config()
-    Hosts.get_hosts.each do |host|      
+  def self.build_config(hosts = nil)
+    (hosts||Hosts.get_hosts).each do |host|      
       by_clazz = {}
       host.interfaces.values.each do |interface|
         throw "class less interface #{interface.inspect}" unless interface.clazz
