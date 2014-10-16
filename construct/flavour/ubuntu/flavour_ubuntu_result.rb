@@ -105,8 +105,8 @@ module Ubuntu
         clazzes[name] ||= []
         clazzes[name] << entry
       end
-      ['Device', 'Bond', 'Vlan', 'Bridge'].each do |type|
-        out += (clazzes[type]||[]).select{|i| i.name != out.first.name }.sort{|a,b| a.name<=>b.name }
+      ['Device', 'Bond', 'Vlan', 'Bridge', 'Gre'].each do |type|
+        out += (clazzes[type]||[]).select{|i| !out.first || i.name != out.first.name }.sort{|a,b| a.name<=>b.name }
       end
       out.flatten.compact.inject("") { |r, entry| r += entry.commit; r }
     end
