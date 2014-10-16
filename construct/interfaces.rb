@@ -3,11 +3,12 @@ module Interfaces
   def self.add_device(host, dev_name, cfg)
     throw "Host not found:#{dev_name}" unless host
     throw "Interface is duplicated:#{host.name}:#{dev_name}" if host.interfaces[dev_name]
+    
     cfg['host'] = host
     cfg['mtu'] ||= 1500
     cfg['clazz'] ||= host.flavour.clazz("device")
-    #puts ">>>>>>> #{dev_name} #{host.name}"
-		host.interfaces[dev_name] = host.flavour.create_interface(dev_name, cfg)
+    (dev_name, obj) = Construct::Tags.add(dev_name) { |name| host.flavour.create_interface(name, cfg) }
+		host.interfaces[dev_name] = obj 
 		host.interfaces[dev_name].address.interface = host.interfaces[dev_name] if host.interfaces[dev_name].address
 		host.interfaces[dev_name]
 	end

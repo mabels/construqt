@@ -8,18 +8,18 @@ module Addresses
   DHCPV4 = :dhcpv4
   DHCPV6 = :dhcpv6
 
-  def self.add_network(*nets)
-    nets.each do |net|
-      @networks << IPAddress.parse(net) 
-    end
-  end
-  def self.networks
-    @networks
-  end
-  def self.to_network(ip)
-    ret = (@networks.find{ |my| (ip.ipv6? == my.ipv6? && ip.ipv4? == my.ipv4?) && my.include?(ip) } || ip.network)
-    ret
-  end
+#  def self.add_network(*nets)
+#    nets.each do |net|
+#      @networks << IPAddress.parse(net) 
+#    end
+#  end
+#  def self.networks
+#    @networks
+#  end
+#  def self.to_network(ip)
+#    ret = (@networks.find{ |my| (ip.ipv6? == my.ipv6? && ip.ipv4? == my.ipv4?) && my.include?(ip) } || ip.network)
+#    ret
+#  end
 
 
   @domain = "construct.org"
@@ -74,7 +74,7 @@ module Addresses
     end
 
     def set_name(name)
-      @name = name
+      (@name, obj) = Construct::Tags.add(name) { |name| self }
       self
     end
     def name=(name)
@@ -105,7 +105,7 @@ module Addresses
         elsif LOOOPBACK == ip
           @loopback = true
         else
-          ip = IPAddress.parse(ip)
+          (unused, ip) = Construct::Tags.add(ip) { |ip| IPAddress.parse(ip) }
           self.ips << ip
         end
       end
