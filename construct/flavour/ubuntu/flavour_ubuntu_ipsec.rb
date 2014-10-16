@@ -19,25 +19,21 @@ listen {
   strict_address;
 }
 HEADER
-      elsif File.basename(path) == "gre.up" or File.basename(path) == "gre.down"
-        return "#!/bin/sh"
       end
       return "# do not edit generated filed #{path}"
     end
     
     def build_gre_config() 
       iname = Util.clean_if("gt", self.other.host.name)
-      self.host.result.add(self, <<GRE,  Ubuntu.root_755, "etc", "network", "if-up.d", "gre.up")
-# #{self.cfg.name}
-#ip -6 tunnel add #{iname}
-ip -6 tunnel add #{iname} mode ip6gre local #{self.my.first_ipv6} remote #{self.other.my.first_ipv6} 
-ip -6 addr add #{self.my.first_ipv6.to_string} dev #{iname}
-ip -6 link set dev #{iname} up
-GRE
-      self.host.result.add(self, <<GRE, Ubuntu.root_755, "etc", "network", "if-down.d", "gre.down")
-ip -6 tunnel del #{iname}
-#ip -6 addr del #{self.my.first_ipv6.to_string} dev #{iname}
-GRE
+      writer = self.host.result.delegate.etc_network_interfaces.get(iname)
+      writer.lines.add(<<UP)
+up ip -6 tunnel add #{iname} mode ip6gre local #{self.my.first_ipv6} remote #{self.other.my.first_ipv6} 
+up ip -6 addr add #{self.my.first_ipv6.to_string} dev #{iname}
+up ip -6 link set dev #{iname} up
+UP
+      writer.lines.add(<<DOWN)
+down ip -6 tunnel del #{iname}
+DOWN
     end
 
     def build_racoon_config() 
