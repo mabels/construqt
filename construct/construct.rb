@@ -29,6 +29,7 @@ module Construct
   require 'construct/templates.rb'
   require 'construct/regions.rb'
   require 'construct/vlans.rb'
+  require 'construct/tags.rb'
   require 'construct/flavour/flavour.rb'
 
   require 'construct/flavour/unknown/flavour_unknown.rb'

@@ -65,14 +65,14 @@ module Bgps
       @name
     end
     def addr_v_(cfg)
-      [{:code=>4, :is? => lambda {|i| i.ipv4? }, :max_prefix=>32}, 
-       {:code=>6, :is? => lambda {|i| i.ipv6? }, :max_prefix=>128}].map{|i| OpenStruct.new(i) }.each do |family|
-        addr_v_ = cfg["addr_v#{family.code}"]
-        next unless addr_v_
+      [OpenStruct.new({:code=>4, :is? => lambda {|i| i.ipv4? }, :max_prefix=>32}), 
+       OpenStruct.new({:code=>6, :is? => lambda {|i| i.ipv6? }, :max_prefix=>128})].each do |family|
+        addr = cfg["addr_v#{family.code}"]
+        next unless addr
         cfg.delete("addr_v#{family.code}")
         addr_sub_prefix = cfg['addr_sub_prefix'] 
         cfg.delete('addr_sub_prefix')
-        addr_v_.ips.each do |net| 
+        addr.ips.each do |net| 
           next unless family.is?.call(net)
           network = Construct::Addresses::Address.new 
           network.add_ip(net.to_string)
