@@ -4,6 +4,7 @@ module Addresses
   @networks = []
 
   UNREACHABLE = :unreachable
+  LOOOPBACK = :looopback
   DHCPV4 = :dhcpv4
   DHCPV6 = :dhcpv6
 
@@ -48,12 +49,15 @@ module Addresses
     def dhcpv6?
       @dhcpv6
     end
+    def loopback?
+      @loopback
+    end
     def initialize()
       self.ips = []
       self.host = nil
       self.interface = nil
       self.routes = []
-      @dhcpv4 = @dhcpv6 = false
+      @loopback = @dhcpv4 = @dhcpv6 = false
       @name = nil
     end
     def v6s
@@ -98,6 +102,8 @@ module Addresses
           @dhcpv4 = true
         elsif DHCPV6 == ip
           @dhcpv6 = true
+        elsif LOOOPBACK == ip
+          @loopback = true
         else
           ip = IPAddress.parse(ip)
           self.ips << ip

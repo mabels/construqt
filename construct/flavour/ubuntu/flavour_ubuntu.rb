@@ -29,35 +29,44 @@ module Ubuntu
     def self.prefix(path)
       "# this is a generated file do not edit!!!!!"
     end
-    def self.create_firewall(iface)
+    def self.create_firewall(iface, lines)
+      lines.add("up iptables -t raw -A PREROUTING -i #{iface.name} -j NOTRACK")
+      lines.add("up iptables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK")
+      lines.add("down iptables -t raw -D PREROUTING -i #{iface.name} -j NOTRACK")
+      lines.add("down iptables -t raw -D OUTPUT -o #{iface.name} -j NOTRACK")
+      lines.add("up ip6tables -t raw -A PREROUTING -i #{iface.name} -j NOTRACK")
+      lines.add("up ip6tables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK")
+      lines.add("down ip6tables -t raw -D PREROUTING -i #{iface.name} -j NOTRACK")
+      lines.add("down ip6tables -t raw -D OUTPUT -o #{iface.name} -j NOTRACK")
     end
-    def self.add_address(host, iface)
-      ret = []
+    def self.add_address(host, iface, lines, ifaces)
+      if iface.address.nil?
+        create_firewall(iface, lines)
+        return
+      end
+      ifaces.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_DHCP) if iface.address.dhcpv4?
+      ifaces.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_LOOPBACK) if iface.address.loopback?
+      lines.add(iface.flavour) if iface.flavour
       iface.address.ips.each do |ip|
-        ret << "  up ip addr add #{ip.to_string} dev #{iface.name}"
-        ret << "  down ip addr del #{ip.to_string} dev #{iface.name}"
+        lines.add("up ip addr add #{ip.to_string} dev #{iface.name}")
+        lines.add("down ip addr del #{ip.to_string} dev #{iface.name}")
       end
       iface.address.routes.each do |route|
-        ret << "  up ip route add #{route.dst.to_string} via #{route.via.to_s}"
-        ret << "  down ip route del #{route.dst.to_string} via #{route.via.to_s}"
+        lines.add("up ip route add #{route.dst.to_string} via #{route.via.to_s}")
+        lines.add("down ip route del #{route.dst.to_string} via #{route.via.to_s}")
       end
-      create_firewall(iface)   
-      ret << "  up iptables -t raw -A PREROUTING -i #{iface.name} -j NOTRACK"
-      ret << "  up iptables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK"
-      ret << "  down iptables -t raw -D PREROUTING -i #{iface.name} -j NOTRACK"
-      ret << "  down iptables -t raw -D OUTPUT -o #{iface.name} -j NOTRACK"
-      ret << "  up ip6tables -t raw -A PREROUTING -i #{iface.name} -j NOTRACK"
-      ret << "  up ip6tables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK"
-      ret << "  down ip6tables -t raw -D PREROUTING -i #{iface.name} -j NOTRACK"
-      ret << "  down ip6tables -t raw -D OUTPUT -o #{iface.name} -j NOTRACK"
-      ret
+      create_firewall(iface, lines)   
     end
     def self.build_config(host, iface)
-      ret = ["auto #{iface.name}", "iface #{iface.name} inet manual"]
-      ret << "  up ip link set mtu #{iface.mtu} dev #{iface.name} up"
-      ret << "  down ip link set dev #{iface.name} down"
-      ret += add_address(host, iface) unless iface.address.nil? || iface.address.ips.empty?
-      host.result.add(self, ret.join("\n"), Ubuntu.root, "etc", "network", "interfaces")
+      #binding.pry if iface.name == "eth1"
+      ifaces = host.result.delegate.etc_network_interfaces.get(iface)
+      ifaces.header.protocol(EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
+      ifaces.lines.add(iface.flavour) if iface.flavour
+#      ifaces.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_DHCP4) if iface.address.dhcpv4?
+#      ifaces.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_LOOOPBACK) if iface.address.loopback?
+      ifaces.lines.add("up ip link set mtu #{iface.mtu} dev #{iface.name} up")
+      ifaces.lines.add("down ip link set dev #{iface.name} down")
+      add_address(host, iface, ifaces.lines, ifaces) #unless iface.address.nil? || iface.address.ips.empty?
     end
   end
   module Vrrp
@@ -91,14 +100,17 @@ module Ubuntu
   module Bond
     def self.build_config(host, iface)
       iface.interfaces.each do |i|
-
-#        host.result.add(<<BOND, "bond") 
-#interface #{iface.name}
-#channel-group #{i.name} mode active
-#end
-#BOND
+        host.result.delegate.etc_network_interfaces.get(i).lines.add("bond-master #{iface.name}")
       end
-		  Device.build_config(host, iface)
+      mac_address=Digest::SHA256.hexdigest("#{host.name} #{iface.name}").scan(/../)[0,6].join(':')
+      host.result.delegate.etc_network_interfaces.get(iface).lines.add(<<BOND)
+pre-up ip link set dev #{iface.name} mtu #{iface.mtu} address #{mac_address}
+bond-mode #{iface.mode}
+bond-miimon 100
+bond-lacp-rate 1
+bond-slaves none
+BOND
+      Device.build_config(host, iface)
     end
   end
   module Vlan
@@ -113,6 +125,8 @@ module Ubuntu
   end
   module Bridge
     def self.build_config(host, iface)
+      port_list = iface.interfaces.map { |i| i.name }.join(",")
+      host.result.delegate.etc_network_interfaces.get(iface).lines.add("bridge_ports #{port_list}")
       Device.build_config(host, iface)
     end
   end
