@@ -25,7 +25,7 @@ HEADER
     
     def build_gre_config() 
       iname = Util.clean_if("gt", self.other.host.name)
-      writer = self.host.result.delegate.etc_network_interfaces.get(iname)
+      writer = self.host.result.delegate.etc_network_interfaces.get(self.interface)
       writer.lines.add(<<UP)
 up ip -6 tunnel add #{iname} mode ip6gre local #{self.my.first_ipv6} remote #{self.other.my.first_ipv6} 
 up ip -6 addr add #{self.my.first_ipv6.to_string} dev #{iname}
@@ -74,7 +74,6 @@ RACOON
     end
 
     def build_config(unused, unused2)
-      #binding.pry
       build_gre_config()
       build_racoon_config()
       host.result.add(self, "# #{self.cfg.name}\n#{self.other.remote.first_ipv6.to_s} #{Util.password(self.cfg.password)}", Ubuntu.root_600, "etc", "racoon", "psk.txt")
