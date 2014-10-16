@@ -164,11 +164,25 @@ SRC
 
   module Host
     def self.header(host)
+      host.result.add(<<TESTNAME, nil, "system", "identity")
+{
+  :local identity [get]
+  :if (($identity->"name") != "#{host.name}") do={
+    :put "Execute /system identity set name=#{host.name}"
+    :error ("The Script is for router #{host.name} this router named ".($identity->"name"))
+  } else={
+    :put "Configure #{host.name}"
+  }
+}
+TESTNAME
       host.result.delegate.render_mikrotik_set_direct({ "name"=> Schema.identifier.required.key }, 
                                                       { "name" => host.name }, "system", "identity")
+
       dns = host.dns_servers || [IPAddress.parse('2001:4860:4860::8844'),IPAddress.parse('2001:4860:4860::8888')]
       host.result.delegate.render_mikrotik_set_direct({"servers"=>Schema.addresses.required.key }, 
                                                       { "servers"=> dns }, "ip", "dns")
+
+      host.result.add("add", nil, "tool", "graphing", "interface")
 
       host.result.add("set [ find name!=ssh && name!=www-ssl ] disabled=yes", nil, "ip", "service")
       host.result.add("set [ find ] address=#{host.id.first_ipv6.first_ipv6}", nil, "ip", "service")
