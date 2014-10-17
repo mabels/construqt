@@ -33,10 +33,10 @@ module Construct
   require 'construct/flavour/flavour.rb'
 
   require 'construct/flavour/unknown/flavour_unknown.rb'
-  require 'construct/flavour/dlink-dgs15xx/flavour_dlink_dgs15xx.rb'
-  require 'construct/flavour/graphviz/graphviz.rb'
-  require 'construct/flavour/mikrotik/flavour_mikrotik.rb'
-  require 'construct/flavour/ubuntu/flavour_ubuntu.rb'
+  require 'construct/flavour/dlink-dgs15xx/flavour_dlink_dgs15xx.rb' rescue Construct::logger.warn("no dlink dgs15xx driver")
+  require 'construct/flavour/graphviz/graphviz.rb' rescue Construct::logger.warn("no graphviz driver")
+  require 'construct/flavour/mikrotik/flavour_mikrotik.rb' rescue Construct::logger.warn("no mikrotik driver")
+  require 'construct/flavour/ubuntu/flavour_ubuntu.rb' rescue Construct::logger.warn("no ubuntu driver")
 
   def self.produce(hosts = Hosts.get_hosts)
     hash_hosts = hosts.inject({}){|r, host| r[host.name] = host; r }
