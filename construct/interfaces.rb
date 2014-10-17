@@ -1,6 +1,9 @@
 module Construct
-module Interfaces
-  def self.add_device(host, dev_name, cfg)
+class Interfaces
+  def initialize(region)
+    @region = region
+  end
+  def add_device(host, dev_name, cfg)
     throw "Host not found:#{dev_name}" unless host
     throw "Interface is duplicated:#{host.name}:#{dev_name}" if host.interfaces[dev_name]
     
@@ -12,13 +15,13 @@ module Interfaces
 		host.interfaces[dev_name].address.interface = host.interfaces[dev_name] if host.interfaces[dev_name].address
 		host.interfaces[dev_name]
 	end
-  def self.add_template(host, name, cfg) 
+  def add_template(host, name, cfg) 
 		cfg['clazz'] = host.flavour.clazz("template")
     cfg['host'] = host
     cfg['name'] = name
     self.add_device(host,name, cfg)
   end
-	def self.add_openvpn(host, name, cfg) 
+	def add_openvpn(host, name, cfg) 
 		cfg['clazz'] = host.flavour.clazz("opvn")
     cfg['ipv6'] ||= nil
     cfg['ipv4'] ||= nil
@@ -27,7 +30,7 @@ module Interfaces
     dev.network.name = "#{name}-#{host.name}"
     dev
   end
-  def self.add_gre(host, name, cfg) 
+  def add_gre(host, name, cfg) 
     throw "we need an address on this cfg #{cfg.inspect}" unless cfg['address'] 
     cfg['clazz'] = host.flavour.clazz("gre")
     cfg['local'] ||= nil
@@ -36,14 +39,14 @@ module Interfaces
     dev.address.interface = host.interfaces[name] if dev.address
     dev
   end
-  def self.add_vlan(host, name, cfg)
+  def add_vlan(host, name, cfg)
     throw "we need an interface #{cfg['interface']}" unless cfg['interface'] 
     cfg['clazz'] = host.flavour.clazz("vlan")
     dev = add_device(host, name, cfg)
     dev.address.interface = host.interfaces[name] if dev.address
     dev
   end
-  def self.add_bond(host, name, cfg)
+  def add_bond(host, name, cfg)
     cfg['interfaces'].each do |interface|
       throw "interface not one same host:#{interface.host.name}:#{host.name}" unless host.name == interface.host.name
     end
@@ -52,7 +55,7 @@ module Interfaces
     dev.address.interface = host.interfaces[name] if dev.address
     dev
   end
-  def self.add_vrrp(name, cfg)
+  def add_vrrp(name, cfg)
     nets = {}
     cfg['address'].ips.each do |adr|
       throw "only host ip's are allowed #{adr.to_s}" if adr.ipv4? && adr.prefix != 32
@@ -71,7 +74,7 @@ module Interfaces
       dev.address.name = name
     end
   end
-  def self.add_bridge(host, name, cfg)
+  def add_bridge(host, name, cfg)
     #cfg['interfaces'] = []
     cfg['interfaces'].each do |interface|
       throw "interface not one same host:#{interface.host.name}:#{host.name}" unless host.name == interface.host.name
@@ -81,13 +84,10 @@ module Interfaces
     dev.address.interface = host.interfaces[name] if dev.address
     dev
   end
-  def self.find(host, iface)
+  def find(host, iface)
     host.interfaces[iface]
   end
-  def self.dump()
-    Hosts.dump()
-  end  
-  def self.build_config(hosts = nil)
+  def build_config(hosts = nil)
     (hosts||Hosts.get_hosts).each do |host|      
       by_clazz = {}
       host.interfaces.values.each do |interface|

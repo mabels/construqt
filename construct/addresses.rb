@@ -1,44 +1,20 @@
 
 module Construct
-module Addresses
-  @networks = []
+class Addresses
 
   UNREACHABLE = :unreachable
   LOOOPBACK = :looopback
   DHCPV4 = :dhcpv4
   DHCPV6 = :dhcpv6
 
-#  def self.add_network(*nets)
-#    nets.each do |net|
-#      @networks << IPAddress.parse(net) 
-#    end
-#  end
-#  def self.networks
-#    @networks
-#  end
-#  def self.to_network(ip)
-#    ret = (@networks.find{ |my| (ip.ipv6? == my.ipv6? && ip.ipv4? == my.ipv4?) && my.include?(ip) } || ip.network)
-#    ret
-#  end
-
-
-  @domain = "construct.org"
-  def self.set_domain(domain)
-    @domain = domain
+  def initialize(network)
+    @network = network
+    @Addresses = []
   end
-  def self.domain
-    @domain
+  def network
+    @network
   end
 
-  @contact = "soa@construct.org"
-  def self.set_contact(contact)
-    @contact = contact
-  end
-  def self.contact
-    @contact
-  end
-
-  @Addresses = []
   class Address
     attr_accessor :host
     attr_accessor :interface
@@ -80,14 +56,6 @@ module Addresses
     def name=(name)
       @name = name
     end
-    def domain
-      fqdn[fqdn.index('.')+1..-1]
-    end
-    def fqdn
-        _name = self.name.gsub(/[\s_]+/, '-')
-        return "#{_name}.#{Addresses.domain}" unless _name.include?('.')
-        return _name
-    end
     def name
       return @name if @name
       return "#{interface.name}-#{interface.host.name}" if interface
@@ -117,8 +85,9 @@ module Addresses
       self
     end
     attr_accessor :routes
-    def add_routes(addr, via, options = {})
-      addr.ips.each {|i| add_route(i.to_string, via, options) }
+    def add_routes(addr_s, via, options = {})
+      addrs = addr_s.kind_of?(Array) ? addr_s : [addr_s]
+      addrs.each{|addr| addr.ips.each {|i| add_route(i.to_string, via, options) } }
       self
     end
     def add_route(dst, via, option = {})
@@ -144,22 +113,21 @@ module Addresses
       "<Address:Address #{self.name}=>#{self.ips.map{|i| i.to_s}.inspect}>"
     end
   end
-  def self.add_ip(ip, region = "")
-    ret = Address.new().add_ip(ip, region)
+  def create
+    ret = Address.new()
     @Addresses << ret
     ret
   end
-  def self.add_route(dest, via = nil)
-    ret = Address.new().add_route(dest, via)
-    @Addresses << ret
-    ret
+  def add_ip(ip, region = "")
+    create.add_ip(ip, region)
   end
-  def self.set_name(name)
-    ret = Address.new().set_name(name)
-    @Addresses << ret
-    ret
+  def add_route(dest, via = nil)
+    create.add_route(dest, via)
   end
-  def self.all
+  def set_name(name)
+    create.set_name(name)
+  end
+  def all
     @Addresses
   end
 end
