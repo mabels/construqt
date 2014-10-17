@@ -201,12 +201,12 @@ TESTNAME
       host.result.delegate.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ip", "route")
       host.result.delegate.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ipv6", "address")
       host.result.delegate.add_remove_pre_condition('comment~"CONSTRUCT\$"', "ipv6", "route")
-      Users.users.each do |u|
+      host.region.users.all.each do |u|
         host.result.add(<<OUT, nil, "user")
 {
    :local found [find name=#{u.name.inspect} ]
    :if ($found = "") do={
-       add comment=#{u.full_name.inspect} name=#{u.name} password=#{Construct::Hosts::default_password} group=full
+       add comment=#{u.full_name.inspect} name=#{u.name} password=#{host.region.hosts.default_password} group=full
    } else={
      set $found comment=#{u.full_name.inspect}
    }

@@ -72,6 +72,7 @@ module Bgps
         cfg.delete("addr_v#{family.code}")
         addr_sub_prefix = cfg['addr_sub_prefix'] 
         cfg.delete('addr_sub_prefix')
+        puts addr.inspect
         addr.ips.each do |net| 
           next unless family.is?.call(net)
           network = Construct::Addresses::Address.new 

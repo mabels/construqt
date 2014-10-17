@@ -155,7 +155,7 @@ RESOLVCONF
       akeys = []
       ykeys = []
       skeys = []
-      Users.users.each do |u|
+      host.region.users.all.each do |u|
         akeys << u.public_key if u.public_key
         ykeys << "#{u.name}:#{u.yubikey}" if u.yubikey
         skeys << "#{u.shadow}" if u.shadow

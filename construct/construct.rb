@@ -18,6 +18,7 @@ module Construct
   end
   # ugly but i need the logger during initialization
   require 'construct/util.rb'
+  require 'construct/networks.rb'
   require 'construct/addresses.rb'
   require 'construct/bgps.rb'
   require 'construct/users.rb'
@@ -44,14 +45,22 @@ module Construct
     end
   end
 
-  def self.produce(hosts = Hosts.get_hosts)
-    hash_hosts = hosts.inject({}){|r, host| r[host.name] = host; r }
-    hash_hosts = nil if hash_hosts.empty?
-    Construct::Hosts.build_config(hash_hosts)
-    Construct::Interfaces.build_config(hosts)
+  def self.produce(region_or_hosts)
+    hosts = false
+    hosts = region_or_hosts if region_or_hosts.kind_of?(Array)
+    hosts = region_or_hosts.hosts.get_hosts if region_or_hosts.kind_of?(Construct::Regions::Region)
+    throw "need a region or hosts list" unless hosts
     Construct::Ipsecs.build_config()
     Construct::Bgps.build_config()
-    Construct::Hosts.commit(hash_hosts)
+    hosts.inject({}) do |r, host| 
+      r[host.region.name] ||= []
+      r[host.region.name] << host
+      r 
+    end.values.each do |hosts|
+      hosts.first.region.hosts.build_config(hosts)
+      hosts.first.region.interfaces.build_config(hosts)
+      hosts.first.region.hosts.commit(hosts)
+    end
   end
 
 end
