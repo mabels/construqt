@@ -39,7 +39,7 @@ module Construct
    'construct/flavour/ubuntu/flavour_ubuntu.rb'].each do |fname|
     begin
       require fname 
-    rescue 
+    rescue LoadError
       Construct::logger.warn("can not load driver:#{fname}")
     end
   end
