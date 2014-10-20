@@ -72,14 +72,16 @@ module Bgps
         cfg.delete("addr_v#{family.code}")
         addr_sub_prefix = cfg['addr_sub_prefix'] 
         cfg.delete('addr_sub_prefix')
-        puts addr.inspect
-        addr.ips.each do |net| 
-          next unless family.is?.call(net)
-          network = Construct::Addresses::Address.new 
-          network.add_ip(net.to_string)
-          cfg = { 'network' => network }.merge(cfg)
-          cfg['prefix_length'] = [net.prefix,family.max_prefix] if addr_sub_prefix
-          @list << cfg
+        #puts addr.inspect
+        (addr.kind_of?(Construct::Addresses::Address) ? [addr] : addr).each do |addr|
+          addr.ips.each do |net| 
+            next unless family.is?.call(net)
+            network = Construct::Addresses::Address.new 
+            network.add_ip(net.to_string)
+            cfg = { 'network' => network }.merge(cfg)
+            cfg['prefix_length'] = [net.prefix,family.max_prefix] if addr_sub_prefix
+            @list << cfg
+          end
         end
         nil
       end

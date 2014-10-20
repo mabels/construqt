@@ -34,15 +34,15 @@ module Ipsecs
     cfg.right.cfg = cfg
 
     #puts "-------- #{cfg.left.my.host.name} - #{cfg.right.my.host.name}"
-    cfg.left.interface = cfg.left.my.host.region.interfaces.add_gre(cfg.left.my.host, Util.clean_if("gre6", cfg.left.other.host.name),
+    cfg.left.interface = cfg.left.my.host.region.interfaces.add_gre(cfg.left.my.host, cfg.left.other.host.name,
                                             "address" => cfg.left.my,
-                                            "local" => cfg.left.remote.first_ipv6,
-                                            "remote" => cfg.right.remote.first_ipv6
+                                            "local" => cfg.left.remote,
+                                            "remote" => cfg.right.remote
                                           )
-    cfg.right.interface = cfg.left.my.host.region.interfaces.add_gre(cfg.right.my.host, Util.clean_if("gre6", cfg.right.other.host.name), 
+    cfg.right.interface = cfg.left.my.host.region.interfaces.add_gre(cfg.right.my.host, cfg.right.other.host.name, 
                                             "address" => cfg.right.my,
-                                            "local" => cfg.right.remote.first_ipv6,
-                                            "remote" => cfg.left.remote.first_ipv6
+                                            "local" => cfg.right.remote,
+                                            "remote" => cfg.left.remote
                                           )
     #binding.pry
     cfg

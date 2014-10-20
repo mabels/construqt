@@ -123,7 +123,9 @@ module Mikrotik
             ""
           ].join("\n"), File.join(@host.name, "#{path}.rsc"))
       end
-      all=["system identity",
+      all=[
+      "system identity",
+      "system clock",
       "system script",
       "system scheduler",
       "user",
