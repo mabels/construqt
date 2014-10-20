@@ -178,6 +178,9 @@ TESTNAME
       host.result.delegate.render_mikrotik_set_direct({ "name"=> Schema.identifier.required.key }, 
                                                       { "name" => host.name }, "system", "identity")
 
+      host.result.delegate.render_mikrotik_set_direct({ "time-zone-name"=> Schema.identifier.required.key }, 
+                                                      { "time-zone-name" => host.time_zone||'MET' }, "system", "clock")
+
       dns = host.dns_servers || [IPAddress.parse('2001:4860:4860::8844'),IPAddress.parse('2001:4860:4860::8888')]
       host.result.delegate.render_mikrotik_set_direct({"servers"=>Schema.addresses.required.key }, 
                                                       { "servers"=> dns }, "ip", "dns")
@@ -251,9 +254,15 @@ OUT
       #puts "iface.name=>#{iface.name}"
       #binding.pry
       #iname = Util.clean_if("gre6", "#{iface.name}")
-      set_interface_gre6(host, "name"=> iface.name, 
-                         "local-address"=>iface.local,
-                         "remote-address"=>iface.remote)
+      if iface.local.first_ipv6 && iface.remote.first_ipv6
+        set_interface_gre6(host, "name"=> iface.name, 
+                           "local-address"=>iface.local.first_ipv6,
+                           "remote-address"=>iface.remote.first_ipv6)
+      else
+        set_interface_gre(host, "name"=> iface.name, 
+                           "local-address"=>iface.local.first_ipv4,
+                           "remote-address"=>iface.remote.first_ipv4)
+      end
       #Mikrotik.set_ipv6_address(host, "address"=>iface.address.first_ipv6.to_string, "interface" => iname)
     end
   end

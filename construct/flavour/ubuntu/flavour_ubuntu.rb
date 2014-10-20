@@ -294,6 +294,23 @@ PAM
       "# this is a generated file do not edit!!!!!"
     end
     def self.build_config(host, iface)
+#      binding.pry
+      writer = host.result.delegate.etc_network_interfaces.get(iface)
+      cfg = nil
+      if iface.local.first_ipv6
+        cfg = OpenStruct.new(:prefix=>6, :my=>iface.local.first_ipv6, :other => iface.remote.first_ipv6, :mode => "ip6gre") 
+      elsif iface.local.first_ipv4
+        cfg = OpenStruct.new(:prefix=>4, :my=>iface.local.first_ipv4, :other => iface.remote.first_ipv4, :mode => "ipgre") 
+      end
+      throw "need a local address #{host.name}:#{iface.name}" unless cfg
+      iname = Util.clean_if("gt#{cfg.prefix}", iface.name)
+      writer.header.interface_name = iname
+      writer.lines.add(<<CFG)
+up ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}
+up ip -#{cfg.prefix} addr add #{cfg.my.to_string} dev #{iname}
+up ip -#{cfg.prefix} link set dev #{iname} up
+down ip -#{cfg.prefix} tunnel del #{iname}
+CFG
     end
   end
 

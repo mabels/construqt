@@ -49,12 +49,16 @@ module Ubuntu
           @auto = true
           @mode = MODE_MANUAL
           @protocol = PROTO_INET4
+          @interface_name = nil
+        end
+        def interface_name=(name)
+          @interface_name = name
         end
         def commit
           out = "\n\n"
           out += "# #{@entry.iface.clazz.name}\n"
-          out += "auto #{@entry.name}\n" if @auto
-          out += "iface #{@entry.name} #{@protocol.to_s} #{@mode.to_s}\n" 
+          out += "auto #{@interface_name || @entry.name}\n" if @auto
+          out += "iface #{@interface_name || @entry.name} #{@protocol.to_s} #{@mode.to_s}\n" 
           out
         end
       end
