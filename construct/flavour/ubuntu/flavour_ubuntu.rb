@@ -105,7 +105,7 @@ module Ubuntu
       mac_address=Digest::SHA256.hexdigest("#{host.name} #{iface.name}").scan(/../)[0,6].join(':')
       host.result.delegate.etc_network_interfaces.get(iface).lines.add(<<BOND)
 pre-up ip link set dev #{iface.name} mtu #{iface.mtu} address #{mac_address}
-bond-mode #{iface.mode}
+bond-mode #{iface.mode||'active-backup'}
 bond-miimon 100
 bond-lacp-rate 1
 bond-slaves none
