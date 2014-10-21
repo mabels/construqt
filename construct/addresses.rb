@@ -6,6 +6,8 @@ class Addresses
   LOOOPBACK = :looopback
   DHCPV4 = :dhcpv4
   DHCPV6 = :dhcpv6
+  IPV4 = :ipv4
+  IPV6 = :ipv6
 
   def initialize(network)
     @network = network
@@ -19,6 +21,7 @@ class Addresses
     attr_accessor :host
     attr_accessor :interface
     attr_accessor :ips
+    attr_accessor :tags
     def dhcpv4?
       @dhcpv4
     end
@@ -33,6 +36,7 @@ class Addresses
       self.host = nil
       self.interface = nil
       self.routes = []
+      self.tags = []
       @loopback = @dhcpv4 = @dhcpv6 = false
       @name = nil
     end
@@ -49,8 +53,17 @@ class Addresses
       v6s.first
     end
 
-    def set_name(name)
-      (@name, obj) = Construct::Tags.add(name) { |name| self }
+    def merge_tag(name, &block)
+      Construct::Tags.add(([name]+self.tags).join("#")) { |name| block.call(name) }
+    end
+
+    def tag(tag)
+      self.tags << tag
+      self
+    end
+
+    def set_name(xname)
+      (@name, obj) = self.merge_tag(xname) { |xname| self }
       self
     end
     def name=(name)
@@ -73,7 +86,7 @@ class Addresses
         elsif LOOOPBACK == ip
           @loopback = true
         else
-          (unused, ip) = Construct::Tags.add(ip) { |ip| IPAddress.parse(ip) }
+          (unused, ip) = self.merge_tag(ip) { |ip| IPAddress.parse(ip) }
           self.ips << ip
         end
       end
@@ -92,7 +105,7 @@ class Addresses
     end
     def add_route(dst, via, option = {})
       #puts "DST => "+dst.class.name+":"+dst.to_s
-      dst = IPAddress.parse(dst)
+      (unused, dst) = self.merge_tag(dst) { |dst| IPAddress.parse(dst) }
       metric = option['metric']
       if via == UNREACHABLE
         via = nil
@@ -110,13 +123,16 @@ class Addresses
       self
     end
     def to_s
-      "<Address:Address #{self.name}=>#{self.ips.map{|i| i.to_s}.inspect}>"
+      "<Address:Address #{@name}=>#{self.ips.map{|i| i.to_s}.join(":")}>"
     end
   end
   def create
     ret = Address.new()
     @Addresses << ret
     ret
+  end
+  def tag(tag)
+    create.tag(tag)
   end
   def add_ip(ip, region = "")
     create.add_ip(ip, region)

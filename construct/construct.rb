@@ -27,6 +27,7 @@ module Construct
   require 'construct/hosts.rb'
   require 'construct/interfaces.rb'
   require 'construct/ipsecs.rb'
+  require 'construct/firewalls.rb'
   require 'construct/templates.rb'
   require 'construct/regions.rb'
   require 'construct/vlans.rb'
