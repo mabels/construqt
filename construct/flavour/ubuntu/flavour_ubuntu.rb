@@ -5,6 +5,7 @@ require 'construct/flavour/ubuntu/flavour_ubuntu_dns.rb'
 require 'construct/flavour/ubuntu/flavour_ubuntu_ipsec.rb'
 require 'construct/flavour/ubuntu/flavour_ubuntu_bgp.rb'
 require 'construct/flavour/ubuntu/flavour_ubuntu_opvn.rb'
+require 'construct/flavour/ubuntu/flavour_ubuntu_firewall.rb'
 require 'construct/flavour/ubuntu/flavour_ubuntu_result.rb'
 require "base64"
 
@@ -29,44 +30,35 @@ module Ubuntu
     def self.prefix(path)
       "# this is a generated file do not edit!!!!!"
     end
-    def self.create_firewall(iface, lines)
-      lines.add("up iptables -t raw -A PREROUTING -i #{iface.name} -j NOTRACK")
-      lines.add("up iptables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK")
-      lines.add("down iptables -t raw -D PREROUTING -i #{iface.name} -j NOTRACK")
-      lines.add("down iptables -t raw -D OUTPUT -o #{iface.name} -j NOTRACK")
-      lines.add("up ip6tables -t raw -A PREROUTING -i #{iface.name} -j NOTRACK")
-      lines.add("up ip6tables -t raw -A OUTPUT -o #{iface.name} -j NOTRACK")
-      lines.add("down ip6tables -t raw -D PREROUTING -i #{iface.name} -j NOTRACK")
-      lines.add("down ip6tables -t raw -D OUTPUT -o #{iface.name} -j NOTRACK")
-    end
-    def self.add_address(host, iface, lines, ifaces)
+    def self.add_address(host, ifname, iface, lines, ifaces)
       if iface.address.nil?
-        create_firewall(iface, lines)
+        Firewall.create(host, ifname, iface)
         return
       end
       ifaces.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_DHCP) if iface.address.dhcpv4?
       ifaces.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_LOOPBACK) if iface.address.loopback?
       lines.add(iface.flavour) if iface.flavour
       iface.address.ips.each do |ip|
-        lines.add("up ip addr add #{ip.to_string} dev #{iface.name}")
-        lines.add("down ip addr del #{ip.to_string} dev #{iface.name}")
+        lines.add("up ip addr add #{ip.to_string} dev #{ifname}")
+        lines.add("down ip addr del #{ip.to_string} dev #{ifname}")
       end
       iface.address.routes.each do |route|
         lines.add("up ip route add #{route.dst.to_string} via #{route.via.to_s}")
         lines.add("down ip route del #{route.dst.to_string} via #{route.via.to_s}")
       end
-      create_firewall(iface, lines)   
+      Firewall.create(host, ifname, iface)
     end
     def self.build_config(host, iface)
       #binding.pry if iface.name == "eth1"
       ifaces = host.result.delegate.etc_network_interfaces.get(iface)
       ifaces.header.protocol(EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
       ifaces.lines.add(iface.flavour) if iface.flavour
+      ifname = ifaces.header.interface_name || iface.name
 #      ifaces.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_DHCP4) if iface.address.dhcpv4?
 #      ifaces.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_LOOOPBACK) if iface.address.loopback?
-      ifaces.lines.add("up ip link set mtu #{iface.mtu} dev #{iface.name} up")
-      ifaces.lines.add("down ip link set dev #{iface.name} down")
-      add_address(host, iface, ifaces.lines, ifaces) #unless iface.address.nil? || iface.address.ips.empty?
+      ifaces.lines.add("up ip link set mtu #{iface.mtu} dev #{ifname} up")
+      ifaces.lines.add("down ip link set dev #{ifname} down")
+      add_address(host, ifname, iface, ifaces.lines, ifaces) #unless iface.address.nil? || iface.address.ips.empty?
     end
   end
   module Vrrp
@@ -136,6 +128,8 @@ BOND
     end
     def self.build_config(host, unused)
       host.result.add(self, <<SCTL, Ubuntu.root, "etc", "sysctl.conf")
+net.ipv4.conf.all.forwarding = 1
+net.ipv4.conf.default.forwarding = 1
 net.ipv4.vs.pmtu_disc=1
 
 net.ipv6.conf.all.autoconf=0
@@ -307,10 +301,10 @@ PAM
       writer.header.interface_name = iname
       writer.lines.add(<<CFG)
 up ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}
-up ip -#{cfg.prefix} addr add #{cfg.my.to_string} dev #{iname}
 up ip -#{cfg.prefix} link set dev #{iname} up
 down ip -#{cfg.prefix} tunnel del #{iname}
 CFG
+      Device.build_config(host, iface)
     end
   end
 

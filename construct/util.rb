@@ -1,5 +1,40 @@
 module Construct
 module Util
+  module Chainable
+    def self.included(clazz)
+      puts "++++++++++++++#{clazz.name}"
+    end
+    def chainable_attr_value(arg, init = nil)
+      instance_variable_name = "@#{arg}".to_sym
+      self.instance_variable_set(instance_variable_name, init)
+      define_method(arg.to_s) do |val|
+        self.instance_variable_set(instance_variable_name, val)
+        self  
+      end
+      define_method("get_#{arg}") do
+        self.instance_variable_get(instance_variable_name.to_sym)
+      end
+    end
+
+    def chainable_attr(arg, default = true, init = false)
+      instance_variable_name = "@#{arg}".to_sym
+      self.instance_variable_set(instance_variable_name, init)
+      define_method(arg.to_s) do |*args|
+        self.instance_variable_set(instance_variable_name, default)
+        self  
+      end
+      if ((default.kind_of?(true.class) || default.kind_of?(false.class)) &&
+          (init.kind_of?(true.class) || init.kind_of?(false.class)))
+        get_name = "#{arg}?"
+      else
+        get_name = "get_#{arg}"
+      end
+      define_method(get_name) do
+        self.instance_variable_get(instance_variable_name.to_sym)
+      end
+    end
+  end
+
   def self.write_str(str, *path)
     path = File.join("cfgs", *path)
     FileUtils.mkdir_p(File.dirname(path))
