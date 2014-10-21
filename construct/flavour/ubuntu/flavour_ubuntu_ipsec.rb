@@ -82,9 +82,9 @@ RACOON
     def from_to_ipsec_conf(dir, remote_my, remote_other, my, other)
       host.result.add(self, "# #{self.cfg.name} #{dir}", Ubuntu.root, "etc", "ipsec-tools.d", "ipsec.conf")
       if my.network.to_s == other.network.to_s
-        spdadd = "spdadd #{my.to_s} #{other.to_s}  any -P #{dir}  ipsec esp/tunnel/#{remove_my}-#{remove_other}/unique;"
+        spdadd = "spdadd #{my.to_s} #{other.to_s}  any -P #{dir}  ipsec esp/tunnel/#{remote_my}-#{remote_other}/unique;"
       else
-        spdadd = "spdadd #{my.to_string} #{other.to_string}  any -P #{dir}  ipsec esp/tunnel/#{remove_my}-#{remove_other}/unique;"
+        spdadd = "spdadd #{my.to_string} #{other.to_string}  any -P #{dir}  ipsec esp/tunnel/#{remote_my}-#{remote_other}/unique;"
       end
       host.result.add(self, spdadd, Ubuntu.root, "etc", "ipsec-tools.d", "ipsec.conf")
     end
@@ -93,12 +93,14 @@ RACOON
       #binding.pry
       my.ips.each do |my_ip|
         other.ips.each do |other_ip|
+          next unless (my_ip.ipv6? && my_ip.ipv6? == other_ip.ipv6?) || (my_ip.ipv4? && my_ip.ipv4? == other_ip.ipv4?) 
           from_to_ipsec_conf("out", remote_my, remote_other, my_ip, other_ip)
           from_to_sainfo(my_ip, other_ip)
         end
       end
       other.ips.each do |other_ip|
         my.ips.each do |my_ip|
+          next unless (my_ip.ipv6? && my_ip.ipv6? == other_ip.ipv6?) || (my_ip.ipv4? && my_ip.ipv4? == other_ip.ipv4?) 
           from_to_ipsec_conf("in", remote_other, remote_my, other_ip, my_ip)
           from_to_sainfo(other_ip, my_ip)
         end
@@ -112,14 +114,14 @@ RACOON
         build_racoon_config(self.other.remote.first_ipv6.to_s)
         host.result.add(self, <<IPV6, Ubuntu.root_600, "etc", "racoon", "psk.txt") 
 # #{self.cfg.name}
-# #{self.other.remote.first_ipv6.to_s} #{Util.password(self.cfg.password)}
+#{self.other.remote.first_ipv6.to_s} #{Util.password(self.cfg.password)}
 IPV6
         build_policy(self.remote.first_ipv6.to_s, self.other.remote.first_ipv6.to_s, self.my, self.other.my)
       elsif self.other.remote.first_ipv4
         build_racoon_config(self.other.remote.first_ipv4.to_s)
         host.result.add(self, <<IPV4, Ubuntu.root_600, "etc", "racoon", "psk.txt") 
 # #{self.cfg.name}
-# #{self.other.remote.first_ipv4.to_s} #{Util.password(self.cfg.password)}
+#{self.other.remote.first_ipv4.to_s} #{Util.password(self.cfg.password)}
 IPV4
         build_policy(self.remote.first_ipv4.to_s, self.other.remote.first_ipv4.to_s, self.my, self.other.my)
       else
