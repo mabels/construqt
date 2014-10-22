@@ -7,7 +7,7 @@ module Ubuntu
     def initialize(cfg)
       super(cfg)
     end
-    def prefix(path)
+    def prefix(host, path)
       if File.basename(path) == "racoon.conf"
         listener = []
         listener << "isakmp #{self.remote.first_ipv4.to_s} [500];" if self.remote.first_ipv4

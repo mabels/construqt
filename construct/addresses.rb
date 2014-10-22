@@ -40,6 +40,13 @@ class Addresses
       @loopback = @dhcpv4 = @dhcpv6 = false
       @name = nil
     end
+    def match_network(ip)
+      if ip.ipv4?
+        self.v4s.find{|nip| nip.include?(ip) } 
+      else
+        self.v6s.find{|nip| nip.include?(ip) } 
+      end
+    end
     def v6s
       self.ips.select{|ip| ip.ipv6? }
     end
