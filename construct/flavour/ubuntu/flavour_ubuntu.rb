@@ -27,16 +27,16 @@ module Ubuntu
   end
 
   module Device
-    def self.prefix(path)
+    def self.prefix(host, path)
       "# this is a generated file do not edit!!!!!"
     end
-    def self.add_address(host, ifname, iface, lines, ifaces)
+    def self.add_address(host, ifname, iface, lines, writer)
       if iface.address.nil?
         Firewall.create(host, ifname, iface)
         return
       end
-      ifaces.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_DHCP) if iface.address.dhcpv4?
-      ifaces.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_LOOPBACK) if iface.address.loopback?
+      writer.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_DHCP) if iface.address.dhcpv4?
+      writer.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_LOOPBACK) if iface.address.loopback?
       lines.add(iface.flavour) if iface.flavour
       iface.address.ips.each do |ip|
         lines.add("up ip addr add #{ip.to_string} dev #{ifname}")
@@ -50,27 +50,28 @@ module Ubuntu
     end
     def self.build_config(host, iface)
       #binding.pry if iface.name == "eth1"
-      ifaces = host.result.delegate.etc_network_interfaces.get(iface)
-      ifaces.header.protocol(EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
-      ifaces.lines.add(iface.flavour) if iface.flavour
-      ifname = ifaces.header.interface_name || iface.name
+      writer = host.result.delegate.etc_network_interfaces.get(iface)
+      writer.header.protocol(EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
+      writer.lines.add(iface.flavour) if iface.flavour
+      ifname = writer.header.interface_name || iface.name
 #      ifaces.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_DHCP4) if iface.address.dhcpv4?
 #      ifaces.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_LOOOPBACK) if iface.address.loopback?
-      ifaces.lines.add("up ip link set mtu #{iface.mtu} dev #{ifname} up")
-      ifaces.lines.add("down ip link set dev #{ifname} down")
-      add_address(host, ifname, iface, ifaces.lines, ifaces) #unless iface.address.nil? || iface.address.ips.empty?
+      writer.lines.add("up ip link set mtu #{iface.mtu} dev #{ifname} up")
+      writer.lines.add("down ip link set dev #{ifname} down")
+      add_address(host, ifname, iface, writer.lines, writer) #unless iface.address.nil? || iface.address.ips.empty?
     end
   end
   module Vrrp
-    def self.prefix(path)
-      "# this is a generated file do not edit!!!!!"
+    def self.prefix(host, path)
+      ret =<<GLOBAL
+global_defs {
+  lvs_id #{host.name}
+}
+GLOBAL
     end
     def self.build_config(host, iface)
       my_iface = iface.interfaces.find{|iface| iface.host == host }
       ret = []
-      ret << "global_defs {"
-      ret << "  lvs_id #{host.name}"
-      ret << "}"
       ret << "vrrp_instance #{iface.name} {"
       ret << "  state MASTER"
       ret << "  interface #{my_iface.name}"
@@ -123,7 +124,7 @@ BOND
     end
   end
   module Host
-    def self.prefix(path)
+    def self.prefix(host, path)
       "# this is a generated file do not edit!!!!!"
     end
     def self.build_config(host, unused)
@@ -284,12 +285,11 @@ PAM
   end
   
   module Gre
-    def self.prefix(path)
+    def self.prefix(host, path)
       "# this is a generated file do not edit!!!!!"
     end
     def self.build_config(host, iface)
 #      binding.pry
-      writer = host.result.delegate.etc_network_interfaces.get(iface)
       cfg = nil
       if iface.local.first_ipv6
         cfg = OpenStruct.new(:prefix=>6, :my=>iface.local.first_ipv6, :other => iface.remote.first_ipv6, :mode => "ip6gre") 
@@ -297,19 +297,24 @@ PAM
         cfg = OpenStruct.new(:prefix=>4, :my=>iface.local.first_ipv4, :other => iface.remote.first_ipv4, :mode => "ipgre") 
       end
       throw "need a local address #{host.name}:#{iface.name}" unless cfg
+      local_iface = host.interfaces.values.find { |iface| iface.address.match_network(cfg.my) }
+      throw "need a interface with address #{host.name}:#{cfg.my}" unless local_iface
+      writer = host.result.delegate.etc_network_interfaces.get(local_iface)
+      writer.header.interface_name = local_iface.name
       iname = Util.clean_if("gt#{cfg.prefix}", iface.name)
-      writer.header.interface_name = iname
       writer.lines.add(<<CFG)
 up ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}
 up ip -#{cfg.prefix} link set dev #{iname} up
+CFG
+      Device.add_address(host, iname, iface, writer.lines, writer)
+      writer.lines.add(<<CFG)
 down ip -#{cfg.prefix} tunnel del #{iname}
 CFG
-      Device.build_config(host, iface)
     end
   end
 
   module Template
-    def self.prefix(path)
+    def self.prefix(host, path)
       "# this is a generated file do not edit!!!!!"
     end
     def self.build_config(host, iface)

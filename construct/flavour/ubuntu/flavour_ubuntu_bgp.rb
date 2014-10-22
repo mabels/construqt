@@ -6,7 +6,7 @@ module Flavour
     def initialize(cfg)
       super(cfg)
     end
-    def prefix(path)
+    def prefix(host, path)
 #      binding.pry
       ret = <<BGP
 log syslog { debug, trace, info, remote, warning, error, auth, fatal, bug };
