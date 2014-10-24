@@ -116,7 +116,7 @@ module Ubuntu
           if rule.to_source? && rule.postrouting?
             src = iface.address.ips.select{|ip| ip.ipv4?}.first 
             throw "missing ipv4 address and postrouting and to_source is used #{ifname}" unless src
-            to_from = ToFrom.new.only_output.end_to("--to-source #{src}").ifname(ifname).factory(writer.ipv4.prerouting)
+            to_from = ToFrom.new.only_output.end_to("--to-source #{src}").ifname(ifname).factory(writer.ipv4.postrouting)
             write_table("iptables", rule, to_from)
           end
         end
@@ -128,8 +128,8 @@ module Ubuntu
           throw "ACTION must set #{ifname}" unless rule.get_action
           if rule.get_log
             to_from = ToFrom.new.ifname(ifname)
-              .middle_to("--nflog-prefix o:#{rule.get_log}:#{ifname}")
-              .middle_from("--nflog-prefix i:#{rule.get_log}:#{ifname}")
+              .end_to("--nflog-prefix o:#{rule.get_log}:#{ifname}")
+              .end_from("--nflog-prefix i:#{rule.get_log}:#{ifname}")
             write_table("iptables", rule.clone.action("NFLOG"), to_from.factory(writer.ipv4.forward))
             write_table("ip6tables", rule.clone.action("NFLOG"), to_from.factory(writer.ipv6.forward))
           end
