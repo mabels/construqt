@@ -16,7 +16,7 @@ module Ubuntu
   end
 
   def self.root_755
-    OpenStruct.new :right => "0600", :owner => 'root'
+    OpenStruct.new :right => "0755", :owner => 'root'
   end
 
   class EtcNetworkIptables
@@ -144,7 +144,8 @@ module Ubuntu
   end
 
   class EtcNetworkInterfaces
-    def initialize
+    def initialize(result)
+      @result = result
       @entries = {}
     end
     def self.prefix(unused, unused2)
@@ -167,6 +168,7 @@ module Ubuntu
         end
         def noauto
           @auto = false
+          self
         end
         def initialize(entry)
           @entry = entry
@@ -175,31 +177,55 @@ module Ubuntu
           @protocol = PROTO_INET4
           @interface_name = nil
         end
-        def interface_name=(name)
+        def interface_name(name)
           @interface_name = name
         end
-        def interface_name
-          @interface_name
+        def get_interface_name
+          @interface_name || @entry.iface.name
         end
         def commit
-          out = "\n\n"
-          out += "# #{@entry.iface.clazz.name}\n"
-          out += "auto #{@interface_name || @entry.name}\n" if @auto
-          out += "iface #{@interface_name || @entry.name} #{@protocol.to_s} #{@mode.to_s}\n" 
-          out
+          return "" if @entry.skip_interfaces?
+          out = <<OUT
+# #{@entry.iface.clazz.name}
+#{@auto ? "auto #{get_interface_name}" : ""}
+iface #{get_interface_name} #{@protocol.to_s} #{@mode.to_s}
+  up   /bin/bash /etc/network/#{get_interface_name}-up.iface
+  down /bin/bash /etc/network/#{get_interface_name}-down.iface
+OUT
         end
       end
       class Lines
         def initialize(entry)
           @entry = entry
           @lines = []
+          @ups = []
+          @downs = []
+        end
+        def up(block)
+          @ups += block.each_line.map{|i| i.strip }.select{|i| !i.empty? }
+        end
+        def down(block)
+          @downs += block.each_line.map{|i| i.strip }.select{|i| !i.empty? }
         end
         def add(block)
           @lines += block.each_line.map{|i| i.strip }.select{|i| !i.empty? }
         end
+        def self.prefix(unused, unused2)
+          "#!/bin/bash"
+        end
+        def write_s(direction, blocks)
+          @entry.result.add(self.class, <<BLOCK, Ubuntu.root_755, "etc", "network", "#{@entry.header.get_interface_name}-#{direction}.iface")
+exec 3>&1 > >(logger -t "#{@entry.header.get_interface_name}-#{direction}")
+#{blocks.join("\n")}
+iptables-restore < /etc/network/iptables.cfg
+ip6tables-restore < /etc/network/ip6tables.cfg
+BLOCK
+        end
         def commit
+          write_s("up", @ups) 
+          write_s("down", @downs) 
           sections = @lines.inject({}) {|r, line| key = line.split(/\s+/).first; r[key] ||= []; r[key] << line; r }
-          (sections.keys.select{|i| !['up','down'].include?(i) }.sort + ['up', 'down']).map do |key| 
+          sections.keys.sort.map do |key| 
             if sections[key]
               sections[key].map{|j| "  #{j}" }
             else
@@ -211,10 +237,15 @@ module Ubuntu
       def iface
         @iface
       end
-      def initialize(iface)
+      def initialize(result, iface)
+        @result = result
         @iface = iface
         @header = Header.new(self)
         @lines = Lines.new(self)
+        @skip_interfaces = false
+      end
+      def result
+        @result
       end
       def name
         @iface.name
@@ -225,13 +256,20 @@ module Ubuntu
       def lines
         @lines
       end
+      def skip_interfaces?
+        @skip_interfaces
+      end
+      def skip_interfaces
+        @skip_interfaces = true
+        self
+      end
       def commit
         @header.commit + @lines.commit
       end
     end
     def get(iface) 
       throw "clazz needed #{iface.name}" unless iface.clazz
-      @entries[iface.name] ||= Entry.new(iface)
+      @entries[iface.name] ||= Entry.new(@result, iface)
     end
     def commit
       #binding.pry
@@ -253,7 +291,7 @@ module Ubuntu
   class Result
     def initialize(host)
       @host = host
-      @etc_network_interfaces = EtcNetworkInterfaces.new
+      @etc_network_interfaces = EtcNetworkInterfaces.new(self)
       @etc_network_iptables = EtcNetworkIptables.new
       @result = {}
     end
@@ -291,6 +329,10 @@ module Ubuntu
       0!=(mode & 0600) && (mode = (mode | 0100))
       "0#{mode.to_s(8)}"
     end
+    def import_fname(fname)
+      '/'+File.dirname(fname)+"/.#{File.basename(fname)}.import"
+    end
+
     def commit
       add(EtcNetworkIptables, etc_network_iptables.commitv4, Ubuntu.root_644, "etc", "network", "iptables.cfg")
       add(EtcNetworkIptables, etc_network_iptables.commitv6, Ubuntu.root_644, "etc", "network", "ip6tables.cfg")
@@ -337,20 +379,22 @@ BASH
         end.select{|i| !i.empty? }.map do |i| 
           "[ ! -d #{i} ] && mkdir #{i} && chown #{block.right.owner} #{i} && chmod #{directory_mode(block.right.right)} #{i}"
         end,
-        "openssl enc -base64 -d > /#{fname}.import <<BASE64", Base64.encode64(text), "BASE64",
+        "openssl enc -base64 -d > #{import_fname(fname)} <<BASE64", Base64.encode64(text), "BASE64",
         <<BASH]
-chown #{block.right.owner} /#{fname}.import
-chmod #{block.right.right} /#{fname}.import
+chown #{block.right.owner} #{import_fname(fname)}
+chmod #{block.right.right} #{import_fname(fname)}
 if [ ! -f /#{fname} ]
 then
-    mv /#{fname}.import /#{fname}
-    echo created #{fname} to #{block.right.owner}:#{block.right.right}
+    mv #{import_fname(fname)} /#{fname}
+    echo created /#{fname} to #{block.right.owner}:#{block.right.right}
 else
-  diff -rq /#{fname}.import /#{fname}
+  diff -rq #{import_fname(fname)} /#{fname}
   if [ $? != 0 ]
   then
-    mv /#{fname}.import /#{fname}
-    echo updated #{fname} to #{block.right.owner}:#{block.right.right}
+    mv #{import_fname(fname)} /#{fname}
+    echo updated /#{fname} to #{block.right.owner}:#{block.right.right}
+  else
+    rm #{import_fname(fname)}
   fi
   git --git-dir /root/construct.git --work-tree=/ add /#{fname}
 fi

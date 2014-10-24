@@ -39,12 +39,12 @@ module Ubuntu
       writer.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_LOOPBACK) if iface.address.loopback?
       lines.add(iface.flavour) if iface.flavour
       iface.address.ips.each do |ip|
-        lines.add("up ip addr add #{ip.to_string} dev #{ifname}")
-        lines.add("down ip addr del #{ip.to_string} dev #{ifname}")
+        lines.up("ip addr add #{ip.to_string} dev #{ifname}")
+        lines.down("ip addr del #{ip.to_string} dev #{ifname}")
       end
       iface.address.routes.each do |route|
-        lines.add("up ip route add #{route.dst.to_string} via #{route.via.to_s}")
-        lines.add("down ip route del #{route.dst.to_string} via #{route.via.to_s}")
+        lines.up("ip route add #{route.dst.to_string} via #{route.via.to_s}")
+        lines.down("ip route del #{route.dst.to_string} via #{route.via.to_s}")
       end
       Firewall.create(host, ifname, iface)
     end
@@ -53,11 +53,11 @@ module Ubuntu
       writer = host.result.delegate.etc_network_interfaces.get(iface)
       writer.header.protocol(EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
       writer.lines.add(iface.flavour) if iface.flavour
-      ifname = writer.header.interface_name || iface.name
+      ifname = writer.header.get_interface_name
 #      ifaces.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_DHCP4) if iface.address.dhcpv4?
 #      ifaces.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_LOOOPBACK) if iface.address.loopback?
-      writer.lines.add("up ip link set mtu #{iface.mtu} dev #{ifname} up")
-      writer.lines.add("down ip link set dev #{ifname} down")
+      writer.lines.up("ip link set mtu #{iface.mtu} dev #{ifname} up")
+      writer.lines.down("ip link set dev #{ifname} down")
       add_address(host, ifname, iface, writer.lines, writer) #unless iface.address.nil? || iface.address.ips.empty?
     end
   end
@@ -299,17 +299,20 @@ PAM
       throw "need a local address #{host.name}:#{iface.name}" unless cfg
       local_iface = host.interfaces.values.find { |iface| iface.address.match_network(cfg.my) }
       throw "need a interface with address #{host.name}:#{cfg.my}" unless local_iface
-      writer = host.result.delegate.etc_network_interfaces.get(local_iface)
-      writer.header.interface_name = local_iface.name
       iname = Util.clean_if("gt#{cfg.prefix}", iface.name)
-      writer.lines.add(<<CFG)
-up ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}
-up ip -#{cfg.prefix} link set dev #{iname} up
-CFG
-      Device.add_address(host, iname, iface, writer.lines, writer)
-      writer.lines.add(<<CFG)
-down ip -#{cfg.prefix} tunnel del #{iname}
-CFG
+
+      writer_local = host.result.delegate.etc_network_interfaces.get(local_iface)
+      writer_local.lines.up("/bin/bash /etc/network/#{iname}-up.iface")
+      writer_local.lines.down("/bin/bash /etc/network/#{iname}-down.iface")
+
+
+      writer = host.result.delegate.etc_network_interfaces.get(iface)
+      writer.skip_interfaces.header.interface_name(iname)
+      writer.lines.up("ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}")
+#      writer.lines.up("ip -#{cfg.prefix} link set dev #{iname} up")
+      Device.build_config(host, iface)
+#      Device.add_address(host, iname, iface, writer.lines, writer)
+      writer.lines.down("ip -#{cfg.prefix} tunnel del #{iname}")
     end
   end
 
