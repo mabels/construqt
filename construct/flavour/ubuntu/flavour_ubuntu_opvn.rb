@@ -3,7 +3,7 @@ module Construct
 module Flavour
 module Ubuntu
   module Opvn
-    def self.prefix(path)
+    def self.prefix(hosts, path)
       nil
     end
     def self.build_config(host, iface)

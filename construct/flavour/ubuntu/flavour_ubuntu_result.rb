@@ -85,14 +85,14 @@ module Ubuntu
             if k.empty? 
               v.keys.map{|o| ":#{o} ACCEPT [0:0]" }
             else
-              ":#{k} ACCEPT [0:0]"
+              ":#{k} - [0:0]"
             end
           end
           tables.each do |k,v|
-            table = !k.empty? ? "-t #{k} " : ""
             v.each do |chain, rows|
+              table = !k.empty? ? "-A #{k}" : "-A #{chain}"
               rows.each do |row|
-                ret << "#{table}-A #{chain} #{row.get_row}"
+                ret << "#{table} #{row.get_row}"
               end
             end
           end
@@ -318,7 +318,7 @@ BLOCK
       throw "not a right #{path}" unless right.respond_to?('right') && right.respond_to?('owner')
       unless @result[path]
         @result[path] = ArrayWithRight.new(right)
-        @result[path] << [clazz.prefix(@host, path)]
+        @result[path] << [clazz.prefix(@host, path)].compact
       end
       @result[path] << block+"\n"
     end
@@ -368,7 +368,7 @@ then
 fi
 BASH
     out += @result.map do |fname, block|
-      text = block.compact.join("\n")
+      text = block.flatten.select{|i| !(i.nil? || i.strip.empty?) }.join("\n")
       next if text.strip.empty?
       Util.write_str(text, @host.name, fname)
 #          binding.pry

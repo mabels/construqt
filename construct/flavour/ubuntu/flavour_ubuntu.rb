@@ -125,7 +125,11 @@ BOND
   end
   module Host
     def self.prefix(host, path)
-      "# this is a generated file do not edit!!!!!"
+      if path.include? "hostname"
+        nil
+      else
+        "# this is a generated file do not edit!!!!!"
+      end
     end
     def self.build_config(host, unused)
       host.result.add(self, <<SCTL, Ubuntu.root, "etc", "sysctl.conf")
@@ -249,7 +253,7 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 # and ChallengeResponseAuthentication to 'no'.
 UsePAM yes
 SSH
-      host.result.add(self, <<PAM , Ubuntu.root_644, "etc", "pam.d", "common-auth")
+      host.enable_yubikey? && host.result.add(self, <<PAM , Ubuntu.root_644, "etc", "pam.d", "common-auth")
 #
 # /etc/pam.d/common-auth - authentication settings common to all services
 #
