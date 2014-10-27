@@ -25,19 +25,24 @@ protocol static {
 }
 
 BGP
-#binding.pry unless path.kind_of?(String)
-      ipv6 = path.include?("bird6.conf")
+      if path.include?("bird6.conf")
+        mode = OpenStruct.new :net_clazz => IPAddress::IPv6, :filter => lambda {|ip| ip.ipv6? }
+      else
+        mode = OpenStruct.new :net_clazz => IPAddress::IPv4, :filter => lambda {|ip| ip.ipv4? }
+      end
       Bgps.filters.each do |filter|
         ret = ret + "filter filter_#{filter.name} {\n"
         filter.list.each do |rule|
           nets = rule['network']
           if nets.kind_of?(String) 
-            nets = Construct::Tags.find(ip)
+            nets = Construct::Tags.find(nets, mode.net_clazz)
+            puts ">>>>>>>>>> #{nets.map{|i| i.class.name}}"
+            nets = IPAddress::summarize(nets)
           else
             nets = nets.ips
           end
           nets.each do |ip|
-            next unless ip.ipv6? == ipv6
+            next unless mode.filter.call(ip)
             ip_str = ip.to_string 
             if rule['prefix_length']
               ip_str = "#{ip.to_string}{#{rule['prefix_length'].first},#{rule['prefix_length'].last}}" 
