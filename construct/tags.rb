@@ -12,10 +12,10 @@ module Construct
       end
       [name, obj]
     end
-    def self.find(tag, *clazz)
+    def self.find(tag, clazz = nil)
       #binding.pry
-      ret = (@tags[tag] || []).select{|o| clazz.nil? || o.kind_of?(clazz.first) }
-      Construct.logger.warn("tag #{tag} #{clazz.first.name} empty result") if ret.empty?
+      ret = (@tags[tag] || []).select{|o| clazz.nil? || o.kind_of?(clazz) }
+      Construct.logger.warn("tag #{tag} #{clazz.inspect} empty result") if ret.empty?
       ret
     end
     def self.ips_net(tag, family)

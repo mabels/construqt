@@ -1,11 +1,20 @@
 module Construct
 module Util
   module Chainable
-    class Attr
-      def initialize
+
+    def self.included(other)
+      #puts "Chainable #{other.name}"
+      other.class.send("define_method", "chainable_attr") do |*args|
+        #puts "chainable_attr:#{self.name} #{args.inspect}" 
+        Chainable.chainable_attr(self, *args)
+      end
+      other.class.send("define_method", "chainable_attr_value") do |*args|
+        #puts "chainable_attr_value:#{self.name} #{args.inspect}"
+        Chainable.chainable_attr_value(self, *args)
       end
     end
-    def self.chainable_attr_value(arg, init = nil)
+
+    def self.chainable_attr_value(clazz, arg, init = nil)
       instance_variable_name = "@#{arg}".to_sym
       self.instance_variable_set(instance_variable_name, init)
       define_method(arg.to_s) do |val|
@@ -17,12 +26,12 @@ module Util
       end
     end
 
-    def self.chainable_attr(other, arg, set_value = true, init = false, aspect = lambda{|i|})
+    def self.chainable_attr(clazz, arg, set_value = true, init = false, aspect = lambda{|i|})
       instance_variable_name = "@#{arg}".to_sym
 #      puts ">>>chainable_attr #{"%x"%self.object_id} init=#{init}"
 #      self.instance_variable_set(instance_variable_name, init)
-      puts "self.chainable_attr #{other.name} #{arg.to_sym} #{set_value} #{init}"
-      define_method(arg.to_sym) do |*args|
+      #puts "self.chainable_attr #{clazz.name} #{arg.to_sym} #{set_value} #{init}"
+      clazz.send("define_method", arg.to_sym) do |*args|
         instance_eval(&aspect)
         self.instance_variable_set(instance_variable_name, args.length>0 ? args[0] : set_value)
         self  
@@ -39,10 +48,10 @@ module Util
           self.instance_variable_set(instance_variable_name, init)
         end
         ret = self.instance_variable_get(instance_variable_name)
-puts "#{self.class.name} #{get_name} #{set_value} #{init} => #{ret.inspect}"
+#puts "#{self.class.name} #{get_name} #{set_value} #{init} => #{ret.inspect}"
         ret
       end
-      define_method(get_name, get_name_proc)
+      clazz.send("define_method", get_name, get_name_proc)
     end
     class Test
       include Chainable
@@ -56,24 +65,26 @@ puts "#{self.class.name} #{get_name} #{set_value} #{init} => #{ret.inspect}"
       chainable_attr :testbool, false, true
       chainable_attr :testbool2, true, true
       chainable_attr :testside, 1, 2, lambda {|i| @sideeffect ||= 9; @sideeffect += 1 }
-
-        chainable_attr :interface
-        chainable_attr :connection
-        chainable_attr :input_only, true, true
-        chainable_attr :output_only, true, true
-        chainable_attr :connection
-        chainable_attr_value :log, nil
-        chainable_attr_value :from_net, nil
-        chainable_attr_value :to_net, nil
-        chainable_attr_value :action, nil
+    end
+    class Test2
+      include Chainable
+      #def initialize
+      #  puts ">>>test instance=#{"%x"%self.object_id} class=#{"%x"%self.class.object_id}"
+      #end
+      attr_reader :sideeffect
+      chainable_attr :bloed0
+      chainable_attr :bloed1
+      chainable_attr :test, 3, 4
+      chainable_attr :testbool, true, false
+      chainable_attr :testside, 3, 4, lambda {|i| @sideeffect ||= 5; @sideeffect += 1 }
     end
     def self.test
       3.times do |i|
         t = Test.new
-        throw "chainable failed input_only" unless t.input_only? == true
-        throw "chainable failed output_only" unless t.output_only? == true
+        #throw "chainable failed input_only" unless t.input_only? == true
+        #throw "chainable failed output_only" unless t.output_only? == true
 
-        puts "#{i}=>#{t.testbool?} #{t.testbool2?}"
+        #puts "#{i}=>#{t.testbool?} #{t.testbool2?}"
         throw "chainable failed test should 2 #{t.get_test.inspect}" if t.get_test != 2
         t.test
         throw "chainable failed this should be 1 " if t.get_test != 1
