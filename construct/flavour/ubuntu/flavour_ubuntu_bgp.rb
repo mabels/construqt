@@ -30,7 +30,13 @@ BGP
       Bgps.filters.each do |filter|
         ret = ret + "filter filter_#{filter.name} {\n"
         filter.list.each do |rule|
-          rule['network'].ips.each do |ip|
+          nets = rule['network']
+          if nets.kind_of?(String) 
+            nets = Construct::Tags.find(ip)
+          else
+            nets = nets.ips
+          end
+          nets.each do |ip|
             next unless ip.ipv6? == ipv6
             ip_str = ip.to_string 
             if rule['prefix_length']

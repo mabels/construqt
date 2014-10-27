@@ -117,7 +117,7 @@ module Firewalls
       end
       def add
         entry = ForwardEntry.new
-        puts "ForwardEntry: #{@firewall.name} #{entry.input_only?} #{entry.output_only?}"
+        #puts "ForwardEntry: #{@firewall.name} #{entry.input_only?} #{entry.output_only?}"
         @rules << entry
         entry
       end
