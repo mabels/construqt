@@ -4,7 +4,7 @@ module Ubuntu
   
   module Firewall
       class ToFrom
-        extend Util::Chainable
+        include Util::Chainable
         chainable_attr_value :middle, nil
         chainable_attr_value :middle_to, nil
         chainable_attr_value :middle_from, nil
@@ -13,7 +13,14 @@ module Ubuntu
         chainable_attr_value :end_from, nil
         chainable_attr_value :factory, nil
         chainable_attr_value :ifname, nil
-        chainable_attr :only_output, true
+        chainable_attr :output_only, false, false
+        chainable_attr :input_only, false, false
+
+        def only_in_out(rule)
+          output_only rule.output_only?
+          input_only rule.input_only?
+          self
+        end
 
         def space_before(str)
           if str.nil? or str.empty?
@@ -59,14 +66,17 @@ module Ubuntu
 
       def self.write_table(iptables, rule, to_from)
         family = iptables=="ip6tables" ? Construct::Addresses::IPV6 : Construct::Addresses::IPV4
-        from_list = Construct::Tags.ips(rule.get_from, family)
-        to_list = Construct::Tags.ips(rule.get_to, family)
+        from_list = Construct::Tags.ips_net(rule.get_from_net, family)
+        to_list = Construct::Tags.ips_net(rule.get_to_net, family)
         #puts ">>>>>#{from_list.inspect}"
         #puts ">>>>>#{state.inspect} end_to:#{state.end_to}:#{state.end_from}:#{state.middle_to}#{state.middle_from}"
         action_i = action_o = rule.get_action
         if to_list.empty? && from_list.empty?
-          to_from.factory!.row("#{to_from.output_ifname}#{to_from.get_middle_to} -j #{rule.get_action}#{to_from.get_end_to}")
-          unless to_from.only_output?
+#puts "write_table=>o:#{to_from.output_only?}:#{to_from.output_ifname} i:#{to_from.input_only?}:#{to_from.input_ifname}"
+          if to_from.output_only?
+            to_from.factory!.row("#{to_from.output_ifname}#{to_from.get_middle_to} -j #{rule.get_action}#{to_from.get_end_to}")
+          end
+          if to_from.input_only?
             to_from.factory!.row("#{to_from.input_ifname}#{to_from.get_middle_from} -j #{rule.get_action}#{to_from.get_end_to}")
           end
         end
@@ -74,8 +84,10 @@ module Ubuntu
           action_o = "I.#{rule.object_id.to_s(32)}"
           action_i = "O.#{rule.object_id.to_s(32)}"
           to_list.each do |ip|
-            to_from.factory!.table(action_o).row("#{to_from.output_ifname} -d #{ip.to_string} -j #{rule.get_action}")
-            unless to_from.only_output?
+            if to_from.output_only?
+              to_from.factory!.table(action_o).row("#{to_from.output_ifname} -d #{ip.to_string} -j #{rule.get_action}")
+            end
+            if to_from.input_only?
               to_from.factory!.table(action_i).row("#{to_from.input_ifname} -s #{ip.to_string} -j #{rule.get_action}")
             end
           end
@@ -86,23 +98,27 @@ module Ubuntu
           from_dst = to_src =""
         end
         from_list.each do |ip|
-          to_from.factory!.row("#{to_from.output_ifname} -s #{ip.to_string}#{from_dst}#{to_from.get_middle_from} -j #{action_o}#{to_from.get_end_to}")
-          unless to_from.only_output?
+          if to_from.output_only?
+            to_from.factory!.row("#{to_from.output_ifname} -s #{ip.to_string}#{from_dst}#{to_from.get_middle_from} -j #{action_o}#{to_from.get_end_to}")
+          end
+          if to_from.input_only?
             to_from.factory!.row("#{to_from.input_ifname}#{to_src} -d #{ip.to_string}#{to_from.get_middle_to} -j #{action_i}#{to_from.get_end_to}")
           end
         end
       end
 
       def self.write_raw(raw, ifname, iface, writer)
+#        puts ">>>RAW #{iface.name} #{raw.firewall.name}"
         raw.rules.each do |rule|
           throw "ACTION must set #{ifname}" unless rule.get_action
           if rule.prerouting? 
-            to_from = ToFrom.new.ifname(ifname)
+            to_from = ToFrom.new.ifname(ifname).only_in_out(rule)
+#puts "PREROUTING #{to_from.inspect}"
             write_table("iptables", rule, to_from.factory(writer.ipv4.prerouting))
-            write_table("ip6tables", rule, to_from.factory(writer.ipv4.prerouting))
+            write_table("ip6tables", rule, to_from.factory(writer.ipv6.prerouting))
           end
           if rule.output?
-            to_from = ToFrom.new.ifname(ifname)
+            to_from = ToFrom.new.ifname(ifname).only_in_out(rule)
             write_table("iptables", rule, to_from.factory(writer.ipv4.output))
             write_table("ip6tables", rule, to_from.factory(writer.ipv6.output))
           end
@@ -116,7 +132,8 @@ module Ubuntu
           if rule.to_source? && rule.postrouting?
             src = iface.address.ips.select{|ip| ip.ipv4?}.first 
             throw "missing ipv4 address and postrouting and to_source is used #{ifname}" unless src
-            to_from = ToFrom.new.only_output.end_to("--to-source #{src}").ifname(ifname).factory(writer.ipv4.postrouting)
+            to_from = ToFrom.new.only_in_out(rule).end_to("--to-source #{src}")
+                            .ifname(ifname).factory(writer.ipv4.postrouting)
             write_table("iptables", rule, to_from)
           end
         end
@@ -126,14 +143,15 @@ module Ubuntu
       def self.write_forward(forward, ifname, iface, writer)
         forward.rules.each do |rule|
           throw "ACTION must set #{ifname}" unless rule.get_action
+puts "write_forward #{rule.inspect} #{rule.input_only?} #{rule.output_only?}"
           if rule.get_log
-            to_from = ToFrom.new.ifname(ifname)
+            to_from = ToFrom.new.ifname(ifname).only_in_out(rule)
               .end_to("--nflog-prefix o:#{rule.get_log}:#{ifname}")
               .end_from("--nflog-prefix i:#{rule.get_log}:#{ifname}")
             write_table("iptables", rule.clone.action("NFLOG"), to_from.factory(writer.ipv4.forward))
             write_table("ip6tables", rule.clone.action("NFLOG"), to_from.factory(writer.ipv6.forward))
           end
-          to_from = ToFrom.new.ifname(ifname)
+          to_from = ToFrom.new.ifname(ifname).only_in_out(rule)
           if rule.connection?
             to_from.middle_from("-m state --state NEW,ESTABLISHED")
             to_from.middle_to("-m state --state RELATED,ESTABLISHED")

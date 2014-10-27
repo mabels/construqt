@@ -36,13 +36,13 @@ module Ubuntu
           @rows = []
         end
         class Row
-          extend Util::Chainable
+          include Util::Chainable
           chainable_attr_value :row, nil
           chainable_attr_value :table, nil
           chainable_attr_value :chain, nil
         end
         class RowFactory
-          extend Util::Chainable
+          include Util::Chainable
           chainable_attr_value :table, nil
           chainable_attr_value :chain, nil
           chainable_attr_value :rows, nil
@@ -231,7 +231,7 @@ BLOCK
             else
               nil
             end
-          end.compact.flatten.join("\n")
+          end.compact.flatten.join("\n")+"\n\n"
         end
       end
       def iface
