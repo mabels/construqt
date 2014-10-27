@@ -13,22 +13,30 @@ module Firewalls
   class Firewall
     def initialize(name)
       @name = name
-      @raw = Raw.new
-      @nat = Nat.new
-      @forward = Forward.new
+      @raw = Raw.new(self)
+      @nat = Nat.new(self)
+      @forward = Forward.new(self)
+    end
+    def name
+      @name
     end
     class Raw
-      class RawEntry
-        extend Util::Chainable
-        chainable_attr :prerouting
-        chainable_attr :output
-        chainable_attr :interface
-        chainable_attr_value :from, nil
-        chainable_attr_value :to, nil
-        chainable_attr_value :action, nil
-      end
-      def initialize
+      attr_reader :firewall
+      def initialize(firewall)
+        @firewall = firewall
         @rules = []
+      end
+      class RawEntry
+        include Util::Chainable
+        chainable_attr :prerouting, true, false, lambda{|i| @output = false; input_only(true); output_only(false) }
+        chainable_attr :input_only, true
+        chainable_attr :output, true, false, lambda {|i| @prerouting = false; input_only(false); output_only(true) }
+        chainable_attr :output_only, true
+        chainable_attr :interface
+        chainable_attr_value :from_net, nil
+        chainable_attr_value :to, nil
+        chainable_attr_value :to_net, nil
+        chainable_attr_value :action, nil
       end
       def add
         entry = RawEntry.new
@@ -47,26 +55,27 @@ module Firewalls
     end
 
     class Nat
+      attr_reader :firewall, :rules
+      def initialize(firewall)
+        @firewall = firewall
+        @rules = []
+      end
       class NatEntry
-        extend Util::Chainable
-        chainable_attr :postrouting
-        chainable_attr :prerouting
+        include Util::Chainable
+        chainable_attr :prerouting, true, false, lambda{|i| @postrouting = false; input_only(true); output_only(false) }
+        chainable_attr :input_only
+        chainable_attr :postrouting, true, false, lambda{|i| @prerouting = false; input_only(false); output_only(true) }
+        chainable_attr :output_only
         chainable_attr :to_source
         chainable_attr :interface
-        chainable_attr_value :from, nil
-        chainable_attr_value :to, nil
+        chainable_attr_value :from_net, nil
+        chainable_attr_value :to_net, nil
         chainable_attr_value :action, nil
-      end
-      def initialize
-        @rules = []
       end
       def add
         entry = NatEntry.new
         @rules << entry
         entry
-      end
-      def rules
-        @rules
       end
     end
     def get_nat
@@ -89,25 +98,28 @@ module Firewalls
     end
 
     class Forward
+      attr_reader :firewall, :rules
+      def initialize(firewall)
+        @firewall = firewall
+        @rules = []
+      end
       class ForwardEntry
-        extend Util::Chainable
+        include Util::Chainable
         chainable_attr :interface
         chainable_attr :connection
+        chainable_attr :input_only, true, true
+        chainable_attr :output_only, true, true
+        chainable_attr :connection
         chainable_attr_value :log, nil
-        chainable_attr_value :from, nil
-        chainable_attr_value :to, nil
+        chainable_attr_value :from_net, nil
+        chainable_attr_value :to_net, nil
         chainable_attr_value :action, nil
-      end
-      def initialize
-        @rules = []
       end
       def add
         entry = ForwardEntry.new
+        puts "ForwardEntry: #{@firewall.name} #{entry.input_only?} #{entry.output_only?}"
         @rules << entry
         entry
-      end
-      def rules
-        @rules
       end
     end
     def get_forward
