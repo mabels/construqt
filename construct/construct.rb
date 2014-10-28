@@ -14,7 +14,7 @@ module Construct
     @logger.fatal "you need the right ipaddress version from https://github.com/mabels/ipaddress" 
   end
   if !OpenStruct.instance_methods.include?(:to_h)
-    class OpenStruct
+    OpenStruct.class_eval do
       def to_h
           @table.dup
       end
