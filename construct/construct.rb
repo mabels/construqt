@@ -13,9 +13,21 @@ module Construct
   if !IPAddress::IPv6.instance_methods.include?(:rev_domains)
     @logger.fatal "you need the right ipaddress version from https://github.com/mabels/ipaddress" 
   end
+  if !OpenStruct.instance_methods.include?(:to_h)
+    class OpenStruct
+      def to_h
+          @table.dup
+      end
+    end
+    @logger.warn "Your running a patched version of OpenStruct"
+  end
+
   def self.logger
     @logger 
   end
+
+
+
   # ugly but i need the logger during initialization
   require 'construct/util.rb'
   require 'construct/networks.rb'
