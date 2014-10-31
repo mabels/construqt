@@ -13,11 +13,11 @@ module Ubuntu
       if iface.push_routes
         push_routes = iface.push_routes.routes.map{|route| "push \"route #{route.dst.to_string}\"" }.join("\n")
       end  
-      host.result.add(self, iface.cacert, Ubuntu.root , "etc", "openvpn", "ssl", "#{iface.name}-cacert")
-      host.result.add(self, iface.hostcert, Ubuntu.root , "etc", "openvpn", "ssl", "#{iface.name}-hostcert")
-      host.result.add(self, iface.hostkey, Ubuntu.root_600 , "etc", "openvpn", "ssl", "#{iface.name}-hostkey")
-      host.result.add(self, iface.dh1024, Ubuntu.root , "etc", "openvpn", "ssl", "#{iface.name}-dh1024")
-      host.result.add(self, <<OPVN, Ubuntu.root, "etc", "openvpn", "#{iface.name}.conf")
+      host.result.add(self, iface.cacert, Construct::Resource::Rights::ROOT_0644, "etc", "openvpn", "ssl", "#{iface.name}-cacert.pem")
+      host.result.add(self, iface.hostcert, Construct::Resource::Rights::ROOT_0644, "etc", "openvpn", "ssl", "#{iface.name}-hostcert.pem")
+      host.result.add(self, iface.hostkey, Construct::Resource::Rights::ROOT_0600, "etc", "openvpn", "ssl", "#{iface.name}-hostkey.pem")
+      host.result.add(self, iface.dh1024, Construct::Resource::Rights::ROOT_0644, "etc", "openvpn", "ssl", "#{iface.name}-dh1024")
+      host.result.add(self, <<OPVN, Construct::Resource::Rights::ROOT_0644, "etc", "openvpn", "#{iface.name}.conf")
 daemon
 local #{local}
 proto udp#{local.ipv6? ? '6' : ''}
@@ -28,7 +28,7 @@ dev #{iface.name}
 ca   /etc/openvpn/ssl/#{iface.name}-cacert.pem
 cert /etc/openvpn/ssl/#{iface.name}-hostcert.pem
 key  /etc/openvpn/ssl/#{iface.name}-hostkey.pem
-dh   /etc/openvpn/ssl/#{iface.name}-dh1024.pem
+dh   /etc/openvpn/ssl/#{iface.name}-dh1024
 server #{iface.network.first_ipv4.to_s} #{iface.network.first_ipv4.netmask}
 server-ipv6 #{iface.network.first_ipv6.to_string}
 client-to-client
