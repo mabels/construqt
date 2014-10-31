@@ -8,13 +8,14 @@ module Networks
       @domain = "construct.org"
       @contact = "soa@construct.org"
       @addresses = Construct::Addresses.new(self)
+      @dns_resolver = nil
     end
     def addresses
       @addresses
     end
     def add_blocks(*nets)
       nets.each do |net|
-        @networks << IPAddress.parse(net) 
+        @networks << IPAddress.parse(net)
       end
     end
     def networks
@@ -23,6 +24,12 @@ module Networks
     def to_network(ip)
       ret = (@networks.find{ |my| (ip.ipv6? == my.ipv6? && ip.ipv4? == my.ipv4?) && my.include?(ip) } || ip.network)
       ret
+    end
+    def set_dns_resolver(nameservers, search)
+      @dns_resolver = OpenStruct.new :nameservers => nameservers, :search => search
+    end
+    def dns_resolver
+      @dns_resolver
     end
     def set_domain(domain)
       @domain = domain
@@ -54,7 +61,7 @@ module Networks
   @networks = {}
   def self.add(name)
     throw "network with name #{name} exists" if @networks[name]
-    @networks[name] = Network.new(name) 
+    @networks[name] = Network.new(name)
   end
 
 end

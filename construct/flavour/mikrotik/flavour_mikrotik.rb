@@ -181,7 +181,7 @@ TESTNAME
       host.result.delegate.render_mikrotik_set_direct({ "time-zone-name"=> Schema.identifier.required.key }, 
                                                       { "time-zone-name" => host.time_zone||'MET' }, "system", "clock")
 
-      dns = host.dns_servers || [IPAddress.parse('2001:4860:4860::8844'),IPAddress.parse('2001:4860:4860::8888')]
+      dns = host.region.network.dns_resolver.nameservers.ips
       host.result.delegate.render_mikrotik_set_direct({"servers"=>Schema.addresses.required.key }, 
                                                       { "servers"=> dns }, "ip", "dns")
 

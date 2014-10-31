@@ -44,6 +44,12 @@ OUT
         address.ips.each do |ip|  
           next if ip.to_i == ip.network.to_i && ((ip.ipv6? && ip.prefix < 128) || (ip.ipv4? && ip.prefix < 32))
           forward[domain] << "#{"%-42s" % "#{name}."} 3600 IN #{ip.ipv4? ? 'A' : 'AAAA'} #{ip.to_s}"  
+          if ip.ipv4?
+            forward[domain] << "#{"ipv4-%-37s" % "#{name}."} 3600 IN A    #{ip.to_s}"  
+          end
+          if ip.ipv6?
+            forward[domain] << "#{"ipv6-%-37s" % "#{name}."} 3600 IN AAAA #{ip.to_s}"  
+          end
           network = host.region.network.to_network(ip.network)
           reverse[network] ||= {}
           reverse[network][ip.reverse.to_s] ||= "#{ip.reverse} 3600 IN PTR #{name}."
@@ -52,16 +58,16 @@ OUT
       include = {}
       forward.each do |domain, lines|
         include[domain] = "/etc/bind/tables/#{domain}.forward"
-        host.result.add(self, write_header(host.region, domain), Ubuntu.root, "etc/bind/tables", "#{domain}.forward")
-        host.result.add(self, lines.sort.join("\n"), Ubuntu.root, "etc/bind/tables", "#{domain}.forward")  
+        host.result.add(self, write_header(host.region, domain), Construct::Resource::Rights::ROOT_0644, "etc/bind/tables", "#{domain}.forward")
+        host.result.add(self, lines.sort.join("\n"), Construct::Resource::Rights::ROOT_0644, "etc/bind/tables", "#{domain}.forward")  
       end
       reverse.each do |domain, lines|
         include[domain.rev_domains.first] = "/etc/bind/tables/#{domain}.reverse"
-        host.result.add(self, write_header(host.region, domain.rev_domains.first), Ubuntu.root, "etc/bind/tables", "#{domain.to_s}.reverse")
-        host.result.add(self, lines.values.sort.join("\n"), Ubuntu.root, "etc/bind/tables", "#{domain.to_s}.reverse")  
+        host.result.add(self, write_header(host.region, domain.rev_domains.first), Construct::Resource::Rights::ROOT_0644, "etc/bind/tables", "#{domain.to_s}.reverse")
+        host.result.add(self, lines.values.sort.join("\n"), Construct::Resource::Rights::ROOT_0644, "etc/bind/tables", "#{domain.to_s}.reverse")  
       end
       include.each do |domain,path|
-          host.result.add(self, <<DNS, Ubuntu.root, "etc/bind/named.conf.local")
+          host.result.add(self, <<DNS, Construct::Resource::Rights::ROOT_0644, "etc/bind/named.conf.local")
 zone "#{domain.to_s}" {
         type master;
         file "#{path}";

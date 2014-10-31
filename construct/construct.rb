@@ -10,6 +10,10 @@ module Construct
 
   @logger = Logger.new(STDOUT)
   @logger.level = Logger::DEBUG
+
+  def self.log_level(level)
+    @logger.level = level
+  end
   if !IPAddress::IPv6.instance_methods.include?(:rev_domains)
     @logger.fatal "you need the right ipaddress version from https://github.com/mabels/ipaddress" 
   end
@@ -36,6 +40,7 @@ module Construct
   require 'construct/users.rb'
   require 'construct/firewalls.rb'
   require 'construct/flavour/delegates.rb'
+  require 'construct/resource.rb'
   require 'construct/hosts.rb'
   require 'construct/interfaces.rb'
   require 'construct/ipsecs.rb'

@@ -15,7 +15,13 @@ module Ubuntu
   def self.name
     'ubuntu'
   end
-  Flavour.add(self)    
+  Flavour.add(self)
+
+  module PassThroughHeader
+    def self.prefix(u1, u2)
+      nil
+    end
+  end
 
   class Interface < OpenStruct
     def initialize(cfg)
@@ -83,11 +89,11 @@ GLOBAL
       ret << "  }"
       ret << "  virtual_ipaddress {"
       iface.address.ips.each do |ip|
-        ret << "    #{ip.to_string} dev #{my_iface.name}"  
+        ret << "    #{ip.to_string} dev #{my_iface.name}"
       end
       ret << "  }"
       ret << "}"
-      host.result.add(self, ret.join("\n"), Ubuntu.root, "etc", "keepalived", "keepalived.conf")
+      host.result.add(self, ret.join("\n"), Construct::Resource::Rights::ROOT_0644, "etc", "keepalived", "keepalived.conf")
     end
   end
   module Bond
@@ -109,8 +115,8 @@ BOND
   module Vlan
     def self.build_config(host, iface)
       vlan = iface.name.split('.')
-      throw "vlan name not valid if.# => #{iface.name}" if vlan.length != 2 || 
-                                                        !vlan.first.match(/^[0-9a-zA-Z]+$/) || 
+      throw "vlan name not valid if.# => #{iface.name}" if vlan.length != 2 ||
+                                                        !vlan.first.match(/^[0-9a-zA-Z]+$/) ||
                                                         !vlan.last.match(/^[0-9]+/) ||
                                                         !(1 <= vlan.last.to_i && vlan.last.to_i < 4096)
       Device.build_config(host, iface)
@@ -132,7 +138,7 @@ BOND
       end
     end
     def self.build_config(host, unused)
-      host.result.add(self, <<SCTL, Ubuntu.root, "etc", "sysctl.conf")
+      host.result.add(self, <<SCTL, Construct::Resource::Rights::ROOT_0644, "etc", "sysctl.conf")
 net.ipv4.conf.all.forwarding = 1
 net.ipv4.conf.default.forwarding = 1
 net.ipv4.vs.pmtu_disc=1
@@ -141,15 +147,12 @@ net.ipv6.conf.all.autoconf=0
 net.ipv6.conf.all.accept_ra=0
 net.ipv6.conf.all.forwarding=1
 SCTL
-      host.result.add(self, host.name, Ubuntu.root_644, "etc", "hostname")
-      host.result.add(self, "# WTF resolvconf", Ubuntu.root_644, "etc", "resolvconf", "resolv.conf.d", "orignal");
-      host.result.add(self, <<RESOLVCONF,  Ubuntu.root_644, "etc", "resolv.conf")
-nameserver 2001:4860:4860::8844
-nameserver 2001:4860:4860::8888
-nameserver 8.8.8.8
-nameserver 8.8.4.4
-search bb.s2betrieb.de
-RESOLVCONF
+      host.result.add(self, host.name, Construct::Resource::Rights::ROOT_0644, "etc", "hostname")
+      host.result.add(self, "# WTF resolvconf", Construct::Resource::Rights::ROOT_0644, "etc", "resolvconf", "resolv.conf.d", "orignal");
+      host.result.add(self,
+                       (host.region.network.dns_resolver.nameservers.ips.map{|i| "nameserver #{i.to_s}" }+
+                       ["search #{host.region.network.dns_resolver.search.join(' ')}"]).join("\n"),
+                      Construct::Resource::Rights::ROOT_0644, "etc", "resolv.conf")
       Dns.build_config(host) if host.dns_server
       akeys = []
       ykeys = []
@@ -159,11 +162,11 @@ RESOLVCONF
         ykeys << "#{u.name}:#{u.yubikey}" if u.yubikey
         skeys << "#{u.shadow}" if u.shadow
       end
-      host.result.add(self, skeys.join(), Ubuntu.root_600, "etc", "shadow.merge")
-      host.result.add(self, akeys.join(), Ubuntu.root_600, "root", ".ssh", "authorized_keys")
-      host.result.add(self, ykeys.join("\n"), Ubuntu.root_644, "etc", "yubikey_mappings")
+      host.result.add(self, skeys.join(), Construct::Resource::Rights::ROOT_0644, "etc", "shadow.merge")
+      host.result.add(self, akeys.join(), Construct::Resource::Rights::ROOT_0644, "root", ".ssh", "authorized_keys")
+      host.result.add(self, ykeys.join("\n"), Construct::Resource::Rights::ROOT_0644, "etc", "yubikey_mappings")
 
-      host.result.add(self, <<SSH , Ubuntu.root_644, "etc", "ssh", "sshd_config")
+      host.result.add(self, <<SSH , Construct::Resource::Rights::ROOT_0644, "etc", "ssh", "sshd_config")
 # Package generated configuration file
 # See the sshd_config(5) manpage for details
 
@@ -253,41 +256,23 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 # and ChallengeResponseAuthentication to 'no'.
 UsePAM yes
 SSH
-      host.enable_yubikey? && host.result.add(self, <<PAM , Ubuntu.root_644, "etc", "pam.d", "common-auth")
-#
-# /etc/pam.d/common-auth - authentication settings common to all services
-#
-# This file is included from other service-specific PAM config files,
-# and should contain a list of the authentication modules that define
-# the central authentication scheme for use on the system
-# (e.g., /etc/shadow, LDAP, Kerberos, etc.).  The default is to use the
-# traditional Unix authentication mechanisms.
-#
-# As of pam 1.0.1-6, this file is managed by pam-auth-update by default.
-# To take advantage of this, it is recommended that you configure any
-# local modules either before or after the default block, and use
-# pam-auth-update to manage selection of other modules.  See
-# pam-auth-update(8) for details.
-
-auth required pam_yubico.so id=16 authfile=/etc/yubikey_mappings 
+      host.result.add(self, <<PAM , Construct::Resource::Rights::ROOT_0644, "etc", "pam.d", "openvpn")
+#{host.yubikey ? '':'# '}auth required pam_yubico.so id=16 authfile=/etc/yubikey_mappings
 auth [success=1 default=ignore] pam_unix.so nullok_secure try_first_pass
 auth requisite pam_deny.so
 
-# here are the per-package modules (the "Primary" block)
-#X auth  [success=1 default=ignore]  pam_unix.so nullok_secure
-# here's the fallback if no module succeeds
-#X auth  requisite      pam_deny.so
-# prime the stack with a positive return value if there isn't one already;
-# this avoids us returning an error just because nothing sets a success code
-# since the modules above will each just jump around
-auth  required      pam_permit.so
-# and here are more per-package modules (the "Additional" block)
-auth  optional      pam_cap.so 
-# end of pam-auth-update config
+@include common-account
+@include common-session-noninteractive
 PAM
+      #binding.pry
+      host.files && host.files.each do |file|
+        if host.result.delegate.replace(PassThroughHeader, file.data, file.right, *file.path)
+          Construct.logger.warn("the file #{file.path} was overriden!")
+        end
+      end
     end
   end
-  
+
   module Gre
     def self.prefix(host, path)
       "# this is a generated file do not edit!!!!!"
@@ -296,9 +281,9 @@ PAM
 #      binding.pry
       cfg = nil
       if iface.local.first_ipv6
-        cfg = OpenStruct.new(:prefix=>6, :my=>iface.local.first_ipv6, :other => iface.remote.first_ipv6, :mode => "ip6gre") 
+        cfg = OpenStruct.new(:prefix=>6, :my=>iface.local.first_ipv6, :other => iface.remote.first_ipv6, :mode => "ip6gre")
       elsif iface.local.first_ipv4
-        cfg = OpenStruct.new(:prefix=>4, :my=>iface.local.first_ipv4, :other => iface.remote.first_ipv4, :mode => "ipgre") 
+        cfg = OpenStruct.new(:prefix=>4, :my=>iface.local.first_ipv4, :other => iface.remote.first_ipv4, :mode => "ipgre")
       end
       throw "need a local address #{host.name}:#{iface.name}" unless cfg
       local_iface = host.interfaces.values.find { |iface| iface.address.match_network(cfg.my) }
@@ -330,13 +315,13 @@ PAM
 
   def self.clazz(name)
     ret = {
-      "opvn" => Opvn, 
-      "gre" => Gre, 
-      "host" => Host, 
-      "device"=> Device, 
-      "vrrp" => Vrrp, 
+      "opvn" => Opvn,
+      "gre" => Gre,
+      "host" => Host,
+      "device"=> Device,
+      "vrrp" => Vrrp,
       "bridge" => Bridge,
-      "bond" => Bond, 
+      "bond" => Bond,
       "vlan" => Vlan,
       "result" => Result,
       "template" => Template

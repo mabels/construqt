@@ -3,22 +3,6 @@ module Construct
 module Flavour
 module Ubuntu
 
-  def self.root
-    OpenStruct.new :right => "0644", :owner => 'root'
-  end
-
-  def self.root_600
-    OpenStruct.new :right => "0600", :owner => 'root'
-  end
-
-  def self.root_644
-    OpenStruct.new :right => "0644", :owner => 'root'
-  end
-
-  def self.root_755
-    OpenStruct.new :right => "0755", :owner => 'root'
-  end
-
   class EtcNetworkIptables
     def initialize
       @mangle = Section.new('mangle')
@@ -214,8 +198,8 @@ OUT
           "#!/bin/bash"
         end
         def write_s(direction, blocks)
-          @entry.result.add(self.class, <<BLOCK, Ubuntu.root_755, "etc", "network", "#{@entry.header.get_interface_name}-#{direction}.iface")
-exec 3>&1 > >(logger -t "#{@entry.header.get_interface_name}-#{direction}")
+          @entry.result.add(self.class, <<BLOCK, Construct::Resource::Rights::ROOT_0755, "etc", "network", "#{@entry.header.get_interface_name}-#{direction}.iface")
+exec > >(logger -t "#{@entry.header.get_interface_name}-#{direction}) 2>&1
 #{blocks.join("\n")}
 iptables-restore < /etc/network/iptables.cfg
 ip6tables-restore < /etc/network/ip6tables.cfg
@@ -322,6 +306,13 @@ BLOCK
       end
       @result[path] << block+"\n"
     end
+    def replace(clazz, block, right, *path) 
+      path = File.join(*path)
+      replaced = !!@result[path]
+      @result.delete(path) if @result[path] 
+      add(clazz, block, right, *path)
+      replaced
+    end
     def directory_mode(mode)
       mode = mode.to_i(8)
       0!=(mode & 06) && (mode = (mode | 01))
@@ -334,9 +325,9 @@ BLOCK
     end
 
     def commit
-      add(EtcNetworkIptables, etc_network_iptables.commitv4, Ubuntu.root_644, "etc", "network", "iptables.cfg")
-      add(EtcNetworkIptables, etc_network_iptables.commitv6, Ubuntu.root_644, "etc", "network", "ip6tables.cfg")
-      add(EtcNetworkInterfaces, etc_network_interfaces.commit, Ubuntu.root_644, "etc", "network", "interfaces")
+      add(EtcNetworkIptables, etc_network_iptables.commitv4, Construct::Resource::Rights::ROOT_0644, "etc", "network", "iptables.cfg")
+      add(EtcNetworkIptables, etc_network_iptables.commitv6, Construct::Resource::Rights::ROOT_0644, "etc", "network", "ip6tables.cfg")
+      add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construct::Resource::Rights::ROOT_0644, "etc", "network", "interfaces")
     out = [<<BASH]
 #!/bin/bash
 hostname=`hostname`

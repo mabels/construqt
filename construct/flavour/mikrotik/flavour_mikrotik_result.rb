@@ -20,7 +20,7 @@ module Mikrotik
       result = {}
       cfg.each do |key, val|
         unless default[key]
-          Construct.logger.warn("cfg unknown key:#{key}") 
+          Construct.logger.debug("skip cfg unknown key:#{key} val:#{val}") 
         else
           result[key] = val
         end

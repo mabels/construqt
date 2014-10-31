@@ -66,6 +66,7 @@ class Hosts
     cfg['flavour'] = Flavour.find(cfg['flavour'] || 'ubuntu')
     throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
     cfg['region'] = @region
+    throw "Host with the name #{name} exisits" if @hosts[name]
     @hosts[name] = Host.new(cfg)
     @hosts[name].result = @hosts[name].flavour.clazz('result').create(@hosts[name])
 
@@ -73,7 +74,6 @@ class Hosts
     throw "host attribute id is required" unless @hosts[name].id.kind_of? HostId
     throw "host attribute configip is required" unless @hosts[name].configip.kind_of? HostId
   
-#binding.pry
     if (@hosts[name].id.first_ipv4! && !@hosts[name].id.first_ipv4!.dhcpv4?) ||
        (@hosts[name].id.first_ipv6! && !@hosts[name].id.first_ipv6!.dhcpv6?)
       adr = nil
