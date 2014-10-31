@@ -5,6 +5,9 @@ module Ubuntu
   module Firewall
       class ToFrom
         include Util::Chainable
+        chainable_attr_value :begin, nil
+        chainable_attr_value :begin_to, nil
+        chainable_attr_value :begin_from, nil
         chainable_attr_value :middle, nil
         chainable_attr_value :middle_to, nil
         chainable_attr_value :middle_from, nil
@@ -29,13 +32,31 @@ module Ubuntu
             " "+str.strip
           end
         end
-        def get_end_to
-          return space_before(@end_to) if @end_to
-          return space_before(@end)
+        def push_begin_to(str) 
+          begin_to(get_begin_to + space_before(str))
         end
-        def get_end_from
-          return space_before(@end_from) if @end_from
-          return space_before(@end) 
+        def push_begin_from(str) 
+          begin_from(get_begin_from + space_before(str))
+        end
+        def push_middle_to(str) 
+          middle_to(get_middle_to + space_before(str))
+        end
+        def push_middle_from(str) 
+          middle_from(get_middle_from + space_before(str))
+        end
+        def push_end_to(str) 
+          end_to(get_end_to + space_before(str))
+        end
+        def push_end_from(str) 
+          end_from(get_end_from + space_before(str))
+        end
+        def get_begin_to
+          return space_before(@begin_to) if @begin_to
+          return space_before(@begin) 
+        end
+        def get_begin_from
+          return space_before(@begin_from) if @begin_from
+          return space_before(@begin) 
         end
         def get_middle_to
           return space_before(@middle_to) if @middle_to
@@ -44,6 +65,14 @@ module Ubuntu
         def get_middle_from
           return space_before(@middle_from) if @middle_from
           return space_before(@middle) 
+        end
+        def get_end_to
+          return space_before(@end_to) if @end_to
+          return space_before(@end)
+        end
+        def get_end_from
+          return space_before(@end_from) if @end_from
+          return space_before(@end) 
         end
         def output_ifname
           return space_before("-o #{@ifname}") if @ifname 
@@ -54,10 +83,10 @@ module Ubuntu
           return ""
         end
         def has_to? 
-          @middle || @middle_to || @end || @end_to 
+          @begin || @begin_to || @middle || @middle_to || @end || @end_to
         end
         def has_from? 
-          @middle || @middle_from || @end || @end_from 
+          @begin || @begin_from || @middle || @middle_from || @end || @end_from 
         end
         def factory!
           get_factory.create
@@ -74,10 +103,10 @@ module Ubuntu
         if to_list.empty? && from_list.empty?
 #puts "write_table=>o:#{to_from.output_only?}:#{to_from.output_ifname} i:#{to_from.input_only?}:#{to_from.input_ifname}"
           if to_from.output_only?
-            to_from.factory!.row("#{to_from.output_ifname}#{to_from.get_middle_to} -j #{rule.get_action}#{to_from.get_end_to}")
+            to_from.factory!.row("#{to_from.output_ifname}#{to_from.get_begin_from}#{to_from.get_middle_to} -j #{rule.get_action}#{to_from.get_end_to}")
           end
           if to_from.input_only?
-            to_from.factory!.row("#{to_from.input_ifname}#{to_from.get_middle_from} -j #{rule.get_action}#{to_from.get_end_to}")
+            to_from.factory!.row("#{to_from.input_ifname}#{to_from.get_begin_to}#{to_from.get_middle_from} -j #{rule.get_action}#{to_from.get_end_to}")
           end
         end
         if to_list.length > 1
@@ -99,10 +128,10 @@ module Ubuntu
         end
         from_list.each do |ip|
           if to_from.output_only?
-            to_from.factory!.row("#{to_from.output_ifname} -s #{ip.to_string}#{from_dst}#{to_from.get_middle_from} -j #{action_o}#{to_from.get_end_to}")
+            to_from.factory!.row("#{to_from.output_ifname}#{to_from.get_begin_from} -s #{ip.to_string}#{from_dst}#{to_from.get_middle_from} -j #{action_o}#{to_from.get_end_to}")
           end
           if to_from.input_only?
-            to_from.factory!.row("#{to_from.input_ifname}#{to_src} -d #{ip.to_string}#{to_from.get_middle_to} -j #{action_i}#{to_from.get_end_to}")
+            to_from.factory!.row("#{to_from.input_ifname}#{to_from.get_begin_to}#{to_src} -d #{ip.to_string}#{to_from.get_middle_to} -j #{action_i}#{to_from.get_end_to}")
           end
         end
       end
@@ -139,6 +168,16 @@ module Ubuntu
         end
       end
 
+      def self.protocol_loop(rule)
+        protocol_loop = []
+        if !rule.tcp? && !rule.udp?
+          protocol_loop << ''
+        else
+          protocol_loop << '-p tcp' if rule.tcp?
+          protocol_loop << '-p udp' if rule.udp?
+        end
+        protocol_loop
+      end
 
       def self.write_forward(forward, ifname, iface, writer)
         forward.rules.each do |rule|
@@ -151,13 +190,21 @@ puts "write_forward #{rule.inspect} #{rule.input_only?} #{rule.output_only?}"
             write_table("iptables", rule.clone.action("NFLOG"), to_from.factory(writer.ipv4.forward))
             write_table("ip6tables", rule.clone.action("NFLOG"), to_from.factory(writer.ipv6.forward))
           end
-          to_from = ToFrom.new.ifname(ifname).only_in_out(rule)
-          if rule.connection?
-            to_from.middle_from("-m state --state NEW,ESTABLISHED")
-            to_from.middle_to("-m state --state RELATED,ESTABLISHED")
+          protocol_loop(rule).each do |protocol|
+            to_from = ToFrom.new.ifname(ifname).only_in_out(rule)
+            to_from.push_begin_to(protocol)
+            to_from.push_begin_from(protocol)
+            if rule.get_ports && !rule.get_ports.empty?
+              to_from.push_middle_from("-dports #{rule.get_ports.join(",")}")
+              to_from.push_middle_to("-dports #{rule.get_ports.join(",")}")
+            end
+            if rule.connection?
+              to_from.push_middle_from("-m state --state NEW,ESTABLISHED")
+              to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
+            end
+            write_table("iptables", rule, to_from.factory(writer.ipv4.forward))
+            write_table("ip6tables", rule, to_from.factory(writer.ipv6.forward))
           end
-          write_table("iptables", rule, to_from.factory(writer.ipv4.forward))
-          write_table("ip6tables", rule, to_from.factory(writer.ipv6.forward))
         end
       end
 
