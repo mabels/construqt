@@ -208,6 +208,9 @@ puts "write_forward #{rule.inspect} #{rule.input_only?} #{rule.output_only?}"
         end
       end
 
+      def self.write_host(host, ifname, iface, writer)
+      end
+
       def self.create(host, ifname, iface)   
         throw 'interface must set' unless ifname
         writer = iface.host.result.delegate.etc_network_iptables
@@ -215,6 +218,7 @@ puts "write_forward #{rule.inspect} #{rule.input_only?} #{rule.output_only?}"
           firewall.get_raw && Firewall.write_raw(firewall.get_raw, ifname, iface, writer.raw) 
           firewall.get_nat && Firewall.write_nat(firewall.get_nat, ifname, iface, writer.nat) 
           firewall.get_forward && Firewall.write_forward(firewall.get_forward, ifname, iface, writer.filter) 
+          firewall.get_host && Firewall.write_host(firewall.get_host, ifname, iface, writer.filter) 
         end
       end
   end
