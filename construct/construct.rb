@@ -34,6 +34,7 @@ module Construct
 
   # ugly but i need the logger during initialization
   require 'construct/util.rb'
+  require 'construct/services.rb'
   require 'construct/networks.rb'
   require 'construct/addresses.rb'
   require 'construct/bgps.rb'

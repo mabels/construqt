@@ -16,6 +16,7 @@ module Firewalls
       @raw = Raw.new(self)
       @nat = Nat.new(self)
       @forward = Forward.new(self)
+      @host = Host.new(self)
     end
     def name
       @name
@@ -97,6 +98,7 @@ module Firewalls
       block.call(@mangle)
     end
 
+
     class Forward
       attr_reader :firewall, :rules
       def initialize(firewall)
@@ -139,14 +141,40 @@ module Firewalls
       block.call(@forward)    
     end
 
-    class Input
-      class All
+    class Host
+      attr_reader :firewall, :rules
+      def initialize(firewall)
+        @firewall = firewall
+        @rules = []
       end
-      @rules = []
-      def all(cfg)
-        @rules << All.new(cfg)
+      class HostEntry < Forward::ForwardEntry
+        include Util::Chainable
+        chainable_attr :from_host
+        chainable_attr :to_host
+      end
+      def add
+        entry = HostEntry.new
+        #puts "ForwardEntry: #{@firewall.name} #{entry.input_only?} #{entry.output_only?}"
+        @rules << entry
+        entry
       end
     end
+
+    def get_host
+      @host
+    end
+    def host(&block)
+      block.call(@host)    
+    end
+
+#    class Input
+#      class All
+#      end
+#      @rules = []
+#      def all(cfg)
+#        @rules << All.new(cfg)
+#      end
+#    end
   end
   def self.add(name, &block)
     throw "firewall with this name exists #{name}" if @firewalls[name]
