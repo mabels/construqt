@@ -84,8 +84,16 @@ class Interfaces
     dev.address.interface = host.interfaces[name] if dev.address
     dev
   end
-  def find(host, iface)
-    host.interfaces[iface]
+  def find(host_or_name, iface_name)
+    if host_or_name.kind_of?(String) 
+      host = @region.hosts.find(host_or_name)
+      throw "host not found #{host_or_name}" unless host
+    else
+      host = host_or_name
+    end
+    iface = host.interfaces[iface_name]
+    throw "interface not found for #{iface_name}:#{host.name}" unless iface
+    iface
   end
   def build_config(hosts = nil)
     (hosts||Hosts.get_hosts).each do |host|      

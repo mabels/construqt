@@ -107,6 +107,12 @@ module Flavour
       def network
         self.delegate.network
       end
+      def cable
+        self.delegate.cable
+      end
+      def cable=(a)
+        self.delegate.cable = a
+      end
     end
     class IpsecDelegate
       include Delegate
