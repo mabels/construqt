@@ -44,6 +44,7 @@ module Construct
   require 'construct/resource.rb'
   require 'construct/hosts.rb'
   require 'construct/interfaces.rb'
+  require 'construct/cables.rb'
   require 'construct/ipsecs.rb'
   require 'construct/firewalls.rb'
   require 'construct/templates.rb'

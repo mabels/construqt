@@ -11,9 +11,13 @@ module Construct
         @interfaces = Construct::Interfaces.new(self)
         @templates = Construct::Templates.new(self)
         @users = Construct::Users.new(self)
+        @cables = Construct::Cables.new(self)
       end
       def name
         @name
+      end
+      def cables
+        @cables
       end
       def hosts
         @hosts
