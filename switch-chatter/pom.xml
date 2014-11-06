@@ -15,7 +15,9 @@
 
 	<build>
 		<filters>
+		<!-- 
 			<filter>src/main/filters/default.properties</filter>
+			-->
 		</filters>
 
 		<testResources>
