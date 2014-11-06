@@ -89,18 +89,6 @@ module DlinkDgs15xx
 #spanning-tree mst hello-time 2
 #end
 
-  def self.root
-    OpenStruct.new :right => "0644", :owner => 'root'
-  end
-
-  def self.root_600
-    OpenStruct.new :right => "0600", :owner => 'root'
-  end
-
-  def self.root_755
-    OpenStruct.new :right => "0600", :owner => 'root'
-  end
-	
 	class Result
 		def initialize(host)
 			@host = host
