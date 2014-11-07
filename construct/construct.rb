@@ -55,6 +55,7 @@ module Construct
 
   require 'construct/flavour/unknown/flavour_unknown.rb'
   ['construct/flavour/dlink-dgs15xx/flavour_dlink_dgs15xx.rb',
+   'construct/flavour/hp-procurve/flavour_hp-procurve.rb',
    'construct/flavour/graphviz/graphviz.rb',
    'construct/flavour/mikrotik/flavour_mikrotik.rb',
    'construct/flavour/ubuntu/flavour_ubuntu.rb'].each do |fname|
