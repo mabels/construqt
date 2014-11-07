@@ -17,6 +17,7 @@ public class Main {
 
 		Future<List<String>> result = sc.createOutputConsumerAndFutureResult();
 		sc.skipSplashScreen();
+		sc.setupTerminal();
 		sc.retrieveConfig();
 		sc.exit();
 

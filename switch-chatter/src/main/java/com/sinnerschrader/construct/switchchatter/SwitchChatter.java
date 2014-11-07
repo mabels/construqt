@@ -78,6 +78,25 @@ public class SwitchChatter implements Closeable {
 		});
 	}
 
+	public void setupTerminal() {
+		PrintWriter pw = new PrintWriter(os, true);
+
+		outputConsumer.addStep(new CommandStep() {
+			@Override
+			public int performStep(StringBuffer input) {
+				pw.println("terminal length 1000");
+				return 0;
+			}
+		});
+
+		outputConsumer.addStep(new WaitForStep("#") {
+			@Override
+			public int performStep(StringBuffer input) {
+				return getConsumedTill();
+			}
+		});
+	}
+
 	public void retrieveConfig() {
 		PrintWriter pw = new PrintWriter(os, true);
 
