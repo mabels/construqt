@@ -97,6 +97,45 @@ public class SwitchChatter implements Closeable {
 		});
 	}
 
+	public void applyConfig(String config) {
+		PrintWriter pw = new PrintWriter(os, true);
+
+		outputConsumer.addStep(new CommandStep() {
+			@Override
+			public int performStep(StringBuffer input) {
+				pw.println("config");
+				return 0;
+			}
+		});
+
+		outputConsumer.addStep(new WaitForStep("#") {
+			@Override
+			public int performStep(StringBuffer input) {
+				return getConsumedTill();
+			}
+		});
+
+		outputConsumer.addStep(new CommandStep() {
+			@Override
+			public int performStep(StringBuffer input) {
+				pw.println(config);
+				return 0;
+			}
+		});
+		int lines = config.split("\\n").length;
+		for (int i = 0; i < lines; i++) {
+			outputConsumer.addStep(new CollectOutputStep("#"));
+		}
+		
+		outputConsumer.addStep(new CommandStep() {
+			@Override
+			public int performStep(StringBuffer input) {
+				pw.println("exit");
+				return 0;
+			}
+		});
+	}
+
 	public void retrieveConfig() {
 		PrintWriter pw = new PrintWriter(os, true);
 

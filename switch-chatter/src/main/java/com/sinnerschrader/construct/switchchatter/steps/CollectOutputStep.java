@@ -14,7 +14,7 @@ public class CollectOutputStep implements Step {
 	public int performStep(StringBuffer buffer) {
 		int index = buffer.indexOf(endMarker);
 		collected = buffer.substring(0, index);
-		return index;
+		return index + 1;
 	}
 
 	@Override
