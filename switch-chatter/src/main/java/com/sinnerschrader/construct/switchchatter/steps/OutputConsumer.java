@@ -13,6 +13,7 @@ import org.apache.commons.io.output.NullWriter;
 public class OutputConsumer extends java.io.FilterWriter {
 
 	PrintWriter consoleWriter = new PrintWriter(new NullWriter());
+	//PrintWriter consoleWriter = new PrintWriter(System.out);
 
 	private Queue<Step> plan = new LinkedList<Step>();
 
