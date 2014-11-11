@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 public class RetrieveConfig {
 	public static void main(String[] args) throws UnknownHostException,
 			IOException, InterruptedException {
-		Socket socket = new Socket("172.16.252.252", 23);
+		Socket socket = new Socket(args[0], Integer.parseInt(args[1]));
 
 		final SwitchChatter sc = new SwitchChatter(socket.getInputStream(),
 				socket.getOutputStream());

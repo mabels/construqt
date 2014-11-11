@@ -24,7 +24,7 @@ public class CollectOutputStep implements Step {
 
 	@Override
 	public String retrieveResult() {
-		return collected;
+		return collected.replaceAll("\r", "");
 	}
 
 }
