@@ -1,28 +1,34 @@
 package com.sinnerschrader.construct.switchchatter;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.IOUtils;
+
 public class ApplyConfig {
 	public static void main(String[] args) throws UnknownHostException,
 			IOException, InterruptedException {
-		Socket socket = new Socket("172.16.252.252", 23);
+		Socket socket = new Socket(args[0], Integer.parseInt(args[1]));
 
+		StringWriter sw = new StringWriter();
+		IOUtils.copy(System.in, sw);
+		
 		final SwitchChatter sc = new SwitchChatter(socket.getInputStream(),
 				socket.getOutputStream());
 
 		Future<List<String>> result = sc.createOutputConsumerAndFutureResult();
 		sc.skipSplashScreen();
 		sc.setupTerminal();
-		sc.applyConfig("vlan 5000000\nvlan 1000000\nexit\n");
+		sc.applyConfig(sw.toString());
 		sc.exit();
 
 		try {
-			List<String> results = result.get(3, TimeUnit.SECONDS);
+			List<String> results = result.get(60, TimeUnit.SECONDS);
 			int errors = 0;
 			for (String line : results) {
 				int errorMessage = line.indexOf("Invalid");
