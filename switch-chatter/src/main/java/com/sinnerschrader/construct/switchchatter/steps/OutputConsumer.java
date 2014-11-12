@@ -12,15 +12,16 @@ import org.apache.commons.io.output.NullWriter;
 
 public class OutputConsumer extends java.io.FilterWriter {
 
-	PrintWriter consoleWriter = new PrintWriter(new NullWriter());
-	//PrintWriter consoleWriter = new PrintWriter(System.out);
+	private PrintWriter consoleWriter;
 
 	private Queue<Step> plan = new LinkedList<Step>();
 
 	List<String> results = new ArrayList<String>();
 
-	public OutputConsumer() {
+	public OutputConsumer(boolean debugOnStdErr) {
 		super(new StringWriter());
+		consoleWriter = debugOnStdErr ? new PrintWriter(System.err, true)
+				: new PrintWriter(new NullWriter(), true);
 	}
 
 	public void addStep(Step step) {
@@ -35,9 +36,15 @@ public class OutputConsumer extends java.io.FilterWriter {
 		checkExpected();
 	}
 
-	private void checkExpected() {
+	private void checkExpected() throws IOException {
+		
+		consoleWriter.print("[check expected called]");
+		consoleWriter.flush();
+		out.flush();
 		StringBuffer buffer = ((StringWriter) out).getBuffer();
 		Step step = getCurrentStep();
+		consoleWriter.print("[check expected " + step + "]");
+		consoleWriter.flush();
 		if (step != null) {
 			boolean succeeded = step.check(buffer);
 

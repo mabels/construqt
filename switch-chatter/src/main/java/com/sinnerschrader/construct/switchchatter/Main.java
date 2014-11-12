@@ -6,9 +6,9 @@ import java.net.UnknownHostException;
 public class Main {
 	public static void main(String[] args) throws UnknownHostException,
 			IOException, InterruptedException {
-		if (args.length != 3) {
+		if (args.length < 3) {
 			System.err.println("usage:");
-			System.err.println("sc [HOST] [PORT] (read|write)");
+			System.err.println("sc [HOST] [PORT] (read|write) (|debug)");
 			System.exit(1);
 		}
 
