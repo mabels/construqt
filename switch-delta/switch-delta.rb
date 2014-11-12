@@ -2,7 +2,13 @@ class VlanConfig
   attr_accessor :vlanid,:name
   def initialize(vlanId)
     @vlanId=vlanId
-    @name=""
+  end
+  def compare(otherVlanConfig)
+    throw "other vlan config must have the same vlanid" unless otherVlanConfig.vlanid == @vlanid
+    if (@name != otherVlanConfig.name)
+      result = { "newName" => @name }
+    end
+    result
   end
 end
 
@@ -30,7 +36,13 @@ class PortConfig
   def addVlan(vlanId, tagged)
     @vlans[vlanId]={"tagged" => tagged}
   end
+  def validate
+    throw "orphaned port: port #{port} is not member of any vlan." if vlans.empty?
+    throw "multiple untagged vlans: port #{port} has more than one untagged vlan" if 1 < vlans.map{|vlanId,conf| conf["tagged"] ? 0 : 1}.inject(:+)
+  end
   def compare(otherPortConfig)
+    self.validate
+    otherPortConfig.validate
     throw "other port config must be on the same port name" unless otherPortConfig.port == @port
     result = {}
     result["addedVlans"] = @vlans.keys - otherPortConfig.vlans.keys
@@ -80,6 +92,15 @@ class SwitchConfig
     (otherSwitchConfig.bondConfigs.keys & @bondConfigs.keys).each do |changedChannel|
       result["bondChanges"][changedChannel] = @bondConfigs[changedChannel].compare(otherSwitchConfig.bondConfigs[changedChannel])
     end
+
+    result["addedVlans"] = @vlanConfigs.keys - otherSwitchConfig.vlanConfigs.keys
+    result["removedVlans"] = otherSwitchConfig.vlanConfigs.keys - @vlanConfigs.keys
+    result["vlanChanges"] = {}
+    (@vlanConfigs.keys & otherSwitchConfig.vlanConfigs.keys).each do |changedVlan|
+      vlanChanges = @vlanConfigs[changedVlan].compare(otherSwitchConfig.vlanConfigs[changedVlan])
+      result["vlanChanges"][changedVlan] = vlanChanges if vlanChanges
+    end
+
     result
   end
 end
@@ -97,8 +118,8 @@ class DeltaCommandRenderer
     end
 
     delta["bondChanges"].each do |channel,bondDelta|
-        config << "trunk " + bondDelta["addedPorts"].join(",") + " #{channel} Trunk" unless bondDelta["addedPorts"].length==0
-        config << "no trunk " + bondDelta["removedPorts"].join(",") unless bondDelta["removedPorts"].length==0
+      config << "trunk " + bondDelta["addedPorts"].join(",") + " #{channel} Trunk" unless bondDelta["addedPorts"].length==0
+      config << "no trunk " + bondDelta["removedPorts"].join(",") unless bondDelta["removedPorts"].length==0
     end
 
     delta["addedPorts"].each do |addedPort|
@@ -118,13 +139,6 @@ class DeltaCommandRenderer
     end
 
     delta["portChanges"].each do |changedPort,portDelta|
-      portDelta["removedVlans"].each do |vlanid|
-        config << "vlan " + vlanid.to_s
-        config << "   no " + (oldSwitchConfig.portConfigs[changedPort].vlans[vlanid]["tagged"] ? "tagged" : "untagged") + " " +
-          oldSwitchConfig.portConfigs[changedPort].port.to_s
-        config << "   exit"
-      end
-
       (portDelta["addedVlans"] + portDelta["newlytagged"] + portDelta["newlyuntagged"]).each do |vlanid|
         config << "vlan " + vlanid.to_s
         config << "   " + (newSwitchConfig.portConfigs[changedPort].vlans[vlanid]["tagged"] ? "tagged" : "untagged") + " " +
@@ -132,8 +146,33 @@ class DeltaCommandRenderer
         config << "   exit"
       end
     end
+
+    delta["removedVlans"].each do |vlanid|
+      config << "vlan " + vlanid.to_s
+      config << "   no " + (oldSwitchConfig.portConfigs[changedPort].vlans[vlanid]["tagged"] ? "tagged" : "untagged") + " " +
+        oldSwitchConfig.portConfigs[changedPort].port.to_s
+      config << "   exit"
+    end
+
+    delta["addedVlans"].each do |addedVlan|
+      config << "vlan " + addedVlan.to_s
+      config << "   name \"" + newSwitchConfig.vlanConfigs[addedVlan].name + "\""
+      config << "   exit"
+    end
+
+    delta["vlanChanges"].each do |addedVlan,vlanDelta|
+      config << "vlan " + addedVlan.to_s
+      config << "   name \"" + vlanDelta["newName"] + "\""
+      config << "   exit"
+    end
+
+    delta["removedVlans"].each do |removedVlan|
+      config << "no vlan " + addedVlan.to_s
+    end
+
     config.join("\n")
   end
+
 end
 
 class SwitchConfigParser
