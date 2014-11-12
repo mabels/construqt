@@ -18,7 +18,7 @@ module Construct
           port
         end
         def portNeighbors?(port1, port2)
-            port2.succ == port1 || port1.succ == port2
+          port2.succ == port1 || port1.succ == port2
         end
         def createRangeDefinition(ports)
           ranges=[]
@@ -40,6 +40,11 @@ module Construct
 
           config += @result["bonds"]
           config << "\n"
+
+          #calculate default vlan config (vlan 1)
+          usedPorts=@result["vlans"].inject([]){|sum, (k,v)| sum + (v["untagged"] + v["tagged"]).map{|port| stripEthernet(port)}}
+          unusedPorts = ("1".."48").to_a - usedPorts
+          unusedPorts.each {|port| self.addVlan(port, 1, nil, true)}
 
           @result["vlans"].each do |vlan_id, cfgs|
             config << "vlan " + vlan_id.to_s + "\n"
@@ -63,9 +68,9 @@ module Construct
             @result["vlans"] = {}
           end
           unless @result["vlans"][vlan_id]
-            @result["vlans"][vlan_id]={"name" => "", "tagged" => [], "untagged" => []}
+            @result["vlans"][vlan_id]={"name" => vlan_id == 1 ? "DEFAULT_VLAN" : "VLAN"+vlan_id.to_s, "tagged" => [], "untagged" => []}
           end
-          @result["vlans"][vlan_id]["name"] = name
+          @result["vlans"][vlan_id]["name"] = name if name
           @result["vlans"][vlan_id][untagged ? "untagged" : "tagged"] << port
         end
         def addBond(channel, devices)
