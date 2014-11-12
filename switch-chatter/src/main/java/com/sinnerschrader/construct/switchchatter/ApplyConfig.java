@@ -17,15 +17,19 @@ public class ApplyConfig {
 
 		StringWriter sw = new StringWriter();
 		IOUtils.copy(System.in, sw);
-		
+
 		final SwitchChatter sc = new SwitchChatter(socket.getInputStream(),
 				socket.getOutputStream());
 
-		Future<List<String>> result = sc.createOutputConsumerAndFutureResult();
+		//setup steps
+		sc.createOutputConsumer(args.length >= 4 && "debug".equals(args[3]));
 		sc.skipSplashScreen();
 		sc.setupTerminal();
 		sc.applyConfig(sw.toString());
 		sc.exit();
+		
+		//start procedure
+		Future<List<String>> result = sc.start();
 
 		try {
 			List<String> results = result.get(60, TimeUnit.SECONDS);

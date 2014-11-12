@@ -15,11 +15,15 @@ public class RetrieveConfig {
 		final SwitchChatter sc = new SwitchChatter(socket.getInputStream(),
 				socket.getOutputStream());
 
-		Future<List<String>> result = sc.createOutputConsumerAndFutureResult();
+		// setup steps
+		sc.createOutputConsumer(args.length >= 4 && "debug".equals(args[3]));
 		sc.skipSplashScreen();
 		sc.setupTerminal();
 		sc.retrieveConfig();
 		sc.exit();
+
+		// start procedure
+		Future<List<String>> result = sc.start();
 
 		try {
 			List<String> results = result.get(3, TimeUnit.SECONDS);

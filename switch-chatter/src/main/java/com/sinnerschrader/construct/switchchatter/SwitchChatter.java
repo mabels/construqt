@@ -40,9 +40,12 @@ public class SwitchChatter implements Closeable {
 		executorService.shutdown();
 	}
 
-	public Future<List<String>> createOutputConsumerAndFutureResult() {
-		this.outputConsumer = new OutputConsumer();
+	public void createOutputConsumer(boolean debug) {
+		this.outputConsumer = new OutputConsumer(debug);
 
+	}
+
+	public Future<List<String>> start() {
 		Callable<List<String>> readingThread = new Callable<List<String>>() {
 			@Override
 			public List<String> call() {
