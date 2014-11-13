@@ -10,25 +10,32 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.IOUtils;
 
+import com.sinnerschrader.construct.switchchatter.connectors.ConnectResult;
+import com.sinnerschrader.construct.switchchatter.connectors.Connector;
+import com.sinnerschrader.construct.switchchatter.connectors.ConnectorFactory;
+
 public class ApplyConfig {
-	public static void main(String[] args) throws UnknownHostException,
-			IOException, InterruptedException {
-		Socket socket = new Socket(args[0], Integer.parseInt(args[1]));
+	public static void main(String[] args) throws Exception {
+
+		Connector connector = ConnectorFactory
+				.createConnector(args[1], args[2]);
+		ConnectResult connect = connector.connect();
 
 		StringWriter sw = new StringWriter();
 		IOUtils.copy(System.in, sw);
 
-		final SwitchChatter sc = new SwitchChatter(socket.getInputStream(),
-				socket.getOutputStream());
+		final SwitchChatter sc = SwitchChatter.create(args[0],
+				connect.getInputStream(), connect.getOutputStream(),
+				args.length >= 5 && "debug".equals(args[4]));
 
-		//setup steps
-		sc.createOutputConsumer(args.length >= 4 && "debug".equals(args[3]));
+		// setup steps
 		sc.skipSplashScreen();
+		sc.enterManagementMode(args[3]);
 		sc.setupTerminal();
 		sc.applyConfig(sw.toString());
 		sc.exit();
-		
-		//start procedure
+
+		// start procedure
 		Future<List<String>> result = sc.start();
 
 		try {
@@ -51,7 +58,7 @@ public class ApplyConfig {
 			System.exit(2);
 		} finally {
 			sc.close();
-			socket.close();
+			connector.disconnect();
 		}
 	}
 }

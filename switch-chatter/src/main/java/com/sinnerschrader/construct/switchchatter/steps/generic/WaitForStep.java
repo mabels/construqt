@@ -1,4 +1,4 @@
-package com.sinnerschrader.construct.switchchatter.steps;
+package com.sinnerschrader.construct.switchchatter.steps.generic;
 
 public abstract class WaitForStep implements Step {
 	private String waitFor;

@@ -7,17 +7,24 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-public class RetrieveConfig {
-	public static void main(String[] args) throws UnknownHostException,
-			IOException, InterruptedException {
-		Socket socket = new Socket(args[0], Integer.parseInt(args[1]));
+import com.sinnerschrader.construct.switchchatter.connectors.ConnectResult;
+import com.sinnerschrader.construct.switchchatter.connectors.Connector;
+import com.sinnerschrader.construct.switchchatter.connectors.ConnectorFactory;
+import com.sinnerschrader.construct.switchchatter.steps.flavoured.Enable;
 
-		final SwitchChatter sc = new SwitchChatter(socket.getInputStream(),
-				socket.getOutputStream());
+public class RetrieveConfig {
+	public static void main(String[] args) throws Exception {
+		Connector connector = ConnectorFactory
+				.createConnector(args[1], args[2]);
+		ConnectResult connect = connector.connect();
+
+		final SwitchChatter sc = SwitchChatter.create(args[0],
+				connect.getInputStream(), connect.getOutputStream(),
+				args.length >= 5 && "debug".equals(args[4]));
 
 		// setup steps
-		sc.createOutputConsumer(args.length >= 4 && "debug".equals(args[3]));
 		sc.skipSplashScreen();
+		sc.enterManagementMode(args[3]);
 		sc.setupTerminal();
 		sc.retrieveConfig();
 		sc.exit();
@@ -36,7 +43,7 @@ public class RetrieveConfig {
 			System.exit(2);
 		} finally {
 			sc.close();
-			socket.close();
+			connector.disconnect();
 		}
 	}
 }
