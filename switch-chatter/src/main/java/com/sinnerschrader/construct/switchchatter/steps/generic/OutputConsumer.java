@@ -1,4 +1,4 @@
-package com.sinnerschrader.construct.switchchatter.steps;
+package com.sinnerschrader.construct.switchchatter.steps.generic;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -18,10 +18,13 @@ public class OutputConsumer extends java.io.FilterWriter {
 
 	List<String> results = new ArrayList<String>();
 
-	public OutputConsumer(boolean debugOnStdErr) {
+	private PrintWriter printWriter;
+
+	public OutputConsumer(boolean debugOnStdErr, PrintWriter printWriter) {
 		super(new StringWriter());
 		consoleWriter = debugOnStdErr ? new PrintWriter(System.err, true)
 				: new PrintWriter(new NullWriter(), true);
+		this.printWriter = printWriter;
 	}
 
 	public void addStep(Step step) {
@@ -37,7 +40,7 @@ public class OutputConsumer extends java.io.FilterWriter {
 	}
 
 	private void checkExpected() throws IOException {
-		
+
 		consoleWriter.print("[check expected called]");
 		consoleWriter.flush();
 		out.flush();
@@ -50,7 +53,7 @@ public class OutputConsumer extends java.io.FilterWriter {
 
 			if (succeeded) {
 				// call listener
-				int consumedTill = step.performStep(buffer);
+				int consumedTill = step.performStep(buffer, printWriter);
 
 				// retrieve result
 				String result = step.retrieveResult();

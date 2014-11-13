@@ -1,4 +1,6 @@
-package com.sinnerschrader.construct.switchchatter.steps;
+package com.sinnerschrader.construct.switchchatter.steps.generic;
+
+import java.io.PrintWriter;
 
 public class CollectOutputStep implements Step {
 
@@ -11,7 +13,7 @@ public class CollectOutputStep implements Step {
 	}
 
 	@Override
-	public int performStep(StringBuffer buffer) {
+	public int performStep(StringBuffer buffer, PrintWriter pw) {
 		int index = buffer.indexOf(endMarker);
 		collected = buffer.substring(0, index);
 		return index + 1;

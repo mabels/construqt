@@ -4,15 +4,15 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 
 public class Main {
-	public static void main(String[] args) throws UnknownHostException,
-			IOException, InterruptedException {
-		if (args.length < 3) {
+	public static void main(String[] args) throws Exception {
+		if (args.length < 4) {
 			System.err.println("usage:");
-			System.err.println("sc [HOST] [PORT] (read|write) (|debug)");
+			System.err
+					.println("sc [FLAVOUR] [CONNECT_STRING] [PASSWORD] (read|write) (|debug)");
 			System.exit(1);
 		}
 
-		if ("write".equals(args[2])) {
+		if ("write".equals(args[3])) {
 			ApplyConfig.main(args);
 		} else {
 			RetrieveConfig.main(args);
