@@ -16,9 +16,8 @@ import com.sinnerschrader.construct.switchchatter.connectors.ConnectorFactory;
 
 public class ApplyConfig {
 	public static void main(String[] args) throws Exception {
-
-		Connector connector = ConnectorFactory
-				.createConnector(args[1], args[2]);
+		String pass = args[2];
+		Connector connector = ConnectorFactory.createConnector(args[1], pass);
 		ConnectResult connect = connector.connect();
 
 		StringWriter sw = new StringWriter();
@@ -30,8 +29,8 @@ public class ApplyConfig {
 
 		// setup steps
 		sc.skipSplashScreen();
-		sc.enterManagementMode(args[3]);
-		sc.setupTerminal();
+		sc.enterManagementMode(pass);
+		sc.disablePaging();
 		sc.applyConfig(sw.toString());
 		sc.exit();
 

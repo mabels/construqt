@@ -4,9 +4,9 @@ import java.io.PrintWriter;
 
 import com.sinnerschrader.construct.switchchatter.steps.generic.WaitForStep;
 
-public class DlinkPasswordPrompt extends WaitForStep {
+public class PasswordPrompt extends WaitForStep {
 
-	public DlinkPasswordPrompt() {
+	public PasswordPrompt() {
 		super("Password:");
 	}
 

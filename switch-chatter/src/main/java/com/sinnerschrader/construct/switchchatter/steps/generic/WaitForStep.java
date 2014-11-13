@@ -1,6 +1,10 @@
 package com.sinnerschrader.construct.switchchatter.steps.generic;
 
-public abstract class WaitForStep implements Step {
+import java.io.PrintWriter;
+
+import org.apache.commons.lang.StringEscapeUtils;
+
+public class WaitForStep implements Step {
 	private String waitFor;
 
 	private int consumedTill = -1;
@@ -32,6 +36,17 @@ public abstract class WaitForStep implements Step {
 	@Override
 	public String retrieveResult() {
 		return null;
+	}
+
+	@Override
+	public int performStep(StringBuffer input, PrintWriter pw) {
+		return getConsumedTill();
+	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + "( waiting for "
+				+ StringEscapeUtils.escapeJava(waitFor) + ")";
 	}
 
 }

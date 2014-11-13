@@ -89,7 +89,7 @@ public abstract class SwitchChatter implements Closeable {
 
 	protected abstract void enterManagementMode(String password);
 
-	protected abstract void setupTerminal();
+	protected abstract void disablePaging();
 
 	protected abstract void applyConfig(String config);
 
