@@ -14,8 +14,8 @@ import com.sinnerschrader.construct.switchchatter.steps.flavoured.Enable;
 
 public class RetrieveConfig {
 	public static void main(String[] args) throws Exception {
-		Connector connector = ConnectorFactory
-				.createConnector(args[1], args[2]);
+		String pass = args[2];
+		Connector connector = ConnectorFactory.createConnector(args[1], pass);
 		ConnectResult connect = connector.connect();
 
 		final SwitchChatter sc = SwitchChatter.create(args[0],
@@ -24,8 +24,8 @@ public class RetrieveConfig {
 
 		// setup steps
 		sc.skipSplashScreen();
-		sc.enterManagementMode(args[3]);
-		sc.setupTerminal();
+		sc.enterManagementMode(pass);
+		sc.disablePaging();
 		sc.retrieveConfig();
 		sc.exit();
 
@@ -33,7 +33,7 @@ public class RetrieveConfig {
 		Future<List<String>> result = sc.start();
 
 		try {
-			List<String> results = result.get(3, TimeUnit.SECONDS);
+			List<String> results = result.get(60, TimeUnit.SECONDS);
 
 			String config = results.get(0);
 			System.out.println(config);

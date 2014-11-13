@@ -5,7 +5,7 @@ import java.io.PrintWriter;
 import com.sinnerschrader.construct.switchchatter.SwitchChatter;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.ConfigureTerminal;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.Exit;
-import com.sinnerschrader.construct.switchchatter.steps.flavoured.HpSetupTerminal;
+import com.sinnerschrader.construct.switchchatter.steps.flavoured.HpDisablePaging;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.HpSkipSplashScreen;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.ShowRunningConfig;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.WaitForPrompt;
@@ -26,8 +26,8 @@ public class HpProcurveSwitchChatter extends SwitchChatter {
 		// switch is automatically in management mode
 	}
 
-	public void setupTerminal() {
-		getOutputConsumer().addStep(new HpSetupTerminal());
+	public void disablePaging() {
+		getOutputConsumer().addStep(new HpDisablePaging());
 		getOutputConsumer().addStep(new WaitForPrompt());
 	}
 
@@ -46,7 +46,7 @@ public class HpProcurveSwitchChatter extends SwitchChatter {
 					return 0;
 				}
 			});
-			getOutputConsumer().addStep(new CollectOutputStep("#"));
+			getOutputConsumer().addStep(new CollectOutputStep(false, "#"));
 		}
 
 		getOutputConsumer().addStep(new Exit());
@@ -63,7 +63,8 @@ public class HpProcurveSwitchChatter extends SwitchChatter {
 					}
 				});
 
-		getOutputConsumer().addStep(new CollectOutputStep("" + (char) 27));
+		getOutputConsumer().addStep(
+				new CollectOutputStep(false, "" + (char) 27));
 	}
 
 	public void exit() {

@@ -5,24 +5,20 @@ import com.sinnerschrader.construct.switchchatter.steps.flavoured.ShowRunningCon
 import com.sinnerschrader.construct.switchchatter.steps.generic.CollectOutputStep;
 import com.sinnerschrader.construct.switchchatter.steps.generic.WaitForStep;
 
-public class DlinkDgs15xxSwitchChatter extends GenericCiscoFlavourSwitchChatter {
-
+public class DellN40xxSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 	public void applyConfig(String config) {
 		throw new RuntimeException("Not implemented.");
 	}
 
 	public void retrieveConfig() {
 		getOutputConsumer().addStep(new ShowRunningConfig());
-		getOutputConsumer().addStep(new WaitForStep("Current configuration :"));
-		getOutputConsumer().addStep(new WaitForStep("\n\r"));
-		getOutputConsumer().addStep(new WaitForStep("\n\r"));
-		getOutputConsumer().addStep(
-				new CollectOutputStep(false, "End of configuration file", "#",
-						"\n\r", "\n\r"));
-	}
-	
-	public void exit() {
-		getOutputConsumer().addStep(new Exit());
+		getOutputConsumer().addStep(new WaitForStep("!Current Configuration:"));
+		getOutputConsumer().addStep(new WaitForStep("\n"));
+		getOutputConsumer().addStep(new CollectOutputStep(false, "\n\r"));
 	}
 
+	public void exit() {
+		getOutputConsumer().addStep(new Exit());
+		getOutputConsumer().addStep(new Exit());
+	}
 }
