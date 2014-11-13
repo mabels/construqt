@@ -1,9 +1,6 @@
 package com.sinnerschrader.construct.switchchatter;
 
-import java.io.IOException;
 import java.io.StringWriter;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;

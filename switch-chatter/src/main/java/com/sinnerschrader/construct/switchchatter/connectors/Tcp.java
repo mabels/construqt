@@ -1,6 +1,5 @@
 package com.sinnerschrader.construct.switchchatter.connectors;
 
-import java.io.IOException;
 import java.net.Socket;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
