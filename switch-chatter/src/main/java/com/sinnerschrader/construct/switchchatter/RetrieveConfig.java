@@ -1,8 +1,5 @@
 package com.sinnerschrader.construct.switchchatter;
 
-import java.io.IOException;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -10,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import com.sinnerschrader.construct.switchchatter.connectors.ConnectResult;
 import com.sinnerschrader.construct.switchchatter.connectors.Connector;
 import com.sinnerschrader.construct.switchchatter.connectors.ConnectorFactory;
-import com.sinnerschrader.construct.switchchatter.steps.flavoured.Enable;
 
 public class RetrieveConfig {
 	public static void main(String[] args) throws Exception {

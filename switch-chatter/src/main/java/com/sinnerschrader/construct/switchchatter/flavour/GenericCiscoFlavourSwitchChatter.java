@@ -5,13 +5,9 @@ import java.io.PrintWriter;
 import com.sinnerschrader.construct.switchchatter.SwitchChatter;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.CiscoDisablePaging;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.Enable;
-import com.sinnerschrader.construct.switchchatter.steps.flavoured.Exit;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.PasswordPrompt;
-import com.sinnerschrader.construct.switchchatter.steps.flavoured.ShowRunningConfig;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.WaitForPrompt;
-import com.sinnerschrader.construct.switchchatter.steps.generic.CollectOutputStep;
 import com.sinnerschrader.construct.switchchatter.steps.generic.CommandStep;
-import com.sinnerschrader.construct.switchchatter.steps.generic.WaitForStep;
 
 public abstract class GenericCiscoFlavourSwitchChatter extends SwitchChatter {
 	
