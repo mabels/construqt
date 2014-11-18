@@ -217,6 +217,7 @@ UML
         end,
         "Ipsec" => lambda do |node|
           [node.reference.left, node.reference.right].each do |iface|
+            binding.pry unless @tree[iface.interface.ident]
             node.connect @tree[iface.interface.ident] 
           end
         end,

@@ -62,9 +62,12 @@ module Flavour
   end
 
   @aspects = []
-  def self.add_aspect(aspects)
-    Construct.logger.info "setup aspect #{aspects.name}"
-    @aspects << aspects
+  def self.add_aspect(aspect)
+    Construct.logger.info "setup aspect #{aspect.name}"
+    @aspects << aspect
+  end
+  def self.del_aspect(aspect)
+    @aspects = @aspects.select{|a| a.name != aspect }
   end
   def self.call_aspects(type, *args)
     @aspects.each { |aspect| aspect.call(type, *args) }

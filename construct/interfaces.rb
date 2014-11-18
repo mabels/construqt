@@ -130,7 +130,7 @@ class Interfaces
       ["host", "device", "vlan", "bond", "bridge", "vrrp", "gre", "bgp", "opvn", "ipsec"].each do |key|
         next unless by_clazz[key]
         by_clazz[key].each do |interface|
-          Construct.logger.debug "Interface:build_config:#{interface.name}:#{interface.class.name}:#{interface.ident}"
+          #Construct.logger.debug "Interface:build_config:#{interface.name}:#{interface.class.name}:#{interface.ident}"
           interface.build_config(host, interface)
         end
       end
