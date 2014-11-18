@@ -2,15 +2,19 @@ module Construct
 module Flavour
 module Ubuntu
 
-  module Vrrp
-    def self.prefix(host, path)
+  class Vrrp < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+    def prefix(host, path)
       ret =<<GLOBAL
 global_defs {
   lvs_id #{host.name}
 }
 GLOBAL
     end
-    def self.build_config(host, iface)
+    def build_config(host, iface)
+      iface = iface.delegate
       my_iface = iface.interfaces.find{|iface| iface.host == host }
       ret = []
       ret << "vrrp_instance #{iface.name} {"

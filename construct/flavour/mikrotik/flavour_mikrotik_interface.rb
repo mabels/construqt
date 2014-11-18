@@ -57,10 +57,10 @@ module Mikrotik
         self.host.result.delegate.render_mikrotik(default, cfg, "ip", "route")
       end
     end
-    def build_config(host, unused)
+    def build_config(host, iface)
       name = File.join(host.name, "interface", "device")
       ret = []
-      ret += self.clazz.build_config(host, self)  
+      ret += self.clazz.build_config(host, iface||self)  
       if !(self.address.nil? || self.address.ips.empty?)
         #binding.pry
         self.address.ips.each do |ip|

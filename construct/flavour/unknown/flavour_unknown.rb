@@ -8,54 +8,69 @@ module Unknown
   end
   Construct::Flavour.add(self)		
 
-	module Device
-		def self.header(path)
-		end
-		def self.build_config(host, iface)
-		end
-	end
-	module Vrrp
-		def self.header(path)
-		end
-		def self.build_config(host, iface)
-		end
-	end
-	module Bond
-    def self.header(path)
+	class Device < OpenStruct
+    def initialize(cfg)
+      super(cfg)
     end
-		def self.build_config(host, iface)
+		def build_config(host, iface)
 		end
 	end
-	module Vlan
-		def self.build_config(host, iface)
+	class Vrrp < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+		def build_config(host, iface)
 		end
 	end
-	module Bridge
-		def self.build_config(host, iface)
+	class Bond < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+		def build_config(host, iface)
 		end
 	end
-	module Host
-		def self.header(path)
+	class Vlan < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+		def build_config(host, iface)
 		end
-		def self.build_config(host, unused)
+	end
+	class Bridge < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+		def build_config(host, iface)
+		end
+	end
+	class Host < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+		def build_config(host, unused)
 		end
 	end
   
-	module Gre
-		def self.header(path)
-		end
-		def self.build_config(host, iface)
+	class Gre < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+		def build_config(host, iface)
     end
 	end
 
-	module Opvn
-		def self.header(path)
-		end
-		def self.build_config(host, iface)
+	class Opvn < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+		def build_config(host, iface)
     end
 	end
 
-  module Template
+  class Template
+    def initialize(cfg)
+      super(cfg)
+    end
   end
 
   class Result
@@ -64,13 +79,14 @@ module Unknown
     def commit
     end
   end
-	class Interface < OpenStruct
-		def initialize(cfg)
-      super(cfg)
-		end
-		def build_config(host, unused)
-		end
-	end
+#	class Interface < OpenStruct
+#		def initialize(cfg)
+#      super(cfg)
+#		end
+#		def build_config(host, iface)
+#      self.clazz.build_config(host, iface||self)
+#		end
+#	end
 
 	def self.clazz(name)
 		ret = {
@@ -84,13 +100,22 @@ module Unknown
 			"bond" => Bond, 
 			"vlan" => Vlan,
 			"result" => Result
-		       }[name]
+    }[name]
 		throw "class not found #{name}" unless ret
 		ret
 	end
+
+  def self.create_host(name, cfg)
+    cfg['name'] = name
+    cfg['result'] = nil
+    host = Host.new(cfg)
+    host.result = Result.new(host)
+    host
+  end
+
 	def self.create_interface(name, cfg)
-		cfg['name'] = name
-		Interface.new(cfg)
+    cfg['name'] = name
+    clazz(cfg['clazz']).new(cfg)
 	end
 
   class Bgp < OpenStruct

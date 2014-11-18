@@ -2,11 +2,15 @@
 module Construct
 module Flavour
 module Ubuntu
-  module Opvn
-    def self.prefix(hosts, path)
+  class Opvn < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+    def prefix(hosts, path)
       nil
     end
-    def self.build_config(host, iface)
+    def build_config(host, opvn)
+      iface = opvn.delegate
       local = iface.ipv6 ? host.id.first_ipv6.first_ipv6 : host.id.first_ipv4.first_ipv4
       return unless local
       push_routes = ""

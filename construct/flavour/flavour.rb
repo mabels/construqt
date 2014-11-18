@@ -31,15 +31,21 @@ module Flavour
         block.call(key, clazz)
       end
     end
-    def clazz(name)
-      delegate = self.clazzes[name]
-      throw "class not found #{name}" unless delegate
-      flavour = @flavour.clazz(name)
-      throw "class not found #{name}" unless flavour
-      delegate.new(flavour)
+#    def clazz(name)
+#      delegate = self.clazzes[name]
+#      throw "class not found #{name}" unless delegate
+#      flavour = @flavour.clazz(name)
+#      throw "class not found #{name}" unless flavour
+#      delegate.new(flavour)
+#    end
+    def create_host(name, cfg)
+      HostDelegate.new(@flavour.create_host(name, cfg))
     end
+#    def create_result(name, cfg)
+#      HostDelegate.new(@flavour.create_host(name, cfg))
+#    end
     def create_interface(dev_name, cfg)
-      InterfaceDelegate.new(@flavour.create_interface(dev_name, cfg))
+      clazzes[cfg['clazz']].new(@flavour.create_interface(dev_name, cfg))
     end
     def create_bgp(cfg)
       BgpDelegate.new(@flavour.create_bgp(cfg))
@@ -57,6 +63,7 @@ module Flavour
 
   @aspects = []
   def self.add_aspect(aspects)
+    Construct.logger.info "setup aspect #{aspects.name}"
     @aspects << aspects
   end
   def self.call_aspects(type, *args)

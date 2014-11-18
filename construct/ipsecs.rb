@@ -9,6 +9,9 @@ module Ipsecs
       self.left.build_config(nil, nil)  
       self.right.build_config(nil, nil)  
     end
+    def ident
+      self.left.ident
+    end
   end
   @ipsecs = {}
   def self.add_connection(cfg, id, to_id, iname)

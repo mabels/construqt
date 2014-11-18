@@ -213,7 +213,7 @@ puts "write_forward #{rule.inspect} #{rule.input_only?} #{rule.output_only?}"
 
       def self.create(host, ifname, iface)   
         throw 'interface must set' unless ifname
-        writer = iface.host.result.delegate.etc_network_iptables
+        writer = iface.host.result.etc_network_iptables
         iface.firewalls && iface.firewalls.each do |firewall|
           firewall.get_raw && Firewall.write_raw(firewall.get_raw, ifname, iface, writer.raw) 
           firewall.get_nat && Firewall.write_nat(firewall.get_nat, ifname, iface, writer.nat) 
