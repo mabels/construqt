@@ -256,7 +256,7 @@ BLOCK
       @entries[iface.name] ||= Entry.new(@result, iface)
     end
     def commit
-      #binding.pry
+#      binding.pry
       out = [@entries['lo']]
       clazzes = {}
       @entries.values.each do |entry|
@@ -265,7 +265,7 @@ BLOCK
         clazzes[name] ||= []
         clazzes[name] << entry
       end
-      ['Device', 'Bond', 'Vlan', 'Bridge', 'Gre'].each do |type|
+      ['device', 'bond', 'vlan', 'bridge', 'gre'].each do |type|
         out += (clazzes[type]||[]).select{|i| !out.first || i.name != out.first.name }.sort{|a,b| a.name<=>b.name }
       end
       out.flatten.compact.inject("") { |r, entry| r += entry.commit; r }

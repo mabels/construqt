@@ -62,6 +62,7 @@ module Ubuntu
       self.class.build_config(host, iface)
     end
     def self.build_config(host, iface)
+#      binding.pry
       writer = host.result.etc_network_interfaces.get(iface)
       writer.header.protocol(EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
 #binding.pry #unless iface.delegate
