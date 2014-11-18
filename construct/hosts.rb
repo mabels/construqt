@@ -14,11 +14,6 @@ class Hosts
   def region
     @region
   end
-  def commit(hosts = nil)
-    (hosts || @hosts.values).each { |h| h.commit }
-    Flavour.call_aspects("completed", nil, nil)
-  end
-
   def set_default_password(pwd)
       @default_pwd = pwd
   end
@@ -52,27 +47,24 @@ class Hosts
 #		cfg['clazz'] = cfg['flavour'].clazz("host")
     throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
     cfg['region'] = @region
-    @hosts[name] = cfg['flavour'].create_host(name, cfg)
-    #@hosts[name].result = cfg['flavour'].create_result(@hosts[name])
-#    @hosts[name].clazz.attach = @hosts[name]
-
-    block.call(@hosts[name])
-    throw "host attribute id is required" unless @hosts[name].id.kind_of? HostId
-    throw "host attribute configip is required" unless @hosts[name].configip.kind_of? HostId
+    host = cfg['flavour'].create_host(name, cfg)
+    block.call(host)
+    throw "host attribute id is required" unless host.id.kind_of? HostId
+    throw "host attribute configip is required" unless host.configip.kind_of? HostId
   
-    if (@hosts[name].id.first_ipv4! && !@hosts[name].id.first_ipv4!.dhcpv4?) ||
-       (@hosts[name].id.first_ipv6! && !@hosts[name].id.first_ipv6!.dhcpv6?)
+    if (host.id.first_ipv4! && !host.id.first_ipv4!.dhcpv4?) ||
+       (host.id.first_ipv6! && !host.id.first_ipv6!.dhcpv6?)
       adr = nil
-      if @hosts[name].id.first_ipv4!
-        adr = (adr || region.network.addresses.create).add_ip(@hosts[name].id.first_ipv4.first_ipv4.to_s).set_name(@hosts[name].name)
+      if host.id.first_ipv4!
+        adr = (adr || region.network.addresses.create).add_ip(host.id.first_ipv4.first_ipv4.to_s).set_name(host.name)
       end
-      if @hosts[name].id.first_ipv6!
-        adr = (adr || region.network.addresses.create).add_ip(@hosts[name].id.first_ipv6.first_ipv6.to_s).set_name(@hosts[name].name)
+      if host.id.first_ipv6!
+        adr = (adr || region.network.addresses.create).add_ip(host.id.first_ipv6.first_ipv6.to_s).set_name(host.name)
       end
       adr = region.network.addresses.create unless adr
-      adr.host = @hosts[name] if adr
+      adr.host = host if adr
     end
-		@hosts[name]
+		@hosts[name] = host
 	end
 	def find(name) 
 		ret = @hosts[name]
@@ -84,5 +76,10 @@ class Hosts
       host.build_config(host, nil)	
 		end
 	end
+  def commit(hosts = nil)
+    (hosts || @hosts.values).each { |h| h.commit }
+    Flavour.call_aspects("completed", nil, nil)
+  end
+
 end
 end
