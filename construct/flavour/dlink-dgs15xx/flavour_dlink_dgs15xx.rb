@@ -119,15 +119,19 @@ module DlinkDgs15xx
       #Util.write_str(out.join("\n"), @name, "deployer.sh")
 		end
 	end
-	class Interface < OpenStruct
+#	class Interface < OpenStruct
+#		def initialize(cfg)
+#			super(cfg)
+#		end
+#		def build_config(host, my)
+#			self.clazz.build_config(host, my||self)
+#		end
+#	end
+	class Device < OpenStruct
 		def initialize(cfg)
 			super(cfg)
 		end
-		def build_config(host, unused)
-			self.clazz.build_config(host, self)
-		end
-	end
-	module Device
+
 		def self.header(path)
 			"# this is a generated file do not edit!!!!!"
 		end
@@ -166,20 +170,27 @@ module DlinkDgs15xx
       end
     end
 
-		def self.build_config(host, iface)
+    def build_config(host, iface)
+      self.class.build_config(host, iface)
+    end
+
+    def self.build_config(host, iface)
         host.result.add(<<DEVICE, "device") 
 interface #{iface.name}
    flowcontrol off
-   max-rcv-frame-size #{iface.mtu || 9126}
+   max-rcv-frame-size #{iface.delegate.mtu || 9126}
    snmp trap link-status
    switchport mode trunk
-   #{untagged(iface.template)}
-   #{tagged(iface.template)}
+   #{untagged(iface.delegate.template)}
+   #{tagged(iface.delegate.template)}
 end
 DEVICE
 		end
 	end
-	module Vrrp
+	class Vrrp < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
 		def self.header(path)
 			"# this is a generated file do not edit!!!!!"
 		end
@@ -187,10 +198,13 @@ DEVICE
 			"# this is a generated file do not edit!!!!!"
 		end
 	end
-	module Bond
+	class Bond < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
     def self.header(path)
     end
-		def self.build_config(host, iface)
+		def build_config(host, iface)
       throw "need template" unless iface.template
       throw "need intefaces" unless iface.interfaces
       iface.interfaces.each do |i|
@@ -203,8 +217,11 @@ BOND
 		  Device.build_config(host, iface)
 		end
 	end
-	module Vlan
-		def self.build_config(host, iface)
+	class Vlan < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+		def build_config(host, iface)
       vlan = iface.name.split('.')
       throw "vlan name not valid if.# => #{iface.name}" if vlan.length != 2 || 
                                                         !vlan.first.match(/^[0-9a-zA-Z]+$/) || 
@@ -213,16 +230,22 @@ BOND
 		  Device.build_config(host, iface)
 		end
 	end
-	module Bridge
-		def self.build_config(host, iface)
+	class Bridge
+    def initialize(cfg)
+      super(cfg)
+    end
+		def build_config(host, iface)
 			throw "not implemented bridge on ubuntu"
 		end
 	end
-	module Host
+	class Host < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
 		def self.header(path)
 			"# this is a generated file do not edit!!!!!"
 		end
-		def self.build_config(host, unused)
+		def build_config(host, unused)
       host.interfaces.values.each do |interface|
         #puts "interface=>#{host.name} #{interface.name}"
       end
@@ -263,12 +286,24 @@ BOND
 			"vlan" => Vlan,
 			"result" => Result
 		       }[name]
+    #binding.pry if name == "device"
 		throw "class not found #{name}" unless ret
 		ret
 	end
+
+  def self.create_host(name, cfg)
+    cfg['name'] = name
+    cfg['result'] = nil
+    host = Host.new(cfg)
+    host.result = Result.new(host)
+    host
+  end
+
 	def self.create_interface(name, cfg)
-		cfg['name'] = name
-		Interface.new(cfg)
+    cfg['name'] = name
+    clazz(cfg['clazz']).new(cfg)
+		#cfg['name'] = name
+		#Interface.new(cfg)
 	end
 
 	def self.create_bgp(cfg)

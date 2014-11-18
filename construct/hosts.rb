@@ -26,49 +26,35 @@ class Hosts
     @default_pwd
   end
 
-  class Host < OpenStruct
-    def initialize(cfg)
-      super(cfg)
-      @users = cfg['users'] || cfg['region'].users
-    end
-    def users
-      @users
-    end
-    def commit
-      clazzes = {}
-      self.flavour.pre_clazzes { |key, clazz| clazzes[key] = self.flavour.clazz(key) }
-      clazzes.each do |key, clazz| 
-        Flavour.call_aspects("#{key}.header", self, nil)
-        clazz.header(self)
-      end
-      Flavour.call_aspects("host.commit", self, nil)
-      self.result.commit
-      clazzes.each do |key, clazz| 
-        Flavour.call_aspects("#{key}.footer", self, nil)
-        clazz.footer(self)
-      end
-    end
-  end
   def get_hosts()
     @hosts.values
   end
+  def del(name)
+    host = @hosts[name]
+    return nil unless host
+    @hosts.delete(name)
+    host
+  end
   def add(name, cfg, &block)
+#binding.pry
     throw "id is not allowed" if cfg['id']
     throw "configip is not allowed" if cfg['configip']
+    throw "Host with the name #{name} exisits" if @hosts[name]
     cfg['interfaces'] = {}
     cfg['id'] ||=nil
     cfg['configip'] ||=nil
 
     cfg['name'] = name
     cfg['dns_server'] ||= false
-    cfg['result'] =nil
-    cfg['shadow'] ||=nil
+    cfg['result'] = nil
+    cfg['shadow'] ||= nil
     cfg['flavour'] = Flavour.find(cfg['flavour'] || 'ubuntu')
+#		cfg['clazz'] = cfg['flavour'].clazz("host")
     throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
     cfg['region'] = @region
-    throw "Host with the name #{name} exisits" if @hosts[name]
-    @hosts[name] = Host.new(cfg)
-    @hosts[name].result = @hosts[name].flavour.clazz('result').create(@hosts[name])
+    @hosts[name] = cfg['flavour'].create_host(name, cfg)
+    #@hosts[name].result = cfg['flavour'].create_result(@hosts[name])
+#    @hosts[name].clazz.attach = @hosts[name]
 
     block.call(@hosts[name])
     throw "host attribute id is required" unless @hosts[name].id.kind_of? HostId
@@ -95,7 +81,7 @@ class Hosts
 	end
 	def build_config(hosts = nil)
     (hosts || @hosts.values).each do |host|
-			host.flavour.clazz('host').build_config(host, nil)	
+      host.build_config(host, nil)	
 		end
 	end
 end

@@ -42,7 +42,7 @@ module Mikrotik
         "routing-table"=>Schema.identifier.default(nil),
         "comment"=>Schema.string.default(nil)
       }
-      self.host.result.delegate.render_mikrotik(default, cfg, "routing", "bgp", "instance")
+      self.host.result.render_mikrotik(default, cfg, "routing", "bgp", "instance")
     end
     def write_peer(host)
       as_s = {}
@@ -96,7 +96,7 @@ module Mikrotik
         "use-bfd" => Schema.boolean.default(true),
         "comment" => Schema.string.null
       }
-      self.host.result.delegate.render_mikrotik(default, cfg, "routing", "bgp", "peer")
+      self.host.result.render_mikrotik(default, cfg, "routing", "bgp", "peer")
     end
 
     def build_config(unused, unused1)

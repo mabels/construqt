@@ -20,7 +20,7 @@ $TTL 86400      ; 1 day
 )
 OUT
         region.hosts.get_hosts.each do |host|
-              next unless host.dns_server
+          next unless host.delegate.dns_server
               plain_adr = region.network.addresses.all.find{|i| i.name == host.name }
               unless plain_adr
                 plain_adr = host.id.first_ipv6
