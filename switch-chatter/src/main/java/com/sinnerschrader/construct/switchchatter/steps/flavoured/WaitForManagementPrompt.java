@@ -4,10 +4,10 @@ import java.io.PrintWriter;
 
 import com.sinnerschrader.construct.switchchatter.steps.generic.WaitForStep;
 
-public class WaitForPrompt extends WaitForStep {
+public class WaitForManagementPrompt extends WaitForStep {
 
-	public WaitForPrompt() {
-		super(">");
+	public WaitForManagementPrompt() {
+		super("#");
 	}
 
 	@Override

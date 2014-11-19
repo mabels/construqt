@@ -11,7 +11,5 @@ public abstract class CommandStep implements Step {
 	public String retrieveResult() {
 		return null;
 	}
-	
-	 
 
 }

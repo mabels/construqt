@@ -8,7 +8,7 @@ import com.sinnerschrader.construct.switchchatter.steps.flavoured.Exit;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.HpDisablePaging;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.HpSkipSplashScreen;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.ShowRunningConfig;
-import com.sinnerschrader.construct.switchchatter.steps.flavoured.WaitForPrompt;
+import com.sinnerschrader.construct.switchchatter.steps.flavoured.WaitForManagementPrompt;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.Yes;
 import com.sinnerschrader.construct.switchchatter.steps.generic.CollectOutputStep;
 import com.sinnerschrader.construct.switchchatter.steps.generic.CommandStep;
@@ -18,7 +18,7 @@ public class HpProcurveSwitchChatter extends SwitchChatter {
 
 	public void skipSplashScreen() {
 		getOutputConsumer().addStep(new HpSkipSplashScreen());
-		getOutputConsumer().addStep(new WaitForPrompt());
+		getOutputConsumer().addStep(new WaitForManagementPrompt());
 	}
 
 	@Override
@@ -28,12 +28,12 @@ public class HpProcurveSwitchChatter extends SwitchChatter {
 
 	public void disablePaging() {
 		getOutputConsumer().addStep(new HpDisablePaging());
-		getOutputConsumer().addStep(new WaitForPrompt());
+		getOutputConsumer().addStep(new WaitForManagementPrompt());
 	}
 
 	public void applyConfig(String config) {
 		getOutputConsumer().addStep(new ConfigureTerminal());
-		getOutputConsumer().addStep(new WaitForPrompt());
+		getOutputConsumer().addStep(new WaitForManagementPrompt());
 
 		String[] lines = config.split("\\n");
 		for (int i = 0; i < lines.length; i++) {

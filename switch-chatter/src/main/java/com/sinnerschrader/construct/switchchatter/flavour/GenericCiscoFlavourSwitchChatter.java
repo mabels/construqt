@@ -5,8 +5,9 @@ import java.io.PrintWriter;
 import com.sinnerschrader.construct.switchchatter.SwitchChatter;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.CiscoDisablePaging;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.Enable;
+import com.sinnerschrader.construct.switchchatter.steps.flavoured.EnterInput;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.PasswordPrompt;
-import com.sinnerschrader.construct.switchchatter.steps.flavoured.WaitForPrompt;
+import com.sinnerschrader.construct.switchchatter.steps.flavoured.WaitForManagementPrompt;
 import com.sinnerschrader.construct.switchchatter.steps.generic.CommandStep;
 
 public abstract class GenericCiscoFlavourSwitchChatter extends SwitchChatter {
@@ -19,20 +20,13 @@ public abstract class GenericCiscoFlavourSwitchChatter extends SwitchChatter {
 	protected void enterManagementMode(String password) {
 		getOutputConsumer().addStep(new Enable());
 		getOutputConsumer().addStep(new PasswordPrompt());
-		getOutputConsumer().addStep(new CommandStep() {
-			@Override
-			public int performStep(StringBuffer inputBuffer,
-					PrintWriter terminalWriter) {
-				terminalWriter.println(password);
-				return 0;
-			}
-		});
-		getOutputConsumer().addStep(new WaitForPrompt());
+		getOutputConsumer().addStep(new EnterInput(password));
+		getOutputConsumer().addStep(new WaitForManagementPrompt());
 	}
 
 	public void disablePaging() {
 		getOutputConsumer().addStep(new CiscoDisablePaging());
-		getOutputConsumer().addStep(new WaitForPrompt());
+		getOutputConsumer().addStep(new WaitForManagementPrompt());
 	}
 
 

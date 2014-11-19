@@ -13,7 +13,7 @@ public class Tcp implements Connector {
 	private Socket socket;
 
 	public Tcp(String connectString, String pass) {
-		Pattern p = Pattern.compile("tcp://([^:]*):?(\\d*)");
+		Pattern p = Pattern.compile("tcp://(.*):(\\d*)");
 		Matcher m = p.matcher(connectString);
 		if (m.matches()) {
 			this.host = m.group(1);
