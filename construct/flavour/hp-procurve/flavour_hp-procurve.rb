@@ -86,7 +86,10 @@ module Construct
         end
       end
 
-      class Host
+      class Host < OpenStruct
+        def initialize(cfg)
+          super(cfg)
+        end
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
@@ -94,7 +97,10 @@ module Construct
         end
       end
 
-      class Device
+      class Device  < OpenStruct
+        def initialize(cfg)
+          super(cfg)
+        end
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
@@ -107,7 +113,10 @@ module Construct
         end
       end
 
-      class Bond
+      class Bond  < OpenStruct
+        def initialize(cfg)
+          super(cfg)
+        end
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
@@ -117,21 +126,15 @@ module Construct
         end
       end
 
-      class NotImplemented
+      class NotImplemented < OpenStruct
+        def initialize(cfg)
+          super(cfg)
+        end
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
         def self.build_config(host, iface)
           throw "not implemented on this flavour"
-        end
-      end
-
-      class Interface < OpenStruct
-        def initialize(cfg)
-          super(cfg)
-        end
-        def build_config(host, unused)
-          self.clazz.build_config(host, self)
         end
       end
 
@@ -152,9 +155,19 @@ module Construct
         ret
       end
 
+      def self.create_host(name, cfg)
+        cfg['name'] = name
+        cfg['result'] = nil
+        host = Host.new(cfg)
+        host.result = Result.new(host)
+        host
+      end
+
       def self.create_interface(name, cfg)
         cfg['name'] = name
-        Interface.new(cfg)
+        clazz(cfg['clazz']).new(cfg)
+        #cfg['name'] = name
+        #Interface.new(cfg)
       end
 
     end

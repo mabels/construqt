@@ -17,15 +17,17 @@ class DlinkSwitchConfigParser < SwitchConfigParser
       elsif (vlanContext && line =~ /^\s*(exit|end)\s*$/)
         #puts "Leaving vlan context #{vlanContext}"
         vlanContext = nil
-      elsif (line =~ /^\s*interface ethernet  ?([\d\/]+)\s*$/)
-        portContext = $1
+      elsif (line =~ /^\s*interface ethernet  ?(#{PORTS_DEF_REGEXP})\s*$/)
+        portContext = resolvePortDefinition($1)
         #puts "Entering port context #{portContext}"
       elsif (portContext && line =~ /^\s*switchport trunk native vlan (\d+)\s*$/)
         #puts "Adding port #{portContext} to untagged vlan #{$1}"
-        sc.getOrCreatePortConfig(portContext).addVlan($1, false)
+        portContext.each { |port| sc.getOrCreatePortConfig(port).addVlan($1, false) }
       elsif (portContext && line =~ /^\s*switchport trunk allowed vlan (#{PORTS_DEF_REGEXP})\s*$/)
         #puts "Adding port #{portContext} to tagged vlans #{$1}"
-        sc.getOrCreatePortConfig(portContext).addVlan(resolvePortDefinition($1), true)
+        resolvePortDefinition($1).each do |vlanid|
+          portContext.each { |port| sc.getOrCreatePortConfig(port).addVlan(vlanid, true) }
+        end
       elsif (portContext && line =~ /^\s*(exit|end)\s*$/)
         #puts "Leaving port context #{portContext}"
         portContext = nil
@@ -63,12 +65,14 @@ class DlinkDeltaCommandRenderer < DeltaCommandRenderer
     end
 
     (delta["addedPorts"] + delta["portChanges"].keys).each do |addedPort|
-      config << "interface ethernet " + addedPort
-      newSwitchConfig.portConfigs[addedPort].vlans.each do |vlanid,conf|
-        mode = conf["tagged"] ? "allowed" : "native"
-        config << "   switchport trunk #{mode} vlan " + vlanid.to_s
+      allowedVlans=newSwitchConfig.portConfigs[addedPort].vlans.select { |vlanid,conf| conf["tagged"] }.keys
+      nativeVlans=newSwitchConfig.portConfigs[addedPort].vlans.select { |vlanid,conf| conf["untagged"] }.keys
+      if (allowedVlans.length + nativeVlans.length > 0)
+        config << "interface ethernet " + addedPort
+        config << "   switchport trunk allowed vlan " + allowedVlans.join(",") if allowedVlans.length > 0
+        config << "   switchport trunk native vlan " + nativeVlans.join(",") if nativeVlans.length > 0
+        config << "   exit"
       end
-      config << "   exit"
     end
 
     delta["removedPorts"].each do |removedPort|
