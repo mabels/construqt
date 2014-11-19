@@ -8,7 +8,7 @@ module Networks
       @domain = "construct.org"
       @contact = "soa@construct.org"
       @addresses = Construct::Addresses.new(self)
-      @services = Construct::Services
+      @services = Construct::Services.new
       @dns_resolver = nil
     end
     def services

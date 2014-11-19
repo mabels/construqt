@@ -325,8 +325,11 @@ module Flavour
           delegate.add(*args)
         end
         def commit
+#          Flavour.call_aspects("#{key}.header", host, nil)
+#          clazz.header(host)
+          
+          binding.pry
           delegate.commit
-#          #binding.pry
 #          host = delegate.host
 #          clazzes = {}
 #          host.flavour.pre_clazzes { |key, clazz| clazzes[key] = host.flavour.clazz(key) }
