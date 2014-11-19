@@ -66,7 +66,7 @@ module Plantuml
     node.out_links.each do |n|
 #      Construct.logger.debug("planuml.draw:Out:#{node.reference.name} #{node.ident}:#{n.ident}")
       unless simple(node.reference.class) == "Host"
-        out << "#{node.ident} o-- #{n.ident}" 
+        out << "#{node.ident} .. #{n.ident}" 
       end
       connect(n, out, path + [n.reference.name])
     end
@@ -81,10 +81,10 @@ module Plantuml
     return if node.drawed!
     n_kind = simple(node.reference.class)
     if n_kind == "Host"
-      out << ident(path, "package \"#{node.ident}\" {")
+      out << ident(path, "package \"#{node.ident}\" <<Node>> #DDDDDD {")
     else
       out << ident(path, <<UML) 
-object #{node.ident} {
+object #{node.ident} <<#{n_kind}>> {
   #{render_object_address(node.reference)}
 }
 UML
@@ -357,7 +357,35 @@ UML
         end
 
         File.open("cfgs/world.puml", 'w') do |file| 
-          file.puts("@startuml") 
+          file.puts(<<UML)
+@startuml
+skinparam object {
+  ArrowColor<<Gre>> MediumOrchid 
+  BackgroundColor<<Gre>> MediumOrchid 
+  ArrowColor<<Bgp>> MediumSeaGreen 
+  BackgroundColor<<Bgp>> MediumSeaGreen 
+  ArrowColor<<Ipsec>> LightSkyBlue 
+  BackgroundColor<<Ipsec>> LightSkyBlue 
+  ArrowColor<<Vrrp>> OrangeRed 
+  BackgroundColor<<Vrrp>> OrangeRed 
+  ArrowColor<<Device>> YellowGreen
+  BackgroundColor<<Device>> YellowGreen
+  ArrowColor<<Bond>> Orange
+  BackgroundColor<<Bond>> Orange
+  ArrowColor<<Vlan>> Yellow
+  BackgroundColor<<Vlan>> Yellow
+  ArrowColor<<Bridge>> Pink
+  BackgroundColor<<Bridge>> Pink
+}
+skinparam stereotypeBackgroundColor<<Gre>> MediumOrchid 
+skinparam stereotypeBackgroundColor<<Bgp>> MediumSeaGreen 
+skinparam stereotypeBackgroundColor<<Ipsec>> LightSkyBlue 
+skinparam stereotypeBackgroundColor<<Vrrp>> OrangeRed 
+skinparam stereotypeBackgroundColor<<Device>> YellowGreen
+skinparam stereotypeBackgroundColor<<Bond>> Orange
+skinparam stereotypeBackgroundColor<<Vlan>> Yellow
+skinparam stereotypeBackgroundColor<<Bridge>> Pink
+UML
           file.write(out.join("\n") + "\n")
           file.puts("@enduml") 
         end
