@@ -1,8 +1,16 @@
 package com.sinnerschrader.construct.switchchatter.flavour;
 
+import java.io.PrintWriter;
+
+import com.sinnerschrader.construct.switchchatter.steps.flavoured.Enable;
+import com.sinnerschrader.construct.switchchatter.steps.flavoured.EnterInput;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.Exit;
+import com.sinnerschrader.construct.switchchatter.steps.flavoured.PasswordPrompt;
 import com.sinnerschrader.construct.switchchatter.steps.flavoured.ShowRunningConfig;
+import com.sinnerschrader.construct.switchchatter.steps.flavoured.WaitForManagementPrompt;
+import com.sinnerschrader.construct.switchchatter.steps.flavoured.WaitForPrompt;
 import com.sinnerschrader.construct.switchchatter.steps.generic.CollectOutputStep;
+import com.sinnerschrader.construct.switchchatter.steps.generic.CommandStep;
 import com.sinnerschrader.construct.switchchatter.steps.generic.WaitForStep;
 
 public class DlinkDgs15xxSwitchChatter extends GenericCiscoFlavourSwitchChatter {
@@ -11,6 +19,13 @@ public class DlinkDgs15xxSwitchChatter extends GenericCiscoFlavourSwitchChatter 
 		throw new RuntimeException("Not implemented.");
 	}
 
+	@Override
+	protected void enterManagementMode(String password) {		
+		getOutputConsumer().addStep(new PasswordPrompt());
+		getOutputConsumer().addStep(new EnterInput(password));
+		super.enterManagementMode(password);		
+	}
+	
 	public void retrieveConfig() {
 		getOutputConsumer().addStep(new ShowRunningConfig());
 		getOutputConsumer().addStep(new WaitForStep("Current configuration :"));
