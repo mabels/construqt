@@ -31,6 +31,12 @@ GLOBAL
         ret << "    #{ip.to_string} dev #{my_iface.name}"
       end
       ret << "  }"
+      if iface.services && !iface.services.empty?
+        ret << "  notify /etc/network/vrrp.#{iface.name}.sh"
+        iface.services.each do |service|
+          Services.get_renderer(service).vrrp(host, my_iface.name, iface)
+        end
+      end
       ret << "}"
       host.result.add(self, ret.join("\n"), Construct::Resource::Rights::ROOT_0644, "etc", "keepalived", "keepalived.conf")
     end

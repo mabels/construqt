@@ -9,12 +9,21 @@ module Services
     end
     def prefix(unused, unused2)
     end
-    def render(host, ifname, iface, writer)
-      binding.pry
+    def up(ifname)
+      "/usr/sbin/dhcrelay -pf /run/dhcrelay-v4.#{ifname}.pid -d -q -4 -i #{ifname} #{@service.servers.map{|i| i.to_s}.join(' ')}"
+    end
+    def down(ifname)
+      "kill `/run/dhcrelay-v4.#{ifname}.pid`"
+    end
+    def vrrp(host, ifname, iface)
+      host.result.etc_network_vrrp(iface.name).add_master(up(ifname)).add_backup(down(ifname))
+    end
+    def interfaces(host, ifname, iface, writer)
+      #binding.pry
       return unless iface.address && iface.address.first_ipv4
       return if @service.servers.empty?
-      writer.lines.up("/usr/sbin/dhcrelay -pf /run/dhcrelay-v4.#{ifname}.pid -d -q -4 -i #{ifname} #{@service.servers.map{|i| i.to_s}.join(' ')}")
-      writer.lines.down("kill `/run/dhcrelay-v4.#{ifname}.pid`")
+      writer.lines.up(up(ifname))
+      writer.lines.down(down(ifname))
     end
   end
   class DhcpV6Relay
@@ -23,11 +32,20 @@ module Services
     end
     def prefix(unused, unused2)
     end
-    def render(host, ifname, iface, writer)
+    def up(ifname)
+      "/usr/sbin/dhcrelay -pf /run/dhcrelay-v6.#{ifname}.pid -d -q -6 -i #{ifname} #{@service.servers.map{|i| i.to_s}.join(' ')}"
+    end
+    def down(ifname)
+      "kill `/run/dhcrelay-v6.#{ifname}.pid`"
+    end
+    def vrrp(host, ifname, iface)
+      host.result.etc_network_vrrp(iface.name).add_master(up(ifname)).add_backup(down(ifname))
+    end
+    def interfaces(host, ifname, iface, writer)
       return unless iface.address && iface.address.first_ipv6
       return if @service.servers.empty?
-      writer.lines.up("/usr/sbin/dhcrelay -pf /run/dhcrelay-v6.#{ifname}.pid -d -q -6 -i #{ifname} #{@service.servers.map{|i| i.to_s}.join(' ')}")
-      writer.lines.down("kill `/run/dhcrelay-v6.#{ifname}.pid`")
+      writer.lines.up(up(ifname))
+      writer.lines.down(down(ifname))
     end
   end
   class Radvd
@@ -36,11 +54,21 @@ module Services
     end
     def prefix(unused, unused2)
     end
-    def render(host, ifname, iface, writer)
+    def up(ifname)
+      "/usr/sbin/radvd -C /etc/network/radvd.#{ifname}.conf -p /run/radvd.#{ifname}.pid"
+    end
+    def down(ifname)
+      "kill `cat /run/radvd.#{ifname}.pid`"
+    end
+    def vrrp(host, ifname, iface)
+      #binding.pry
+      host.result.etc_network_vrrp(iface.name).add_master(up(ifname)).add_backup(down(ifname))
+    end
+    def interfaces(host, ifname, iface, writer)
 #      binding.pry
       return unless iface.address && iface.address.first_ipv6
-      writer.lines.up("/usr/sbin/radvd -C /etc/network/radvd.#{ifname}.conf -p /run/radvd.#{ifname}.pid")
-      writer.lines.down("kill `cat /run/radvd.#{ifname}.pid`")
+      writer.lines.up(up(ifname))
+      writer.lines.down(down(ifname))
       host.result.add(self, <<RADV, Construct::Resource::Rights::ROOT_0644, "etc", "network", "radvd.#{ifname}.conf")
 interface #{ifname}
 {
