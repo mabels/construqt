@@ -52,8 +52,8 @@ module Plantuml
     def connect(node)
       throw "node not set" unless node
       unless self.in_links?(node)
-        @out_links[node.object_id] = node 
-        node.in_links = self 
+        @out_links[node.object_id] = node
+        node.in_links = self
       end
     end
   end
@@ -66,7 +66,7 @@ module Plantuml
     node.out_links.each do |n|
 #      Construct.logger.debug("planuml.draw:Out:#{node.reference.name} #{node.ident}:#{n.ident}")
       unless simple(node.reference.class) == "Host"
-        out << "#{node.ident} .. #{n.ident}" 
+        out << "#{node.ident} .. #{n.ident}"
       end
       connect(n, out, path + [n.reference.name])
     end
@@ -83,7 +83,7 @@ module Plantuml
     if n_kind == "Host"
       out << ident(path, "package \"#{node.ident}\" <<Node>> #DDDDDD {")
     else
-      out << ident(path, <<UML) 
+      out << ident(path, <<UML)
 object #{node.ident} <<#{n_kind}>> {
   #{render_object_address(node.reference)}
 }
@@ -97,14 +97,14 @@ UML
     end
   end
 
-  def self.render_object_address(iface) 
+  def self.render_object_address(iface)
     out = []
     out << "name = \"#{iface.name}\""
     if iface.address
       [iface.address.v4s, iface.address.v6s].each do |ips|
         next unless ips.first
         prefix = ips.first.ipv4? ? "ipv4" : "ipv6"
-        ips.each_with_index do |ip, idx| 
+        ips.each_with_index do |ip, idx|
           out << "#{prefix}(#{idx}) = #{ip.to_string}"
         end
       end
@@ -160,8 +160,8 @@ UML
 
     method = factory[type]
     if method
-      obj = method.call(type, host, *args) 
-      if obj 
+      obj = method.call(type, host, *args)
+      if obj
         ident = obj.ident
         throw "A object needs a ident #{obj.class.name}" unless ident
         @tree[ident] ||= Node.new(obj)
@@ -174,28 +174,28 @@ UML
     #binding.pry
     @tree.each do |ident,node|
       #binding.pry
-#      Construct.logger.debug "Planuml:build_tree=#{node.reference.class.name}=#{simple(node.reference.class)}" 
-      { 
+#      Construct.logger.debug "Planuml:build_tree=#{node.reference.class.name}=#{simple(node.reference.class)}"
+      {
         "Vrrp" => lambda do |node|
           node.reference.delegate.interfaces.each do |i|
-            node.connect @tree[i.ident] 
+            node.connect @tree[i.ident]
           end
         end,
         "Vlan" => lambda do |node|
           node.reference.interfaces.each do |vlan_iface|
-            node.connect @tree[vlan_iface.ident] 
+            node.connect @tree[vlan_iface.ident]
           end
         end,
         "Bond" => lambda do |node|
           node.reference.delegate.interfaces.each do |i|
             #Construct.logger.debug(">>>>>>>>>> BOND -> #{simple(i.clazz)} #{i.name}")
-            node.connect @tree[i.ident] 
+            node.connect @tree[i.ident]
           end
         end,
         "Bridge" => lambda do |node|
           node.reference.delegate.interfaces.each do |i|
             #binding.pry
-            node.connect @tree[i.ident] 
+            node.connect @tree[i.ident]
           end
         end,
         "Device" => lambda do |node|
@@ -211,26 +211,26 @@ UML
         "Gre" => lambda do |node|
 #          binding.pry
           interface = node.reference.delegate.local.interface
-          node.connect @tree[interface.ident] 
+          node.connect @tree[interface.ident]
         end,
         "Opvn" => lambda do |node|
         end,
         "Ipsec" => lambda do |node|
           [node.reference.left, node.reference.right].each do |iface|
             binding.pry unless @tree[iface.interface.ident]
-            node.connect @tree[iface.interface.ident] 
+            node.connect @tree[iface.interface.ident]
           end
         end,
         "Bgp" => lambda do |node|
 #binding.pry
           [node.reference.left, node.reference.right].each do |iface|
-            node.connect @tree[iface.my.ident] 
+            node.connect @tree[iface.my.ident]
           end
         end,
         "Host" => lambda do |node|
           node.reference.interfaces.values.each do |iface|
             next if simple(iface.class) == "Vrrp"
-#Construct.logger.debug "Planuml:Host:#{iface.name}:#{iface.ident}:#{simple(iface.class)}" 
+#Construct.logger.debug "Planuml:Host:#{iface.name}:#{iface.ident}:#{simple(iface.class)}"
            node.connect @tree[iface.ident]
           end
         end
@@ -241,7 +241,7 @@ UML
 #X         #[i"Vrrp","Vlan", "Bridge", "Bond", "Device"].each do |clazz|
 #X         tree.keys.each do |clazz|
 #X            (tree[clazz]||{}).values.each do |node|
-#X              next unless node.in_links.empty? 
+#X              next unless node.in_links.empty?
 #X              next if node.drawed?
 #X              draw(node, out, [node.reference.name])
 #X            end
@@ -253,7 +253,7 @@ UML
   def self.call(type, *args)
     add_node_factory(type, *args)
     factory = {
-#X       "host.commit" => lambda do |type, host, *args| 
+#X       "host.commit" => lambda do |type, host, *args|
 #X         #binding.pry
 #X         # vrrp -> bridge -> vlan -> bond -> device
 #X         # vrrp1
@@ -262,12 +262,12 @@ UML
 #X         # device0 device1
 #X         #
 #X         out = []
-#X         
+#X
 #X         out << <<UML
 #X package "#{host.name}" {
 #X UML
 #X         tree = {}
-#X         host.interfaces.each do |k,v| 
+#X         host.interfaces.each do |k,v|
 #X           key = simple(v.clazz)
 #X           tree[key] ||= {}
 #X           ident = "#{clean_name(host.name)}_#{key}_#{clean_name(v.name)}"
@@ -278,31 +278,31 @@ UML
 #X }
 #X UML
 #X         end
-#X 
+#X
 #X         tree.each do |k,ifaces|
 #X #          puts "K=>#{k}"
 #X           ifaces.each do |name, iface|
 #X #            binding.pry if k == 'Bond'
-#X             { 
+#X             {
 #X               "Vrrp" => lambda do |iface|
 #X                 interface = iface.interface.delegate.interface
-#X                 iface.connect tree[simple(interface.clazz)][interface.name] 
+#X                 iface.connect tree[simple(interface.clazz)][interface.name]
 #X               end,
 #X               "Vlan" => lambda do |iface|
 #X                 iface.interface.interfaces.each do |vlan_iface|
-#X                   iface.connect tree[simple(vlan_iface.clazz)][vlan_iface.name] 
+#X                   iface.connect tree[simple(vlan_iface.clazz)][vlan_iface.name]
 #X                 end
 #X               end,
 #X               "Bond" => lambda do |iface|
 #X                 iface.interface.delegate.interfaces.each do |i|
 #X                   #Construct.logger.debug(">>>>>>>>>> BOND -> #{simple(i.clazz)} #{i.name}")
-#X                   iface.connect tree[simple(i.clazz)][i.name] 
+#X                   iface.connect tree[simple(i.clazz)][i.name]
 #X                 end
 #X               end,
 #X               "Bridge" => lambda do |iface|
 #X                 iface.interface.delegate.interfaces.each do |i|
 #X                   #binding.pry
-#X                   iface.connect tree[simple(i.clazz)][i.name] 
+#X                   iface.connect tree[simple(i.clazz)][i.name]
 #X                 end
 #X               end,
 #X               "Device" => lambda do |iface|
@@ -315,19 +315,19 @@ UML
 #X               "Gre" => lambda do |iface|
 #X                 interface = iface.interface.delegate.local.interface
 #X            #     puts ">>>>>>GRE #{interface.host.name} #{interface.name}"
-#X                 iface.connect tree[simple(interface.clazz)][interface.name] 
+#X                 iface.connect tree[simple(interface.clazz)][interface.name]
 #X               end,
 #X               "Opvn" => lambda do |iface|
 #X               end
 #X             }[k].call(iface)
 #X           end
 #X         end
-#X 
+#X
 #X         #render_matrixs = []
 #X         #[i"Vrrp","Vlan", "Bridge", "Bond", "Device"].each do |clazz|
 #X         tree.keys.each do |clazz|
 #X            (tree[clazz]||{}).values.each do |node|
-#X              next unless node.in_links.empty? 
+#X              next unless node.in_links.empty?
 #X              next if node.drawed?
 #X              draw(node, out, [node.reference.name])
 #X            end
@@ -347,27 +347,27 @@ UML
 #UML
 #        end
         @tree.values.each do |node|
-#           next unless node.in_links.empty? 
+#           next unless node.in_links.empty?
           draw(node, out, [node.reference.name], ['Vrrp', 'Ipsec', 'Bgp'].include?(simple(node.reference.class)))
         end
         @tree.values.each { |n| n.drawed = false }
         @tree.values.each do |node|
-#           next unless node.in_links.empty? 
+#           next unless node.in_links.empty?
            connect(node, out, [node.reference.name])
         end
 
-        File.open("cfgs/world.puml", 'w') do |file| 
+        File.open("cfgs/world.puml", 'w') do |file|
           file.puts(<<UML)
 @startuml
 skinparam object {
-  ArrowColor<<Gre>> MediumOrchid 
-  BackgroundColor<<Gre>> MediumOrchid 
-  ArrowColor<<Bgp>> MediumSeaGreen 
-  BackgroundColor<<Bgp>> MediumSeaGreen 
-  ArrowColor<<Ipsec>> LightSkyBlue 
-  BackgroundColor<<Ipsec>> LightSkyBlue 
-  ArrowColor<<Vrrp>> OrangeRed 
-  BackgroundColor<<Vrrp>> OrangeRed 
+  ArrowColor<<Gre>> MediumOrchid
+  BackgroundColor<<Gre>> MediumOrchid
+  ArrowColor<<Bgp>> MediumSeaGreen
+  BackgroundColor<<Bgp>> MediumSeaGreen
+  ArrowColor<<Ipsec>> LightSkyBlue
+  BackgroundColor<<Ipsec>> LightSkyBlue
+  ArrowColor<<Vrrp>> OrangeRed
+  BackgroundColor<<Vrrp>> OrangeRed
   ArrowColor<<Device>> YellowGreen
   BackgroundColor<<Device>> YellowGreen
   ArrowColor<<Bond>> Orange
@@ -377,23 +377,29 @@ skinparam object {
   ArrowColor<<Bridge>> Pink
   BackgroundColor<<Bridge>> Pink
 }
-skinparam stereotypeBackgroundColor<<Gre>> MediumOrchid 
-skinparam stereotypeBackgroundColor<<Bgp>> MediumSeaGreen 
-skinparam stereotypeBackgroundColor<<Ipsec>> LightSkyBlue 
-skinparam stereotypeBackgroundColor<<Vrrp>> OrangeRed 
+skinparam stereotypeBackgroundColor<<Gre>> MediumOrchid
+skinparam stereotypeBackgroundColor<<Bgp>> MediumSeaGreen
+skinparam stereotypeBackgroundColor<<Ipsec>> LightSkyBlue
+skinparam stereotypeBackgroundColor<<Vrrp>> OrangeRed
 skinparam stereotypeBackgroundColor<<Device>> YellowGreen
 skinparam stereotypeBackgroundColor<<Bond>> Orange
 skinparam stereotypeBackgroundColor<<Vlan>> Yellow
 skinparam stereotypeBackgroundColor<<Bridge>> Pink
 UML
           file.write(out.join("\n") + "\n")
-          file.puts("@enduml") 
+          file.puts("@enduml")
         end
-        system("java -jar ~/Downloads/plantuml.jar -Djava.awt.headless=true -graphvizdot $HOME/macosx/bin/dot -tsvg cfgs/world.puml")
+        if File.exists?("/usr/bin/dot")
+          dot = "/usr/bin/dot"
+        else
+          dot = "$HOME/macosx/bin/dot"
+        end
+        system("java -jar ~/Downloads/plantuml.jar -Djava.awt.headless=true -graphvizdot #{dot} -tsvg cfgs/world.puml")
+
       end
     }
-    Construct.logger.debug "Planuml:#{type}" 
-    action = factory[type] 
+    Construct.logger.debug "Planuml:#{type}"
+    action = factory[type]
     if action
       action.call(type, *args)
     end
