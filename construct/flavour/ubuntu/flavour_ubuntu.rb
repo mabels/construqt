@@ -64,7 +64,7 @@ module Ubuntu
     end
     def self.add_services(host, ifname, iface, writer) 
       iface.services && iface.services.each do |service|
-        Services.get_renderer(service).render(host, ifname, iface, writer)
+        Services.get_renderer(service).interfaces(host, ifname, iface, writer)
       end
     end
     def self.build_config(host, iface)

@@ -271,12 +271,74 @@ BLOCK
       out.flatten.compact.inject("") { |r, entry| r += entry.commit; r }
     end
   end
+  class EtcNetworkVrrp
+    def initialize
+      @interfaces = {}
+    end
+    class Vrrp
+      def initialize
+        @masters = []
+        @backups = []
+      end
+      def add_master(master)
+        @masters << master
+        self
+      end
+      def add_backup(backup)
+        @backups << backup
+        self
+      end
+      def render(lines)
+        lines.map do |line|
+            "                  #{line}"
+        end.join("\n")
+      end
+      def render_masters
+        render(@masters)
+      end
+      def render_backups
+        render(@backups)
+      end 
+    end
+    def get(ifname)
+      @interfaces[ifname] ||= Vrrp.new
+    end
+    def prefix(unused, unused2)
+    end
+    def commit(result)
+      @interfaces.keys.sort.each do |ifname|
+        vrrp = @interfaces[ifname]
+        result.add(self, <<VRRP, Construct::Resource::Rights::ROOT_0755, "etc", "network", "vrrp.#{ifname}.sh")
+#!/bin/bash
+
+TYPE=$1
+NAME=$2
+STATE=$3
+
+case $STATE in
+        "MASTER") 
+#{vrrp.render_masters}
+                  exit 0
+                  ;;
+        "BACKUP")
+#{vrrp.render_backups}
+                  exit 0
+                  ;;
+        *)        echo "unknown state"
+                  exit 1
+                  ;;
+esac
+VRRP
+      end
+    end
+  end
 
   class Result
     def initialize(host)
       @host = host
       @etc_network_interfaces = EtcNetworkInterfaces.new(self)
       @etc_network_iptables = EtcNetworkIptables.new
+      @etc_network_vrrp = EtcNetworkVrrp.new
       @result = {}
     end
     def etc_network_interfaces
@@ -284,6 +346,9 @@ BLOCK
     end
     def etc_network_iptables
       @etc_network_iptables
+    end
+    def etc_network_vrrp(ifname)
+      @etc_network_vrrp.get(ifname)
     end
     def host
       @host
@@ -329,6 +394,7 @@ BLOCK
       add(EtcNetworkIptables, etc_network_iptables.commitv4, Construct::Resource::Rights::ROOT_0644, "etc", "network", "iptables.cfg")
       add(EtcNetworkIptables, etc_network_iptables.commitv6, Construct::Resource::Rights::ROOT_0644, "etc", "network", "ip6tables.cfg")
       add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construct::Resource::Rights::ROOT_0644, "etc", "network", "interfaces")
+      @etc_network_vrrp.commit(self)
     out = [<<BASH]
 #!/bin/bash
 hostname=`hostname`
