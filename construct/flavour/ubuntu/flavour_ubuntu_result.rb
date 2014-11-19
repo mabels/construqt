@@ -170,7 +170,7 @@ module Ubuntu
         def commit
           return "" if @entry.skip_interfaces?
           out = <<OUT
-# #{@entry.iface.clazz.name}
+# #{@entry.iface.clazz}
 #{@auto ? "auto #{get_interface_name}" : ""}
 iface #{get_interface_name} #{@protocol.to_s} #{@mode.to_s}
   up   /bin/bash /etc/network/#{get_interface_name}-up.iface
@@ -199,7 +199,7 @@ OUT
         end
         def write_s(direction, blocks)
           @entry.result.add(self.class, <<BLOCK, Construct::Resource::Rights::ROOT_0755, "etc", "network", "#{@entry.header.get_interface_name}-#{direction}.iface")
-exec > >(logger -t "#{@entry.header.get_interface_name}-#{direction}) 2>&1
+exec > >(logger -t "#{@entry.header.get_interface_name}-#{direction}") 2>&1
 #{blocks.join("\n")}
 iptables-restore < /etc/network/iptables.cfg
 ip6tables-restore < /etc/network/ip6tables.cfg
@@ -256,16 +256,16 @@ BLOCK
       @entries[iface.name] ||= Entry.new(@result, iface)
     end
     def commit
-      #binding.pry
+#      binding.pry
       out = [@entries['lo']]
       clazzes = {}
       @entries.values.each do |entry|
-        name = entry.iface.clazz.name[entry.iface.clazz.name.rindex(':')+1..-1]
+        name = entry.iface.clazz#.name[entry.iface.clazz.name.rindex(':')+1..-1]
         #puts "NAME=>#{name}:#{entry.iface.clazz.name.rindex(':')+1}:#{entry.iface.clazz.name}:#{entry.name}"
         clazzes[name] ||= []
         clazzes[name] << entry
       end
-      ['Device', 'Bond', 'Vlan', 'Bridge', 'Gre'].each do |type|
+      ['device', 'bond', 'vlan', 'bridge', 'gre'].each do |type|
         out += (clazzes[type]||[]).select{|i| !out.first || i.name != out.first.name }.sort{|a,b| a.name<=>b.name }
       end
       out.flatten.compact.inject("") { |r, entry| r += entry.commit; r }
@@ -302,6 +302,7 @@ BLOCK
       throw "not a right #{path}" unless right.respond_to?('right') && right.respond_to?('owner')
       unless @result[path]
         @result[path] = ArrayWithRight.new(right)
+        #binding.pry
         @result[path] << [clazz.prefix(@host, path)].compact
       end
       @result[path] << block+"\n"

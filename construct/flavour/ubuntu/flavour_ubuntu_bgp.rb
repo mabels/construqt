@@ -36,7 +36,7 @@ BGP
           nets = rule['network']
           if nets.kind_of?(String) 
             nets = Construct::Tags.find(nets, mode.net_clazz)
-            puts ">>>>>>>>>> #{nets.map{|i| i.class.name}}"
+#            puts ">>>>>>>>>> #{nets.map{|i| i.class.name}}"
             nets = IPAddress::summarize(nets)
           else
             nets = nets.ips

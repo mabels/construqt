@@ -74,7 +74,7 @@ class Addresses
       self
     end
     def name=(name)
-      @name = name
+      set_name(name)
     end
     def name
       return @name if @name
@@ -99,11 +99,11 @@ class Addresses
       end
       self
     end
-    @nameservers = []
-    def add_nameserver(ip)
-      @nameservers << IPAddress.parse(ip)
-      self
-    end
+#    @nameservers = []
+#    def add_nameserver(ip)
+#      @nameservers << IPAddress.parse(ip)
+#      self
+#    end
     attr_accessor :routes
     def add_routes(addr_s, via, options = {})
       addrs = addr_s.kind_of?(Array) ? addr_s : [addr_s]
