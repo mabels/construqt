@@ -8,6 +8,7 @@ require 'construct/flavour/ubuntu/flavour_ubuntu_opvn.rb'
 require 'construct/flavour/ubuntu/flavour_ubuntu_vrrp.rb'
 require 'construct/flavour/ubuntu/flavour_ubuntu_firewall.rb'
 require 'construct/flavour/ubuntu/flavour_ubuntu_result.rb'
+require 'construct/flavour/ubuntu/flavour_ubuntu_services.rb'
 require "base64"
 
 module Construct
@@ -61,6 +62,11 @@ module Ubuntu
     def build_config(host, iface)
       self.class.build_config(host, iface)
     end
+    def self.add_services(host, ifname, iface, writer) 
+      iface.services && iface.services.each do |service|
+        Services.get_renderer(service).render(host, ifname, iface, writer)
+      end
+    end
     def self.build_config(host, iface)
 #      binding.pry
       writer = host.result.etc_network_interfaces.get(iface)
@@ -73,6 +79,7 @@ module Ubuntu
       writer.lines.up("ip link set mtu #{iface.delegate.mtu} dev #{ifname} up")
       writer.lines.down("ip link set dev #{ifname} down")
       add_address(host, ifname, iface.delegate, writer.lines, writer) #unless iface.address.nil? || iface.address.ips.empty?
+      add_services(host, ifname, iface.delegate, writer)
     end
   end
   class Bond < OpenStruct
