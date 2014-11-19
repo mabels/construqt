@@ -1,11 +1,11 @@
 module Construct
   class Services
 
-    module DHCPV4RELAY
+    class DhcpV4Relay
     end
-    module DHCPV6RELAY
+    class DhcpV6Relay
     end
-    module RADVD
+    class Radvd
     end
 
   end

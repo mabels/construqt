@@ -24,17 +24,20 @@ module Ubuntu
     end
   end
 
-  class Interface < OpenStruct
+#  class Interface < OpenStruct
+#    def initialize(cfg)
+#      super(cfg)
+#    end
+#    def build_config(host, iface)
+#      self.clazz.build_config(host, iface||self)
+#    end
+#  end
+
+  class Device < OpenStruct
     def initialize(cfg)
       super(cfg)
     end
-    def build_config(host, unused)
-      self.clazz.build_config(host, self)
-    end
-  end
-
-  module Device
-    def self.prefix(host, path)
+    def prefix(host, path)
       "# this is a generated file do not edit!!!!!"
     end
     def self.add_address(host, ifname, iface, lines, writer)
@@ -55,37 +58,48 @@ module Ubuntu
       end
       Firewall.create(host, ifname, iface)
     end
+    def build_config(host, iface)
+      self.class.build_config(host, iface)
+    end
     def self.build_config(host, iface)
-      #binding.pry if iface.name == "eth1"
-      writer = host.result.delegate.etc_network_interfaces.get(iface)
+#      binding.pry
+      writer = host.result.etc_network_interfaces.get(iface)
       writer.header.protocol(EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
-      writer.lines.add(iface.flavour) if iface.flavour
+#binding.pry #unless iface.delegate
+      writer.lines.add(iface.delegate.flavour) if iface.delegate.flavour
       ifname = writer.header.get_interface_name
 #      ifaces.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_DHCP4) if iface.address.dhcpv4?
 #      ifaces.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_LOOOPBACK) if iface.address.loopback?
-      writer.lines.up("ip link set mtu #{iface.mtu} dev #{ifname} up")
+      writer.lines.up("ip link set mtu #{iface.delegate.mtu} dev #{ifname} up")
       writer.lines.down("ip link set dev #{ifname} down")
-      add_address(host, ifname, iface, writer.lines, writer) #unless iface.address.nil? || iface.address.ips.empty?
+      add_address(host, ifname, iface.delegate, writer.lines, writer) #unless iface.address.nil? || iface.address.ips.empty?
     end
   end
-  module Bond
-    def self.build_config(host, iface)
-      iface.interfaces.each do |i|
-        host.result.delegate.etc_network_interfaces.get(i).lines.add("bond-master #{iface.name}")
+  class Bond < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+    def build_config(host, bond)
+      bond_delegate = bond.delegate
+      bond_delegate.interfaces.each do |i|
+        host.result.etc_network_interfaces.get(i).lines.add("bond-master #{bond_delegate.name}")
       end
-      mac_address=Digest::SHA256.hexdigest("#{host.name} #{iface.name}").scan(/../)[0,6].join(':')
-      host.result.delegate.etc_network_interfaces.get(iface).lines.add(<<BOND)
-pre-up ip link set dev #{iface.name} mtu #{iface.mtu} address #{mac_address}
-bond-mode #{iface.mode||'active-backup'}
+      mac_address=bond_delegate.mac_address || Digest::SHA256.hexdigest("#{host.name} #{bond_delegate.name}").scan(/../)[0,6].join(':')
+      host.result.etc_network_interfaces.get(bond_delegate).lines.add(<<BOND)
+pre-up ip link set dev #{bond_delegate.name} mtu #{bond_delegate.mtu} address #{mac_address}
+bond-mode #{bond_delegate.mode||'active-backup'}
 bond-miimon 100
 bond-lacp-rate 1
 bond-slaves none
 BOND
-      Device.build_config(host, iface)
+      Device.build_config(host, bond)
     end
   end
-  module Vlan
-    def self.build_config(host, iface)
+  class Vlan < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+    def build_config(host, iface)
       vlan = iface.name.split('.')
       throw "vlan name not valid if.# => #{iface.name}" if vlan.length != 2 ||
                                                         !vlan.first.match(/^[0-9a-zA-Z]+$/) ||
@@ -94,22 +108,28 @@ BOND
       Device.build_config(host, iface)
     end
   end
-  module Bridge
-    def self.build_config(host, iface)
+  class Bridge < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+    def build_config(host, iface)
       port_list = iface.interfaces.map { |i| i.name }.join(",")
-      host.result.delegate.etc_network_interfaces.get(iface).lines.add("bridge_ports #{port_list}")
+      host.result.etc_network_interfaces.get(iface).lines.add("bridge_ports #{port_list}")
       Device.build_config(host, iface)
     end
   end
-  module Host
-    def self.prefix(host, path)
+  class Host < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+    def prefix(host, path)
       if path.include? "hostname"
         nil
       else
         "# this is a generated file do not edit!!!!!"
       end
     end
-    def self.build_config(host, unused)
+    def build_config(host, unused)
       host.result.add(self, <<SCTL, Construct::Resource::Rights::ROOT_0644, "etc", "sysctl.conf")
 net.ipv4.conf.all.forwarding = 1
 net.ipv4.conf.default.forwarding = 1
@@ -125,7 +145,8 @@ SCTL
                        (host.region.network.dns_resolver.nameservers.ips.map{|i| "nameserver #{i.to_s}" }+
                        ["search #{host.region.network.dns_resolver.search.join(' ')}"]).join("\n"),
                       Construct::Resource::Rights::ROOT_0644, "etc", "resolv.conf")
-      Dns.build_config(host) if host.dns_server
+#binding.pry
+      Dns.build_config(host) if host.delegate.dns_server
       akeys = []
       ykeys = []
       skeys = []
@@ -229,7 +250,7 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 UsePAM yes
 SSH
       host.result.add(self, <<PAM , Construct::Resource::Rights::ROOT_0644, "etc", "pam.d", "openvpn")
-#{host.yubikey ? '':'# '}auth required pam_yubico.so id=16 authfile=/etc/yubikey_mappings
+      #{host.delegate.yubikey ? '':'# '}auth required pam_yubico.so id=16 authfile=/etc/yubikey_mappings
 auth [success=1 default=ignore] pam_unix.so nullok_secure try_first_pass
 auth requisite pam_deny.so
 
@@ -237,51 +258,58 @@ auth requisite pam_deny.so
 @include common-session-noninteractive
 PAM
       #binding.pry
-      host.files && host.files.each do |file|
-        if host.result.delegate.replace(PassThroughHeader, file.data, file.right, *file.path)
+      host.delegate.files && host.delegate.files.each do |file|
+        if host.result.replace(PassThroughHeader, file.data, file.right, *file.path)
           Construct.logger.warn("the file #{file.path} was overriden!")
         end
       end
     end
   end
 
-  module Gre
-    def self.prefix(host, path)
+  class Gre < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+    def prefix(host, path)
       "# this is a generated file do not edit!!!!!"
     end
-    def self.build_config(host, iface)
+    def build_config(host, gre)
+      gre_delegate = gre.delegate
 #      binding.pry
       cfg = nil
-      if iface.local.first_ipv6
-        cfg = OpenStruct.new(:prefix=>6, :my=>iface.local.first_ipv6, :other => iface.remote.first_ipv6, :mode => "ip6gre")
-      elsif iface.local.first_ipv4
-        cfg = OpenStruct.new(:prefix=>4, :my=>iface.local.first_ipv4, :other => iface.remote.first_ipv4, :mode => "ipgre")
+      if gre_delegate.local.first_ipv6
+        cfg = OpenStruct.new(:prefix=>6, :my=>gre_delegate.local.first_ipv6, :other => gre_delegate.remote.first_ipv6, :mode => "ip6gre")
+      elsif gre_delegate.local.first_ipv4
+        cfg = OpenStruct.new(:prefix=>4, :my=>gre_delegate.local.first_ipv4, :other => gre_delegate.remote.first_ipv4, :mode => "ipgre")
       end
-      throw "need a local address #{host.name}:#{iface.name}" unless cfg
+      throw "need a local address #{host.name}:#{gre_delegate.name}" unless cfg
       local_iface = host.interfaces.values.find { |iface| iface.address.match_network(cfg.my) }
       throw "need a interface with address #{host.name}:#{cfg.my}" unless local_iface
-      iname = Util.clean_if("gt#{cfg.prefix}", iface.name)
+      iname = Util.clean_if("gt#{cfg.prefix}", gre_delegate.name)
 
-      writer_local = host.result.delegate.etc_network_interfaces.get(local_iface)
+      writer_local = host.result.etc_network_interfaces.get(local_iface)
       writer_local.lines.up("/bin/bash /etc/network/#{iname}-up.iface")
       writer_local.lines.down("/bin/bash /etc/network/#{iname}-down.iface")
 
 
-      writer = host.result.delegate.etc_network_interfaces.get(iface)
+      writer = host.result.etc_network_interfaces.get(gre_delegate)
       writer.skip_interfaces.header.interface_name(iname)
       writer.lines.up("ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}")
 #      writer.lines.up("ip -#{cfg.prefix} link set dev #{iname} up")
-      Device.build_config(host, iface)
+      Device.build_config(host, gre)
 #      Device.add_address(host, iname, iface, writer.lines, writer)
       writer.lines.down("ip -#{cfg.prefix} tunnel del #{iname}")
     end
   end
 
-  module Template
-    def self.prefix(host, path)
+  class Template < OpenStruct
+    def initialize(cfg)
+      super(cfg)
+    end
+    def prefix(host, path)
       "# this is a generated file do not edit!!!!!"
     end
-    def self.build_config(host, iface)
+    def build_config(host, iface)
     end
   end
 
@@ -301,9 +329,17 @@ PAM
     throw "class not found #{name}" unless ret
     ret
   end
+  def self.create_host(name, cfg)
+    cfg['name'] = name
+    cfg['result'] = nil
+    host = Host.new(cfg)
+    host.result = Result.new(host)
+    host
+  end
+
   def self.create_interface(name, cfg)
     cfg['name'] = name
-    Interface.new(cfg)
+    clazz(cfg['clazz']).new(cfg)
   end
 
   def self.create_bgp(cfg)

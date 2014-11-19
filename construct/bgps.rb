@@ -8,6 +8,9 @@ module Bgps
       self.left.build_config(nil, nil)  
       self.right.build_config(nil, nil)  
     end
+    def ident
+      self.left.ident
+    end
   end
   @bgps = {}
   def self.connections
@@ -46,10 +49,10 @@ module Bgps
       hosts[bgp.left.host.name] = bgp.left
       hosts[bgp.right.host.name] = bgp.right
     end
-    hosts.values.each do |flavour_bgp|
-      flavour_bgp.header(flavour_bgp.host)
-      flavour_bgp.footer(flavour_bgp.host)
-    end
+    #hosts.values.each do |flavour_bgp|
+    #  flavour_bgp.header(flavour_bgp.host)
+    #  flavour_bgp.footer(flavour_bgp.host)
+    #end
   end
   @filters = {}
 
