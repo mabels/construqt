@@ -119,8 +119,23 @@ module Construct
       ranges = ranges.map do |range|
         range["from"] == range["to"] ? range["from"] : range["from"] +"-"+range["to"]
       end
-
+#puts "self.createRangeDefinition[#{ports}]=>#{ranges}"
       ranges.join(",")
+    end
+
+    def self.expandRangeDefinition(list_str)
+      ret = list_str.strip.split(/\s*,\s*/).map do |elem|
+        values = elem.split('-')
+        if values.length != 2
+          values = [elem, elem]
+        end
+        values.each do |i|
+          throw "RangeDefition unknown for #{list_str}:#{elem}" unless /^\d+$/.match(i.to_s)
+        end
+        (values[0]..values[1]).to_a
+      end.flatten
+#puts "self.expandRangeDefinition[#{list_str}]=>#{ret}"
+      ret
     end
   end
 end

@@ -10,6 +10,18 @@ module Construct
         end
       end
 
+
+      class SwitchPortTrunkAllowedVlan
+        def self.parse_line(line, lines, section, result)
+          verb = "switchport trunk allowed vlan"
+          return false unless line.start_with?(verb)
+          Util.expandRangeDefinition(line[verb.length..-1]).each do |vlan_id|
+            section.add(verb, Ciscian::RangeVerb).add(vlan_id)
+          end
+          true
+        end
+      end
+
       class DlinkDgs15xx
         def self.name
           'dlink-dgs15xx'
@@ -24,16 +36,14 @@ module Construct
         end
 
         def clear_interface(line)
-          ret = line.split(/\s+/).map do |i|
+          line.split(/\s+/).map do |i|
             split = /^([^0-9]+)([0-9].*)$/.match(i)
             split ? split[1..-1] : i
           end.flatten.join(' ')
-          puts "IF[#{ret}]"
-          ret
         end
 
         def parse_line(line, lines, section, result)
-          [HostNameVerb].find{|i| i.parse_line(line, lines, section, result) }
+          [HostNameVerb,SwitchPortTrunkAllowedVlan].find{|i| i.parse_line(line, lines, section, result) }
         end
 
         def expand_device_name(device)
