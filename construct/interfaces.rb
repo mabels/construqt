@@ -6,10 +6,11 @@ module Construct
 
     def setup_template(iface)
       iface.template.vlans.each do |vlan|
-        vname = "vlan.#{vlan.vlan_id}"
+
+        vname = vlan.description
         to_add_iface = iface.host.interfaces[vname]
         unless to_add_iface
-          to_add_iface = add_vlan(iface.host, vname, vlan.to_h)
+          to_add_iface = add_vlan(iface.host, vname, vlan.to_h.inject({}){|r,(k,v)| r[k.to_s]=v; r })
         end
 
         #puts ">>>>>#{iface.name}"
@@ -20,12 +21,17 @@ module Construct
     def add_device(host, dev_name, cfg)
       throw "Host not found:#{dev_name}" unless host
       throw "Interface is duplicated:#{host.name}:#{dev_name}" if host.interfaces[dev_name]
+      throw "invalid name #{dev_name}" unless dev_name.match(/^[A-Za-z0-9\-\.]+$/)
+      if match=/^.*[^\d](\d+)$/.match(dev_name)
+        cfg['number'] ||= match[1].to_i
+      end
 
       cfg['host'] = host
       cfg['mtu'] ||= 1500
       #binding.pry if host && host.name == "ct-iar1-ham"
       #    binding.pry
       cfg['clazz'] ||= "device"
+      cfg['address'] ||= nil
       (dev_name, iface) = Construct::Tags.add(dev_name) { |name| host.flavour.create_interface(name, cfg) }
       #    iface.clazz.attach = iface
       host.interfaces[dev_name] = iface
@@ -34,12 +40,12 @@ module Construct
       host.interfaces[dev_name]
     end
 
-    def add_template(host, name, cfg)
-      cfg['clazz'] = "template"
-      cfg['host'] = host
-      cfg['name'] = name
-      self.add_device(host,name, cfg)
-    end
+#    def add_template(host, name, cfg)
+#     cfg['clazz'] = "template"
+#    cfg['host'] = host
+#   cfg['name'] = name
+#      self.add_device(host,name, cfg)
+#    end
 
     def add_openvpn(host, name, cfg)
       cfg['clazz'] = "opvn"
@@ -62,6 +68,9 @@ module Construct
     end
 
     def add_vlan(host, name, cfg)
+      unless cfg["vlan_id"].to_s.match(/^[0-9]+$/) && 1 <= cfg["vlan_id"].to_i && cfg["vlan_id"].to_i < 4096
+        throw "vlan_id must be set on vlan with name #{name}"
+      end
       cfg = cfg.clone
       interfaces = cfg['interfaces'] || []
       interfaces << cfg['interface'] if cfg['interface']

@@ -238,6 +238,10 @@ module Construct
         self.delegate.interfaces
       end
 
+      def vlan_id
+        self.delegate.vlan_id
+      end
+
       def _ident
         "Vlan_#{self.host.name}_#{self.name}"
       end

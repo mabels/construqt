@@ -63,7 +63,7 @@ module Construct
             net.push(digest[0..1].to_i(16).to_s)
             net.push(digest[-2..-1].to_i(16).to_s)
             router_id = IPAddress.parse(net.join('.')) # hack ..... achtung
-            cfg = as.to_h.merge({
+            cfg = as.to_h.inject({}){|r,(k,v)| r[k.to_s]=v; r }.merge({
               "comment" => as.description,
               "name"=>"#{as.name}",
               "as" => as.num,
