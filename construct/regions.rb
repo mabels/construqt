@@ -3,6 +3,7 @@ module Construct
   module Regions
     @regions = {}
     class Region
+      attr_reader :name, :cables, :hosts, :interfaces, :users, :vlans, :network, :templates
       def initialize(name, network)
         @name = name
         @network = network
@@ -13,30 +14,6 @@ module Construct
         @users = Construct::Users.new(self)
         @cables = Construct::Cables.new(self)
       end
-      def name
-        @name
-      end
-      def cables
-        @cables
-      end
-      def hosts
-        @hosts
-      end
-      def interfaces
-        @interfaces
-      end
-      def users
-        @users
-      end
-      def vlans
-        @vlans
-      end
-      def network
-        @network
-      end
-      def templates
-        @templates
-      end
     end
 
     def self.add(name, network)
@@ -45,6 +22,7 @@ module Construct
       @regions[name] = ret
       ret
     end
+
     def self.find(name)
       throw "region with name #{name} not found" unless @regions[name]
       @regions[name]

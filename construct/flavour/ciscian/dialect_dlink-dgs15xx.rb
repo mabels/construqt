@@ -5,9 +5,11 @@ module Construct
         def self.name
           'dlink-dgs15xx'
         end
+
         def initialize(result)
           @result=result
         end
+
         def add_device(device)
           @result.add("interface #{device.name}") do |section|
             section.add("flowcontrol").add("off")
@@ -16,6 +18,7 @@ module Construct
             section.add("switchport mode").add("trunk")
           end
         end
+
         def add_vlan(vlan)
           @result.add("vlan #{vlan.delegate.vlan_id}") do |section|
             section.add("name").add(vlan.delegate.description)
@@ -33,6 +36,7 @@ module Construct
           end
         end
       end
+
       Construct::Flavour::Ciscian.add_dialect(DlinkDgs15xx)
     end
   end
