@@ -1,27 +1,30 @@
 
 module Construct
-module Flavour
-module Ubuntu
-  class Opvn < OpenStruct
-    def initialize(cfg)
-      super(cfg)
-    end
-    def prefix(hosts, path)
-      nil
-    end
-    def build_config(host, opvn)
-      iface = opvn.delegate
-      local = iface.ipv6 ? host.id.first_ipv6.first_ipv6 : host.id.first_ipv4.first_ipv4
-      return unless local
-      push_routes = ""
-      if iface.push_routes
-        push_routes = iface.push_routes.routes.map{|route| "push \"route #{route.dst.to_string}\"" }.join("\n")
-      end  
-      host.result.add(self, iface.cacert, Construct::Resource::Rights::ROOT_0644, "etc", "openvpn", "ssl", "#{iface.name}-cacert.pem")
-      host.result.add(self, iface.hostcert, Construct::Resource::Rights::ROOT_0644, "etc", "openvpn", "ssl", "#{iface.name}-hostcert.pem")
-      host.result.add(self, iface.hostkey, Construct::Resource::Rights::ROOT_0600, "etc", "openvpn", "ssl", "#{iface.name}-hostkey.pem")
-      host.result.add(self, iface.dh1024, Construct::Resource::Rights::ROOT_0644, "etc", "openvpn", "ssl", "#{iface.name}-dh1024")
-      host.result.add(self, <<OPVN, Construct::Resource::Rights::ROOT_0644, "etc", "openvpn", "#{iface.name}.conf")
+  module Flavour
+    module Ubuntu
+      class Opvn < OpenStruct
+        def initialize(cfg)
+          super(cfg)
+        end
+
+        def prefix(hosts, path)
+          nil
+        end
+
+        def build_config(host, opvn)
+          iface = opvn.delegate
+          local = iface.ipv6 ? host.id.first_ipv6.first_ipv6 : host.id.first_ipv4.first_ipv4
+          return unless local
+          push_routes = ""
+          if iface.push_routes
+            push_routes = iface.push_routes.routes.map{|route| "push \"route #{route.dst.to_string}\"" }.join("\n")
+          end
+
+          host.result.add(self, iface.cacert, Construct::Resource::Rights::ROOT_0644, "etc", "openvpn", "ssl", "#{iface.name}-cacert.pem")
+          host.result.add(self, iface.hostcert, Construct::Resource::Rights::ROOT_0644, "etc", "openvpn", "ssl", "#{iface.name}-hostcert.pem")
+          host.result.add(self, iface.hostkey, Construct::Resource::Rights::ROOT_0600, "etc", "openvpn", "ssl", "#{iface.name}-hostkey.pem")
+          host.result.add(self, iface.dh1024, Construct::Resource::Rights::ROOT_0644, "etc", "openvpn", "ssl", "#{iface.name}-dh1024")
+          host.result.add(self, <<OPVN, Construct::Resource::Rights::ROOT_0644, "etc", "openvpn", "#{iface.name}.conf")
 daemon
 local #{local}
 proto udp#{local.ipv6? ? '6' : ''}
@@ -48,14 +51,14 @@ persist-tun
 status /etc/openvpn/status
 log-append  /var/log/openvpn-#{iface.name}.log
 mute 20
-#{push_routes}
+          #{push_routes}
 mssfix #{iface.mtu||1348}
 plugin /usr/lib/openvpn/openvpn-plugin-auth-pam.so openvpn
 client-cert-not-required
 script-security 2
 OPVN
+        end
+      end
     end
   end
-end
-end
 end

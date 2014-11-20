@@ -11,16 +11,20 @@ module Construct
       def initialize(cfg)
         super(cfg)
       end
+
       def tagged?
         @tagged
       end
+
       def tagged
         @tagged=true
         self
       end
+
       def untagged?
         !@tagged
       end
+
       def untagged
         @tagged = false
         self
@@ -38,10 +42,10 @@ module Construct
       @vlans_description[cfg['description']] = ret
       ret
     end
+
     def clone(key)
       throw "vlan clone key not found #{key}" unless @vlans_id[key] || @vlans_description[key]
       (@vlans_id[key] || @vlans_description[key]).clone
     end
   end
 end
-

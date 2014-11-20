@@ -14,23 +14,24 @@ module Construct
   def self.log_level(level)
     @logger.level = level
   end
+
   if !IPAddress::IPv6.instance_methods.include?(:rev_domains)
     @logger.fatal "you need the right ipaddress version from https://github.com/mabels/ipaddress"
   end
+
   if !OpenStruct.instance_methods.include?(:to_h)
     OpenStruct.class_eval do
       def to_h
-          @table.dup
+        @table.dup
       end
     end
+
     @logger.warn "Your running a patched version of OpenStruct"
   end
 
   def self.logger
     @logger
   end
-
-
 
   # ugly but i need the logger during initialization
   require 'construct/util.rb'
@@ -55,33 +56,32 @@ module Construct
 
   require 'construct/flavour/unknown/flavour_unknown.rb'
   [
-   'construct/flavour/ciscian/ciscian.rb',
-   'construct/flavour/plantuml/plantuml.rb',
-   'construct/flavour/mikrotik/flavour_mikrotik.rb',
-   'construct/flavour/ubuntu/flavour_ubuntu.rb'].each do |fname|
-    begin
-      require fname
-    rescue LoadError
-      Construct::logger.warn("can not load driver:#{fname}")
+    'construct/flavour/ciscian/ciscian.rb',
+    'construct/flavour/plantuml/plantuml.rb',
+    'construct/flavour/mikrotik/flavour_mikrotik.rb',
+    'construct/flavour/ubuntu/flavour_ubuntu.rb'].each do |fname|
+      begin
+        require fname
+      rescue LoadError
+        Construct::logger.warn("can not load driver:#{fname}")
+      end
     end
-  end
 
-  def self.produce(region_or_hosts)
-    hosts = false
-    hosts = region_or_hosts if region_or_hosts.kind_of?(Array)
-    hosts = region_or_hosts.hosts.get_hosts if region_or_hosts.kind_of?(Construct::Regions::Region)
-    throw "need a region or hosts list" unless hosts
-    Construct::Ipsecs.build_config()
-    Construct::Bgps.build_config()
-    hosts.inject({}) do |r, host|
-      r[host.region.name] ||= []
-      r[host.region.name] << host
-      r
-    end.values.each do |hosts|
-      hosts.first.region.hosts.build_config(hosts)
-      hosts.first.region.interfaces.build_config(hosts)
-      hosts.first.region.hosts.commit(hosts)
+    def self.produce(region_or_hosts)
+      hosts = false
+      hosts = region_or_hosts if region_or_hosts.kind_of?(Array)
+      hosts = region_or_hosts.hosts.get_hosts if region_or_hosts.kind_of?(Construct::Regions::Region)
+      throw "need a region or hosts list" unless hosts
+      Construct::Ipsecs.build_config()
+      Construct::Bgps.build_config()
+      hosts.inject({}) do |r, host|
+        r[host.region.name] ||= []
+        r[host.region.name] << host
+        r
+      end.values.each do |hosts|
+        hosts.first.region.hosts.build_config(hosts)
+        hosts.first.region.interfaces.build_config(hosts)
+        hosts.first.region.hosts.commit(hosts)
+      end
     end
-  end
-
 end

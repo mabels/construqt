@@ -6,30 +6,35 @@ module Construct
       def self.name
         'dlink-dgs15xx'
       end
-      Construct::Flavour.add(self)
 
+      Construct::Flavour.add(self)
 
       class Result
         def initialize(host)
           @host = host
           @result = {}
         end
+
         def host
           @host
         end
+
         def empty?(name)
           not @result[name]
         end
+
         def add(block, clazz)
           @result[clazz] = [] unless @result[clazz]
           @result[clazz] << block unless block.strip == ""
         end
+
         def commit
           @result.each do |clazz, block|
             Util.write_str(block.join("\n"), File.join(@host.name, "#{clazz}.cfg"))
           end
         end
       end
+
       class Device < OpenStruct
         def initialize(cfg)
           super(cfg)
@@ -38,6 +43,7 @@ module Construct
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def self.untagged(template)
           return "" if template.nil?
           return "" if template.vlans.nil?
@@ -65,6 +71,7 @@ module Construct
               range << [vlan_id, vlan_id]
             end
           end
+
           if range.length
             range_str = range.map{|i| i.first == i.last ? i.first.to_s : "#{i.first}-#{i.last}" }.join(',')
             "switchport trunk allowed vlan #{range_str}"
@@ -88,23 +95,29 @@ module Construct
           host.result.add("end", "device")
         end
       end
+
       class Vrrp < OpenStruct
         def initialize(cfg)
           super(cfg)
         end
+
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def self.build_config(host, iface)
           "# this is a generated file do not edit!!!!!"
         end
       end
+
       class Bond < OpenStruct
         def initialize(cfg)
           super(cfg)
         end
+
         def self.header(path)
         end
+
         def build_config(host, iface)
           throw "need template" unless iface.template
           throw "need intefaces" unless iface.interfaces
@@ -119,10 +132,12 @@ module Construct
           end
         end
       end
+
       class Vlan < OpenStruct
         def initialize(cfg)
           super(cfg)
         end
+
         def build_config(host, iface)
           vlan = iface.name.split('.')
           throw "vlan name not valid if.# => #{iface.name}" if vlan.length != 2 ||
@@ -132,21 +147,26 @@ module Construct
           Device.build_config(host, iface)
         end
       end
+
       class Bridge
         def initialize(cfg)
           super(cfg)
         end
+
         def build_config(host, iface)
           throw "not implemented bridge on ubuntu"
         end
       end
+
       class Host < OpenStruct
         def initialize(cfg)
           super(cfg)
         end
+
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def build_config(host, unused)
           host.interfaces.values.each do |interface|
             #puts "interface=>#{host.name} #{interface.name}"
@@ -158,6 +178,7 @@ module Construct
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def self.build_config(host, iface)
           throw "not implemented bridge on ubuntu"
         end
@@ -167,6 +188,7 @@ module Construct
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def self.build_config(host, iface)
           throw "not implemented bridge on ubuntu"
         end

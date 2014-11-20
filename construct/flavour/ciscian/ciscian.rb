@@ -4,6 +4,7 @@ module Construct
       def self.name
         'ciscian'
       end
+
       Construct::Flavour.add(self)
 
       @dialects={}
@@ -25,14 +26,17 @@ module Construct
           throw "cannot load dialect class #{host.dialect}" unless Ciscian.dialects[host.dialect]
           self.dialect=Ciscian.dialects[host.dialect].new(self)
         end
+
         def render_verbs(verbs)
           block=[]
           verbs.keys.sort.each do |key|
             verb = verbs[key]
             block << verb.serialize
           end
+
           block
         end
+
         def commit
           block=[]
           @sections.keys.sort.each do |key|
@@ -41,6 +45,7 @@ module Construct
             block += render_verbs(section.verbs)
             block << "end"
           end
+
           Util.write_str(block.join("\n"), File.join(@host.name, "#{self.dialect.class.name}.cfg"))
         end
 
@@ -50,10 +55,12 @@ module Construct
             self.section=section
             self.verbs={}
           end
+
           def add(verb, clazz = GenericVerb)
             self.verbs[verb] ||= clazz.new(verb)
           end
         end
+
         def add(section, &block)
           @sections[section] ||= Section.new(section)
           block.call(@sections[section])
@@ -67,10 +74,12 @@ module Construct
           self.key=key
           self.values = []
         end
+
         def add(value)
           self.values << value
           self
         end
+
         def serialize
           "  " + key + " " + values.join(",")
         end
@@ -80,6 +89,7 @@ module Construct
         def initialize(key)
           super(key)
         end
+
         def serialize
           "  " + key + " " + Construct::Util.createRangeDefinition(values)
         end
@@ -89,9 +99,11 @@ module Construct
         def initialize(cfg)
           super(cfg)
         end
+
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def build_config(host, unused)
         end
       end
@@ -100,9 +112,11 @@ module Construct
         def initialize(cfg)
           super(cfg)
         end
+
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def build_config(host, device)
           host.result.dialect.add_device(device)
         end
@@ -112,9 +126,11 @@ module Construct
         def initialize(cfg)
           super(cfg)
         end
+
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def build_config(host, device)
           host.result.dialect.add_vlan(device)
         end
@@ -124,21 +140,24 @@ module Construct
         def initialize(cfg)
           super(cfg)
         end
+
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def build_config(host, bond)
         end
       end
-
 
       class NotImplemented < OpenStruct
         def initialize(cfg)
           super(cfg)
         end
+
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def build_config(host, iface)
           throw "not implemented on this flavour #{iface.class.name}"
         end
@@ -175,7 +194,6 @@ module Construct
         #cfg['name'] = name
         #Interface.new(cfg)
       end
-
     end
   end
 end

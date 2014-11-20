@@ -6,6 +6,7 @@ module Construct
       def self.name
         'hp-procurve'
       end
+
       Construct::Flavour.add(self)
 
       class Result
@@ -13,13 +14,16 @@ module Construct
           @host = host
           @result = {}
         end
+
         def stripEthernet(port)
           port.slice! "ethernet "
           port
         end
+
         def portNeighbors?(port1, port2)
           port2.succ == port1 || port1.succ == port2
         end
+
         def createRangeDefinition(ports)
           ranges=[]
           lastPort=nil
@@ -30,11 +34,14 @@ module Construct
               ranges << {"from" => port, "to" => port}
             end
           end
+
           ranges = ranges.map do |range|
             range["from"] == range["to"] ? range["from"] : range["from"] +"-"+range["to"]
           end
+
           ranges.join(",")
         end
+
         def commit
           config=[]
 
@@ -56,23 +63,30 @@ module Construct
                 cfgs[t].map do |port|
                   stripEthernet(port)
                 end
+
                 config << createRangeDefinition(cfgs[t]) + "\n"
               end
             end
+
             config << "   exit\n\n"
           end
+
           Util.write_str(config.join(), File.join(@host.name, "vlans.cfg"))
         end
+
         def addVlan(port, vlan_id, name, untagged)
           unless @result["vlans"]
             @result["vlans"] = {}
           end
+
           unless @result["vlans"][vlan_id]
             @result["vlans"][vlan_id]={"name" => vlan_id == 1 ? "DEFAULT_VLAN" : "VLAN"+vlan_id.to_s, "tagged" => [], "untagged" => []}
           end
+
           @result["vlans"][vlan_id]["name"] = name if name
           @result["vlans"][vlan_id][untagged ? "untagged" : "tagged"] << port
         end
+
         def addBond(channel, devices)
           unless @result["bonds"]
             @result["bonds"] = []
@@ -90,9 +104,11 @@ module Construct
         def initialize(cfg)
           super(cfg)
         end
+
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def self.build_config(host, unused)
         end
       end
@@ -101,9 +117,11 @@ module Construct
         def initialize(cfg)
           super(cfg)
         end
+
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def self.build_config(host, device)
           return "" if device.template.nil?
           return "" if device.template.vlans.nil?
@@ -117,9 +135,11 @@ module Construct
         def initialize(cfg)
           super(cfg)
         end
+
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def self.build_config(host, bond)
           host.result.delegate.addBond(bond.name, bond.interfaces)
           Device.build_config(host, bond)
@@ -130,9 +150,11 @@ module Construct
         def initialize(cfg)
           super(cfg)
         end
+
         def self.header(path)
           "# this is a generated file do not edit!!!!!"
         end
+
         def self.build_config(host, iface)
           throw "not implemented on this flavour"
         end
@@ -169,7 +191,6 @@ module Construct
         #cfg['name'] = name
         #Interface.new(cfg)
       end
-
     end
   end
 end
