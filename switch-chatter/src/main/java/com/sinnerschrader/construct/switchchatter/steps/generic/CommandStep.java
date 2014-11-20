@@ -1,4 +1,4 @@
-package com.sinnerschrader.construct.switchchatter.steps;
+package com.sinnerschrader.construct.switchchatter.steps.generic;
 
 public abstract class CommandStep implements Step {
 
@@ -11,7 +11,5 @@ public abstract class CommandStep implements Step {
 	public String retrieveResult() {
 		return null;
 	}
-	
-	 
 
 }

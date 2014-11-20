@@ -1,28 +1,41 @@
 package com.sinnerschrader.construct.switchchatter;
 
-import java.io.IOException;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.IOUtils;
+
+import com.sinnerschrader.construct.switchchatter.connectors.ConnectResult;
+import com.sinnerschrader.construct.switchchatter.connectors.Connector;
+import com.sinnerschrader.construct.switchchatter.connectors.ConnectorFactory;
+
 public class ApplyConfig {
-	public static void main(String[] args) throws UnknownHostException,
-			IOException, InterruptedException {
-		Socket socket = new Socket("172.16.252.252", 23);
+	public static void main(String[] args) throws Exception {
+		String pass = args[2];
+		Connector connector = ConnectorFactory.createConnector(args[1], pass);
+		ConnectResult connect = connector.connect();
 
-		final SwitchChatter sc = new SwitchChatter(socket.getInputStream(),
-				socket.getOutputStream());
+		StringWriter sw = new StringWriter();
+		IOUtils.copy(System.in, sw);
 
-		Future<List<String>> result = sc.createOutputConsumerAndFutureResult();
+		final SwitchChatter sc = SwitchChatter.create(args[0],
+				connect.getInputStream(), connect.getOutputStream(),
+				args.length >= 5 && "debug".equals(args[4]));
+
+		// setup steps
 		sc.skipSplashScreen();
-		sc.setupTerminal();
-		sc.applyConfig("vlan 5000000\nvlan 1000000\nexit\n");
+		sc.enterManagementMode(pass);
+		sc.disablePaging();
+		sc.applyConfig(sw.toString());
 		sc.exit();
 
+		// start procedure
+		Future<List<String>> result = sc.start();
+
 		try {
-			List<String> results = result.get(3, TimeUnit.SECONDS);
+			List<String> results = result.get(60, TimeUnit.SECONDS);
 			int errors = 0;
 			for (String line : results) {
 				int errorMessage = line.indexOf("Invalid");
@@ -41,7 +54,7 @@ public class ApplyConfig {
 			System.exit(2);
 		} finally {
 			sc.close();
-			socket.close();
+			connector.disconnect();
 		}
 	}
 }

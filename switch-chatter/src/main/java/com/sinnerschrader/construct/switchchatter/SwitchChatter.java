@@ -13,25 +13,49 @@ import java.util.concurrent.Future;
 
 import org.apache.commons.io.IOUtils;
 
-import com.sinnerschrader.construct.switchchatter.steps.CollectOutputStep;
-import com.sinnerschrader.construct.switchchatter.steps.CommandStep;
-import com.sinnerschrader.construct.switchchatter.steps.OutputConsumer;
-import com.sinnerschrader.construct.switchchatter.steps.WaitForStep;
+import com.sinnerschrader.construct.switchchatter.steps.generic.OutputConsumer;
 
-public class SwitchChatter implements Closeable {
+public abstract class SwitchChatter implements Closeable {
 
-	private final OutputStream os;
+	private OutputStream os;
 
-	private final InputStream is;
+	private InputStream is;
 
 	private OutputConsumer outputConsumer;
 
 	private ExecutorService executorService;
 
-	public SwitchChatter(InputStream is, OutputStream os) {
+	protected SwitchChatter() {
+	}
+
+	public static SwitchChatter create(String flavour, InputStream is,
+			OutputStream os, boolean debug) {
+		String clazz = "com.sinnerschrader.construct.switchchatter.flavour."
+				+ flavour + "SwitchChatter";
+
+		try {
+			SwitchChatter switchChatter = (SwitchChatter) Class.forName(clazz)
+					.newInstance();
+			switchChatter.initialize(is, os, debug);
+			return switchChatter;
+		} catch (ClassNotFoundException e) {
+			System.err.println("Flavour " + flavour
+					+ " not found (Class not found : " + clazz);
+			return null;
+		} catch (Exception e) {
+			throw new RuntimeException("Cannot create flavour " + flavour, e);
+		}
+	}
+
+	public PrintWriter getPrintWriter() {
+		return new PrintWriter(os, true);
+	}
+
+	public void initialize(InputStream is, OutputStream os, boolean debug) {
 		this.is = is;
 		this.os = os;
 		this.executorService = Executors.newSingleThreadExecutor();
+		this.outputConsumer = new OutputConsumer(debug, getPrintWriter());
 	}
 
 	public void close() {
@@ -40,9 +64,7 @@ public class SwitchChatter implements Closeable {
 		executorService.shutdown();
 	}
 
-	public Future<List<String>> createOutputConsumerAndFutureResult() {
-		this.outputConsumer = new OutputConsumer();
-
+	public Future<List<String>> start() {
 		Callable<List<String>> readingThread = new Callable<List<String>>() {
 			@Override
 			public List<String> call() {
@@ -59,116 +81,20 @@ public class SwitchChatter implements Closeable {
 		return executorService.submit(readingThread);
 	}
 
-	public void skipSplashScreen() {
-		PrintWriter pw = new PrintWriter(os, true);
-
-		outputConsumer.addStep(new WaitForStep("Press any key to continue") {
-			@Override
-			public int performStep(StringBuffer input) {
-				pw.println();
-				return getConsumedTill();
-			}
-		});
-
-		outputConsumer.addStep(new WaitForStep("#") {
-			@Override
-			public int performStep(StringBuffer input) {
-				return getConsumedTill();
-			}
-		});
+	public OutputConsumer getOutputConsumer() {
+		return outputConsumer;
 	}
 
-	public void setupTerminal() {
-		PrintWriter pw = new PrintWriter(os, true);
+	protected abstract void skipSplashScreen();
 
-		outputConsumer.addStep(new CommandStep() {
-			@Override
-			public int performStep(StringBuffer input) {
-				pw.println("terminal length 1000");
-				return 0;
-			}
-		});
+	protected abstract void enterManagementMode(String password);
 
-		outputConsumer.addStep(new WaitForStep("#") {
-			@Override
-			public int performStep(StringBuffer input) {
-				return getConsumedTill();
-			}
-		});
-	}
+	protected abstract void disablePaging();
 
-	public void applyConfig(String config) {
-		PrintWriter pw = new PrintWriter(os, true);
+	protected abstract void applyConfig(String config);
 
-		outputConsumer.addStep(new CommandStep() {
-			@Override
-			public int performStep(StringBuffer input) {
-				pw.println("config");
-				return 0;
-			}
-		});
+	protected abstract void retrieveConfig();
 
-		outputConsumer.addStep(new WaitForStep("#") {
-			@Override
-			public int performStep(StringBuffer input) {
-				return getConsumedTill();
-			}
-		});
-
-		outputConsumer.addStep(new CommandStep() {
-			@Override
-			public int performStep(StringBuffer input) {
-				pw.println(config);
-				return 0;
-			}
-		});
-		int lines = config.split("\\n").length;
-		for (int i = 0; i < lines; i++) {
-			outputConsumer.addStep(new CollectOutputStep("#"));
-		}
-		
-		outputConsumer.addStep(new CommandStep() {
-			@Override
-			public int performStep(StringBuffer input) {
-				pw.println("exit");
-				return 0;
-			}
-		});
-	}
-
-	public void retrieveConfig() {
-		PrintWriter pw = new PrintWriter(os, true);
-
-		outputConsumer.addStep(new CommandStep() {
-			@Override
-			public int performStep(StringBuffer input) {
-				pw.println("show running-config");
-				return 0;
-			}
-		});
-
-		outputConsumer.addStep(new WaitForStep("Running configuration:\n\r") {
-			@Override
-			public int performStep(StringBuffer input) {
-				return getConsumedTill();
-			}
-		});
-
-		outputConsumer.addStep(new CollectOutputStep("" + (char) 27));
-	}
-
-	public void exit() {
-		PrintWriter pw = new PrintWriter(os, true);
-
-		outputConsumer.addStep(new CommandStep() {
-			@Override
-			public int performStep(StringBuffer input) {
-				pw.println("exit");
-				pw.println("exit");
-				pw.println("y");
-				return 0;
-			}
-		});
-	}
+	protected abstract void exit();
 
 }
