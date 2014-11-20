@@ -49,7 +49,7 @@ module Construct
           @sections.keys.sort do |a,b|
             match_a=/^(.*[^\d])(\d+)$/.match(a)||[nil,a,1]
             match_b=/^(.*[^\d])(\d+)$/.match(b)||[nil,b,1]
-            puts match_a, match_b, a, b
+            #puts match_a, match_b, a, b
             ret = match_a[1]<=>match_b[1]
             ret = match_a[2].to_i<=>match_b[2].to_i  if ret==0
             ret
@@ -120,7 +120,7 @@ module Construct
           block=[]
           verbs.keys.sort.each do |key|
             verb = verbs[key]
-            puts "#{verb.class.name} section=[#{section}] key=[#{key}] [#{verb.serialize}]"
+            #puts "#{verb.class.name} section=[#{section}] key=[#{key}] [#{verb.serialize}]"
             block << verb.serialize.map{|i| "  #{i}"}
           end
           block
@@ -152,9 +152,17 @@ module Construct
         end
       end
 
-      class RangeVerb < GenericVerb
+      class RangeVerb
+        attr_accessor :key,:values
         def initialize(key)
-          super(key)
+          self.key=key
+          self.values = []
+        end
+
+        def add(value)
+          throw "must be a number #{value}" unless /^\d+$/.match(value.to_s)
+          self.values << value.to_i
+          self
         end
 
         def serialize
