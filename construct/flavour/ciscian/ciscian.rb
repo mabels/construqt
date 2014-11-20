@@ -17,7 +17,7 @@ module Construct
       end
 
       class Result
-        attr_accessor :dialect
+        attr_accessor :dialect,:host
         def initialize(host)
           @host = host
           @sections = {}
@@ -27,44 +27,76 @@ module Construct
           self.dialect=Ciscian.dialects[host.dialect].new(self)
         end
 
+        def commit
+          self.dialect.commit
+
+          block=[]
+          @sections.keys.sort do |a,b|
+            match_a=/^(.*[^\d])(\d+)$/.match(a)||[nil,a,1]
+            match_b=/^(.*[^\d])(\d+)$/.match(b)||[nil,b,1]
+            puts match_a, match_b, a, b
+            ret = match_a[1]<=>match_b[1]
+            ret = match_a[2].to_i<=>match_b[2].to_i  if ret==0
+            ret
+          end.each do |key|
+            section = @sections[key]
+            block += section.serialize
+          end
+
+          Util.write_str(block.join("\n"), File.join(@host.name, "#{self.dialect.class.name}.cfg"))
+        end
+
+        def add(section, clazz=NestedSection)
+          throw "section must not be nil" unless section
+          @sections[section] ||= clazz.new(section)
+          yield(@sections[section])  if block_given?
+          @sections[section]
+        end
+      end
+
+      class SingleVerb
+        attr_accessor :verb,:value
+        def initialize(verb)
+          self.verb=verb
+        end
+        def serialize
+          [[verb , value].compact.join(" ")]
+        end
+        def add(value)
+          self.value=value
+        end
+      end
+
+      class NestedSection
+        attr_accessor :section,:verbs
+        def initialize(section)
+          self.section=section
+          self.verbs={}
+        end
+
+        def add(verb, clazz = GenericVerb)
+          if verb.respond_to?(:section_key)
+            clazz=verb
+            verb=clazz.section_key
+          end
+          self.verbs[verb] ||= clazz.new(verb)
+        end
+
         def render_verbs(verbs)
           block=[]
           verbs.keys.sort.each do |key|
             verb = verbs[key]
             block << verb.serialize
           end
-
           block
         end
 
-        def commit
+        def serialize
           block=[]
-          @sections.keys.sort.each do |key|
-            section = @sections[key]
-            block << key
-            block += render_verbs(section.verbs)
-            block << "end"
-          end
-
-          Util.write_str(block.join("\n"), File.join(@host.name, "#{self.dialect.class.name}.cfg"))
-        end
-
-        class Section
-          attr_accessor :section,:verbs
-          def initialize(section)
-            self.section=section
-            self.verbs={}
-          end
-
-          def add(verb, clazz = GenericVerb)
-            self.verbs[verb] ||= clazz.new(verb)
-          end
-        end
-
-        def add(section, &block)
-          @sections[section] ||= Section.new(section)
-          block.call(@sections[section])
-          @sections[section]
+          block << section
+          block += render_verbs(self.verbs)
+          block << "exit"
+          block
         end
       end
 
@@ -94,6 +126,17 @@ module Construct
           "  " + key + " " + Construct::Util.createRangeDefinition(values)
         end
       end
+
+      class StringVerb < GenericVerb
+        def initialize(key)
+          super(key)
+        end
+
+        def serialize
+          "  " + key + " " + values.map{|i| i.inspect}.join(",")
+        end
+      end
+
 
       class Host < OpenStruct
         def initialize(cfg)
@@ -146,6 +189,7 @@ module Construct
         end
 
         def build_config(host, bond)
+          host.result.dialect.add_bond(bond)
         end
       end
 
