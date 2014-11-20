@@ -87,7 +87,7 @@ module Construct
           @bond=bond
         end
         def serialize
-          "  channel-group #{@bond.name[2..-1]} mode #{@bond.delegate.mode || 'active'}"
+          ["channel-group #{@bond.name[2..-1]} mode #{@bond.delegate.mode || 'active'}"]
         end
       end
 

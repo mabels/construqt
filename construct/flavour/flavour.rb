@@ -6,6 +6,7 @@ module Construct
     @flavours = {}
 
     class FlavourDelegate
+      attr_reader :flavour
       def initialize(flavour)
         @flavour = flavour
       end
@@ -88,5 +89,10 @@ module Construct
       throw "flavour #{name} not found" unless ret
       ret
     end
+
+    def self.parser(flavour, dialect)
+      @flavours[flavour].flavour::Result.new(OpenStruct.new(:dialect => dialect))
+    end
+
   end
 end

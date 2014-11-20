@@ -1,6 +1,15 @@
 module Construct
   module Flavour
     module Ciscian
+      class HostNameVerb
+        def self.parse_line(line, lines, section, result)
+          return false unless line.start_with?("snmp-server name")
+          result.host.name = line.split(/\s+/)[2]
+          section.add("snmp-server name", Ciscian::SingleVerb).add(result.host.name)
+          true
+        end
+      end
+
       class DlinkDgs15xx
         def self.name
           'dlink-dgs15xx'
@@ -8,6 +17,23 @@ module Construct
 
         def initialize(result)
           @result=result
+        end
+
+        def block_end?(line)
+          ['end','exit'].include?(line.strip)
+        end
+
+        def clear_interface(line)
+          ret = line.split(/\s+/).map do |i|
+            split = /^([^0-9]+)([0-9].*)$/.match(i)
+            split ? split[1..-1] : i
+          end.flatten.join(' ')
+          puts "IF[#{ret}]"
+          ret
+        end
+
+        def parse_line(line, lines, section, result)
+          [HostNameVerb].find{|i| i.parse_line(line, lines, section, result) }
         end
 
         def expand_device_name(device)
@@ -70,7 +96,7 @@ module Construct
           @bond=bond
         end
         def serialize
-          "  channel-group #{@bond.name[2..-1]} mode #{@bond.delegate.mode || 'active'}"
+          ["channel-group #{@bond.name[2..-1]} mode #{@bond.delegate.mode || 'active'}"]
         end
       end
 
