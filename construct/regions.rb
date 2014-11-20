@@ -3,7 +3,7 @@ module Construct
   module Regions
     @regions = {}
     class Region
-      attr_reader :name, :cables, :hosts, :interfaces, :users, :vlans, :network, :templates
+      attr_reader :name, :cables, :hosts, :interfaces, :users, :vlans, :network, :templates, :resources
       def initialize(name, network)
         @name = name
         @network = network
@@ -13,6 +13,7 @@ module Construct
         @templates = Construct::Templates.new(self)
         @users = Construct::Users.new(self)
         @cables = Construct::Cables.new(self)
+        @resources = Construct::Resources.new(self)
       end
     end
 

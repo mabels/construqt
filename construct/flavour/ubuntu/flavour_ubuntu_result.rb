@@ -204,7 +204,7 @@ module Construct
               return "" if @entry.skip_interfaces?
               out = <<OUT
 # #{@entry.iface.clazz}
-              #{@auto ? "auto #{get_interface_name}" : ""}
+#{@auto ? "auto #{get_interface_name}" : ""}
 iface #{get_interface_name} #{@protocol.to_s} #{@mode.to_s}
   up   /bin/bash /etc/network/#{get_interface_name}-up.iface
   down /bin/bash /etc/network/#{get_interface_name}-down.iface
@@ -237,9 +237,9 @@ OUT
             end
 
             def write_s(direction, blocks)
-              @entry.result.add(self.class, <<BLOCK, Construct::Resource::Rights::ROOT_0755, "etc", "network", "#{@entry.header.get_interface_name}-#{direction}.iface")
+              @entry.result.add(self.class, <<BLOCK, Construct::Resources::Rights::ROOT_0755, "etc", "network", "#{@entry.header.get_interface_name}-#{direction}.iface")
 exec > >(logger -t "#{@entry.header.get_interface_name}-#{direction}") 2>&1
-              #{blocks.join("\n")}
+#{blocks.join("\n")}
 iptables-restore < /etc/network/iptables.cfg
 ip6tables-restore < /etc/network/ip6tables.cfg
 BLOCK
@@ -371,7 +371,7 @@ BLOCK
         def commit(result)
           @interfaces.keys.sort.each do |ifname|
             vrrp = @interfaces[ifname]
-            result.add(self, <<VRRP, Construct::Resource::Rights::ROOT_0755, "etc", "network", "vrrp.#{ifname}.sh")
+            result.add(self, <<VRRP, Construct::Resources::Rights::ROOT_0755, "etc", "network", "vrrp.#{ifname}.sh")
 #!/bin/bash
 
 TYPE=$1
@@ -465,9 +465,9 @@ VRRP
         end
 
         def commit
-          add(EtcNetworkIptables, etc_network_iptables.commitv4, Construct::Resource::Rights::ROOT_0644, "etc", "network", "iptables.cfg")
-          add(EtcNetworkIptables, etc_network_iptables.commitv6, Construct::Resource::Rights::ROOT_0644, "etc", "network", "ip6tables.cfg")
-          add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construct::Resource::Rights::ROOT_0644, "etc", "network", "interfaces")
+          add(EtcNetworkIptables, etc_network_iptables.commitv4, Construct::Resources::Rights::ROOT_0644, "etc", "network", "iptables.cfg")
+          add(EtcNetworkIptables, etc_network_iptables.commitv6, Construct::Resources::Rights::ROOT_0644, "etc", "network", "ip6tables.cfg")
+          add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construct::Resources::Rights::ROOT_0644, "etc", "network", "interfaces")
           @etc_network_vrrp.commit(self)
           out = [<<BASH]
 #!/bin/bash

@@ -61,8 +61,13 @@ module Construct
           end
 
           iface.address.routes.each do |route|
-            lines.up("ip route add #{route.dst.to_string} via #{route.via.to_s}")
-            lines.down("ip route del #{route.dst.to_string} via #{route.via.to_s}")
+            if route.metric
+              metric = " metric #{route.metric}"
+            else
+              metric = ""
+            end
+            lines.up("ip route add #{route.dst.to_string} via #{route.via.to_s}#{metric}")
+            lines.down("ip route del #{route.dst.to_string} via #{route.via.to_s}#{metric}")
           end
 
           Firewall.create(host, ifname, iface)
@@ -158,7 +163,7 @@ BOND
         end
 
         def build_config(host, unused)
-          host.result.add(self, <<SCTL, Construct::Resource::Rights::ROOT_0644, "etc", "sysctl.conf")
+          host.result.add(self, <<SCTL, Construct::Resources::Rights::ROOT_0644, "etc", "sysctl.conf")
 net.ipv4.conf.all.forwarding = 1
 net.ipv4.conf.default.forwarding = 1
 net.ipv4.vs.pmtu_disc=1
@@ -167,12 +172,22 @@ net.ipv6.conf.all.autoconf=0
 net.ipv6.conf.all.accept_ra=0
 net.ipv6.conf.all.forwarding=1
 SCTL
-          host.result.add(self, host.name, Construct::Resource::Rights::ROOT_0644, "etc", "hostname")
-          host.result.add(self, "# WTF resolvconf", Construct::Resource::Rights::ROOT_0644, "etc", "resolvconf", "resolv.conf.d", "orignal");
+          host.result.add(self, <<HOSTS, Construct::Resources::Rights::ROOT_0644, "etc", "hosts")
+127.0.0.1       localhost
+::1             localhost ip6-localhost ip6-loopback
+fe00::0         ip6-localnet
+ff00::0         ip6-mcastprefix
+ff02::1         ip6-allnodes
+ff02::2         ip6-allrouters
+
+127.0.1.1       #{host.name} #{host.region.network.fqdn(host.name)}
+HOSTS
+          host.result.add(self, host.name, Construct::Resources::Rights::ROOT_0644, "etc", "hostname")
+          host.result.add(self, "# WTF resolvconf", Construct::Resources::Rights::ROOT_0644, "etc", "resolvconf", "resolv.conf.d", "orignal");
           host.result.add(self,
                           (host.region.network.dns_resolver.nameservers.ips.map{|i| "nameserver #{i.to_s}" }+
                            ["search #{host.region.network.dns_resolver.search.join(' ')}"]).join("\n"),
-                          Construct::Resource::Rights::ROOT_0644, "etc", "resolv.conf")
+                          Construct::Resources::Rights::ROOT_0644, "etc", "resolv.conf")
           #binding.pry
           Dns.build_config(host) if host.delegate.dns_server
           akeys = []
@@ -184,11 +199,11 @@ SCTL
             skeys << "#{u.shadow}" if u.shadow
           end
 
-          host.result.add(self, skeys.join(), Construct::Resource::Rights::ROOT_0644, "etc", "shadow.merge")
-          host.result.add(self, akeys.join(), Construct::Resource::Rights::ROOT_0644, "root", ".ssh", "authorized_keys")
-          host.result.add(self, ykeys.join("\n"), Construct::Resource::Rights::ROOT_0644, "etc", "yubikey_mappings")
+          host.result.add(self, skeys.join(), Construct::Resources::Rights::ROOT_0644, "etc", "shadow.merge")
+          host.result.add(self, akeys.join(), Construct::Resources::Rights::ROOT_0644, "root", ".ssh", "authorized_keys")
+          host.result.add(self, ykeys.join("\n"), Construct::Resources::Rights::ROOT_0644, "etc", "yubikey_mappings")
 
-          host.result.add(self, <<SSH , Construct::Resource::Rights::ROOT_0644, "etc", "ssh", "sshd_config")
+          host.result.add(self, <<SSH , Construct::Resources::Rights::ROOT_0644, "etc", "ssh", "sshd_config")
 # Package generated configuration file
 # See the sshd_config(5) manpage for details
 
@@ -278,7 +293,7 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 # and ChallengeResponseAuthentication to 'no'.
 UsePAM yes
 SSH
-          host.result.add(self, <<PAM , Construct::Resource::Rights::ROOT_0644, "etc", "pam.d", "openvpn")
+          host.result.add(self, <<PAM , Construct::Resources::Rights::ROOT_0644, "etc", "pam.d", "openvpn")
           #{host.delegate.yubikey ? '':'# '}auth required pam_yubico.so id=16 authfile=/etc/yubikey_mappings
 auth [success=1 default=ignore] pam_unix.so nullok_secure try_first_pass
 auth requisite pam_deny.so

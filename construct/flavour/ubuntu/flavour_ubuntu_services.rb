@@ -86,7 +86,7 @@ module Construct
             return unless iface.address && iface.address.first_ipv6
             writer.lines.up(up(ifname))
             writer.lines.down(down(ifname))
-            host.result.add(self, <<RADV, Construct::Resource::Rights::ROOT_0644, "etc", "network", "radvd.#{ifname}.conf")
+            host.result.add(self, <<RADV, Construct::Resources::Rights::ROOT_0644, "etc", "network", "radvd.#{ifname}.conf")
 interface #{ifname}
 {
         AdvManagedFlag on;

@@ -42,7 +42,7 @@ GLOBAL
           end
 
           ret << "}"
-          host.result.add(self, ret.join("\n"), Construct::Resource::Rights::ROOT_0644, "etc", "keepalived", "keepalived.conf")
+          host.result.add(self, ret.join("\n"), Construct::Resources::Rights::ROOT_0644, "etc", "keepalived", "keepalived.conf")
         end
       end
     end
