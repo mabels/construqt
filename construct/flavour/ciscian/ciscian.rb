@@ -17,7 +17,7 @@ module Construct
       end
 
       class Result
-        attr_accessor :dialect,:host
+        attr_accessor :dialect,:host, :sections
         def initialize(host)
           @host = host
           @sections = {}
@@ -25,6 +25,21 @@ module Construct
           require_relative("dialect_#{host.dialect}.rb")
           throw "cannot load dialect class #{host.dialect}" unless Ciscian.dialects[host.dialect]
           self.dialect=Ciscian.dialects[host.dialect].new(self)
+        end
+
+        def parse(lines)
+          lines = lines.map{|i| i.strip }
+          while line = lines.shift
+            parse_line(line, lines, self, self)
+          end
+          self
+        end
+
+        def parse_line(line, lines, section, result)
+          return if self.dialect.parse_line(line, lines, section, result)
+          [NestedSection, SingleVerb].find do |clazz|
+            clazz.parse_line(line, lines, section, result)
+          end
         end
 
         def commit
@@ -59,11 +74,17 @@ module Construct
         def initialize(verb)
           self.verb=verb
         end
+
         def serialize
           [[verb , value].compact.join(" ")]
         end
+
         def add(value)
           self.value=value
+        end
+
+        def self.parse_line(line, lines, section, result)
+          section.add(line, Ciscian::SingleVerb)
         end
       end
 
@@ -79,14 +100,28 @@ module Construct
             clazz=verb
             verb=clazz.section_key
           end
+
           self.verbs[verb] ||= clazz.new(verb)
+        end
+
+        def self.parse_line(line, lines, section, result)
+          #binding.pry if line.start_with?("interface")
+          if ['interface', 'vlan'].find{|i| line.start_with?(i) }
+            section.add(result.dialect.clear_interface(line)) do |_section|
+              while line = lines.shift
+                break if result.dialect.block_end?(line)
+                result.parse_line(line, lines, _section, result)
+              end
+            end
+          end
         end
 
         def render_verbs(verbs)
           block=[]
           verbs.keys.sort.each do |key|
             verb = verbs[key]
-            block << verb.serialize
+            puts "#{verb.class.name} section=[#{section}] key=[#{key}] [#{verb.serialize}]"
+            block << verb.serialize.map{|i| "  #{i}"}
           end
           block
         end
@@ -113,7 +148,7 @@ module Construct
         end
 
         def serialize
-          "  " + key + " " + values.join(",")
+          ["#{key} #{values.join(",")}"]
         end
       end
 
@@ -123,7 +158,7 @@ module Construct
         end
 
         def serialize
-          "  " + key + " " + Construct::Util.createRangeDefinition(values)
+          ["#{key} #{Construct::Util.createRangeDefinition(values)}"]
         end
       end
 
@@ -133,10 +168,9 @@ module Construct
         end
 
         def serialize
-          "  " + key + " " + values.map{|i| i.inspect}.join(",")
+          ["#{key} #{values.map{|i| i.inspect}.join(",")}"]
         end
       end
-
 
       class Host < OpenStruct
         def initialize(cfg)
