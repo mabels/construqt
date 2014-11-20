@@ -1,4 +1,4 @@
-package com.sinnerschrader.construct.switchchatter.steps;
+package com.sinnerschrader.construct.switchchatter.steps.generic;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -12,15 +12,19 @@ import org.apache.commons.io.output.NullWriter;
 
 public class OutputConsumer extends java.io.FilterWriter {
 
-	PrintWriter consoleWriter = new PrintWriter(new NullWriter());
-	//PrintWriter consoleWriter = new PrintWriter(System.out);
+	private PrintWriter consoleWriter;
 
 	private Queue<Step> plan = new LinkedList<Step>();
 
 	List<String> results = new ArrayList<String>();
 
-	public OutputConsumer() {
+	private PrintWriter printWriter;
+
+	public OutputConsumer(boolean debugOnStdErr, PrintWriter printWriter) {
 		super(new StringWriter());
+		consoleWriter = debugOnStdErr ? new PrintWriter(System.err, true)
+				: new PrintWriter(new NullWriter(), true);
+		this.printWriter = printWriter;
 	}
 
 	public void addStep(Step step) {
@@ -35,15 +39,21 @@ public class OutputConsumer extends java.io.FilterWriter {
 		checkExpected();
 	}
 
-	private void checkExpected() {
+	private void checkExpected() throws IOException {
+
+		consoleWriter.print("[check expected called]");
+		consoleWriter.flush();
+		out.flush();
 		StringBuffer buffer = ((StringWriter) out).getBuffer();
 		Step step = getCurrentStep();
+		consoleWriter.print("[check expected " + step + "]");
+		consoleWriter.flush();
 		if (step != null) {
 			boolean succeeded = step.check(buffer);
 
 			if (succeeded) {
 				// call listener
-				int consumedTill = step.performStep(buffer);
+				int consumedTill = step.performStep(buffer, printWriter);
 
 				// retrieve result
 				String result = step.retrieveResult();

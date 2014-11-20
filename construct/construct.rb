@@ -15,7 +15,7 @@ module Construct
     @logger.level = level
   end
   if !IPAddress::IPv6.instance_methods.include?(:rev_domains)
-    @logger.fatal "you need the right ipaddress version from https://github.com/mabels/ipaddress" 
+    @logger.fatal "you need the right ipaddress version from https://github.com/mabels/ipaddress"
   end
   if !OpenStruct.instance_methods.include?(:to_h)
     OpenStruct.class_eval do
@@ -27,7 +27,7 @@ module Construct
   end
 
   def self.logger
-    @logger 
+    @logger
   end
 
 
@@ -54,14 +54,13 @@ module Construct
   require 'construct/flavour/flavour.rb'
 
   require 'construct/flavour/unknown/flavour_unknown.rb'
-  ['construct/flavour/dlink-dgs15xx/flavour_dlink_dgs15xx.rb',
-   'construct/flavour/hp-procurve/flavour_hp-procurve.rb',
-   'construct/flavour/graphviz/graphviz.rb',
+  [
+   'construct/flavour/ciscian/ciscian.rb',
    'construct/flavour/plantuml/plantuml.rb',
    'construct/flavour/mikrotik/flavour_mikrotik.rb',
    'construct/flavour/ubuntu/flavour_ubuntu.rb'].each do |fname|
     begin
-      require fname 
+      require fname
     rescue LoadError
       Construct::logger.warn("can not load driver:#{fname}")
     end
@@ -74,10 +73,10 @@ module Construct
     throw "need a region or hosts list" unless hosts
     Construct::Ipsecs.build_config()
     Construct::Bgps.build_config()
-    hosts.inject({}) do |r, host| 
+    hosts.inject({}) do |r, host|
       r[host.region.name] ||= []
       r[host.region.name] << host
-      r 
+      r
     end.values.each do |hosts|
       hosts.first.region.hosts.build_config(hosts)
       hosts.first.region.interfaces.build_config(hosts)

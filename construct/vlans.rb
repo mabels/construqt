@@ -10,21 +10,19 @@ module Construct
     class Vlan < OpenStruct
       def initialize(cfg)
         super(cfg)
-        @tagged = true
-        @untagged = false
       end
       def tagged?
         @tagged
       end
       def tagged
-        @tagged = true
+        @tagged=true
         self
       end
       def untagged?
-        @untagged
+        !@tagged
       end
       def untagged
-        @untagged = true
+        @tagged = false
         self
       end
     end

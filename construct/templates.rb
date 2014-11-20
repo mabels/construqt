@@ -10,6 +10,12 @@ module Construct
       def initialize(cfg)
         super(cfg)
       end
+      def is_tagged?(vlan_id)
+        self.vlans.each do |vlan|
+          return vlan.tagged? if vlan.vlan_id == vlan_id
+        end
+        throw "vlan with id #{vlan_id} not found in template #{self}"
+      end
     end
     def find(name)
       ret = @templates[name]
