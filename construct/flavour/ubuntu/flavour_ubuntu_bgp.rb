@@ -63,7 +63,7 @@ BGP
 
         def build_bird_conf
           if self.my.address.first_ipv4 && self.other.my.address.first_ipv4
-            self.my.host.result.add(self, <<BGP, Construct::Resource::Rights::ROOT_0644, "etc", "bird", "bird.conf")
+            self.my.host.result.add(self, <<BGP, Construct::Resources::Rights::ROOT_0644, "etc", "bird", "bird.conf")
 protocol bgp #{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)} {
         description "#{self.my.host.name} <=> #{self.other.host.name}";
         direct;
@@ -82,7 +82,7 @@ BGP
         def build_bird6_conf
           #      binding.pry
           if self.my.address.first_ipv6 && self.other.my.address.first_ipv6
-            self.my.host.result.add(self, <<BGP, Construct::Resource::Rights::ROOT_0644, "etc", "bird", "bird6.conf")
+            self.my.host.result.add(self, <<BGP, Construct::Resources::Rights::ROOT_0644, "etc", "bird", "bird6.conf")
 protocol bgp #{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)} {
         description "#{self.my.host.name} <=> #{self.other.host.name}";
         direct;
