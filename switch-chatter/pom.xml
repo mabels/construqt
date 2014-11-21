@@ -104,7 +104,7 @@
 					</descriptorRefs>
 					<archive>
 						<manifest>
-							<mainClass>com.sinnerschrader.construct.switchchatter.Main</mainClass>
+							<mainClass>com.adviser.construct.switchchatter.Main</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
