@@ -30,8 +30,8 @@ public abstract class SwitchChatter implements Closeable {
 
 	public static SwitchChatter create(String flavour, InputStream is,
 			OutputStream os, boolean debug) {
-		String clazz = "com.adviser.construct.switchchatter.flavour."
-				+ flavour + "SwitchChatter";
+		String clazz = "com.adviser.construct.switchchatter.flavour." + flavour
+				+ "SwitchChatter";
 
 		try {
 			SwitchChatter switchChatter = (SwitchChatter) Class.forName(clazz)
@@ -85,9 +85,7 @@ public abstract class SwitchChatter implements Closeable {
 		return outputConsumer;
 	}
 
-	protected abstract void skipSplashScreen();
-
-	protected abstract void enterManagementMode(String password);
+	protected abstract void enterManagementMode(String username, String password);
 
 	protected abstract void disablePaging();
 

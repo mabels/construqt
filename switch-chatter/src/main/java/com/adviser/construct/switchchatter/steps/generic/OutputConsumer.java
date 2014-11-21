@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 
 import org.apache.commons.io.output.NullWriter;
 
@@ -14,7 +14,7 @@ public class OutputConsumer extends java.io.FilterWriter {
 
 	private PrintWriter consoleWriter;
 
-	private Queue<Step> plan = new LinkedList<Step>();
+	private LinkedList<Step> plan = new LinkedList<Step>();
 
 	List<String> results = new ArrayList<String>();
 
@@ -29,6 +29,7 @@ public class OutputConsumer extends java.io.FilterWriter {
 
 	public void addStep(Step step) {
 		this.plan.add(step);
+		checkExpected();
 	}
 
 	@Override
@@ -39,11 +40,14 @@ public class OutputConsumer extends java.io.FilterWriter {
 		checkExpected();
 	}
 
-	private void checkExpected() throws IOException {
-
+	private void checkExpected() {
 		consoleWriter.print("[check expected called]");
 		consoleWriter.flush();
-		out.flush();
+		try {
+			out.flush();
+		} catch (IOException e) {
+			throw new RuntimeException("An error occured while flushing.", e);
+		}
 		StringBuffer buffer = ((StringWriter) out).getBuffer();
 		Step step = getCurrentStep();
 		consoleWriter.print("[check expected " + step + "]");
@@ -52,17 +56,17 @@ public class OutputConsumer extends java.io.FilterWriter {
 			boolean succeeded = step.check(buffer);
 
 			if (succeeded) {
+				// remove current step
+				plan.poll();
+
 				// call listener
-				int consumedTill = step.performStep(buffer, printWriter);
+				int consumedTill = step.performStep(buffer, printWriter, this);
 
 				// retrieve result
 				String result = step.retrieveResult();
 				if (result != null) {
 					results.add(result);
 				}
-
-				// remove step
-				plan.poll();
 
 				if (consumedTill > 0) {
 					// clear buffer
@@ -72,6 +76,10 @@ public class OutputConsumer extends java.io.FilterWriter {
 				checkExpected();
 			}
 		}
+	}
+
+	public void insertAfterCurrentStep(Step[] steps) {
+		plan.addAll(0, Arrays.asList(steps));
 	}
 
 	public Step getCurrentStep() {

@@ -24,13 +24,13 @@ public class Ssh implements Connector {
 
 	private String pass;
 
-	public Ssh(String connectString, String pass) {
-		Pattern p = Pattern.compile("ssh://([^@]+@|)([^:]*):?(\\d*)");
+	public Ssh(String connectString, String user, String pass) {
+		Pattern p = Pattern.compile("ssh://([^:]*):?(\\d*)");
 		Matcher m = p.matcher(connectString);
 		if (m.matches()) {
-			this.user = m.group(1);
-			this.host = m.group(2);
-			this.port = Integer.parseInt(m.group(3));
+			this.host = m.group(1);
+			this.port = Integer.parseInt(m.group(2));
+			this.user = user;
 			this.pass = pass;
 		} else {
 			throw new RuntimeException("Invalid ssh connect string "
@@ -93,4 +93,6 @@ public class Ssh implements Connector {
 		channel.disconnect();
 		session.disconnect();
 	}
+
+
 }
