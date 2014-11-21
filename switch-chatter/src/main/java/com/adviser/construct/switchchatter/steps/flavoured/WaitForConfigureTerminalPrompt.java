@@ -8,7 +8,7 @@ import com.adviser.construct.switchchatter.steps.generic.WaitForStep;
 public class WaitForConfigureTerminalPrompt extends WaitForStep {
 
 	public WaitForConfigureTerminalPrompt() {
-		super("(config)#");
+		super("#");
 	}
 
 	@Override
