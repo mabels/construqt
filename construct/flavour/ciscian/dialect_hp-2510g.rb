@@ -6,29 +6,11 @@ module Construct
           'hp-2510g'
         end
 
-        #hostname "ProCurve Switch 2510G-48"
-        #max-vlans 64
-        #
-        #vlan 1
-        #name "DEFAULT_VLAN"
-        # untagged 1-48
-        #  ip address dhcp-bootp
-        #   exit
-
         def initialize(result)
           @result=result
         end
 
         def commit
-          @result.add("hostname", Ciscian::SingleVerb).add(@result.host.name)
-          @result.add("max-vlans", Ciscian::SingleVerb).add(64)
-          @result.add("snmp-server community \"public\" Unrestricted", Ciscian::SingleVerb)
-          @result.host.interfaces.values.each do |iface|
-            next unless iface.delegate.address
-            iface.delegate.address.routes.each do |route|
-              @result.add("ip route #{route.dst.to_s} #{route.dst.netmask} #{route.via.to_s}", Ciscian::SingleVerb)
-            end
-          end
         end
 
         def expand_device_name(device)
@@ -41,9 +23,19 @@ module Construct
           pattern%device.name[2..-1]
         end
 
+        def add_host(host)
+          @result.add("hostname", Ciscian::SingleVerb).add(@result.host.name)
+          @result.add("max-vlans", Ciscian::SingleVerb).add(64)
+          @result.add("snmp-server community \"public\" Unrestricted", Ciscian::SingleVerb)
+          @result.host.interfaces.values.each do |iface|
+            next unless iface.delegate.address
+            iface.delegate.address.routes.each do |route|
+              @result.add("ip route #{route.dst.to_s} #{route.dst.netmask} #{route.via.to_s}", Ciscian::SingleVerb)
+            end
+          end
+        end
+
         def add_device(device)
-          #@result.add("interface #{expand_device_name(device)}") do |section|
-          #end
         end
 
         def add_bond(bond)
@@ -77,17 +69,18 @@ module Construct
             end
           end
         end
-      end
 
-      class ChannelGroupVerb < GenericVerb
-        def self.section_key
-          "channel-group"
-        end
-        def add(bond)
-          @bond=bond
-        end
-        def serialize
-          ["channel-group #{@bond.name[2..-1]} mode #{@bond.delegate.mode || 'active'}"]
+        class TrunkVerb < GenericVerb
+          def self.section_key
+            "trunk #{key}"
+          end
+          def serialize
+            if @no
+              ["no trunk #{Construct::Util.createRangeDefinition(values)}"]
+            else
+              ["trunk #{Construct::Util.createRangeDefinition(values)} #{key} Trunk"]
+            end
+          end
         end
       end
 
