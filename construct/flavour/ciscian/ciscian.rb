@@ -22,7 +22,7 @@ module Construct
           @host = host
           @sections = {}
           throw "ciscian flavour can only be created with dialect" unless host.dialect
-          require_relative("dialect_#{host.dialect}.rb")
+          require("construct/flavour/ciscian/dialect_#{host.dialect}.rb")
           throw "cannot load dialect class #{host.dialect}" unless Ciscian.dialects[host.dialect]
           self.dialect=Ciscian.dialects[host.dialect].new(self)
         end
@@ -138,6 +138,24 @@ module Construct
         end
       end
 
+      class VariableVerb
+        attr_accessor :key,:values
+        def initialize(key)
+          self.key=key
+          self.values = []
+        end
+
+        def add(value)
+          self.values << value
+          self
+        end
+
+        def serialize
+          puts "VALUES" + values.to_s
+          [eval("\"#{key}\"")]
+        end
+      end
+
       class NestedSection
         attr_accessor :section,:sections
         def initialize(section)
@@ -200,8 +218,13 @@ module Construct
           self
         end
 
+        def no
+          @no="no "
+          self
+        end
+
         def serialize
-          ["#{key} #{values.join(",")}"]
+          ["#{@no}#{key} #{values.join(",")}"]
         end
 
         def compare(section, other)
@@ -256,6 +279,7 @@ module Construct
         end
 
         def build_config(host, unused)
+          host.result.dialect.add_host(host)
         end
       end
 
