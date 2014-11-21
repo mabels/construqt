@@ -61,6 +61,9 @@ module Construct
         def commit
         end
 
+        def add_host(host)
+        end
+
         def add_device(device)
           @result.add("interface #{expand_device_name(device)}") do |section|
             section.add("flowcontrol").add("off")
