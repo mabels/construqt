@@ -2,6 +2,7 @@ package com.adviser.construct.switchchatter.steps.flavoured;
 
 import java.io.PrintWriter;
 
+import com.adviser.construct.switchchatter.steps.generic.OutputConsumer;
 import com.adviser.construct.switchchatter.steps.generic.WaitForStep;
 
 public class PasswordPrompt extends WaitForStep {
@@ -11,7 +12,7 @@ public class PasswordPrompt extends WaitForStep {
 	}
 
 	@Override
-	public int performStep(StringBuffer inputBuffer, PrintWriter terminalWriter) {
+	public int performStep(StringBuffer inputBuffer, PrintWriter terminalWriter, OutputConsumer outputConsumer) {
 		return getConsumedTill();
 	}
 

@@ -2,54 +2,48 @@ package com.adviser.construct.switchchatter.flavour;
 
 import java.io.PrintWriter;
 
-import com.adviser.construct.switchchatter.SwitchChatter;
-import com.adviser.construct.switchchatter.steps.flavoured.ConfigureTerminal;
+import com.adviser.construct.switchchatter.steps.flavoured.EnterInput;
 import com.adviser.construct.switchchatter.steps.flavoured.Exit;
 import com.adviser.construct.switchchatter.steps.flavoured.HpDisablePaging;
-import com.adviser.construct.switchchatter.steps.flavoured.HpSkipSplashScreen;
+import com.adviser.construct.switchchatter.steps.flavoured.PasswordPrompt;
 import com.adviser.construct.switchchatter.steps.flavoured.ShowRunningConfig;
 import com.adviser.construct.switchchatter.steps.flavoured.WaitForManagementPrompt;
 import com.adviser.construct.switchchatter.steps.flavoured.Yes;
+import com.adviser.construct.switchchatter.steps.generic.Case;
 import com.adviser.construct.switchchatter.steps.generic.CollectOutputStep;
-import com.adviser.construct.switchchatter.steps.generic.CommandStep;
+import com.adviser.construct.switchchatter.steps.generic.OutputConsumer;
+import com.adviser.construct.switchchatter.steps.generic.Step;
+import com.adviser.construct.switchchatter.steps.generic.SwitchStep;
 import com.adviser.construct.switchchatter.steps.generic.WaitForStep;
 
-public class HpProcurveSwitchChatter extends SwitchChatter {
-
-	public void skipSplashScreen() {
-		getOutputConsumer().addStep(new HpSkipSplashScreen());
-		getOutputConsumer().addStep(new WaitForManagementPrompt());
-	}
+public class HpProcurveSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 
 	@Override
-	protected void enterManagementMode(String password) {
-		// switch is automatically in management mode
+	protected void enterManagementMode(String username, String password) {
+		getOutputConsumer().addStep(new SwitchStep( //
+				new Case("Press any key to continue") {
+					public Step[] then() {
+						return new Step[] { new EnterInput("") };
+					}
+				}, new Case("Username:") {
+					public Step[] then() {
+						return new Step[] { //
+						new EnterInput(username), //
+								new PasswordPrompt(), //
+								new EnterInput(password) };
+					}
+				}, new Case("Password:") {
+					public Step[] then() {
+						return new Step[] { new EnterInput(password) };
+					}
+				}));
+
+		getOutputConsumer().addStep(new WaitForManagementPrompt());
 	}
 
 	public void disablePaging() {
 		getOutputConsumer().addStep(new HpDisablePaging());
 		getOutputConsumer().addStep(new WaitForManagementPrompt());
-	}
-
-	public void applyConfig(String config) {
-		getOutputConsumer().addStep(new ConfigureTerminal());
-		getOutputConsumer().addStep(new WaitForManagementPrompt());
-
-		String[] lines = config.split("\\n");
-		for (int i = 0; i < lines.length; i++) {
-			final String line = lines[i];
-			getOutputConsumer().addStep(new CommandStep() {
-				@Override
-				public int performStep(StringBuffer input, PrintWriter pw) {
-					pw.println(line);
-					System.out.println("Applying config: " + line);
-					return 0;
-				}
-			});
-			getOutputConsumer().addStep(new CollectOutputStep(false, "#"));
-		}
-
-		getOutputConsumer().addStep(new Exit());
 	}
 
 	public void retrieveConfig() {
@@ -58,7 +52,8 @@ public class HpProcurveSwitchChatter extends SwitchChatter {
 		getOutputConsumer().addStep(
 				new WaitForStep("Running configuration:\n\r") {
 					@Override
-					public int performStep(StringBuffer input, PrintWriter pw) {
+					public int performStep(StringBuffer input, PrintWriter pw,
+							OutputConsumer outputConsumer) {
 						return getConsumedTill();
 					}
 				});
