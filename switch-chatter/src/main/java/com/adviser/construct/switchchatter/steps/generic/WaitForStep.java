@@ -39,7 +39,7 @@ public class WaitForStep implements Step {
 	}
 
 	@Override
-	public int performStep(StringBuffer input, PrintWriter pw) {
+	public int performStep(StringBuffer input, PrintWriter pw, OutputConsumer outputConsumer) {
 		return getConsumedTill();
 	}
 

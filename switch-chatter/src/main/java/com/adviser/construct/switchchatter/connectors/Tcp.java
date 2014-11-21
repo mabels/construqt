@@ -12,7 +12,7 @@ public class Tcp implements Connector {
 
 	private Socket socket;
 
-	public Tcp(String connectString, String pass) {
+	public Tcp(String connectString) {
 		Pattern p = Pattern.compile("tcp://(.*):(\\d*)");
 		Matcher m = p.matcher(connectString);
 		if (m.matches()) {
@@ -35,5 +35,6 @@ public class Tcp implements Connector {
 	public void disconnect() throws Exception {
 		socket.close();
 	}
+
 
 }
