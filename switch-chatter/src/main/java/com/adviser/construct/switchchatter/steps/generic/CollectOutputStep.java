@@ -15,7 +15,7 @@ public class CollectOutputStep implements Step {
 	}
 
 	@Override
-	public int performStep(StringBuffer buffer, PrintWriter pw) {
+	public int performStep(StringBuffer buffer, PrintWriter pw, OutputConsumer outputConsumer) {
 		int index = findLastIndex(buffer);
 		collected = buffer.substring(0, index);
 		return index + 1;

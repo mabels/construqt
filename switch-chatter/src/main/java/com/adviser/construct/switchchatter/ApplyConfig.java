@@ -13,8 +13,10 @@ import com.adviser.construct.switchchatter.connectors.ConnectorFactory;
 
 public class ApplyConfig {
 	public static void main(String[] args) throws Exception {
-		String pass = args[2];
-		Connector connector = ConnectorFactory.createConnector(args[1], pass);
+		String user = args[2];
+		String pass = args[3];
+		Connector connector = ConnectorFactory.createConnector(args[1], user,
+				pass);
 		ConnectResult connect = connector.connect();
 
 		StringWriter sw = new StringWriter();
@@ -22,11 +24,10 @@ public class ApplyConfig {
 
 		final SwitchChatter sc = SwitchChatter.create(args[0],
 				connect.getInputStream(), connect.getOutputStream(),
-				args.length >= 5 && "debug".equals(args[4]));
+				args.length >= 6 && "debug".equals(args[5]));
 
 		// setup steps
-		sc.skipSplashScreen();
-		sc.enterManagementMode(pass);
+		sc.enterManagementMode(user, pass);
 		sc.disablePaging();
 		sc.applyConfig(sw.toString());
 		sc.exit();

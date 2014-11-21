@@ -5,10 +5,10 @@ import java.io.PrintWriter;
 import com.adviser.construct.switchchatter.steps.generic.OutputConsumer;
 import com.adviser.construct.switchchatter.steps.generic.WaitForStep;
 
-public class WaitForPrompt extends WaitForStep {
+public class WaitForConfigureTerminalPrompt extends WaitForStep {
 
-	public WaitForPrompt() {
-		super(">");
+	public WaitForConfigureTerminalPrompt() {
+		super("(config)#");
 	}
 
 	@Override
