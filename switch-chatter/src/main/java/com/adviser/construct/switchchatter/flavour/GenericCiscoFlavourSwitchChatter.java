@@ -33,7 +33,7 @@ public abstract class GenericCiscoFlavourSwitchChatter extends SwitchChatter {
 				}
 			});
 			getOutputConsumer().addStep(
-					new CollectOutputStep(false, "(config)#"));
+					new CollectOutputStep(false, "#"));
 		}
 
 		getOutputConsumer().addStep(new Exit());
