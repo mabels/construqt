@@ -78,11 +78,15 @@ module Construct
             ['end','exit'].include?(line.strip)
           end
 
-          def clear_interface(line)
-            line.to_s.split(/\s+/).map do |i|
-              split = /^([^0-9]+)([0-9].*)$/.match(i)
-              split ? split[1..-1] : i
-            end.flatten.join(' ')
+        def add_host(host)
+        end
+
+        def add_device(device)
+          @result.add("interface #{expand_device_name(device)}") do |section|
+            section.add("flowcontrol").add("off")
+            section.add("max-rcv-frame-size").add(device.delegate.mtu)
+            section.add("snmp trap").add("link-status")
+            section.add("switchport mode").add("trunk")
           end
 
           def parse_line(line, lines, section, result)
