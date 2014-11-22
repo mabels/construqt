@@ -110,7 +110,7 @@ module Construct
             host.result.etc_network_interfaces.get(i).lines.add("bond-master #{bond_delegate.name}")
           end
 
-          mac_address=bond_delegate.mac_address || Digest::SHA256.hexdigest("#{host.name} #{bond_delegate.name}").scan(/../)[0,6].join(':')
+          mac_address = bond_delegate.mac_address || Construct::Util.generate_mac_address_from_name("#{host.name} #{bond_delegate.name}")
           host.result.etc_network_interfaces.get(bond_delegate).lines.add(<<BOND)
 pre-up ip link set dev #{bond_delegate.name} mtu #{bond_delegate.mtu} address #{mac_address}
 bond-mode #{bond_delegate.mode||'active-backup'}

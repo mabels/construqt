@@ -137,5 +137,10 @@ module Construct
 #puts "self.expandRangeDefinition[#{list_str}]=>#{ret}"
       ret
     end
+
+    def self.generate_mac_address_from_name(name)
+      # http://www.iana.org/assignments/ethernet-numbers/ethernet-numbers.xhtml
+      '8f:'+Digest::SHA256.hexdigest("#{name}").scan(/../)[0,5].join(':')
+    end
   end
 end
