@@ -90,8 +90,8 @@ module Construct
       ret
     end
 
-    def self.parser(flavour, dialect)
-      @flavours[flavour].flavour::Result.new(OpenStruct.new(:dialect => dialect))
+    def self.parser(flavour, dialect, prefix = nil)
+      @flavours[flavour].flavour::Result.new(OpenStruct.new(:dialect => dialect, :fname => prefix, :interfaces => {}))
     end
 
   end

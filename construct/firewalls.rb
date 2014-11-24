@@ -40,6 +40,20 @@ module Construct
           chainable_attr_value :to, nil
           chainable_attr_value :to_net, nil
           chainable_attr_value :action, nil
+
+          def initialize
+            @from_is = nil
+          end
+
+          def from_is_inbound?
+            @from_is == :inbound
+          end
+          def from_is_outbound?
+            @from_is == :outbound
+          end
+          def from_is(direction)
+            @from_is = direction
+          end
         end
 
         def add
@@ -47,6 +61,7 @@ module Construct
           @rules << entry
           entry
         end
+
 
         def rules
           @rules
@@ -123,6 +138,7 @@ module Construct
           chainable_attr :connection
           chainable_attr :input_only, true, true
           chainable_attr :output_only, true, true
+          chainable_attr :from_interface, true, true
           chainable_attr :connection
           chainable_attr :tcp
           chainable_attr :udp
@@ -130,6 +146,21 @@ module Construct
           chainable_attr_value :from_net, nil
           chainable_attr_value :to_net, nil
           chainable_attr_value :action, nil
+
+          def initialize
+            @from_is = nil
+          end
+
+          def from_is_inbound?
+            @from_is == :inbound
+          end
+          def from_is_outbound?
+            @from_is == :outbound
+          end
+          def from_is(direction)
+            @from_is = direction
+          end
+
           def port(port)
             @ports ||= []
             @ports << port

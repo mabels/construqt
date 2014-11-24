@@ -16,8 +16,11 @@ module Construct
           chainable_attr_value :end_from, nil
           chainable_attr_value :factory, nil
           chainable_attr_value :ifname, nil
+          chainable_attr_value :interface, nil
           chainable_attr :output_only, false, false
           chainable_attr :input_only, false, false
+          chainable_attr_value :output_ifname_direction, "-i"
+          chainable_attr_value :input_ifname_direction, "-o"
 
           def only_in_out(rule)
             output_only rule.output_only?
@@ -87,13 +90,25 @@ module Construct
             return space_before(@end)
           end
 
+          def bind_interface(ifname, iface, rule)
+            self.interface(iface)
+            self.ifname(ifname)
+            if rule.from_is_inbound?
+              output_ifname_direction("-i")
+              input_ifname_direction("-o")
+            else
+              output_ifname_direction("-o")
+              input_ifname_direction("-i")
+            end
+          end
+
           def output_ifname
-            return space_before("-o #{@ifname}") if @ifname
+            return space_before("#{@output_ifname_direction} #{@ifname}") if @ifname
             return ""
           end
 
           def input_ifname
-            return space_before("-i #{@ifname}") if @ifname
+            return space_before("#{@input_ifname_direction} #{@ifname}") if @ifname
             return ""
           end
 
@@ -112,7 +127,14 @@ module Construct
 
         def self.write_table(iptables, rule, to_from)
           family = iptables=="ip6tables" ? Construct::Addresses::IPV6 : Construct::Addresses::IPV4
-          from_list = Construct::Tags.ips_net(rule.get_from_net, family)
+          if rule.from_interface?
+            from_list = IPAddress::IPv4::summarize(
+              *(iptables=="ip6tables" ? to_from.get_interface.address.v6s : to_from.get_interface.address.v4s).map do |adr|
+                adr.to_string
+              end)
+          else
+            from_list = Construct::Tags.ips_net(rule.get_from_net, family)
+          end
           to_list = Construct::Tags.ips_net(rule.get_to_net, family)
           #puts ">>>>>#{from_list.inspect}"
           #puts ">>>>>#{state.inspect} end_to:#{state.end_to}:#{state.end_from}:#{state.middle_to}#{state.middle_from}"
@@ -124,13 +146,13 @@ module Construct
             end
 
             if to_from.input_only?
-              to_from.factory!.row("#{to_from.input_ifname}#{to_from.get_begin_to}#{to_from.get_middle_from} -j #{rule.get_action}#{to_from.get_end_to}")
+              to_from.factory!.row("#{to_from.input_ifname}#{to_from.get_begin_to}#{to_from.get_middle_from} -j #{rule.get_action}#{to_from.get_end_from}")
             end
           end
 
           if to_list.length > 1
-            action_o = "I.#{rule.object_id.to_s(32)}"
-            action_i = "O.#{rule.object_id.to_s(32)}"
+            action_o = "I.#{to_from.get_ifname}.#{rule.object_id.to_s(32)}"
+            action_i = "O.#{to_from.get_ifname}.#{rule.object_id.to_s(32)}"
             to_list.each do |ip|
               if to_from.output_only?
                 to_from.factory!.table(action_o).row("#{to_from.output_ifname} -d #{ip.to_string} -j #{rule.get_action}")
@@ -164,14 +186,14 @@ module Construct
           raw.rules.each do |rule|
             throw "ACTION must set #{ifname}" unless rule.get_action
             if rule.prerouting?
-              to_from = ToFrom.new.ifname(ifname).only_in_out(rule)
+              to_from = ToFrom.new.bind_interface(ifname, iface, rule).only_in_out(rule)
               #puts "PREROUTING #{to_from.inspect}"
               write_table("iptables", rule, to_from.factory(writer.ipv4.prerouting))
               write_table("ip6tables", rule, to_from.factory(writer.ipv6.prerouting))
             end
 
             if rule.output?
-              to_from = ToFrom.new.ifname(ifname).only_in_out(rule)
+              to_from = ToFrom.new.bind_interface(ifname, iface, rule).only_in_out(rule)
               write_table("iptables", rule, to_from.factory(writer.ipv4.output))
               write_table("ip6tables", rule, to_from.factory(writer.ipv6.output))
             end
@@ -207,9 +229,9 @@ module Construct
         def self.write_forward(forward, ifname, iface, writer)
           forward.rules.each do |rule|
             throw "ACTION must set #{ifname}" unless rule.get_action
-            puts "write_forward #{rule.inspect} #{rule.input_only?} #{rule.output_only?}"
+            #puts "write_forward #{rule.inspect} #{rule.input_only?} #{rule.output_only?}"
             if rule.get_log
-              to_from = ToFrom.new.ifname(ifname).only_in_out(rule)
+              to_from = ToFrom.new.bind_interface(ifname, iface, rule).only_in_out(rule)
                 .end_to("--nflog-prefix o:#{rule.get_log}:#{ifname}")
                 .end_from("--nflog-prefix i:#{rule.get_log}:#{ifname}")
               write_table("iptables", rule.clone.action("NFLOG"), to_from.factory(writer.ipv4.forward))
@@ -217,7 +239,8 @@ module Construct
             end
 
             protocol_loop(rule).each do |protocol|
-              to_from = ToFrom.new.ifname(ifname).only_in_out(rule)
+              #binding.pry
+              to_from = ToFrom.new.bind_interface(ifname, iface, rule).only_in_out(rule)
               to_from.push_begin_to(protocol)
               to_from.push_begin_from(protocol)
               if rule.get_ports && !rule.get_ports.empty?
