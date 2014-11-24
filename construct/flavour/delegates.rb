@@ -12,21 +12,13 @@ module Construct
         @delegate = a
       end
 
-      #      def attach=(obj)
-      #        @self = obj
-      #      end
+      def tags
+        @tags || []
+      end
 
-      #      def attached
-      #        @attached
-      #      end
-
-      #      def header(host)
-      #        self.delegate.respond_to?('header') && self.delegate.header(host)
-      #      end
-
-      #      def footer(host)
-      #        self.delegate.respond_to?('footer') && self.delegate.footer(host)
-      #      end
+      def tags=(tags)
+        @tags = tags
+      end
 
       def name
         self.delegate.name

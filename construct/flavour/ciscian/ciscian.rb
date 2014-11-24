@@ -27,8 +27,41 @@ module Construct
           self.dialect=Ciscian.dialects[host.dialect].new(self)
         end
 
+        class Lines
+          class Line
+            attr_reader :to_s, :nr
+            def initialize(str, nr)
+              @to_s = str
+              @nr = nr
+            end
+            def <=>(other)
+              a = self.to_s
+              b = other.to_s
+              match_a=/^(.*[^\d])(\d+)$/.match(a)||[nil,a,1]
+              match_b=/^(.*[^\d])(\d+)$/.match(b)||[nil,b,1]
+              #puts match_a, match_b, a, b
+              ret = match_a[1]<=>match_b[1]
+              ret = match_a[2].to_i<=>match_b[2].to_i  if ret==0
+              ret
+            end
+#            def hash
+#              self.to_s.hash
+#            end
+          end
+          def initialize(lines)
+            @lines = []
+            lines.each_with_index do |line, idx|
+              @lines << Line.new(line.strip, idx)
+            end
+            @pos = 0
+          end
+          def shift
+            @pos += 1
+            @lines[@pos-1]
+          end
+        end
         def parse(lines)
-          lines = lines.map{|i| i.strip }
+          lines = Lines.new(lines)
           while line = lines.shift
             parse_line(line, lines, self, self)
           end
@@ -46,37 +79,54 @@ module Construct
           self.dialect.commit
 
           block=[]
-          @sections.keys.sort do |a,b|
-            match_a=/^(.*[^\d])(\d+)$/.match(a)||[nil,a,1]
-            match_b=/^(.*[^\d])(\d+)$/.match(b)||[nil,b,1]
-            #puts match_a, match_b, a, b
-            ret = match_a[1]<=>match_b[1]
-            ret = match_a[2].to_i<=>match_b[2].to_i  if ret==0
-            ret
-          end.each do |key|
+          @sections.keys.sort.each do |key|
             section = @sections[key]
             block += section.serialize
           end
-
-          Util.write_str(block.join("\n"), File.join(@host.name, "#{self.dialect.class.name}.cfg"))
+          Util.write_str(block.join("\n"), File.join(@host.name, "#{@host.fname||self.dialect.class.name}.cfg"))
         end
 
         def add(section, clazz=NestedSection)
-          throw "section must not be nil" unless section
-          @sections[section] ||= clazz.new(section)
-          yield(@sections[section])  if block_given?
-          @sections[section]
+          throw "section is nil" unless section
+          #puts "#{Lines::Line.name} #{section.class.name}"
+          section = Lines::Line.new(section, -1) unless section.kind_of?(Lines::Line)
+          @sections[section.to_s] ||= clazz.new(section)
+          yield(@sections[section.to_s])  if block_given?
+          @sections[section.to_s]
+        end
+
+        def self.compare(result, my, other)
+          my.sections.keys.sort.each do |key|
+            section = my.sections[key.to_s]
+            other_section = other.sections.delete(key.to_s)
+            section.compare(result, other_section)
+          end
+        end
+
+        def compare(other)
+          result = Result.new(@host)
+          self.class.compare(result, self, other)
+          other.sections.each do |k, v|
+            Construct.logger.debug "untouched=>#{v.section}::#{k}"
+          end
+          result
         end
       end
 
       class SingleVerb
-        attr_accessor :verb,:value
+        attr_accessor :verb,:value,:section
         def initialize(verb)
           self.verb=verb
+          self.section=verb
         end
 
         def serialize
           [[verb , value].compact.join(" ")]
+        end
+
+        def compare(section, other)
+          return section.add(section) unless other
+          return section.add(section) unless self.serialize == other.serialize
         end
 
         def add(value)
@@ -89,10 +139,10 @@ module Construct
       end
 
       class NestedSection
-        attr_accessor :section,:verbs
+        attr_accessor :section,:sections
         def initialize(section)
           self.section=section
-          self.verbs={}
+          self.sections={}
         end
 
         def add(verb, clazz = GenericVerb)
@@ -100,16 +150,15 @@ module Construct
             clazz=verb
             verb=clazz.section_key
           end
-
-          self.verbs[verb] ||= clazz.new(verb)
+          self.sections[verb.to_s] ||= clazz.new(verb)
         end
 
         def self.parse_line(line, lines, section, result)
           #binding.pry if line.start_with?("interface")
-          if ['interface', 'vlan'].find{|i| line.start_with?(i) }
-            section.add(result.dialect.clear_interface(line)) do |_section|
+          if ['interface', 'vlan'].find{|i| line.to_s.start_with?(i) }
+            section.add(Result::Lines::Line.new(result.dialect.clear_interface(line), line.nr)) do |_section|
               while line = lines.shift
-                break if result.dialect.block_end?(line)
+                break if result.dialect.block_end?(line.to_s)
                 result.parse_line(line, lines, _section, result)
               end
             end
@@ -118,9 +167,8 @@ module Construct
 
         def render_verbs(verbs)
           block=[]
-          verbs.keys.sort.each do |key|
-            verb = verbs[key]
-            #puts "#{verb.class.name} section=[#{section}] key=[#{key}] [#{verb.serialize}]"
+          sections.keys.sort.each do |key|
+            verb = sections[key]
             block << verb.serialize.map{|i| "  #{i}"}
           end
           block
@@ -128,10 +176,15 @@ module Construct
 
         def serialize
           block=[]
-          block << section
-          block += render_verbs(self.verbs)
+          block << "#{section.to_s}"
+          block += render_verbs(self.sections)
           block << "exit"
           block
+        end
+
+        def compare(section, other)
+          return section.add(self) unless other
+          Result.compare(section, self, other)
         end
       end
 
@@ -150,6 +203,11 @@ module Construct
         def serialize
           ["#{key} #{values.join(",")}"]
         end
+
+        def compare(section, other)
+          return section.add(self) unless other
+          return section.add(self) unless other.serialize == other.serialize
+        end
       end
 
       class RangeVerb
@@ -163,6 +221,11 @@ module Construct
           throw "must be a number #{value}" unless /^\d+$/.match(value.to_s)
           self.values << value.to_i
           self
+        end
+
+        def compare(section, other)
+          return section.add(self) unless other
+          return section.add(self) unless self.serialize == other.serialize
         end
 
         def serialize

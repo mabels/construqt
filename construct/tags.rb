@@ -35,8 +35,22 @@ module Construct
       IPAddress::IPv4::summarize(*(@tags[tag]||[]).map do |obj|
         if obj.kind_of?(IPAddress)
           obj
-        else
+        elsif obj.respond_to? :ips
           obj.ips
+        elsif obj.kind_of?(Construct::Flavour::HostDelegate)
+          #binding.pry
+          res = obj.interfaces.values.map do |i|
+            i.delegate.address.ips.map do |a|
+              prefix = a.ipv4? ? 32 : 128
+              ret = IPAddress.parse("#{a.to_s}/#{prefix}")
+              puts "ADR=#{tag} #{ret.to_string} #{a.to_s}"
+              ret
+            end
+          end.flatten
+          puts "HOST=>#{tag} #{res.map{|i| i.to_string }}"
+          res
+        else
+          nil
         end
       end.flatten.compact.select do |i|
         (family==Construct::Addresses::IPV4 && i.ipv4?) ||
