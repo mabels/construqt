@@ -85,8 +85,10 @@ module Construct
                 end
               end
 
-              tables.each do |k,v|
-                v.each do |chain, rows|
+              tables.keys.sort.each do |k,v|
+                v = tables[k]
+                v.keys.sort.each do |chain|
+                  rows = v[chain]
                   table = !k.empty? ? "-A #{k}" : "-A #{chain}"
                   rows.each do |row|
                     ret << "#{table} #{row.get_row}"

@@ -35,7 +35,12 @@ module Construct
       host
     end
 
-    def add(name, cfg, &block)
+    def add(host_name, cfg, &block)
+      (host_name, host) = Construct::Tags.add(host_name) { |name| add_internal(name, cfg) { |h| block.call(h) } }
+      host
+    end
+
+    def add_internal(name, cfg, &block)
       #binding.pry
       throw "id is not allowed" if cfg['id']
       throw "configip is not allowed" if cfg['configip']
