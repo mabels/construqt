@@ -22,7 +22,7 @@ GLOBAL
           ret << "vrrp_instance #{iface.name} {"
           ret << "  state MASTER"
           ret << "  interface #{my_iface.name}"
-          ret << "  virtual_router_id #{iface.vrid}"
+          ret << "  virtual_router_id #{iface.vrid||iface.interfaces.map{|a,b| a.priority<=>b.priority}.first}"
           ret << "  priority #{my_iface.priority}"
           ret << "  authentication {"
           ret << "        auth_type PASS"
@@ -36,7 +36,9 @@ GLOBAL
           ret << "  }"
           if iface.services && !iface.services.empty?
             ret << "  notify /etc/network/vrrp.#{iface.name}.sh"
+            writer = host.result.etc_network_interfaces.get(iface)
             iface.services.each do |service|
+              Services.get_renderer(service).interfaces(host, my_iface.name, my_iface, writer)
               Services.get_renderer(service).vrrp(host, my_iface.name, iface)
             end
           end
