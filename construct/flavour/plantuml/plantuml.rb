@@ -114,16 +114,24 @@ UML
         out = []
         out << "name = \"#{iface.name}\""
         if iface.address
+          tags = []
           [iface.address.v4s, iface.address.v6s].each do |ips|
             next unless ips.first
             prefix = ips.first.ipv4? ? "ipv4" : "ipv6"
             ips.each_with_index do |ip, idx|
+              tags += Construct::Tags.from(ip)||[]
               out << "#{prefix}(#{idx}) = #{ip.to_string}"
             end
           end
 
           iface.address.routes.each_with_index do |route, idx|
             out << "route(#{idx}) = \"#{route.dst.to_string} via #{route.via.to_s}\""
+          end
+          iface.delegate.firewalls && iface.delegate.firewalls.each_with_index do |fw, idx|
+            out << "fw(#{idx}) = \"#{fw.name}\""
+          end
+          (iface.tags+tags).sort.uniq.each_with_index do |tag, idx|
+            out << "tag(#{idx}) = \"#{tag}\""
           end
         end
 

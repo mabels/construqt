@@ -2,16 +2,25 @@
 module Construct
   module Tags
     @tags = {}
+    @object_id_tags = {}
     def self.add(tag_str, &block)
       (name, *tags) = tag_str.split(/\s*#\s*/)
-        obj = block.call(name, tags)
+      obj = block.call(name, tags)
       #binding.pry
       tags && tags.uniq.each do |tag|
         @tags[tag] ||= []
         @tags[tag] << obj unless @tags[tag].include?(obj)
       end
-
+      if obj.respond_to? :tags
+        obj.tags = tags
+      end
+      @object_id_tags[obj.object_id] ||= []
+      @object_id_tags[obj.object_id] = (@object_id_tags[obj.object_id] + tags).uniq
       [name, obj]
+    end
+
+    def self.from(obj)
+      @object_id_tags[obj.object_id]
     end
 
     def self.find(tag, clazz = nil)
