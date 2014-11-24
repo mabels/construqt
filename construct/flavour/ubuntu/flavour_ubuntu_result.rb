@@ -348,18 +348,21 @@ BLOCK
             self
           end
 
-          def render(lines)
+          def render(lines, direction)
             lines.map do |line|
-              "                  #{line}"
+              [
+                "                  logger '#{direction}#{line}'",
+                "                  #{line}"
+              ]
             end.join("\n")
           end
 
           def render_masters
-            render(@masters)
+            render(@masters, 'STARTING:')
           end
 
           def render_backups
-            render(@backups)
+            render(@backups, 'STOPPING:')
           end
         end
 
@@ -382,11 +385,11 @@ STATE=$3
 
 case $STATE in
         "MASTER")
-            #{vrrp.render_masters}
+#{vrrp.render_masters}
                   exit 0
                   ;;
         "BACKUP")
-            #{vrrp.render_backups}
+#{vrrp.render_backups}
                   exit 0
                   ;;
         *)        echo "unknown state"

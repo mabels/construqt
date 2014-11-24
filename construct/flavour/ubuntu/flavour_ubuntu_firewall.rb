@@ -128,6 +128,7 @@ module Construct
         def self.write_table(iptables, rule, to_from)
           family = iptables=="ip6tables" ? Construct::Addresses::IPV6 : Construct::Addresses::IPV4
           if rule.from_interface?
+            #binding.pry
             from_list = IPAddress::IPv4::summarize(
               *(iptables=="ip6tables" ? to_from.get_interface.address.v6s : to_from.get_interface.address.v4s).map do |adr|
                 adr.to_string
@@ -176,7 +177,7 @@ module Construct
             end
 
             if to_from.input_only?
-              to_from.factory!.row("#{to_from.input_ifname}#{to_from.get_begin_to}#{to_src} -d #{ip.to_string}#{to_from.get_middle_to} -j #{action_i}#{to_from.get_end_to}")
+              to_from.factory!.row("#{to_from.input_ifname}#{to_from.get_begin_to}#{to_src} -d #{ip.to_string}#{to_from.get_middle_to} -j #{action_i}#{to_from.get_end_from}")
             end
           end
         end
