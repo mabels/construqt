@@ -9,8 +9,7 @@ import com.adviser.construct.switchchatter.steps.flavoured.Enable;
 import com.adviser.construct.switchchatter.steps.flavoured.EnterInput;
 import com.adviser.construct.switchchatter.steps.flavoured.Exit;
 import com.adviser.construct.switchchatter.steps.flavoured.PasswordPrompt;
-import com.adviser.construct.switchchatter.steps.flavoured.WaitForConfigureTerminalPrompt;
-import com.adviser.construct.switchchatter.steps.flavoured.WaitForManagementPrompt;
+import com.adviser.construct.switchchatter.steps.flavoured.WaitForPrompt;
 import com.adviser.construct.switchchatter.steps.generic.CollectOutputStep;
 import com.adviser.construct.switchchatter.steps.generic.CommandStep;
 import com.adviser.construct.switchchatter.steps.generic.OutputConsumer;
@@ -19,7 +18,7 @@ public abstract class GenericCiscoFlavourSwitchChatter extends SwitchChatter {
 
 	public void applyConfig(String config) {
 		getOutputConsumer().addStep(new ConfigureTerminal());
-		getOutputConsumer().addStep(new WaitForConfigureTerminalPrompt());
+		getOutputConsumer().addStep(new WaitForPrompt());
 
 		String[] lines = config.split("\\n");
 		for (int i = 0; i < lines.length; i++) {
@@ -44,12 +43,12 @@ public abstract class GenericCiscoFlavourSwitchChatter extends SwitchChatter {
 		getOutputConsumer().addStep(new Enable());
 		getOutputConsumer().addStep(new PasswordPrompt());
 		getOutputConsumer().addStep(new EnterInput(password));
-		getOutputConsumer().addStep(new WaitForManagementPrompt());
+		getOutputConsumer().addStep(new WaitForPrompt());
 	}
 
 	public void disablePaging() {
 		getOutputConsumer().addStep(new CiscoDisablePaging());
-		getOutputConsumer().addStep(new WaitForManagementPrompt());
+		getOutputConsumer().addStep(new WaitForPrompt());
 	}
 
 }

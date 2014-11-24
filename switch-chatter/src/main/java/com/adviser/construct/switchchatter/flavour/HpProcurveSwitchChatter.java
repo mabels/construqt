@@ -7,7 +7,7 @@ import com.adviser.construct.switchchatter.steps.flavoured.Exit;
 import com.adviser.construct.switchchatter.steps.flavoured.HpDisablePaging;
 import com.adviser.construct.switchchatter.steps.flavoured.PasswordPrompt;
 import com.adviser.construct.switchchatter.steps.flavoured.ShowRunningConfig;
-import com.adviser.construct.switchchatter.steps.flavoured.WaitForManagementPrompt;
+import com.adviser.construct.switchchatter.steps.flavoured.WaitForPrompt;
 import com.adviser.construct.switchchatter.steps.flavoured.Yes;
 import com.adviser.construct.switchchatter.steps.generic.Case;
 import com.adviser.construct.switchchatter.steps.generic.CollectOutputStep;
@@ -38,12 +38,12 @@ public class HpProcurveSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 					}
 				}));
 
-		getOutputConsumer().addStep(new WaitForManagementPrompt());
+		getOutputConsumer().addStep(new WaitForPrompt());
 	}
 
 	public void disablePaging() {
 		getOutputConsumer().addStep(new HpDisablePaging());
-		getOutputConsumer().addStep(new WaitForManagementPrompt());
+		getOutputConsumer().addStep(new WaitForPrompt());
 	}
 
 	public void retrieveConfig() {
