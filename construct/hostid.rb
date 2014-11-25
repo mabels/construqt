@@ -11,6 +11,7 @@ module Construct
 
     def first_ipv6!
       self.interfaces.each do |i|
+        next unless i.address
         return i.address if i.address.first_ipv6
       end
 
@@ -25,6 +26,7 @@ module Construct
 
     def first_ipv4!
       self.interfaces.each do |i|
+        next unless i.address
         return i.address if i.address.first_ipv4
       end
 
