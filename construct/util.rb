@@ -119,23 +119,31 @@ module Construct
       ranges = ranges.map do |range|
         range["from"] == range["to"] ? range["from"] : range["from"] +"-"+range["to"]
       end
-#puts "self.createRangeDefinition[#{ports}]=>#{ranges}"
+      #puts "self.createRangeDefinition[#{ports}]=>#{ranges}"
       ranges.join(",")
     end
 
+    PORTS_DEF_REGEXP = "([^\\d\\s]*\\d+|,|-)+"
+    PORT_NAME_REGEXP="^(.*?)(\\d+)$"
     def self.expandRangeDefinition(list_str)
-      ret = list_str.strip.split(/\s*,\s*/).map do |elem|
-        values = elem.split('-')
-        if values.length != 2
-          values = [elem, elem]
+      ports = list_str.strip.split(",").map do |range_def|
+        range = range_def.split("-")
+        if (range.length==1)
+          range
+        elsif (range.length==2)
+          range[0]=~/#{PORT_NAME_REGEXP}/
+          prefix_from=$1
+          from = $2
+          range[1]=~/#{PORT_NAME_REGEXP}/
+          prefix_to=$1
+          to = $2
+          throw "port prefixes differ" unless prefix_from==prefix_to
+          (from.to_i .. to.to_i).map {|n| prefix_from + n.to_s }
+        else
+          throw "invalid range found #{rangeDef}"
         end
-        values.each do |i|
-          throw "RangeDefition unknown for #{list_str}:#{elem}" unless /^\d+$/.match(i.to_s)
-        end
-        (values[0]..values[1]).to_a
-      end.flatten
-#puts "self.expandRangeDefinition[#{list_str}]=>#{ret}"
-      ret
+      end
+      ports.flatten
     end
 
     def self.generate_mac_address_from_name(name)
