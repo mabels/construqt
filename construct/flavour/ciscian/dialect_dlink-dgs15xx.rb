@@ -2,6 +2,7 @@ module Construct
   module Flavour
     module Ciscian
       module DlinkDgs15xx
+
         class HostNameVerb
           def self.parse_line(line, lines, section, result)
             return false unless line.to_s.start_with?("snmp-server name")
@@ -10,6 +11,7 @@ module Construct
             true
           end
         end
+
         class MtuVerb
           def self.parse_line(line, lines, section, result)
             verb = "max-rcv-frame-size"
@@ -23,7 +25,7 @@ module Construct
             verb = "switchport trunk allowed vlan"
             return false unless line.to_s.start_with?(verb)
             Util.expandRangeDefinition(line.to_s[verb.length..-1]).each do |vlan_id|
-              section.add(Result::Lines::Line.new(verb, line.nr), Ciscian::RangeVerb).add(vlan_id)
+              section.add(verb, Ciscian::RangeVerb).add(vlan_id)
             end
             true
           end
