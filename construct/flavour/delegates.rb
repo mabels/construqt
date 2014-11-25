@@ -152,20 +152,28 @@ module Construct
       end
 
       def commit
-        clazzes = {}
-        #binding.pry
-        self.flavour.pre_clazzes { |key, clazz| clazzes[key] = clazz }
-        clazzes.each do |key, clazz|
+        header_clazzes = {:host => self } # host class need also a header call
+        footer_clazzes = {:host => self } # host class need also a header call
+        self.interfaces.values.each do |iface|
+          header_clazzes[iface.class.name] ||= iface if iface.delegate.respond_to? :header
+          footer_clazzes[iface.class.name] ||= iface if iface.delegate.respond_to? :footer
+        end
+        #:binding.pry
+        self.flavour.pre_clazzes do |key, clazz| 
           Flavour.call_aspects("#{key}.header", self, nil)
-          #clazz.header(self)
+        end
+        header_clazzes.values.each do |iface| 
+          Construct.logger.debug ">>>>>#{iface.delegate.class.name}"
+          iface.delegate.header(self) 
         end
 
         Flavour.call_aspects("host.commit", self, nil)
         self.result.commit
-        clazzes.each do |key, clazz|
+        
+        self.flavour.pre_clazzes do |key, clazz| 
           Flavour.call_aspects("#{key}.footer", self, nil)
-          #clazz.footer(self)
         end
+        footer_clazzes.values.each { |iface| iface.delegate.footer(self) }
       end
     end
 
