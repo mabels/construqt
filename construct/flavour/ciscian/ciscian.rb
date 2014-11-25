@@ -44,9 +44,9 @@ module Construct
               ret = match_a[2].to_i<=>match_b[2].to_i  if ret==0
               ret
             end
-#            def hash
-#              self.to_s.hash
-#            end
+            #            def hash
+            #              self.to_s.hash
+            #            end
           end
           def initialize(lines)
             @lines = []
@@ -66,6 +66,15 @@ module Construct
             parse_line(line, lines, self, self)
           end
           self
+        end
+
+        def self.normalize_section_key(key)
+          matchdata=key.match(/^\s*(no\s+|)(.*)/)
+          matchdata[2]
+        end
+
+        def self.starts_with_no(key)
+          return key.match(/^\s*no\s+/)
         end
 
         def parse_line(line, lines, section, result)
@@ -88,27 +97,26 @@ module Construct
 
         def add(section, clazz=NestedSection)
           throw "section is nil" unless section
-          #puts "#{Lines::Line.name} #{section.class.name}"
           section = Lines::Line.new(section, -1) unless section.kind_of?(Lines::Line)
-          @sections[section.to_s] ||= clazz.new(section)
-          yield(@sections[section.to_s])  if block_given?
-          @sections[section.to_s]
-        end
+          section_key=Result.normalize_section_key(section.to_s)
 
-        def self.compare(result, my, other)
-          my.sections.keys.sort.each do |key|
-            section = my.sections[key.to_s]
-            other_section = other.sections.delete(key.to_s)
-            section.compare(result, other_section)
+          @sections[section_key] ||= clazz.new(section_key)
+          if Result.starts_with_no(section.to_s)
+            @sections[section_key].no
           end
+          yield(@sections[section_key])  if block_given?
+          @sections[section_key]
         end
 
         def compare(other)
           result = Result.new(@host)
-          self.class.compare(result, self, other)
-          other.sections.each do |k, v|
-            Construct.logger.debug "untouched=>#{v.section}::#{k}"
-          end
+
+          nu_root=NestedSection.new("root")
+          nu_root.sections.merge!(@sections)
+          other_root=NestedSection.new("root")
+          other_root.sections.merge!(other.sections)
+
+          result.sections = NestedSection.compare(nu_root, other_root)
           result
         end
       end
@@ -121,20 +129,32 @@ module Construct
         end
 
         def serialize
-          [[verb , value].compact.join(" ")]
+          [[@no, verb , value].compact.join(" ")]
         end
 
-        def compare(section, other)
-          return section.add(section) unless other
-          return section.add(section) unless self.serialize == other.serialize
+        def self.compare(nu, old)
+          return nu unless old
+          return old.no unless nu
+          return nu unless nu.serialize == old.serialize
         end
 
         def add(value)
           self.value=value
         end
 
+        def no
+          @no="no"
+          self.value=nil
+          self
+        end
+
         def self.parse_line(line, lines, section, result)
-          section.add(line, Ciscian::SingleVerb)
+          throw "here" if line.to_s=="interface ethernet 1/0/3"
+          if (line.to_s =~ /(.*) \"?(\S+)\"?/)
+            section.add($1, Ciscian::SingleVerb).add($2)
+          else
+            section.add(line.to_s, Ciscian::SingleVerb)
+          end
         end
       end
 
@@ -159,8 +179,8 @@ module Construct
       class NestedSection
         attr_accessor :section,:sections
         def initialize(section)
-          self.section=section
           self.sections={}
+          self.section=section
         end
 
         def add(verb, clazz = GenericVerb)
@@ -168,18 +188,32 @@ module Construct
             clazz=verb
             verb=clazz.section_key
           end
-          self.sections[verb.to_s] ||= clazz.new(verb)
+          self.sections[Result.normalize_section_key(verb.to_s)] ||= clazz.new(verb)
         end
 
         def self.parse_line(line, lines, section, result)
           #binding.pry if line.start_with?("interface")
-          if ['interface', 'vlan'].find{|i| line.to_s.start_with?(i) }
-            section.add(Result::Lines::Line.new(result.dialect.clear_interface(line), line.nr)) do |_section|
-              while line = lines.shift
-                break if result.dialect.block_end?(line.to_s)
-                result.parse_line(line, lines, _section, result)
+          if [/^\s*(no\s+|)interface/, /^\s*(no\s+|)vlan/].find{|i| line.to_s.match(i) }
+            resultline=Result::Lines::Line.new(result.dialect.clear_interface(line), line.nr)
+            section.add(resultline.to_s) do |_section|
+              while _line = lines.shift
+                break if result.dialect.block_end?(_line.to_s)
+                result.parse_line(_line, lines, _section, result)
               end
             end
+
+            if (matchdata = line.to_s.match(Construct::Util::PORTS_DEF_REGEXP))
+              ports = Construct::Util::expandRangeDefinition(matchdata[0])
+              if (ports.length>1)
+                section_to_split=section.sections.delete(resultline.to_s)
+                ports.each do |port|
+                  section.add(line.to_s.gsub(/#{Construct::Util::PORTS_DEF_REGEXP}/, port)) do |_section|
+                    _section.sections.merge!(section_to_split.sections)
+                  end
+                end
+              end
+            end
+            return true
           end
         end
 
@@ -192,24 +226,53 @@ module Construct
           block
         end
 
+        def no
+          @no="no "
+          @sections={}
+          self
+        end
+
+        def no?
+          @no
+        end
+
         def serialize
           block=[]
-          block << "#{section.to_s}"
-          block += render_verbs(self.sections)
-          block << "exit"
+          block << "#{@no}#{section.to_s}"
+          unless (@no)
+            block += render_verbs(self.sections)
+            block << "exit"
+          end
           block
         end
 
-        def compare(section, other)
-          return section.add(self) unless other
-          Result.compare(section, self, other)
+        def self.compare(nu, old)
+          return nu unless old
+          return old.no unless nu
+          throw "classes must match #{nu.class.name} != #{old.class.name}" unless nu.class == old.class
+          if (nu.serialize==old.serialize)
+            nil
+          else
+            if (nu.no?)
+              nu
+            else
+              delta = nu.class.new(nu.section)
+              (nu.sections.keys + old.sections.keys).sort.each do |k,v|
+                nu_section=nu.sections[k]
+                old_section=old.sections[k]
+                comp = (nu_section||old_section).class.compare(nu_section, old_section)
+                delta.sections[comp.section] = comp if comp
+              end
+            end
+            delta
+          end
         end
       end
 
       class GenericVerb
-        attr_accessor :key,:values
-        def initialize(key)
-          self.key=key
+        attr_accessor :section,:values
+        def initialize(section)
+          self.section=section
           self.values = []
         end
 
@@ -224,35 +287,60 @@ module Construct
         end
 
         def serialize
-          ["#{@no}#{key} #{values.join(",")}"]
+          if @no
+            ["#{@no}#{section}"]
+          else
+            ["#{section} #{values.join(",")}"]
+          end
         end
 
-        def compare(section, other)
-          return section.add(self) unless other
-          return section.add(self) unless other.serialize == other.serialize
+        def self.compare(nu, old)
+          return nu unless old
+          return old.no unless nu
+          throw "classes must match #{nu.class.name} != #{old.class.name}" unless nu.class == old.class
+          if (nu.serialize==old.serialize)
+            nil
+          else
+            nu
+          end
         end
       end
 
       class RangeVerb
-        attr_accessor :key,:values
-        def initialize(key)
-          self.key=key
+        attr_accessor :section,:values
+        def initialize(section)
+          self.section=section
           self.values = []
         end
 
         def add(value)
-          throw "must be a number #{value}" unless /^\d+$/.match(value.to_s)
+          throw "must be a number \'#{value}\'" unless /^\d+$/.match(value.to_s)
           self.values << value.to_i
           self
         end
 
-        def compare(section, other)
-          return section.add(self) unless other
-          return section.add(self) unless self.serialize == other.serialize
+        def no
+          @no="no "
+          self
+        end
+
+        def self.compare(nu, old)
+          return nu unless old
+          return old.no unless nu
+          throw "classes must match #{nu.class.name} != #{old.class.name}" unless nu.class == old.class
+          if (nu.serialize==old.serialize)
+            nil
+          else
+            nu
+          end
         end
 
         def serialize
-          ["#{key} #{Construct::Util.createRangeDefinition(values)}"]
+          if @no
+            ["#{@no}#{section}"]
+          else
+            ["#{section} #{Construct::Util.createRangeDefinition(values)}"]
+          end
         end
       end
 
