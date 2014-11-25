@@ -196,7 +196,11 @@ SRC
           super(cfg)
         end
 
+        def footer(host)
+        end
+
         def header(host)
+          host = host.delegate
           host.result.add(<<TESTNAME, nil, "system", "identity")
 {
   :local identity [get]
