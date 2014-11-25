@@ -123,7 +123,7 @@ module Construct
       ranges.join(",")
     end
 
-    PORTS_DEF_REGEXP = "([^\\d\\s]*\\d+|,|-)+"
+    PORTS_DEF_REGEXP = "([^\\d\\s]*[\\d,-]+)+"
     PORT_NAME_REGEXP="^(.*?)(\\d+)$"
     def self.expandRangeDefinition(list_str)
       ports = list_str.strip.split(",").map do |range_def|
@@ -140,7 +140,7 @@ module Construct
           throw "port prefixes differ" unless prefix_from==prefix_to
           (from.to_i .. to.to_i).map {|n| prefix_from + n.to_s }
         else
-          throw "invalid range found #{rangeDef}"
+          throw "invalid range found #{range_def}"
         end
       end
       ports.flatten
