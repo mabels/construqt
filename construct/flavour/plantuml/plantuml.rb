@@ -113,6 +113,7 @@ UML
       def self.render_object_address(iface)
         out = []
         out << "name = \"#{iface.name}\""
+        out << "desc = \"#{iface.description}\"" if iface.description
         if iface.address
           tags = []
           [iface.address.v4s, iface.address.v6s].each do |ips|
@@ -434,13 +435,19 @@ UML
               file.puts("@enduml")
             end
 
-            if File.exists?("/usr/bin/dot")
+            if File.exists?("/cygdrive/c/Program Files/cygwin/bin/dot.exe")
+              dot = "C:\\Program Files\\cygwin\\bin\\dot.exe"
+            elsif File.exists?("/usr/bin/dot")
               dot = "/usr/bin/dot"
             else
               dot = "$HOME/macosx/bin/dot"
             end
-
-            system("java -jar ~/Downloads/plantuml.jar -Djava.awt.headless=true -graphvizdot #{dot} -tsvg cfgs/world.puml")
+            if  File.exists?("#{ENV['HOMEPATH']}/Downloads/plantuml.jar")
+              plantuml_jar = "#{ENV['HOMEPATH']}/Downloads/plantuml.jar"
+            else
+               plantuml_jar = "~/Downloads/plantuml.jar"
+            end
+            system("java -jar \"#{plantuml_jar}\" -Djava.awt.headless=true -graphvizdot \"#{dot}\" -tsvg cfgs/world.puml")
           end
 
         }
