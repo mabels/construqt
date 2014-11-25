@@ -20,6 +20,10 @@ module Construct
         @tags = tags
       end
 
+      def description
+        self.delegate.description
+      end
+
       def name
         self.delegate.name
       end
