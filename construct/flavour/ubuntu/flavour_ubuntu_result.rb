@@ -489,7 +489,7 @@ else
 fi
 updates=''
 for i in language-pack-en language-pack-de git aptitude traceroute vlan bridge-utils tcpdump mtr-tiny \\
-bird keepalived strace iptables conntrack openssl racoon ulogd2
+bird keepalived strace iptables conntrack openssl racoon ulogd2 ifenslave
 do
  dpkg -l $i > /dev/null 2> /dev/null
  if [ $? != 0 ]
