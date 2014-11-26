@@ -359,7 +359,10 @@ module Construct
           super(cfg)
         end
 
-        def self.header(path)
+        def header(host)
+          "# this is a generated file do not edit!!!!!"
+        end
+        def footer(host)
           "# this is a generated file do not edit!!!!!"
         end
 

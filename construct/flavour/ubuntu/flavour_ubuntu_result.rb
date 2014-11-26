@@ -348,18 +348,21 @@ BLOCK
             self
           end
 
-          def render(lines)
+          def render(lines, direction)
             lines.map do |line|
-              "                  #{line}"
+              [
+                "                  logger '#{direction}#{line}'",
+                "                  #{line}"
+              ]
             end.join("\n")
           end
 
           def render_masters
-            render(@masters)
+            render(@masters, 'STARTING:')
           end
 
           def render_backups
-            render(@backups)
+            render(@backups, 'STOPPING:')
           end
         end
 
@@ -382,11 +385,11 @@ STATE=$3
 
 case $STATE in
         "MASTER")
-            #{vrrp.render_masters}
+#{vrrp.render_masters}
                   exit 0
                   ;;
         "BACKUP")
-            #{vrrp.render_backups}
+#{vrrp.render_backups}
                   exit 0
                   ;;
         *)        echo "unknown state"
@@ -486,7 +489,7 @@ else
 fi
 updates=''
 for i in language-pack-en language-pack-de git aptitude traceroute vlan bridge-utils tcpdump mtr-tiny \\
-bird keepalived strace iptables conntrack openssl racoon ulogd2
+bird keepalived strace iptables conntrack openssl racoon ulogd2 ifenslave
 do
  dpkg -l $i > /dev/null 2> /dev/null
  if [ $? != 0 ]
