@@ -59,6 +59,12 @@ module Construct
           super(cfg)
         end
 
+        def header(host)
+        end
+
+        def footer(host)
+        end
+
         def build_config(host, unused)
         end
       end

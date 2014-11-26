@@ -154,6 +154,12 @@ BOND
           super(cfg)
         end
 
+        def header(host)
+        end
+
+        def footer(host)
+        end
+
         def prefix(host, path)
           if path.include? "hostname"
             nil

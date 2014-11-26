@@ -36,6 +36,7 @@ module Construct
           chainable_attr :output, true, false, lambda {|i| @prerouting = false; input_only(false); output_only(true) }
           chainable_attr :output_only, true
           chainable_attr :interface
+          chainable_attr :from_interface, true, false
           chainable_attr_value :from_net, nil
           chainable_attr_value :to, nil
           chainable_attr_value :to_net, nil
@@ -91,6 +92,7 @@ module Construct
           chainable_attr :output_only
           chainable_attr :to_source
           chainable_attr :interface
+          chainable_attr :from_interface, true, false
           chainable_attr_value :from_net, nil
           chainable_attr_value :to_net, nil
           chainable_attr_value :action, nil
@@ -138,7 +140,7 @@ module Construct
           chainable_attr :connection
           chainable_attr :input_only, true, true
           chainable_attr :output_only, true, true
-          chainable_attr :from_interface, true, true
+          chainable_attr :from_interface, true, false
           chainable_attr :connection
           chainable_attr :tcp
           chainable_attr :udp

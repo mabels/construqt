@@ -91,15 +91,15 @@ interface #{ifname}
 {
         AdvManagedFlag on;
         AdvSendAdvert on;
-        #AdvAutonomous on;
-        AdvLinkMTU 1480;
         AdvOtherConfigFlag on;
-        MinRtrAdvInterval 3;
-        MaxRtrAdvInterval 60;
+        #AdvAutonomous on;
+        #AdvLinkMTU 1480;
+        #MinRtrAdvInterval 3;
+        #MaxRtrAdvInterval 60;
         prefix #{iface.address.first_ipv6.network.to_string}
         {
                 AdvOnLink on;
-        #       AdvAutonomous on;
+                AdvAutonomous off;
                 AdvRouterAddr on;
         };
 
