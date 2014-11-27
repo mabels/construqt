@@ -142,5 +142,9 @@ module Construct
       # http://www.iana.org/assignments/ethernet-numbers/ethernet-numbers.xhtml
       '8f:'+Digest::SHA256.hexdigest("#{name}").scan(/../)[0,5].join(':')
     end
+
+    def self.indent(body, ident)
+      body.lines.map { |line| ident+line }.join("\n")
+    end
   end
 end

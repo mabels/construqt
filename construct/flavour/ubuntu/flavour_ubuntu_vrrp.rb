@@ -7,8 +7,8 @@ module Construct
           super(cfg)
         end
 
-        def prefix(host, path)
-          ret =<<GLOBAL
+        def self.header(host)
+          host.result.add(self, <<GLOBAL, Construct::Resources::Rights::ROOT_0644, "etc", "keepalived", "keepalived.conf")
 global_defs {
   lvs_id #{host.name}
 }
