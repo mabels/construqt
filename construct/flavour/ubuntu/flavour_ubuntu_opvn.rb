@@ -7,10 +7,6 @@ module Construct
           super(cfg)
         end
 
-        def prefix(hosts, path)
-          nil
-        end
-
         def build_config(host, opvn)
           iface = opvn.delegate
           local = iface.ipv6 ? host.id.first_ipv6.first_ipv6 : host.id.first_ipv4.first_ipv4

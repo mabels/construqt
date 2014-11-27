@@ -7,11 +7,26 @@ module Construct
           super(cfg)
         end
 
-        def prefix(host, path)
+        def self.header(host)
+          addrs = {}
+          host.interfaces.values.each do |iface|
+            iface = iface.delegate
+            next unless iface.cfg
+            next unless iface.cfg.kind_of? Construct::Bgp
+            addrs[iface.name] = iface
+          end
+          return if addrs.empty?
+          bird_v4 = self.header_bird(host, OpenStruct.new(:net_clazz => IPAddress::IPv4, :filter => lambda {|ip| ip.ipv4? }))
+          host.result.add(self, bird_v4, Construct::Resources::Rights::ROOT_0644, "etc", "bird", "bird.conf")
+          bird_v6 = self.header_bird(host, OpenStruct.new(:net_clazz => IPAddress::IPv6, :filter => lambda {|ip| ip.ipv6? }))
+          host.result.add(self, bird_v6, Construct::Resources::Rights::ROOT_0644, "etc", "bird", "bird6.conf")
+        end
+
+        def self.header_bird(host, mode)
           #      binding.pry
           ret = <<BGP
 log syslog { debug, trace, info, remote, warning, error, auth, fatal, bug };
-router id #{self.host.id.first_ipv4.first_ipv4.to_s};
+router id #{host.id.first_ipv4.first_ipv4.to_s};
 protocol device {
 }
 protocol direct {
@@ -26,12 +41,6 @@ protocol static {
 }
 
 BGP
-          if path.include?("bird6.conf")
-            mode = OpenStruct.new :net_clazz => IPAddress::IPv6, :filter => lambda {|ip| ip.ipv6? }
-          else
-            mode = OpenStruct.new :net_clazz => IPAddress::IPv4, :filter => lambda {|ip| ip.ipv4? }
-          end
-
           Bgps.filters.each do |filter|
             ret = ret + "filter filter_#{filter.name} {\n"
             filter.list.each do |rule|

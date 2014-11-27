@@ -20,12 +20,6 @@ module Construct
 
       Flavour.add(self)
 
-      module PassThroughHeader
-        def self.prefix(u1, u2)
-          nil
-        end
-      end
-
       #  class Interface < OpenStruct
       #    def initialize(cfg)
       #      super(cfg)
@@ -40,10 +34,6 @@ module Construct
       class Device < OpenStruct
         def initialize(cfg)
           super(cfg)
-        end
-
-        def prefix(host, path)
-          "# this is a generated file do not edit!!!!!"
         end
 
         def self.add_address(host, ifname, iface, lines, writer)
@@ -152,20 +142,6 @@ BOND
       class Host < OpenStruct
         def initialize(cfg)
           super(cfg)
-        end
-
-        def header(host)
-        end
-
-        def footer(host)
-        end
-
-        def prefix(host, path)
-          if path.include? "hostname"
-            nil
-          else
-            "# this is a generated file do not edit!!!!!"
-          end
         end
 
         def build_config(host, unused)
@@ -309,7 +285,7 @@ auth requisite pam_deny.so
 PAM
           #binding.pry
           host.delegate.files && host.delegate.files.each do |file|
-            if host.result.replace(PassThroughHeader, file.data, file.right, *file.path)
+            if host.result.replace(nil, file.data, file.right, *file.path)
               Construct.logger.warn("the file #{file.path} was overriden!")
             end
           end
@@ -319,10 +295,6 @@ PAM
       class Gre < OpenStruct
         def initialize(cfg)
           super(cfg)
-        end
-
-        def prefix(host, path)
-          "# this is a generated file do not edit!!!!!"
         end
 
         def build_config(host, gre)
@@ -360,16 +332,12 @@ PAM
           super(cfg)
         end
 
-        def prefix(host, path)
-          "# this is a generated file do not edit!!!!!"
-        end
-
         def build_config(host, iface)
         end
       end
 
-      def self.clazz(name)
-        ret = {
+      def self.clazzes
+        {
           "opvn" => Opvn,
           "gre" => Gre,
           "host" => Host,
@@ -379,8 +347,14 @@ PAM
           "bond" => Bond,
           "vlan" => Vlan,
           "result" => Result,
+          "ipsec" => Ipsec,
+          "bgp" => Bgp,
           "template" => Template
-        }[name]
+        }
+      end
+
+      def self.clazz(name)
+        ret = self.clazzes[name]
         throw "class not found #{name}" unless ret
         ret
       end
