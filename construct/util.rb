@@ -107,7 +107,13 @@ module Construct
     def self.createRangeDefinition(ports)
       ranges=[]
       lastPort=nil
-      ports.sort.each do |port|
+
+      #remove duplicates
+      ports = ports & ports
+      ports.sort do |l,r|
+        fc = l.to_s.length <=> r.to_s.length
+        fc!=0 ? fc : l<=>r
+      end.each do |port|
         port = port.to_s
         if  (ranges.length>0 && portNeighbors?(port, ranges[ranges.length-1]["to"]))
           ranges[ranges.length-1]["to"] = port

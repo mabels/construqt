@@ -1,7 +1,6 @@
 CONSTRUCT_PATH=ENV['CONSTRUCT_PATH']||'..'
 ["#{CONSTRUCT_PATH}/ipaddress/lib","#{CONSTRUCT_PATH}/construct"].each{|path| $LOAD_PATH.unshift(path) }
 
-puts $LOAD_PATH
 require("construct/construct.rb")
 require("construct/flavour/ciscian/ciscian.rb")
 

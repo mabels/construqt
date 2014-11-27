@@ -52,17 +52,17 @@ module Construct
         result = Construct::Flavour::Ciscian::Result.new(Host.new("test-switch-123", "dlink-dgs15xx"))
 
         delta["addedBonds"].each do |addedBond|
-          result.add("interface port-channel #{addedBond}", Construct::Flavour::Ciscian::SingleVerb)
+          result.add("interface port-channel #{addedBond}", Construct::Flavour::Ciscian::SingleValueVerb)
         end
 
         delta["removedBonds"].each do |removedBond|
-          result.add("no interface port-channel #{addedBond}", Construct::Flavour::Ciscian::SingleVerb)
+          result.add("no interface port-channel #{addedBond}", Construct::Flavour::Ciscian::SingleValueVerb)
         end
 
         delta["bondChanges"].each do |channel,bondDelta|
           bondDelta["addedPorts"].each do |addedPort|
             result.add("interface ethernet #{addedPort}") do |section|
-              section.add("channel-group #{channel} mode active", Construct::Flavour::Ciscian::SingleVerb)
+              section.add("channel-group #{channel} mode active", Construct::Flavour::Ciscian::SingleValueVerb)
             end
           end
         end
@@ -82,7 +82,7 @@ module Construct
           result.add("interface ethernet #{removedPort}") do |section|
             oldSwitchConfig.portConfigs[removedPort].vlans.each do |vlanid,conf|
               mode = conf["tagged"] ? "allowed" : "native"
-              section.add("no switchport trunk #{mode} vlan", Construct::Flavour::Ciscian::SingleVerb).add(vlanid.to_s)
+              section.add("no switchport trunk #{mode} vlan", Construct::Flavour::Ciscian::SingleValueVerb).add(vlanid.to_s)
             end
           end
         end
@@ -94,7 +94,7 @@ module Construct
         end
 
         delta["removedVlans"].each do |removedVlan|
-          result.add("no vlan #{removedVlan.to_s}", Construct::Flavour::Ciscian::SingleVerb)
+          result.add("no vlan #{removedVlan.to_s}", Construct::Flavour::Ciscian::SingleValueVerb)
         end
 
         result.commit
