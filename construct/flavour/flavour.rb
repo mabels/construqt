@@ -25,13 +25,13 @@ module Construct
           "bridge" => BridgeDelegate,
           "bond" => BondDelegate,
           "vlan" => VlanDelegate,
-          "result" => ResultDelegate,
+          #"result" => ResultDelegate,
           "template" => TemplateDelegate
         }
       end
 
       def pre_clazzes(&block)
-        self.clazzes.each do |key, clazz|
+        @flavour.clazzes.each do |key, clazz|
           block.call(key, clazz)
         end
       end

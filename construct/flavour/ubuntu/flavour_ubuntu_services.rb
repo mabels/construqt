@@ -8,9 +8,6 @@ module Construct
             @service = service
           end
 
-          def prefix(unused, unused2)
-          end
-
           def up(ifname)
             "/usr/sbin/dhcrelay -pf /run/dhcrelay-v4.#{ifname}.pid -d -q -4 -i #{ifname} #{@service.servers.map{|i| i.to_s}.join(' ')}"
           end
@@ -37,9 +34,6 @@ module Construct
             @service = service
           end
 
-          def prefix(unused, unused2)
-          end
-
           def up(ifname)
             "/usr/sbin/dhcrelay -pf /run/dhcrelay-v6.#{ifname}.pid -d -q -6 -i #{ifname} #{@service.servers.map{|i| i.to_s}.join(' ')}"
           end
@@ -63,9 +57,6 @@ module Construct
         class Radvd
           def initialize(service)
             @service = service
-          end
-
-          def prefix(unused, unused2)
           end
 
           def up(ifname)

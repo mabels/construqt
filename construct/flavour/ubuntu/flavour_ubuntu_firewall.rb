@@ -17,8 +17,8 @@ module Construct
           chainable_attr_value :factory, nil
           chainable_attr_value :ifname, nil
           chainable_attr_value :interface, nil
-          chainable_attr :output_only, false, false
-          chainable_attr :input_only, false, false
+          chainable_attr :output_only, true, false
+          chainable_attr :input_only, true, false
           chainable_attr_value :output_ifname_direction, "-i"
           chainable_attr_value :input_ifname_direction, "-o"
 
@@ -136,6 +136,7 @@ module Construct
           else
             from_list = Construct::Tags.ips_net(rule.get_from_net, family)
           end
+
           to_list = Construct::Tags.ips_net(rule.get_to_net, family)
           #puts ">>>>>#{from_list.inspect}"
           #puts ">>>>>#{state.inspect} end_to:#{state.end_to}:#{state.end_from}:#{state.middle_to}#{state.middle_from}"
@@ -261,6 +262,26 @@ module Construct
         end
 
         def self.write_host(host, ifname, iface, writer)
+          host.rules.each do |rule|
+            in_to_from = ToFrom.new.bind_interface(ifname, iface, rule).input_only
+            out_to_from = ToFrom.new.bind_interface(ifname, iface, rule).output_only
+            if rule.get_log
+              #binding.pry
+              l_in_to_from = ToFrom.new.bind_interface(ifname, iface, rule).input_only
+                .end_to("--nflog-prefix o:#{rule.get_log}:#{ifname}")
+              l_out_to_from = ToFrom.new.bind_interface(ifname, iface, rule).output_only
+                .end_from("--nflog-prefix i:#{rule.get_log}:#{ifname}")
+              write_table("iptables", rule.clone.action("NFLOG"), l_in_to_from.factory(writer.ipv4.input))
+              write_table("iptables", rule.clone.action("NFLOG"), l_out_to_from.factory(writer.ipv4.output))
+              write_table("ip6tables", rule.clone.action("NFLOG"), l_in_to_from.factory(writer.ipv6.input))
+              write_table("ip6tables", rule.clone.action("NFLOG"), l_out_to_from.factory(writer.ipv6.output))
+            end
+
+            write_table("iptables", rule, in_to_from.factory(writer.ipv4.input))
+            write_table("iptables", rule, out_to_from.factory(writer.ipv4.output))
+            write_table("ip6tables", rule, in_to_from.factory(writer.ipv6.input))
+            write_table("ip6tables", rule, out_to_from.factory(writer.ipv6.output))
+          end
         end
 
         def self.create(host, ifname, iface)

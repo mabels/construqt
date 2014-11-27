@@ -3,8 +3,6 @@ module Construct
 
     module Ubuntu
       module Dns
-        def self.prefix(host, path)
-        end
 
         def self.write_header(region, domain)
           ret = [<<OUT]

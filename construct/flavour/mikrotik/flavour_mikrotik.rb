@@ -199,7 +199,7 @@ SRC
         def footer(host)
         end
 
-        def header(host)
+        def self.header(host)
           host = host.delegate
           host.result.add(<<TESTNAME, nil, "system", "identity")
 {
@@ -361,8 +361,8 @@ OUT
         end.compact.join(":").sub(/:+$/, '::')
       end
 
-      def self.clazz(name)
-        ret = {
+      def self.clazzes
+        {
           "opvn" => Ovpn,
           "gre" => Gre,
           "host" => Host,
@@ -372,8 +372,13 @@ OUT
           "bond" => Bond,
           "vlan" => Vlan,
           "result" => Result,
-          "template" => Template
-        }[name]
+          "template" => Template,
+          "bgp" => Ipsec,
+          "ipsec" => Bgp
+        }
+      end
+      def self.clazz(name)
+        ret = self.clazzes[name]
         throw "class not found #{name}" unless ret
         ret
       end

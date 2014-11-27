@@ -8,24 +8,30 @@ module Construct
           super(cfg)
         end
 
-        def prefix(host, path)
-          if File.basename(path) == "racoon.conf"
-            listener = []
-            listener << "isakmp #{self.remote.first_ipv4.to_s} [500];" if self.remote.first_ipv4
-            listener << "isakmp #{self.remote.first_ipv6.to_s} [500];" if self.remote.first_ipv6
-            return <<HEADER
+        def self.header(host)
+          addrs = {}
+          host.interfaces.values.each do |iface|
+            iface = iface.delegate
+            next unless iface.cfg
+            next unless iface.cfg.kind_of? Construct::Ipsec
+            if iface.remote.first_ipv4
+              addrs[iface.remote.first_ipv4.to_s] = "isakmp #{self.remote.first_ipv4.to_s} [500];"
+            end
+            if iface.remote.first_ipv6
+              addrs[iface.remote.first_ipv6.to_s] = "isakmp #{self.remote.first_ipv6.to_s} [500];"
+            end
+          end
+          return if addrs.empty?
+          self.host.result.add(self, <<HEADER, Construct::Resources::Rights::ROOT_0644, "etc", "racoon", "racoon.conf")
 # do not edit generated filed #{path}
 path pre_shared_key "/etc/racoon/psk.txt";
 path certificate "/etc/racoon/certs";
 log info;
 listen {
-            #{listener.join("\n")}
+#{Util.indent(addrs.keys.sort.map{|k| addrs[k] }.join("\n"), " ")}
   strict_address;
 }
 HEADER
-          end
-
-          return "# do not edit generated filed #{path}"
         end
 
         #    def build_gre_config()
