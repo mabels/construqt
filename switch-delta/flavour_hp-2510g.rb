@@ -44,12 +44,12 @@ module Construct
         end
 
         delta["removedBonds"].each do |removedBond|
-          result.add("no trunk " + oldSwitchConfig.bondConfigs[removedBond].ports.join(","), Construct::Flavour::Ciscian::SingleVerb)
+          result.add("no trunk " + oldSwitchConfig.bondConfigs[removedBond].ports.join(","), Construct::Flavour::Ciscian::SingleValueVerb)
         end
 
         delta["bondChanges"].each do |channel,bondDelta|
-          result.add("trunk " + bondDelta["addedPorts"].join(",") + " #{channel} Trunk", Construct::Flavour::Ciscian::SingleVerb) unless bondDelta["addedPorts"].length==0
-          result.add("no trunk " + bondDelta["removedPorts"].join(","), Construct::Flavour::Ciscian::SingleVerb) unless bondDelta["removedPorts"].length==0
+          result.add("trunk " + bondDelta["addedPorts"].join(",") + " #{channel} Trunk", Construct::Flavour::Ciscian::SingleValueVerb) unless bondDelta["addedPorts"].length==0
+          result.add("no trunk " + bondDelta["removedPorts"].join(","), Construct::Flavour::Ciscian::SingleValueVerb) unless bondDelta["removedPorts"].length==0
         end
 
         delta["addedPorts"].each do |addedPort|

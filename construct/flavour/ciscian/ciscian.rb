@@ -79,7 +79,7 @@ module Construct
 
         def parse_line(line, lines, section, result)
           return if self.dialect.parse_line(line, lines, section, result)
-          [NestedSection, SingleVerb].find do |clazz|
+          [NestedSection, SingleValueVerb].find do |clazz|
             clazz.parse_line(line, lines, section, result)
           end
         end
@@ -108,34 +108,36 @@ module Construct
           @sections[section_key]
         end
 
-        def compare(other)
-          result = Result.new(@host)
+        def self.compare(nu, old)
+          result = Result.new(nu.host)
 
           nu_root=NestedSection.new("root")
-          nu_root.sections.merge!(@sections)
+          nu_root.sections.merge!(nu.sections)
           other_root=NestedSection.new("root")
-          other_root.sections.merge!(other.sections)
+          other_root.sections.merge!(old.sections)
 
-          result.sections = NestedSection.compare(nu_root, other_root)
+          deltas=NestedSection.compare(nu_root, other_root)
+          throw "illegal state" if deltas.length != 1
+          result.sections = deltas[0]
           result
         end
       end
 
-      class SingleVerb
-        attr_accessor :verb,:value,:section
-        def initialize(verb)
-          self.verb=verb
-          self.section=verb
+      class SingleValueVerb
+        attr_accessor :section,:value
+        def initialize(section)
+          self.section=section
         end
 
         def serialize
-          [[@no, verb , value].compact.join(" ")]
+          [[@no, section , value].compact.join(" ")]
         end
 
         def self.compare(nu, old)
-          return nu unless old
-          return old.no unless nu
-          return nu unless nu.serialize == old.serialize
+          return [nu] unless old
+          return [old.no] unless nu
+          return [nu] unless nu.serialize == old.serialize
+          [nil]
         end
 
         def add(value)
@@ -149,11 +151,11 @@ module Construct
         end
 
         def self.parse_line(line, lines, section, result)
-          throw "here" if line.to_s=="interface ethernet 1/0/3"
-          if (line.to_s =~ /(.*) \"?(\S+)\"?/)
-            section.add($1, Ciscian::SingleVerb).add($2)
+          regexp = line.to_s.strip.end_with?("\"") ? /^(.*) (\"[^"]+\")$/ : /^(.*) ([^\s"]+)$/
+          if (line.to_s.strip =~ regexp)
+            section.add($1, Ciscian::SingleValueVerb).add($2)
           else
-            section.add(line.to_s, Ciscian::SingleVerb)
+            section.add(line.to_s, Ciscian::SingleValueVerb)
           end
         end
       end
@@ -183,11 +185,11 @@ module Construct
           self.section=section
         end
 
-        def add(verb, clazz = GenericVerb)
-          if verb.respond_to?(:section_key)
-            clazz=verb
-            verb=clazz.section_key
-          end
+        def add(verb, clazz = MultiValueVerb)
+          # if verb.respond_to?(:section_key)
+          #   clazz=verb
+          #   verb=clazz.section_key
+          # end
           self.sections[Result.normalize_section_key(verb.to_s)] ||= clazz.new(verb)
         end
 
@@ -247,29 +249,32 @@ module Construct
         end
 
         def self.compare(nu, old)
-          return nu unless old
-          return old.no unless nu
+          return [nu] unless old
+          return [old.no] unless nu
           throw "classes must match #{nu.class.name} != #{old.class.name}" unless nu.class == old.class
           if (nu.serialize==old.serialize)
-            nil
+            return [nil]
           else
             if (nu.no?)
-              nu
+              return [nu]
             else
               delta = nu.class.new(nu.section)
               (nu.sections.keys + old.sections.keys).sort.each do |k,v|
                 nu_section=nu.sections[k]
                 old_section=old.sections[k]
-                comp = (nu_section||old_section).class.compare(nu_section, old_section)
-                delta.sections[comp.section] = comp if comp
+                comps = (nu_section||old_section).class.compare(nu_section, old_section)
+                throw "class #{(nu_section||old_section).class.name} returns illegal nil in compare method" unless comps
+                comps.compact.each do |comp|
+                  delta.sections[comp.section] = comp
+                end
               end
+              return [delta]
             end
-            delta
           end
         end
       end
 
-      class GenericVerb
+      class MultiValueVerb
         attr_accessor :section,:values
         def initialize(section)
           self.section=section
@@ -295,13 +300,13 @@ module Construct
         end
 
         def self.compare(nu, old)
-          return nu unless old
-          return old.no unless nu
+          return [nu] unless old
+          return [old.no] unless nu
           throw "classes must match #{nu.class.name} != #{old.class.name}" unless nu.class == old.class
           if (nu.serialize==old.serialize)
-            nil
+            [nil]
           else
-            nu
+            [nu]
           end
         end
       end
@@ -325,13 +330,13 @@ module Construct
         end
 
         def self.compare(nu, old)
-          return nu unless old
-          return old.no unless nu
+          return [nu] unless old
+          return [old.no] unless nu
           throw "classes must match #{nu.class.name} != #{old.class.name}" unless nu.class == old.class
           if (nu.serialize==old.serialize)
-            nil
+            [nil]
           else
-            nu
+            [nu]
           end
         end
 
@@ -344,13 +349,229 @@ module Construct
         end
       end
 
-      class StringVerb < GenericVerb
-        def initialize(key)
-          super(key)
+
+      class PatternBasedVerb
+        attr_accessor :section, :changes
+
+        def initialize(section)
+          self.section=section
+          self.changes=[]
+        end
+
+        def add(entry)
+          changes << entry
+          self
+        end
+
+        def self.invert(a)
+          return a.gsub(/\+/,"-") if a.match(/\+/)
+          return a.gsub(/\-/,"+") if a.match(/\-/)
+          throw "cannot invert #{a}"
+        end
+
+        def self.variables(patterns)
+          variables=[]
+          patterns.each do |pattern|
+            variables+=find_variables(pattern)
+          end
+          return variables
+        end
+
+        def self.find_variables(pattern)
+          return pattern.scan(/{[^}]+}/)
+        end
+
+        def self.parse_line(line, lines, section, result)
+          entry=matches(self.patterns, line.to_s)
+          return false unless entry
+          section.add(self.section, self).add(entry)
+          return true
+        end
+
+        def self.find_regex(varname)
+          return nil
+        end
+
+        def self.extract_varname(variable)
+          matchdata=variable.match(/{(\+|\-|\=|\*)([^}]+)}/)
+          throw "could not extract varname from #{variable}" unless matchdata
+          return matchdata[2]
+        end
+
+        def self.matches(patterns, line)
+          patterns.each do |pattern|
+            variables = find_variables(pattern)
+            regex=pattern
+            variables.each do |var|
+              var_regex = find_regex(extract_varname(var))
+              var_regex = "#{Construct::Util::PORTS_DEF_REGEXP}" unless var_regex
+              regex=regex.gsub(var, var_regex)
+            end
+            regex=regex.gsub(" ", "\\s+")
+            regex="^"+regex+"$"
+            if (matchdata=line.match(regex))
+              values={"pattern" => pattern}
+              (1..variables.length).each do |i|
+                if find_regex(extract_varname(variables[i-1])).nil?
+                  values[variables[i-1]]=Construct::Util.expandRangeDefinition(matchdata[i])
+                else
+                  values[variables[i-1]]=[matchdata[i]]
+                end
+              end
+              return values
+            end
+          end
+          return false
+        end
+
+        def self.compare(nu, old)
+          nu_ports=nu.nil? ? {} : nu.integrate
+          old_ports=old.nil? ? {} : old.integrate
+
+          result = self.new(self.section)
+
+          key_var = (nu||old).find_key_var
+          set_keys = (nu||old).keys_of_set + (old||nu).keys_of_set
+
+          set_keys.each do |key_val|
+            variables(self.patterns).each do |v|
+              if is_key_value?(v)
+                result.add({key_var => key_val})
+              elsif is_value?(v)
+                result.add({key_var => key_val, v => nu_ports[key_val][v]})
+              else
+                set = []
+                set += nu_ports[key_val][v] if nu_ports[key_val]
+                set += old_ports[key_val][invert(v)] if old_ports[key_val] && old_ports[key_val][invert(v)]
+                set -= nu_ports[key_val][invert(v)] if nu_ports[key_val] && nu_ports[key_val][invert(v)]
+                set -= old_ports[key_val][v] if old_ports[key_val]
+                result.add({key_var => key_val, v => set}) if set.length > 0
+              end
+            end
+          end
+
+          return [result]
+        end
+
+        def self.is_key_value?(v)
+          return !v.nil? && v.start_with?("{*")
+        end
+
+        def self.is_value?(v)
+          return !v.nil? && v.start_with?("{=")
+        end
+
+        def find_key_var
+          #find variable for key
+          key_var=nil
+          changes.each do |entry|
+            entry.keys.each do |v|
+              if self.class.is_key_value?(v)
+                throw "can only have one key value variable in pattern {*var}" if key_var !=nil && key_var !=v
+                key_var = v
+              end
+            end
+          end
+          return key_var
+        end
+
+        def keys_of_set
+          keys=[]
+
+          key_var=find_key_var
+
+          if key_var
+            changes.each do |entry|
+              keys << entry[key_var] if entry[key_var]
+            end
+          end
+
+          return keys unless keys.empty?
+          return [nil]
+        end
+
+        def integrate
+          set_keys = keys_of_set
+
+          #initialize sets
+          sets={}
+          set_keys.each do |key_val|
+            sets[key_val] = {}
+          end
+
+          #initialize start values of values inside sets
+          set_keys.each do |key_val|
+            self.class.variables(self.class.patterns).each do |v|
+              if self.class.is_key_value?(v)
+                sets[key_val][v]=key_val
+              elsif self.class.is_value?(v)
+                sets[key_val][v]=nil
+              else
+                sets[key_val][v]=[]
+              end
+            end
+          end
+
+          key_var=find_key_var
+          changes.each do |entry|
+            sets.each do|key_val,value_sets|
+              value_sets.each do |v,set|
+                if (entry[key_var]==key_val)
+                  if self.class.is_key_value?(v)
+                    value_sets[v] = entry[v] if entry[v]
+                  elsif self.class.is_value?(v)
+                    value_sets[v] = entry[v]
+                  else
+                    value_sets[v] += entry[v] if entry[v]
+                    value_sets[self.class.invert(v)] -= entry[v] if entry[v] && value_sets[self.class.invert(v)]
+                  end
+                end
+              end
+            end
+          end
+
+          #remove duplicate entries
+          sets.each do|key_val,value_sets|
+            value_sets.each do |v,set|
+              value_sets[v] = set & set
+            end
+          end
+
+          return sets
         end
 
         def serialize
-          ["#{key} #{values.map{|i| i.inspect}.join(",")}"]
+          buffer = []
+          sets = integrate
+
+          # deactivate grouping, if one variable has a custom regex (i.e. is not a range definition)
+          group=true
+          self.class.variables(self.class.patterns).each do |v|
+            group=false unless self.class.find_regex(self.class.extract_varname(v)).nil?
+          end
+
+          self.class.patterns.each do |pattern|
+            sets.each do |key_val,value_sets|
+              index = 0
+              begin
+                substitution=false
+                result = pattern
+                self.class.find_variables(pattern).each do |v|
+                  if (group)
+                    result = result.gsub(v, Construct::Util.createRangeDefinition(value_sets[v])) unless value_sets[v].empty?
+                  else
+                    if (index < value_sets[v].length)
+                      result = result.gsub(v, value_sets[v][index])
+                      substitution=true
+                    end
+                  end
+                end
+                buffer << result if self.class.find_variables(result).empty?
+                index+=1
+              end while substitution
+            end
+          end
+          return buffer
         end
       end
 

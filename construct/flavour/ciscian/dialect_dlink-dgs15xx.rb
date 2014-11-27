@@ -3,31 +3,71 @@ module Construct
     module Ciscian
       module DlinkDgs15xx
 
-        class HostNameVerb
-          def self.parse_line(line, lines, section, result)
-            return false unless line.to_s.start_with?("snmp-server name")
-            result.host.name = line.to_s.split(/\s+/)[2]
-            section.add(Result::Lines::Line.new("snmp-server name", line.nr), Ciscian::SingleVerb).add(result.host.name)
-            true
+        class HostNameVerb < PatternBasedVerb
+          def self.section
+            "snmp-server name"
+          end
+
+          def self.find_regex(variable)
+            {
+              "name" => "(.*)"
+            }[variable]
+          end
+
+          def self.patterns
+            ["snmp-server name {+name}"]
           end
         end
 
-        class MtuVerb
-          def self.parse_line(line, lines, section, result)
-            verb = "max-rcv-frame-size"
-            return false unless line.to_s.start_with?(verb)
-            section.add(verb).add(line.to_s[verb.length..-1].strip.to_i)
+        class MtuVerb < PatternBasedVerb
+          def self.section
+            "max-rcv-frame-size"
+          end
+
+          def self.find_regex(variable)
+            {
+              "frame-size" => "(.*)"
+            }[variable]
+          end
+
+          def self.patterns
+            ["max-rcv-frame-size {+framesize}"]
           end
         end
 
-        class SwitchPortTrunkAllowedVlan
-          def self.parse_line(line, lines, section, result)
-            verb = "switchport trunk allowed vlan"
-            return false unless line.to_s.start_with?(verb)
-            Util.expandRangeDefinition(line.to_s[verb.length..-1]).each do |vlan_id|
-              section.add(verb, Ciscian::RangeVerb).add(vlan_id)
-            end
-            true
+        class SwitchPortTrunkAllowedVlan < PatternBasedVerb
+          def self.section
+            "switchport trunk allowed vlan"
+          end
+
+          def self.patterns
+            ["switchport trunk allowed vlan {=vlans}"]
+          end
+        end
+
+        class ChannelGroupVerb < PatternBasedVerb
+          def self.section
+            "channel-group"
+          end
+
+          def self.patterns
+            ["no channel-group", "channel-group {+channel} mode active"]
+          end
+        end
+
+        class Ipv4RouteVerb < PatternBasedVerb
+          def self.section
+            "ip route"
+          end
+
+          def self.find_regex(variable)
+            {
+              "routedefs" => "(\\S+\\s+\\S+\\s+\\S+)"
+            }[variable]
+          end
+
+          def self.patterns
+            ["no ip route {-routedefs}", "ip route {+routedefs}"]
           end
         end
 
@@ -107,7 +147,9 @@ module Construct
               Comment,
               HostNameVerb,
               MtuVerb,
-              SwitchPortTrunkAllowedVlan
+              SwitchPortTrunkAllowedVlan,
+              ChannelGroupVerb,
+              Ipv4RouteVerb
             ].find do |i|
               i.parse_line(line, lines, section, result)
             end
@@ -125,12 +167,12 @@ module Construct
           end
 
           def commit
-            @result.add("snmp-server name", Ciscian::SingleVerb).add(@result.host.name)
+            @result.add("snmp-server name", Ciscian::SingleValueVerb).add(@result.host.name)
             @result.host.interfaces.values.each do |iface|
               next unless iface.delegate.address
               iface.delegate.address.routes.each do |route|
                 ip = route.dst.ipv6? ? "ipv6" : "ip"
-                @result.add("#{ip} route #{route.dst.to_string} vlan#{iface.delegate.vlan_id} #{route.via.to_s}", Ciscian::SingleVerb)
+                @result.add("#{ip} route #{route.dst.to_string} vlan#{iface.delegate.vlan_id} #{route.via.to_s}", Ciscian::SingleValueVerb)
               end
             end
           end
@@ -147,7 +189,7 @@ module Construct
           def add_bond(bond)
             bond.interfaces.each do |iface|
               @result.add("interface #{expand_device_name(iface)}") do |section|
-                section.add(ChannelGroupVerb).add(bond)
+                section.add("channel-group", ChannelGroupVerb).add({"{+channel}" => [bond.name[2..-1]]})
               end
             end
           end
@@ -183,20 +225,6 @@ module Construct
                 end
               end
             end
-          end
-        end
-
-        class ChannelGroupVerb < GenericVerb
-          def self.section_key
-            "channel-group"
-          end
-
-          def add(bond)
-            @bond=bond
-          end
-
-          def serialize
-            ["channel-group #{@bond.name[2..-1]} mode #{@bond.delegate.mode || 'active'}"]
           end
         end
 
