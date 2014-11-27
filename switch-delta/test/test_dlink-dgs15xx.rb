@@ -206,6 +206,33 @@ module Construct
           assert_equal_config(expected, create_delta_config("dlink-dgs15xx", old_config, nu_config))
         end
 
+        def test_ip_routes
+          old_config = <<-CONFIG
+          ip route 20.0.0.0 255.0.0.0 10.1.1.253
+          ip route 20.0.0.0 255.0.0.0 10.1.1.252
+          ip route 20.0.0.0 255.0.0.0 10.1.1.251
+          ip route 20.0.0.0 255.0.0.0 10.1.1.250
+          CONFIG
+
+          nu_config = <<-CONFIG
+          ip route 20.0.0.0 255.0.0.0 10.1.1.254
+          ip route 20.0.0.0 255.0.0.0 10.1.1.253
+          ip route 20.0.0.0 255.0.0.0 10.1.1.252
+          ip route 20.0.0.0 255.0.0.0 10.1.1.214
+          ip route 20.0.0.0 255.0.0.0 10.1.1.215
+          CONFIG
+
+          expected = <<-CONFIG
+          no ip route 20.0.0.0 255.0.0.0 10.1.1.251
+          no ip route 20.0.0.0 255.0.0.0 10.1.1.250
+          ip route 20.0.0.0 255.0.0.0 10.1.1.254
+          ip route 20.0.0.0 255.0.0.0 10.1.1.214
+          ip route 20.0.0.0 255.0.0.0 10.1.1.215
+          CONFIG
+
+          assert_equal_config(expected, create_delta_config("dlink-dgs15xx", old_config, nu_config))
+        end
+
       end
     end
   end
