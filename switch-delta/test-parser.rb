@@ -3,10 +3,6 @@ CONSTRUCT_PATH=ENV['CONSTRUCT_PATH']||'..'
 
 require("construct/construct.rb")
 
-
-
-
-
 module Construct
   module Flavour
     module Ciscian
@@ -18,8 +14,9 @@ module Construct
         end
       end
 
-
-      host=Host.new({"dialect" => "dlink-dgs15xx"})
+      host=Host.new({"dialect" => ARGV[0]})
+      #remove flavour argument
+      flavour = ARGV.shift
 
       oldConfig = []
       while ( line = $stdin.gets )
@@ -35,7 +32,7 @@ module Construct
       newResult=Result.new(host)
       newResult.parse(newConfig)
 
-      compareResult=newResult.compare(oldResult)
+      compareResult=Result.compare(newResult, oldResult)
       putsResult(compareResult)
 
     end

@@ -24,13 +24,13 @@ module Construct
         end
 
         def add_host(host)
-          @result.add("hostname", Ciscian::SingleVerb).add(@result.host.name)
-          @result.add("max-vlans", Ciscian::SingleVerb).add(64)
-          @result.add("snmp-server community \"public\" Unrestricted", Ciscian::SingleVerb)
+          @result.add("hostname", Ciscian::SingleValueVerb).add(@result.host.name)
+          @result.add("max-vlans", Ciscian::SingleValueVerb).add(64)
+          @result.add("snmp-server community \"public\" Unrestricted", Ciscian::SingleValueVerb)
           @result.host.interfaces.values.each do |iface|
             next unless iface.delegate.address
             iface.delegate.address.routes.each do |route|
-              @result.add("ip route #{route.dst.to_s} #{route.dst.netmask} #{route.via.to_s}", Ciscian::SingleVerb)
+              @result.add("ip route #{route.dst.to_s} #{route.dst.netmask} #{route.via.to_s}", Ciscian::SingleValueVerb)
             end
           end
         end
@@ -39,18 +39,14 @@ module Construct
         end
 
         def add_bond(bond)
-          bond.interfaces.each do |iface|
-            @result.add("interface #{expand_device_name(iface)}") do |section|
-              section.add(ChannelGroupVerb).add(bond)
-            end
-          end
+          throw "not implemented yet"
         end
 
         def add_vlan(vlan)
           @result.add("vlan #{vlan.delegate.vlan_id}") do |section|
             next unless vlan.delegate.description && !vlan.delegate.description.empty?
             throw "vlan name too long, max 32 chars" if vlan.delegate.description.length > 32
-            section.add("name", Ciscian::StringVerb).add(vlan.delegate.description)
+            section.add("name", Ciscian::SingleValueVerb).add(vlan.delegate.description)
 
 
             vlan.interfaces.each do |port|
@@ -70,18 +66,46 @@ module Construct
           end
         end
 
-        class TrunkVerb < GenericVerb
-          def self.section_key
-            "trunk #{key}"
-          end
-          def serialize
-            if @no
-              ["no trunk #{Construct::Util.createRangeDefinition(values)}"]
-            else
-              ["trunk #{Construct::Util.createRangeDefinition(values)} #{key} Trunk"]
-            end
+        def parse_line(line, lines, section, result)
+          [TrunkVerb, Tagged
+          ].find do |i|
+            i.parse_line(line, lines, section, result)
           end
         end
+
+        def clear_interface(line)
+          line.to_s.split(/\s+/).map do |i|
+            split = /^([^0-9]+)([0-9].*)$/.match(i)
+            split ? split[1..-1] : i
+          end.flatten.join(' ')
+        end
+
+        def block_end?(line)
+          ['end','exit'].include?(line.strip)
+        end
+
+
+        class Tagged < PatternBasedVerb
+          def self.section
+            "tagged"
+          end
+
+          def self.patterns
+            ["tagged {+ports}", "no tagged {-ports}", "untagged {+uports}", "no untagged {-uports}"]
+          end
+        end
+
+        class TrunkVerb < PatternBasedVerb
+          def self.section
+            "trunk"
+          end
+
+          def self.patterns
+            ["no trunk {-ports}", "trunk {+ports} Trk{*channel} Trunk"]
+          end
+        end
+
+
       end
 
       Construct::Flavour::Ciscian.add_dialect(Hp2510g)
