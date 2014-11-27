@@ -9,8 +9,10 @@ module Construct
 
       def self.putsResult(result)
         puts("--- RESULT ---")
-        result.sections.sections.values.each do |section|
-          puts section.serialize
+        if result.sections
+          result.sections.sections.values.each do |section|
+            puts section.serialize
+          end
         end
       end
 
