@@ -9,8 +9,8 @@ module Construct
 ; this is a generated file do not edit!!!!!
 ; for #{domain.to_s}
 $TTL 86400      ; 1 day
-          #{domain}. IN SOA ns.#{region.network.domain}. #{region.network.contact}. (
-          #{Time.now.to_i} ; serial
+#{domain}. IN SOA ns.#{region.network.domain}. #{region.network.contact}. (
+#{Time.now.to_i} ; serial
 10000      ; refresh (2 hours 46 minutes 40 seconds)
 3600       ; retry (1 hour)
 604800     ; expire (1 week)

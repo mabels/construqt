@@ -158,7 +158,7 @@ module Construct
         #  header_clazzes[iface.class.name] ||= iface if iface.delegate.respond_to? :header
         #  footer_clazzes[iface.class.name] ||= iface if iface.delegate.respond_to? :footer
         #end
-        binding.pry
+        #binding.pry
         self.flavour.pre_clazzes do |key, clazz|
           Flavour.call_aspects("#{key}.header", self, nil)
           clazz.header(self) if clazz.respond_to? :header
