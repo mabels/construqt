@@ -142,7 +142,6 @@ module Construct
 
     def build_config(hosts = nil)
       (hosts||Hosts.get_hosts).each do |host|
-        #binding.pry
         by_clazz = {}
         host.interfaces.values.each do |interface|
           #throw "class less interface #{interface.inspect}" unless interface.clazz
@@ -153,6 +152,7 @@ module Construct
           by_clazz[name] << interface
         end
 
+        #binding.pry
         ["host", "device", "vlan", "bond", "bridge", "vrrp", "gre", "bgp", "opvn", "ipsec"].each do |key|
           next unless by_clazz[key]
           by_clazz[key].each do |interface|
