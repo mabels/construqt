@@ -54,7 +54,7 @@ module Construct
   require 'construct/tags.rb'
   require 'construct/flavour/flavour.rb'
 
-  require 'construct/flavour/unknown/flavour_unknown.rb'
+  require 'construct/flavour/unknown/unknown.rb'
   [
     'construct/flavour/ciscian/ciscian.rb',
     'construct/flavour/plantuml/plantuml.rb',

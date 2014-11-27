@@ -111,9 +111,9 @@ module Construct
       #		end
 
       #	end
-
-      def self.clazz(name)
-        ret = {
+      #
+      def self.clazzes
+        {
           "opvn" => Opvn,
           "gre" => Gre,
           "host" => Host,
@@ -124,7 +124,11 @@ module Construct
           "bond" => Bond,
           "vlan" => Vlan,
           "result" => Result
-        }[name]
+        }
+      end
+
+      def self.clazz(name)
+        ret = self.clazzes[name]
         throw "class not found #{name}" unless ret
         ret
       end

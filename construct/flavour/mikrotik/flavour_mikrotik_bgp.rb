@@ -8,7 +8,7 @@ module Construct
           super(cfg)
         end
 
-        def write_filter(host)
+        def self.write_filter(host)
           Bgps.filters.each do |filter|
             v4_name="v4-#{filter.name}"
             v6_name="v6-#{filter.name}"
@@ -29,7 +29,7 @@ module Construct
           end
         end
 
-        def set_routing_bgp_instance(cfg)
+        def self.set_routing_bgp_instance(host, cfg)
           default = {
             "name" => Schema.string.required,
             "as" => Schema.int.required.key,
@@ -45,10 +45,10 @@ module Construct
             "routing-table"=>Schema.identifier.default(nil),
             "comment"=>Schema.string.default(nil)
           }
-          self.host.result.render_mikrotik(default, cfg, "routing", "bgp", "instance")
+          host.result.render_mikrotik(default, cfg, "routing", "bgp", "instance")
         end
 
-        def write_peer(host)
+        def self.write_peer(host)
           as_s = {}
           Bgps.connections.each do |bgp|
             as_s[bgp.left.as] ||= OpenStruct.new(:host => host) if bgp.left.my.host == host
@@ -69,16 +69,16 @@ module Construct
               "as" => as.num,
               "router-id" => router_id}).inject({}) {|r,p| r[p.first.to_s] = p.last; r}
             #puts ">>>#{cfg.inspect}"
-            set_routing_bgp_instance(cfg)
+            set_routing_bgp_instance(host, cfg)
           end
 
           #puts ">>>>>> #{as_s.keys}"
         end
 
-        def header(host)
+        def self.header(host)
           #binding.pry if host.name == "s2b-l3-r01"
-          write_peer(host)
-          write_filter(host)
+          self.write_peer(host)
+          self.write_filter(host)
         end
 
         def set_routing_bgp_peer(cfg)
