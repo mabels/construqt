@@ -109,8 +109,7 @@ module Construct
       lastPort=nil
 
       #remove duplicates
-      ports = ports & ports
-      ports.sort do |l,r|
+      ports.uniq.sort do |l,r|
         fc = l.to_s.length <=> r.to_s.length
         fc!=0 ? fc : l<=>r
       end.each do |port|
