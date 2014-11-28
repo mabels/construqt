@@ -160,24 +160,6 @@ module Construct
         end
       end
 
-      class VariableVerb
-        attr_accessor :key,:values
-        def initialize(key)
-          self.key=key
-          self.values = []
-        end
-
-        def add(value)
-          self.values << value
-          self
-        end
-
-        def serialize
-          puts "VALUES" + values.to_s
-          [eval("\"#{key}\"")]
-        end
-      end
-
       class NestedSection
         attr_accessor :section,:sections
         def initialize(section)
@@ -349,7 +331,6 @@ module Construct
         end
       end
 
-
       class PatternBasedVerb
         attr_accessor :section, :changes
 
@@ -430,15 +411,15 @@ module Construct
 
           result = self.new(self.section)
 
-          key_var = (nu||old).find_key_var
-          set_keys = (nu||old).keys_of_set + (old||nu).keys_of_set
+          key_var = (old||nu).find_key_var
+          set_keys = (old||nu).keys_of_set + (nu||old).keys_of_set
 
           set_keys.each do |key_val|
             variables(self.patterns).each do |v|
               if is_key_value?(v)
                 result.add({key_var => key_val})
               elsif is_value?(v)
-                result.add({key_var => key_val, v => nu_ports[key_val][v]})
+                result.add({key_var => key_val, v => (nu_ports[key_val] && nu_ports[key_val][v]) ? nu_ports[key_val][v] : nil})
               else
                 set = []
                 set += nu_ports[key_val][v] if nu_ports[key_val]
@@ -518,11 +499,14 @@ module Construct
               value_sets.each do |v,set|
                 if (entry[key_var]==key_val)
                   if self.class.is_key_value?(v)
-                    value_sets[v] = entry[v] if entry[v]
+                    value_sets[v] = entry[v]
                   elsif self.class.is_value?(v)
                     value_sets[v] = entry[v]
                   else
                     value_sets[v] += entry[v] if entry[v]
+                    #remove duplicates without changing insertion order:
+                    value_sets[v] = value_sets[v].reverse.uniq.reverse
+
                     value_sets[self.class.invert(v)] -= entry[v] if entry[v] && value_sets[self.class.invert(v)]
                   end
                 end
@@ -530,14 +514,27 @@ module Construct
             end
           end
 
-          #remove duplicate entries
-          sets.each do|key_val,value_sets|
-            value_sets.each do |v,set|
-              value_sets[v] = set & set
+          return sets
+        end
+
+        def determine_output_patterns(value_sets)
+          output_patterns=[]
+          empty_pattern = nil
+          self.class.patterns.each do |pattern|
+            pvs = self.class.find_variables(pattern)
+            if (pvs.empty?)
+              empty_pattern=pattern
+            else
+              pvs.each do |pv|
+                if (!value_sets[pv].nil? && !value_sets[pv].empty?)
+                  output_patterns << pattern
+                  break
+                end
+              end
             end
           end
-
-          return sets
+          output_patterns << empty_pattern if output_patterns.empty? && !empty_pattern.nil?
+          return output_patterns
         end
 
         def serialize
@@ -550,15 +547,17 @@ module Construct
             group=false unless self.class.find_regex(self.class.extract_varname(v)).nil?
           end
 
-          self.class.patterns.each do |pattern|
-            sets.each do |key_val,value_sets|
+          sets.each do |key_val,value_sets|
+            determine_output_patterns(value_sets).each do |pattern|
               index = 0
+              i=0
               begin
                 substitution=false
                 result = pattern
+                i+=1
                 self.class.find_variables(pattern).each do |v|
                   if (group)
-                    result = result.gsub(v, Construct::Util.createRangeDefinition(value_sets[v])) unless value_sets[v].empty?
+                    result = result.gsub(v, Construct::Util.createRangeDefinition(value_sets[v])) unless value_sets[v].nil? || value_sets[v].empty?
                   else
                     if (index < value_sets[v].length)
                       result = result.gsub(v, value_sets[v][index])

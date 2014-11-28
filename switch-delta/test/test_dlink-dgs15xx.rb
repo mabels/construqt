@@ -54,6 +54,28 @@ module Construct
           assert_equal_config(expected, create_delta_config("dlink-dgs15xx", old_config, nu_config))
         end
 
+        def test_remove_allowed_vlan
+          old_config = <<-CONFIG
+          interface ethernet 1/0/1
+          switchport trunk allowed vlan 100,101,102
+          exit
+          CONFIG
+
+          nu_config = <<-CONFIG
+          interface ethernet 1/0/1
+          no switchport trunk allowed vlan
+          exit
+          CONFIG
+
+          expected = <<-CONFIG
+          interface ethernet 1/0/1
+          no switchport trunk allowed vlan
+          exit
+          CONFIG
+
+          assert_equal_config(expected, create_delta_config("dlink-dgs15xx", old_config, nu_config))
+        end
+
         def test_native_vlan_changed
           old_config = <<-CONFIG
           interface ethernet 1/0/1
@@ -166,7 +188,6 @@ module Construct
 
           expected = <<-CONFIG
           interface ethernet 1/0/2
-          no channel-group
           channel-group 13 mode active
           exit
           CONFIG
@@ -195,7 +216,6 @@ module Construct
 
           expected = <<-CONFIG
           interface ethernet 1/0/1
-          no channel-group
           channel-group 14 mode active
           exit
           no interface port-channel 13

@@ -41,7 +41,7 @@ module Construct
           end
 
           def self.patterns
-            ["switchport trunk allowed vlan {=vlans}"]
+            ["no switchport trunk allowed vlan", "switchport trunk allowed vlan {=vlans}"]
           end
         end
 
