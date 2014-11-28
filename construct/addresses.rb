@@ -88,10 +88,16 @@ module Construct
       end
 
       def name
+        ret = self.name!
+        throw "unreferenced address [#{self.ips.map{|i| i.to_string }}]" unless ret
+        ret
+      end
+
+      def name!
         return @name if @name
-        return "#{interface.name}-#{interface.host.name}" if interface
-        return host.name if host
-        throw "unreferenced address #{self.inspect}"
+        return "#{self.interface.name}-#{self.interface.host.name}" if self.interface
+        return self.host.name if self.host
+        nil
       end
 
       def add_ip(ip, region = "")
@@ -179,7 +185,7 @@ module Construct
       @Addresses
     end
 
-    def v4_default_route(tag)
+    def v4_default_route(tag = "")
       nets = [(1..9),(11..126),(128..168),(170..171),(173..191),(193..223)].map do |range|
         range.to_a.map{|i| "#{i}.0.0.0/8"}
       end.flatten
@@ -187,11 +193,11 @@ module Construct
       nets += (0..255).to_a.select{|i| !(16<=i&&i<31)}.map{|i| "172.#{i}.0.0/16" }
       nets += (0..255).to_a.select{|i| i!=168}.map{|i| "192.#{i}.0.0/16" }
 
-      v4_default_route = self.create.set_name(tag).tag(tag)
+      v4_default_route = self.create
+      v4_default_route.set_name(tag).tag(tag) if tag && !tag.empty?
       IPAddress::IPv4::summarize(*(nets.map{|i| IPAddress::IPv4.new(i) })).each do |i|
         v4_default_route.add_ip(i.to_string)
       end
-
       v4_default_route
     end
   end

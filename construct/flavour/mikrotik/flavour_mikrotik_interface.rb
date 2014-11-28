@@ -2,15 +2,12 @@ module Construct
   module Flavour
     module Mikrotik
 
-      class Interface < OpenStruct
-        def initialize(cfg)
-          super(cfg)
-        end
+      class Interface
 
-        def render_ip(ip)
+        def self.render_ip(host, iface, ip)
           cfg = {
             "address" => ip,
-            "interface" => self.name
+            "interface" => iface.name
           }
           if ip.ipv6?
             default = {
@@ -21,7 +18,7 @@ module Construct
             }
             cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}-CONSTRUCT"
             #puts ">>>>>>>> #{cfg.inspect}"
-            self.host.result.delegate.render_mikrotik(default, cfg, "ipv6", "address")
+            host.result.render_mikrotik(default, cfg, "ipv6", "address")
           else
             default = {
               "address" => Schema.addrprefix.required,
@@ -29,11 +26,11 @@ module Construct
               "comment" => Schema.string.required.key
             }
             cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}-CONSTRUCT"
-            self.host.result.delegate.render_mikrotik(default, cfg, "ip", "address")
+            host.result.render_mikrotik(default, cfg, "ip", "address")
           end
         end
 
-        def render_route(rt)
+        def self.render_route(host, iface, rt)
           throw "dst via mismatch #{rt}" if rt.type.nil? and !(rt.dst.ipv6? == rt.via.ipv6? or rt.dst.ipv4? == rt.via.ipv4?)
           cfg = {
             "dst-address" => rt.dst,
@@ -55,28 +52,26 @@ module Construct
           }
           cfg['comment'] = "#{cfg['dst-address']} via #{cfg['gateway']} CONSTRUCT"
           if rt.dst.ipv6?
-            self.host.result.delegate.render_mikrotik(default, cfg, "ipv6", "route")
+            host.result.render_mikrotik(default, cfg, "ipv6", "route")
           else
-            self.host.result.delegate.render_mikrotik(default, cfg, "ip", "route")
+            host.result.render_mikrotik(default, cfg, "ip", "route")
           end
         end
 
-        def build_config(host, iface)
-          name = File.join(host.name, "interface", "device")
-          ret = []
-          ret += self.clazz.build_config(host, iface||self)
-          if !(self.address.nil? || self.address.ips.empty?)
-            #binding.pry
-            self.address.ips.each do |ip|
-              ret += render_ip(ip)
+        def self.build_config(host, iface)
+          #name = File.join(host.name, "interface", "device")
+          #ret = []
+          #ret += self.clazz.build_config(host, iface||self)
+          if !(iface.address.nil? || iface.address.ips.empty?)
+            iface.address.ips.each do |ip|
+              render_ip(host, iface, ip)
             end
 
-            self.address.routes.each do |rt|
-              ret += render_route(rt)
+            iface.address.routes.each do |rt|
+              render_route(host, iface, rt)
             end
           end
-
-          ret
+          #ret
         end
       end
     end

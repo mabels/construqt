@@ -24,6 +24,10 @@ module Construct
         self.delegate.description
       end
 
+      def default_name
+        self.delegate.default_name
+      end
+
       def name
         self.delegate.name
       end

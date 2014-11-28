@@ -19,10 +19,12 @@ $TTL 86400      ; 1 day
 OUT
           region.hosts.get_hosts.each do |host|
             next unless host.delegate.dns_server
-            plain_adr = region.network.addresses.all.find{|i| i.name == host.name }
+            plain_adr = region.network.addresses.all.find{|i| i.name! == host.name }
             unless plain_adr
               plain_adr = host.id.first_ipv6
             end
+
+            binding.pry unless plain_adr.name
 
             ret << "#{domain}. 3600 IN NS #{region.network.fqdn(plain_adr.name)}."
             #if (domain == Addresses.domain)
@@ -39,7 +41,13 @@ OUT
           forward = {}
           reverse = {}
           host.region.network.addresses.all.each do |address|
-            name = host.region.network.fqdn(address.name)
+            next unless address
+            next if address.ips.empty?
+            unless address.name!
+              Construct.logger.warn "unreference address #{address.ips.map{|i| i.to_string}}"
+              next
+            end
+            name = host.region.network.fqdn(address.name!)
             domain = host.region.network.domain
             forward[domain] ||= []
             address.ips.each do |ip|

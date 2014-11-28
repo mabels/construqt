@@ -17,7 +17,7 @@ module Construct
             "port" => Schema.int.default(500),
             "auth-method" => Schema.identifier.default("pre-shared-key"),
             "generate-policy" => Schema.identifier.default("no"),
-            "policy-group" => Schema.identifier.default("default"),
+#            "policy-group" => Schema.identifier.default("default"),
             "exchange-mode" => Schema.identifier.default("main"),
             "send-initial-contact" => Schema.boolean.default(true),
             "nat-traversal" => Schema.boolean.default(true),
