@@ -163,7 +163,10 @@ module Construct
             "ip ipsec policy",
             "routing filter",
             "routing bgp instance",
-            "routing bgp peer"].map do |path|
+            "routing bgp peer",
+            "tool graphing interface",
+            "ip service"
+          ].map do |path|
               if sorted[path]
                 sorted[path]
               else

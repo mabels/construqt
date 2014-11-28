@@ -23,6 +23,7 @@ module Construct
         end
 
         def build_config(host, iface)
+          binding.pry if iface.default_name.nil? || iface.default_name.empty?
           iface = iface.delegate
           default = {
             "l2mtu" => Schema.int.default(1590),
@@ -36,6 +37,7 @@ module Construct
             "name" => iface.name,
             "default-name" => iface.default_name
           }, "interface")
+          Interface.build_config(host, iface)
         end
       end
 
@@ -60,6 +62,7 @@ module Construct
             "v3-protocol" => "ipv6",
             "vrid" => iface.vrid
           }, "interface", "vrrp")
+          Interface.build_config(host, iface)
         end
       end
 
@@ -133,6 +136,7 @@ SRC
             "mode" => iface.mode,
             "slaves" => iface.interfaces.map{|iface| iface.name}.join(',')
           }, "interface", "bonding")
+          Interface.build_config(host, iface)
           scheduler_hack(host, iface)
         end
       end
@@ -158,6 +162,7 @@ SRC
               "vlan-id" => iface.vlan_id
             }, "interface", "vlan")
           end
+          Interface.build_config(host, iface)
         end
       end
 
@@ -188,6 +193,7 @@ SRC
               "bridge" => iface.name,
             }, "interface", "bridge", "port")
           end
+          Interface.build_config(host, iface)
         end
       end
 
@@ -284,8 +290,8 @@ OUT
             "local-address"=>Schema.address.required,
             "remote-address"=>Schema.address.required,
             "dscp"=>Schema.identifier.default("inherit"),
-            "mtu"=>Schema.int.default(1476),
-            "l2mtu"=>Scheme.int.default(65535)
+            "mtu"=>Schema.int.default(1476)
+#            "l2mtu"=>Scheme.int.default(65535)
           }
           host.result.render_mikrotik(default, cfg, "interface", "gre")
         end
@@ -295,8 +301,8 @@ OUT
             "name"=>Schema.identifier.required.key,
             "local-address"=>Schema.address.required,
             "remote-address"=>Schema.address.required,
-            "mtu"=>Schema.int.default(1456),
-            "l2mtu"=>Schema.int.default(65535)
+            "mtu"=>Schema.int.default(1456)
+#            "l2mtu"=>Schema.int.default(65535)
           }
           host.result.render_mikrotik(default, cfg, "interface", "gre6")
         end
@@ -315,6 +321,7 @@ OUT
                               "local-address"=>iface.local.first_ipv4,
                               "remote-address"=>iface.remote.first_ipv4)
           end
+          Interface.build_config(host, iface)
 
           #Mikrotik.set_ipv6_address(host, "address"=>iface.address.first_ipv6.to_string, "interface" => iname)
         end
