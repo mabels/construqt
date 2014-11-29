@@ -1,4 +1,5 @@
-/switch-chatter/.project
-/switch-chatter/.classpath
-/switch-chatter/.settings/org.eclipse.jdt.core.prefs
-/switch-chatter/target
+**/.project
+**/.classpath
+**/.settings
+**/target/*
+*.orig
