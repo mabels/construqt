@@ -189,9 +189,14 @@ module Construqt
           @required
         end
 
-        def key
+        def key(order = 0)
           @key = true
+          @key_order = order
           self
+        end
+
+        def key_order
+          @key_order || 0
         end
 
         def key?

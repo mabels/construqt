@@ -8,6 +8,7 @@ module Construqt
         end
 
         def self.header(host)
+          binding.pry
           addrs = {}
           host.interfaces.values.each do |iface|
             iface = iface.delegate

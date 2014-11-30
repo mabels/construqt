@@ -102,6 +102,10 @@ module Construqt
       def _ident
         "Gre_#{self.host.name}_#{self.name}"
       end
+
+      def cfg
+        self.delegate.cfg
+      end
     end
 
     class HostDelegate
