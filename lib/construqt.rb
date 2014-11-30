@@ -3,7 +3,7 @@ require 'logger'
 require 'fileutils'
 require 'ostruct'
 
-require 'ipaddress'
+require 'construqt/ipaddress'
 require 'digest/sha1'
 require 'digest/md5'
 require "base64"

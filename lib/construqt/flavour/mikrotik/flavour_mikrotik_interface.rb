@@ -44,11 +44,11 @@ module Construqt
 
           cfg['distance'] = rt.metric if rt.metric
           default = {
-            "dst-address" => Schema.network.required,
+            "dst-address" => Schema.network.required.key(0),
             "gateway" => Schema.address,
             "type" => Schema.identifier,
             "distance" => Schema.int,
-            "comment" => Schema.string.required.key
+            "comment" => Schema.string.required.key(1)
           }
           cfg['comment'] = "#{cfg['dst-address']} via #{cfg['gateway']} CONSTRUQT"
           if rt.dst.ipv6?

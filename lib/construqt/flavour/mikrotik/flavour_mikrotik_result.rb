@@ -44,7 +44,8 @@ module Construqt
           end
 
           OpenStruct.new(
-            :key => keys.map{|k,v| "#{k}=#{default[k].serialize(v)}"}.sort.join(" && "),
+            :key => keys.keys.sort{|a,b| default[a].key_order <=> default[b].key_order }
+                        .map{|k| v=keys[k]; "#{k}=#{default[k].serialize(v)}"}.join(" && "),
             :result => result,
             :add_line => result.select{ |k,v|
               if default[k].kind_of?(Schema) && default[k].noset?

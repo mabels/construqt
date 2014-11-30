@@ -230,7 +230,7 @@ TESTNAME
           host.result.add("add", nil, "tool", "graphing", "interface")
 
           host.result.add("set [ find name!=ssh && name!=www-ssl ] disabled=yes", nil, "ip", "service")
-          host.result.add("set [ find ] address=#{host.id.first_ipv6.first_ipv6}", nil, "ip", "service")
+          host.result.add("set [ find ] address=0::/0", nil, "ip", "service")
           host.result.add("set [ find name!=admin ] comment=REMOVE", nil, "user")
 
           host.result.render_mikrotik({
