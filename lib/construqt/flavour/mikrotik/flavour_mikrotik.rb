@@ -367,6 +367,14 @@ OUT
         end.compact.join(":").sub(/:+$/, '::')
       end
 
+      def self.ipsec
+        Ipsec
+      end
+
+      def self.bgp
+        Bgp
+      end
+
       def self.clazzes
         {
           "opvn" => Ovpn,
@@ -377,10 +385,10 @@ OUT
           "bridge" => Bridge,
           "bond" => Bond,
           "vlan" => Vlan,
-          "result" => Result,
+          #"result" => Result,
           "template" => Template,
-          "bgp" => Ipsec,
-          "ipsec" => Bgp
+          #"bgp" => Ipsec,
+          #"ipsec" => Bgp
         }
       end
       def self.clazz(name)

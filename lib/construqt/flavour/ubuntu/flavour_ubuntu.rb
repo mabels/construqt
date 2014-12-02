@@ -333,6 +333,13 @@ PAM
         end
       end
 
+      def self.ipsec
+        Ipsec
+      end
+      def self.bgp
+        Bgp
+      end
+
       def self.clazzes
         {
           "opvn" => Opvn,
@@ -343,9 +350,9 @@ PAM
           "bridge" => Bridge,
           "bond" => Bond,
           "vlan" => Vlan,
-          "result" => Result,
-          "ipsec" => Ipsec,
-          "bgp" => Bgp,
+          #"result" => Result,
+          #"ipsec" => Ipsec,
+          #"bgp" => Bgp,
           "template" => Template
         }
       end

@@ -14,6 +14,14 @@ module Construqt
         @flavour.name
       end
 
+      def ipsec
+        @flavour.ipsec
+      end
+
+      def bgp
+        @flavour.bgp
+      end
+
       def clazzes
         ret = {
           "opvn" => OpvnDelegate,

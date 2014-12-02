@@ -110,11 +110,14 @@ module Construqt
 
     class HostDelegate
       include Delegate
+      attr_reader :users, :bgps, :ipsecs
       def initialize(host)
         #binding.pry
         #Construqt.logger.debug "HostDelegate.new(#{host.name})"
         self.delegate = host
 
+        @ipsecs = []
+        @bgps = []
         @users = host.users || host.region.users
       end
 
@@ -155,8 +158,12 @@ module Construqt
         self.delegate.configip
       end
 
-      def users
-        @users
+      def add_ipsec(ipsec)
+        @ipsecs << ipsec
+      end
+
+      def add_bgp(bgp)
+        @bgps << bgp
       end
 
       def commit

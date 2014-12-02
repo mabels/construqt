@@ -111,6 +111,13 @@ module Construqt
 
       #	end
       #
+      #
+      def self.ipsec
+        Ipsec
+      end
+      def self.bgp
+        Bgp
+      end
       def self.clazzes
         {
           "opvn" => Opvn,
@@ -122,7 +129,6 @@ module Construqt
           "template" => Template,
           "bond" => Bond,
           "vlan" => Vlan,
-          "result" => Result
         }
       end
 

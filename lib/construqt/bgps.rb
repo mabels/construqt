@@ -44,16 +44,25 @@ module Construqt
       cfg.left.cfg = cfg
       cfg.right.other = cfg.left
       cfg.right.cfg = cfg
+
+      cfg.right.host.add_bgp(cfg)
+      cfg.left.host.add_bgp(cfg)
       cfg
     end
 
     def self.build_config()
       #binding.pry
       hosts = {}
+      @bgps.values.each do |bgp|
+        hosts[bgp.left.host.object_id] ||= bgp.left.host
+        hosts[bgp.right.host.object_id] ||= bgp.right.host
+      end
+      #binding.pry
+      hosts.values.each do |host|
+        host.flavour.bgp.header(host) if host.flavour.bgp.respond_to?(:header)
+      end
       @bgps.each do |name, bgp|
         bgp.build_config()
-        hosts[bgp.left.host.name] = bgp.left
-        hosts[bgp.right.host.name] = bgp.right
       end
 
       #hosts.values.each do |flavour_bgp|
