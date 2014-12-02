@@ -20,6 +20,14 @@ module Construqt
         @tags = tags
       end
 
+      def vrrp=(a)
+        @vrrp = a
+      end
+
+      def vrrp
+        @vrrp
+      end
+
       def description
         self.delegate.description
       end

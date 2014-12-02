@@ -1,8 +1,14 @@
 module Construqt
   class Services
+    class ConntrackD
+      attr_accessor :name, :services
+      def initialize(name)
+        self.name = name
+      end
+    end
 
     class DhcpV4Relay
-      attr_accessor :servers, :name
+      attr_accessor :servers, :name, :services
       def initialize(name)
         self.name = name
         self.servers = []
@@ -15,26 +21,38 @@ module Construqt
       end
     end
     class DhcpV6Relay
-      attr_accessor :servers, :name
+      attr_accessor :servers, :name, :services
       def initialize(name)
         self.name = name
         self.servers = []
       end
-      def add_server(ip)
+      class Server
+        attr_accessor :ip, :iface
+      end
+      def add_server(name)
+        (ip, iface) = name.split("%")
+        throw "ip not set #{name}" unless ip
         ip = IPAddress.parse(ip)
         throw "ip must be a v6 address" unless ip.ipv6?
-        self.servers << ip
+        throw "iface not set #{name}" if iface.nil? || iface.empty?
+        server = Server.new
+        server.ip = ip
+        server.iface = iface
+        self.servers << server
         self
       end
     end
     class Radvd
-      attr_accessor :servers, :name
+      attr_accessor :servers, :name, :services
       def initialize(name)
         self.name = name
       end
     end
 
-    def initialize
+
+    attr_reader :region
+    def initialize(region)
+      @region = region
       @services = {}
     end
 
@@ -46,6 +64,7 @@ module Construqt
 
     def add(service)
       @services[service.name] = service
+      service.services = self
       self
     end
 

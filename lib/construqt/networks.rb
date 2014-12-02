@@ -8,12 +8,7 @@ module Construqt
         @domain = "construqt.org"
         @contact = "soa@construqt.org"
         @addresses = Construqt::Addresses.new(self)
-        @services = Construqt::Services.new
         @dns_resolver = nil
-      end
-
-      def services
-        @services
       end
 
       def addresses

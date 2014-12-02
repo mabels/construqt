@@ -3,6 +3,72 @@ module Construqt
   module Flavour
     module Ubuntu
 
+      class EtcConntrackdConntrackd
+        def initialize(result)
+          @result = result
+          @others = []
+        end
+
+        class Other
+          attr_accessor :ifname, :my_ip, :other_ip
+        end
+
+        def add(ifname, my_ip, other_ip)
+          other = Other.new
+          other.ifname = ifname
+          other.my_ip = my_ip
+          other.other_ip = other_ip
+          @others << other
+        end
+
+        def commit
+          return '' if @others.empty?
+          out = [<<CONNTRACKD]
+General {
+	HashSize 32768
+	HashLimit 524288
+	Syslog on
+	LockFile /var/lock/conntrackd.lock
+	UNIX {
+		Path /var/run/conntrackd.sock
+		Backlog 20
+	}
+	SocketBufferSize 262142
+	SocketBufferSizeMaxGrown 655355
+	Filter {
+		Protocol Accept {
+			TCP
+		}
+		Address Ignore {
+			IPv4_address 127.0.0.1 # loopback
+		}
+	}
+}
+Sync {
+	Mode FTFW {
+   	DisableExternalCache Off
+		CommitTimeout 1800
+		PurgeTimeout 5
+	}
+CONNTRACKD
+          @others.each do |other|
+            out.push(<<OTHER)
+  UDP Default {
+          IPv4_address #{other.my_ip}
+          IPv4_Destination_Address #{other.other_ip}
+          Port 3780
+          Interface #{other.ifname}
+          SndSocketBuffer 24985600
+          RcvSocketBuffer 24985600
+          Checksum on
+  }
+OTHER
+          end
+          out.push("}")
+          out.join("\n")
+        end
+      end
+
       class EtcNetworkIptables
         def initialize
           @mangle = Section.new('mangle')
@@ -389,20 +455,14 @@ VRRP
       end
 
       class Result
+        attr_reader :etc_network_interfaces, :etc_network_iptables, :etc_conntrackd_conntrackd
         def initialize(host)
           @host = host
           @etc_network_interfaces = EtcNetworkInterfaces.new(self)
           @etc_network_iptables = EtcNetworkIptables.new
+          @etc_conntrackd_conntrackd = EtcConntrackdConntrackd.new(self)
           @etc_network_vrrp = EtcNetworkVrrp.new
           @result = {}
-        end
-
-        def etc_network_interfaces
-          @etc_network_interfaces
-        end
-
-        def etc_network_iptables
-          @etc_network_iptables
         end
 
         def etc_network_vrrp(ifname)
@@ -432,7 +492,6 @@ VRRP
             #binding.pry
             #@result[path] << [clazz.xprefix(@host)].compact
           end
-
           @result[path] << block+"\n"
         end
 
@@ -460,6 +519,7 @@ VRRP
           add(EtcNetworkIptables, etc_network_iptables.commitv4, Construqt::Resources::Rights::ROOT_0644, "etc", "network", "iptables.cfg")
           add(EtcNetworkIptables, etc_network_iptables.commitv6, Construqt::Resources::Rights::ROOT_0644, "etc", "network", "ip6tables.cfg")
           add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construqt::Resources::Rights::ROOT_0644, "etc", "network", "interfaces")
+          add(EtcConntrackdConntrackd, etc_conntrackd_conntrackd.commit, Construqt::Resources::Rights::ROOT_0644, "etc", "conntrack", "conntrackd.conf")
           @etc_network_vrrp.commit(self)
           out = [<<BASH]
 #!/bin/bash
@@ -471,12 +531,13 @@ fi
 if [ $hostname != #{@host.name} ]
 then
  echo 'You try to run a deploy script on a host which has not the right name $hostname != #{@host.name}'
+ exit 47
 else
  echo Configure Host #{@host.name}
 fi
 updates=''
 for i in language-pack-en language-pack-de git aptitude traceroute vlan bridge-utils tcpdump mtr-tiny \\
-bird keepalived strace iptables conntrack openssl racoon ulogd2 ifenslave
+bird keepalived strace iptables conntrack openssl racoon ulogd2 ifenslave conntrackd conntrack
 do
  dpkg -l $i > /dev/null 2> /dev/null
  if [ $? != 0 ]
