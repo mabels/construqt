@@ -8,15 +8,8 @@ module Construqt
         end
 
         def self.header(host)
-          binding.pry
-          addrs = {}
-          host.interfaces.values.each do |iface|
-            iface = iface.delegate
-            next unless iface.cfg
-            next unless iface.cfg.kind_of? Construqt::Bgp
-            addrs[iface.name] = iface
-          end
-          return if addrs.empty?
+          return if host.bgps.empty?
+          # binding.pry
           bird_v4 = self.header_bird(host, OpenStruct.new(:net_clazz => IPAddress::IPv4, :filter => lambda {|ip| ip.ipv4? }))
           host.result.add(self, bird_v4, Construqt::Resources::Rights::ROOT_0644, "etc", "bird", "bird.conf")
           bird_v6 = self.header_bird(host, OpenStruct.new(:net_clazz => IPAddress::IPv6, :filter => lambda {|ip| ip.ipv6? }))
@@ -24,7 +17,7 @@ module Construqt
         end
 
         def self.header_bird(host, mode)
-          #      binding.pry
+          #binding.pry
           ret = <<BGP
 log syslog { debug, trace, info, remote, warning, error, auth, fatal, bug };
 router id #{host.id.first_ipv4.first_ipv4.to_s};
@@ -109,6 +102,7 @@ BGP
         end
 
         def build_config(unused, unused1)
+          # binding.pry
           build_bird_conf
           build_bird6_conf
         end

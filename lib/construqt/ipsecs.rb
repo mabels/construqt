@@ -40,6 +40,9 @@ module Construqt
       cfg.right.other = cfg.left
       cfg.right.cfg = cfg
 
+      cfg.left.host.add_ipsec(cfg)
+      cfg.right.host.add_ipsec(cfg)
+
       #puts "-------- #{cfg.left.my.host.name} - #{cfg.right.my.host.name}"
       cfg.left.interface = cfg.left.my.host.region.interfaces.add_gre(cfg.left.my.host, cfg.left.other.host.name,
                                                                       "address" => cfg.left.my,
@@ -56,6 +59,15 @@ module Construqt
     end
 
     def self.build_config()
+      hosts = {}
+      @ipsecs.values.each do |ipsec|
+        hosts[ipsec.left.host.object_id] ||= ipsec.left.host
+        hosts[ipsec.right.host.object_id] ||= ipsec.right.host
+      end
+      #binding.pry
+      hosts.values.each do |host|
+        host.flavour.ipsec.header(host) if host.flavour.ipsec.respond_to?(:header)
+      end
       @ipsecs.each do |name, ipsec|
         ipsec.build_config()
       end

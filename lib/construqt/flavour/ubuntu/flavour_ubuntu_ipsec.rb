@@ -8,6 +8,7 @@ module Construqt
         end
 
         def self.header(host)
+          #binding.pry
           addrs = {}
           host.interfaces.values.each do |iface|
             iface = iface.delegate
@@ -117,22 +118,25 @@ RACOON
           end
         end
 
+        def psk(ip, cfg)
+          [
+            "# #{cfg.name}",
+            "#{ip} #{Util.password(cfg.password)}"
+          ].join("\n")
+        end
+
         def build_config(unused, unused2)
           #      build_gre_config()
           #binding.pry
           if self.other.remote.first_ipv6
             build_racoon_config(self.other.remote.first_ipv6.to_s)
-            host.result.add(self, <<IPV6, Construqt::Resources::Rights::ROOT_0600, "etc", "racoon", "psk.txt")
-# #{self.cfg.name}
-            #{self.other.remote.first_ipv6.to_s} #{Util.password(self.cfg.password)}
-IPV6
+            host.result.add(self, psk(self.other.remote.first_ipv6.to_s, cfg),
+                            Construqt::Resources::Rights::ROOT_0600, "etc", "racoon", "psk.txt")
             build_policy(self.remote.first_ipv6.to_s, self.other.remote.first_ipv6.to_s, self.my, self.other.my)
           elsif self.other.remote.first_ipv4
             build_racoon_config(self.other.remote.first_ipv4.to_s)
-            host.result.add(self, <<IPV4, Construqt::Resources::Rights::ROOT_0600, "etc", "racoon", "psk.txt")
-# #{self.cfg.name}
-            #{self.other.remote.first_ipv4.to_s} #{Util.password(self.cfg.password)}
-IPV4
+            host.result.add(self, psk(self.other.remote.first_ipv4.to_s, cfg),
+                            Construqt::Resources::Rights::ROOT_0600, "etc", "racoon", "psk.txt")
             build_policy(self.remote.first_ipv4.to_s, self.other.remote.first_ipv4.to_s, self.my, self.other.my)
           else
             throw "ipsec need a remote address"

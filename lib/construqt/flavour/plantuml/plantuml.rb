@@ -124,6 +124,12 @@ UML
               out << "#{prefix}(#{idx}) = #{ip.to_string}"
             end
           end
+          if iface.address.dhcpv4?
+            out << "dhcpv4 = client"
+          end
+          if iface.address.dhcpv6?
+            out << "dhcpv6 = client"
+          end
 
           iface.address.routes.each_with_index do |route, idx|
             out << "route(#{idx}) = \"#{route.dst.to_string} via #{route.via.to_s}\""
@@ -440,12 +446,12 @@ UML
             elsif File.exists?("/usr/bin/dot")
               dot = "/usr/bin/dot"
             else
-              dot = "$HOME/macosx/bin/dot"
+              dot = "$(which dot)"
             end
             if  File.exists?("#{ENV['HOMEPATH']}/Downloads/plantuml.jar")
               plantuml_jar = "#{ENV['HOMEPATH']}/Downloads/plantuml.jar"
             else
-               plantuml_jar = "~/Downloads/plantuml.jar"
+               plantuml_jar = "$HOME/Downloads/plantuml.jar"
             end
             system("java -jar \"#{plantuml_jar}\" -Djava.awt.headless=true -graphvizdot \"#{dot}\" -tsvg cfgs/world.puml")
           end
