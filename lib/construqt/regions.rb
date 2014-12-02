@@ -3,7 +3,7 @@ module Construqt
   module Regions
     @regions = {}
     class Region
-      attr_reader :name, :cables, :hosts, :interfaces, :users, :vlans, :network, :templates, :resources
+      attr_reader :name, :cables, :hosts, :interfaces, :users, :vlans, :network, :templates, :resources, :services
       def initialize(name, network)
         @name = name
         @network = network
@@ -13,6 +13,7 @@ module Construqt
         @templates = Construqt::Templates.new(self)
         @users = Construqt::Users.new(self)
         @cables = Construqt::Cables.new(self)
+        @services = Construqt::Services.new(self)
         @resources = Construqt::Resources.new(self)
       end
     end

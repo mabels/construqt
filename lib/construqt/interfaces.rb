@@ -109,6 +109,7 @@ module Construqt
         cfg['interface'] = interface
         throw "vrrp interface does not have within the same network" if nets.length == interface.address.ips.select { |adr| nets[adr.network.to_s] }.length
         dev = add_device(interface.host, name, cfg)
+        interface.vrrp = dev
         dev.address.interface = nil
         dev.address.host = nil
         dev.address.name = name

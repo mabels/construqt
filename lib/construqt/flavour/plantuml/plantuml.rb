@@ -111,11 +111,11 @@ UML
       end
 
       def self.render_object_address(iface)
+        tags = []
         out = []
         out << "name = \"#{iface.name}\""
         out << "desc = \"#{iface.description}\"" if iface.description
         if iface.address
-          tags = []
           [iface.address.v4s, iface.address.v6s].each do |ips|
             next unless ips.first
             prefix = ips.first.ipv4? ? "ipv4" : "ipv6"
@@ -124,9 +124,11 @@ UML
               out << "#{prefix}(#{idx}) = #{ip.to_string}"
             end
           end
+
           if iface.address.dhcpv4?
             out << "dhcpv4 = client"
           end
+
           if iface.address.dhcpv6?
             out << "dhcpv6 = client"
           end
@@ -134,12 +136,14 @@ UML
           iface.address.routes.each_with_index do |route, idx|
             out << "route(#{idx}) = \"#{route.dst.to_string} via #{route.via.to_s}\""
           end
-          iface.delegate.firewalls && iface.delegate.firewalls.each_with_index do |fw, idx|
-            out << "fw(#{idx}) = \"#{fw.name}\""
-          end
-          (iface.tags+tags).sort.uniq.each_with_index do |tag, idx|
-            out << "tag(#{idx}) = \"#{tag}\""
-          end
+        end
+
+        iface.delegate.firewalls && iface.delegate.firewalls.each_with_index do |fw, idx|
+          out << "fw(#{idx}) = \"#{fw.name}\""
+        end
+
+        (iface.tags+tags).sort.uniq.each_with_index do |tag, idx|
+          out << "tag(#{idx}) = \"#{tag}\""
         end
 
         out.join("\n")
@@ -448,11 +452,13 @@ UML
             else
               dot = "$(which dot)"
             end
+
             if  File.exists?("#{ENV['HOMEPATH']}/Downloads/plantuml.jar")
               plantuml_jar = "#{ENV['HOMEPATH']}/Downloads/plantuml.jar"
             else
-               plantuml_jar = "$HOME/Downloads/plantuml.jar"
+              plantuml_jar = "$HOME/Downloads/plantuml.jar"
             end
+
             system("java -jar \"#{plantuml_jar}\" -Djava.awt.headless=true -graphvizdot \"#{dot}\" -tsvg cfgs/world.puml")
           end
 
