@@ -128,7 +128,16 @@ module Construqt
       attr_accessor :routes
       def add_routes(addr_s, via, options = {})
         addrs = addr_s.kind_of?(Array) ? addr_s : [addr_s]
-        addrs.each{|addr| addr.ips.each {|i| add_route(i.to_string, via, options) } }
+        addrs.each do |addr|
+          if addr.respond_to? :ips
+            ips = addr.ips if addr.respond_to? :ips
+          else
+            ips = [addr]
+          end
+          ips.each do |i|
+            add_route(i.to_string, via, options)
+          end
+        end
         self
       end
 
