@@ -157,7 +157,7 @@ module Construqt
     end
 
     def self.indent(body, ident)
-      body.lines.map { |line| ident+line }.join("\n")
+      body.lines.map { |line| ident+line.chomp.strip }.join("\n")
     end
   end
 end

@@ -10,25 +10,25 @@ module Construqt
         def self.header(host)
           #binding.pry
           addrs = {}
-          host.interfaces.values.each do |iface|
-            iface = iface.delegate
-            next unless iface.cfg
-            next unless iface.cfg.kind_of? Construqt::Ipsec
-            if iface.remote.first_ipv4
-              addrs[iface.remote.first_ipv4.to_s] = "isakmp #{self.remote.first_ipv4.to_s} [500];"
-            end
-            if iface.remote.first_ipv6
-              addrs[iface.remote.first_ipv6.to_s] = "isakmp #{self.remote.first_ipv6.to_s} [500];"
+          host.ipsecs.each do |ipsec|
+            [ipsec.left, ipsec.right].each do |iface|
+              next if iface.host != host
+              if iface.remote.first_ipv4
+                addrs[iface.remote.first_ipv4.to_s] = "isakmp #{iface.remote.first_ipv4.to_s} [500];"
+              end
+              if iface.remote.first_ipv6
+                addrs[iface.remote.first_ipv6.to_s] = "isakmp #{iface.remote.first_ipv6.to_s} [500];"
+              end
             end
           end
           return if addrs.empty?
-          self.host.result.add(self, <<HEADER, Construqt::Resources::Rights::ROOT_0644, "etc", "racoon", "racoon.conf")
-# do not edit generated filed #{path}
+          host.result.add(self, <<HEADER, Construqt::Resources::Rights::ROOT_0644, "etc", "racoon", "racoon.conf")
+# do not edit generated file
 path pre_shared_key "/etc/racoon/psk.txt";
 path certificate "/etc/racoon/certs";
 log info;
 listen {
-#{Util.indent(addrs.keys.sort.map{|k| addrs[k] }.join("\n"), " ")}
+#{Util.indent(addrs.keys.sort.map{|k| addrs[k] }.join("\n"), "  ")}
   strict_address;
 }
 HEADER
