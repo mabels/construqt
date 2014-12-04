@@ -103,6 +103,8 @@ module Construqt
           @sections[section_key] ||= clazz.new(section_key)
           if Result.starts_with_no(section.to_s)
             @sections[section_key].no
+          else
+            @sections[section_key].yes
           end
           yield(@sections[section_key])  if block_given?
           @sections[section_key]
