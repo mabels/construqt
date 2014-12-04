@@ -94,5 +94,7 @@ public abstract class SwitchChatter implements Closeable {
 	protected abstract void retrieveConfig();
 
 	protected abstract void exit();
+	
+	protected abstract void saveRunningConfig();
 
 }

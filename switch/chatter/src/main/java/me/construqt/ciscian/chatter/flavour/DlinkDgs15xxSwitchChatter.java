@@ -1,5 +1,7 @@
 package me.construqt.ciscian.chatter.flavour;
 
+import me.construqt.ciscian.chatter.steps.flavoured.AnswerYes;
+import me.construqt.ciscian.chatter.steps.flavoured.CiscoCopy;
 import me.construqt.ciscian.chatter.steps.flavoured.EnterInput;
 import me.construqt.ciscian.chatter.steps.flavoured.Exit;
 import me.construqt.ciscian.chatter.steps.flavoured.PasswordPrompt;
@@ -8,8 +10,6 @@ import me.construqt.ciscian.chatter.steps.generic.CollectOutputStep;
 import me.construqt.ciscian.chatter.steps.generic.WaitForStep;
 
 public class DlinkDgs15xxSwitchChatter extends GenericCiscoFlavourSwitchChatter {
-
-
 
 	@Override
 	protected void enterManagementMode(String user, String password) {
@@ -30,6 +30,12 @@ public class DlinkDgs15xxSwitchChatter extends GenericCiscoFlavourSwitchChatter 
 
 	public void exit() {
 		getOutputConsumer().addStep(new Exit());
+	}
+
+	@Override
+	protected void saveRunningConfig() {
+		getOutputConsumer().addStep(new CiscoCopy());
+		getOutputConsumer().addStep(new AnswerYes());
 	}
 
 }

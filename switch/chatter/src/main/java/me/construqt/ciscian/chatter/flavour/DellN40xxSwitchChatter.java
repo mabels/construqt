@@ -1,5 +1,7 @@
 package me.construqt.ciscian.chatter.flavour;
 
+import org.apache.commons.lang.NotImplementedException;
+
 import me.construqt.ciscian.chatter.steps.flavoured.Exit;
 import me.construqt.ciscian.chatter.steps.flavoured.ShowRunningConfig;
 import me.construqt.ciscian.chatter.steps.generic.CollectOutputStep;
@@ -21,4 +23,11 @@ public class DellN40xxSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 		getOutputConsumer().addStep(new Exit());
 		getOutputConsumer().addStep(new Exit());
 	}
+
+	@Override
+	protected void saveRunningConfig() {
+		throw new NotImplementedException(
+				"Saving is not implemented in this flavour.");
+	}
+
 }
