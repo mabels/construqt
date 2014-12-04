@@ -20,7 +20,7 @@ import me.construqt.ciscian.chatter.steps.generic.WaitForStep;
 public class HpProcurveSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 
 	@Override
-	protected void enterManagementMode(String username, String password) {
+	protected void enterManagementMode(final String username, final String password) {
 		getOutputConsumer().addStep(new SwitchStep( //
 				new Case("Press any key to continue") {
 					public Step[] then() {
