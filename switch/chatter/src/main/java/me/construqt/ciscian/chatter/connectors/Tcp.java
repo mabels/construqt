@@ -26,6 +26,7 @@ public class Tcp implements Connector {
 	}
 
 	public ConnectResult connect() throws Exception {
+    System.err.println("Host:["+host+"]");
 		socket = new Socket(host, port);
 		return new ConnectResult(socket.getInputStream(),
 				socket.getOutputStream());
