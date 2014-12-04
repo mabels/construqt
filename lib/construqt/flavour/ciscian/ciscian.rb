@@ -151,9 +151,11 @@ module Construqt
         end
 
         def self.parse_line(line, lines, section, result)
-          regexp = line.to_s.strip.end_with?("\"") ? /^(.*) (\"[^"]+\")$/ : /^(.*) ([^\s"]+)$/
+          regexp = line.to_s.strip.end_with?("\"") ? /^\s*((no|).*) (\"[^"]+\")$/ : /^\s*((no|).*) ([^\s"]+)$/
           if (line.to_s.strip =~ regexp)
-            section.add($1, Ciscian::SingleValueVerb).add($2)
+            key=$1
+            val=$3
+            section.add(key, Ciscian::SingleValueVerb).add(val)
           else
             section.add(line.to_s, Ciscian::SingleValueVerb)
           end
@@ -172,7 +174,14 @@ module Construqt
           #   clazz=verb
           #   verb=clazz.section_key
           # end
-          self.sections[Result.normalize_section_key(verb.to_s)] ||= clazz.new(verb)
+
+          section_key=Result.normalize_section_key(verb.to_s)
+          self.sections[section_key] ||= clazz.new(section_key)
+
+          if Result.starts_with_no(verb.to_s)
+            @sections[section_key].no
+          end
+          @sections[section_key]
         end
 
         def self.parse_line(line, lines, section, result)
