@@ -57,6 +57,44 @@ module Construqt
           end
         end
 
+        class EnablePasswordVerb < SingleValueVerb
+          def self.section
+            "enable password level"
+          end
+
+          def self.patterns
+            ["no channel-group", "enable password level {+admin} {+level} {+pw_hash}"]
+          end
+        end
+
+        class UserNamePasswordVerb < SingleValueVerb
+          def self.section
+            "user XXXXX password"
+          end
+
+          def self.patterns
+          end
+        end
+
+        class UserNamePrivilegeVerb < SingleValueVerb
+          def self.section
+            "user XXXX privilege"
+          end
+
+          def self.patterns
+          end
+        end
+
+        class PasswordVerb < SingleValueVerb
+          def self.section
+            "password"
+          end
+
+          def self.patterns
+          end
+        end
+
+
         class Ipv4RouteVerb < PatternBasedVerb
           def self.section
             "ip route"
@@ -169,7 +207,31 @@ module Construqt
           end
 
           def commit
-#            ["aaa",
+            [
+              "aaa",
+              "service password-encryption",
+              "no ip http server",
+              "debug reboot on-error",
+              "no debug enable"
+            ].each do |verb|
+              @result.add(verb, Ciscian::SingleValueVerb)
+            end
+
+            ["line console", "line telnet", "line ssh"].each do |section|
+              @result.add(section) { |_section| _section.add("line") }
+            end
+
+            @result.host.interfaces.values.each do |iface|
+              @result.add(k
+            end
+
+
+
+
+#             "enable password level 15 7 <>"
+#             "username root password 7 <>"
+#             "username root password 15"
+#
 #             "autoconfig",
 #             ["clock timezone", "+ 1"],
 #             "no clock summer-time"
@@ -178,7 +240,6 @@ module Construqt
 #             "debug"
 #             "debug reboot"
 #             "dim"
-#             "enable password XXXXXXXXXXXXXXXX"
 #             "ignore"
 #             "instance 16 vlans"
   #             no power-saving link-detection
