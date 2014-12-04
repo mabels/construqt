@@ -7,29 +7,31 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.IOUtils;
 
+import me.construqt.ciscian.chatter.Main.CLIOptions;
 import me.construqt.ciscian.chatter.connectors.ConnectResult;
 import me.construqt.ciscian.chatter.connectors.Connector;
 import me.construqt.ciscian.chatter.connectors.ConnectorFactory;
 
 public class ApplyConfig {
-	public static void main(String[] args) throws Exception {
-		String user = args[2];
-		String pass = args[3];
-		Connector connector = ConnectorFactory.createConnector(args[1], user,
-				pass);
+	public static void apply(CLIOptions options) throws Exception {
+		// String user = args[2];
+		// String pass = args[3];
+		Connector connector = ConnectorFactory.createConnector(options.connect,
+				options.user, options.password);
 		ConnectResult connect = connector.connect();
 
 		StringWriter sw = new StringWriter();
 		IOUtils.copy(System.in, sw);
 
-		final SwitchChatter sc = SwitchChatter.create(args[0],
+		final SwitchChatter sc = SwitchChatter.create(options.flavour,
 				connect.getInputStream(), connect.getOutputStream(),
-				args.length >= 6 && "debug".equals(args[5]));
+				options.debug);
 
 		// setup steps
-		sc.enterManagementMode(user, pass);
+		sc.enterManagementMode(options.user, options.password);
 		sc.disablePaging();
 		sc.applyConfig(sw.toString());
+		sc.saveRunningConfig();
 		sc.exit();
 
 		// start procedure

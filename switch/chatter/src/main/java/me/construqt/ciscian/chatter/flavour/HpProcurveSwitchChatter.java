@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import me.construqt.ciscian.chatter.steps.flavoured.EnterInput;
 import me.construqt.ciscian.chatter.steps.flavoured.Exit;
 import me.construqt.ciscian.chatter.steps.flavoured.HpDisablePaging;
+import me.construqt.ciscian.chatter.steps.flavoured.HpWriteMemory;
 import me.construqt.ciscian.chatter.steps.flavoured.PasswordPrompt;
 import me.construqt.ciscian.chatter.steps.flavoured.ShowRunningConfig;
 import me.construqt.ciscian.chatter.steps.flavoured.WaitForPrompt;
@@ -60,6 +61,11 @@ public class HpProcurveSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 
 		getOutputConsumer().addStep(
 				new CollectOutputStep(false, "" + (char) 27));
+	}
+
+	@Override
+	protected void saveRunningConfig() {
+		getOutputConsumer().addStep(new HpWriteMemory());
 	}
 
 	public void exit() {
