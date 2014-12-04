@@ -3,6 +3,8 @@ module Construqt
     module Ciscian
       module DlinkDgs15xx
 
+
+
         class HostNameVerb < PatternBasedVerb
           def self.section
             "snmp-server name"
@@ -167,6 +169,82 @@ module Construqt
           end
 
           def commit
+#            ["aaa",
+#             "autoconfig",
+#             ["clock timezone", "+ 1"],
+#             "no clock summer-time"
+#             "sntp interval 720"
+#             "ddp report-timer 30",
+#             "debug"
+#             "debug reboot"
+#             "dim"
+#             "enable password XXXXXXXXXXXXXXXX"
+#             "ignore"
+#             "instance 16 vlans"
+  #             no power-saving link-detection
+  #             no dim led
+  #             no power-saving hibernation
+  #             no power-saving dim-led
+  #             no power-saving port-shutdown
+#
+#
+#             "ddp"
+#             "no power-saving eee"
+#             "no snmp-server trap-sending"
+#             "no speed"
+#             "spanning-tree guard"
+#             "spanning-tree mst hello-time"
+#
+#
+#            "ip arp gratuitous"
+#            "ip dhcp relay information option format circuit-id default"
+#            "ip dhcp relay information option format remote-id default"
+#            "ip dhcp relay information policy replace"
+#            "ip domain"
+#            "ip http service-port"
+#            "ip http timeout-policy idle"
+#            "ip ssh"
+#            "ip telnet"
+#            "ip telnet service-port"
+#            "port-channel load-balance"
+#            "power-saving"
+#            "service"
+#
+#            "snmp-server community private  view CommunityView"
+#            "snmp-server community public  view CommunityView"
+#            "snmp-server contact"
+#            "snmp-server enable traps rmon falling-alarm"
+#            "snmp-server enable traps snmp rising-alarm"
+#            "snmp-server engineID local"
+#            "snmp-server group initial"
+#            "snmp-server group initial v3  noauth read restricted notify"
+#            "snmp-server group private v1 read CommunityView write CommunityView notify"
+#            "snmp-server group private v2c read CommunityView write CommunityView notify"
+#            "snmp-server group public v1 read CommunityView notify"
+#            "snmp-server group public v2c read CommunityView notify"
+#            "snmp-server location"
+#            "snmp-server response"
+#            "snmp-server service-port"
+#            "snmp-server user initial"
+#            "snmp-server user initial initial"
+#            "snmp-server view CommunityView 1"
+#            "snmp-server view CommunityView 1.3.6.1.6.3"
+#            "snmp-server view CommunityView 1.3.6.1.6.3.1"
+#            "snmp-server view restricted 1.3.6.1.2.1.1"
+#            "snmp-server view restricted 1.3.6.1.2.1.11"
+#            "snmp-server view restricted 1.3.6.1.6.3.10.2.1"
+#            "snmp-server view restricted 1.3.6.1.6.3.11.2.1"
+#            "snmp-server view restricted 1.3.6.1.6.3.15.1.1"
+#            "sntp"
+#            "sntp interval"
+#            "spanning-tree mode"
+#            "spanning-tree mst"
+#            "ssh user root authentication-method"
+#            "username root password 7"
+#            "username root privilege"
+#
+
+
             @result.add("snmp-server name", Ciscian::SingleValueVerb).add(@result.host.name)
             @result.host.interfaces.values.each do |iface|
               next unless iface.delegate.address
