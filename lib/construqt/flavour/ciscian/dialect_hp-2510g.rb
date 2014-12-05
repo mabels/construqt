@@ -13,6 +13,10 @@ module Construqt
         def commit
         end
 
+        def sort_section_keys(keys)
+          keys
+        end
+
         def expand_device_name(device)
           return device.delegate.dev_name if device.delegate.dev_name
           pattern = (({
