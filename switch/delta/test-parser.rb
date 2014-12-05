@@ -8,7 +8,7 @@ module Construqt
     module Ciscian
 
       def self.putsResult(result)
-        puts("--- RESULT ---")
+
         if result.sections
           result.sections.sections.values.each do |section|
             puts section.serialize
@@ -35,7 +35,9 @@ module Construqt
       newResult.parse(newConfig)
 
       compareResult=Result.compare(newResult, oldResult)
-      putsResult(compareResult)
+
+      puts("--- RESULT ---v2")
+      puts(compareResult.serialize)
 
     end
   end

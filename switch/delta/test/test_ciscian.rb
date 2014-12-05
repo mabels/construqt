@@ -5,7 +5,7 @@ module Construqt
         def result_to_string(result)
           config = []
           if result.sections
-            result.sections.sections.values.each do |section|
+            result.sections.values.each do |section|
               config << section.serialize
             end
           end
