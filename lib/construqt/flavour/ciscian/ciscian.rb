@@ -34,19 +34,6 @@ module Construqt
               @to_s = str
               @nr = nr
             end
-            def <=>(other)
-              a = self.to_s
-              b = other.to_s
-              match_a=/^(.*[^\d])(\d+)$/.match(a)||[nil,a,1]
-              match_b=/^(.*[^\d])(\d+)$/.match(b)||[nil,b,1]
-              #puts match_a, match_b, a, b
-              ret = match_a[1]<=>match_b[1]
-              ret = match_a[2].to_i<=>match_b[2].to_i  if ret==0
-              ret
-            end
-            #            def hash
-            #              self.to_s.hash
-            #            end
           end
           def initialize(lines)
             @lines = []
@@ -84,15 +71,19 @@ module Construqt
           end
         end
 
-        def commit
-          self.dialect.commit
-
+        def serialize
           block=[]
-          @sections.keys.sort.each do |key|
+          section_keys = self.dialect.sort_section_keys(@sections.keys)
+          section_keys.each do |key|
             section = @sections[key]
             block += section.serialize
           end
-          Util.write_str(block.join("\n"), File.join(@host.name, "#{@host.fname||self.dialect.class.name}.cfg"))
+          block
+        end
+
+        def commit
+          self.dialect.commit
+          Util.write_str(self.serialize().join("\n"), File.join(@host.name, "#{@host.fname||self.dialect.class.name}.cfg"))
         end
 
         def add(section, clazz=NestedSection)
@@ -103,8 +94,6 @@ module Construqt
           @sections[section_key] ||= clazz.new(section_key)
           if Result.starts_with_no(section.to_s)
             @sections[section_key].no
-          else
-            @sections[section_key].yes
           end
           yield(@sections[section_key])  if block_given?
           @sections[section_key]
@@ -120,7 +109,7 @@ module Construqt
 
           deltas=NestedSection.compare(nu_root, other_root)
           throw "illegal state" if deltas.length != 1
-          result.sections = deltas[0]
+          result.sections = deltas[0].sections unless deltas[0].nil?
           result
         end
       end
@@ -137,7 +126,8 @@ module Construqt
 
         def self.compare(nu, old)
           return [nu] unless old
-          return [old.no] unless nu
+          # return no changes (empty list) if old configuration of single value verb (default) is not explicitly reconfigured in new configuration:
+          return [] unless nu
           return [nu] unless nu.serialize == old.serialize
           [nil]
         end
@@ -172,11 +162,6 @@ module Construqt
         end
 
         def add(verb, clazz = MultiValueVerb)
-          # if verb.respond_to?(:section_key)
-          #   clazz=verb
-          #   verb=clazz.section_key
-          # end
-
           section_key=Result.normalize_section_key(verb.to_s)
           self.sections[section_key] ||= clazz.new(section_key)
 
@@ -233,10 +218,12 @@ module Construqt
 
         def serialize
           block=[]
-          block << "#{@no}#{section.to_s}"
-          unless (@no)
-            block += render_verbs(self.sections)
-            block << "exit"
+          if (!self.sections.empty? &&(!@no || section.include?("vlan")))
+            block << "#{@no}#{section.to_s}"
+            unless (@no)
+              block += render_verbs(self.sections)
+              block << "exit"
+            end
           end
           block
         end
@@ -245,6 +232,7 @@ module Construqt
           return [nu] unless old
           return [old.no] unless nu
           throw "classes must match #{nu.class.name} != #{old.class.name}" unless nu.class == old.class
+
           if (nu.serialize==old.serialize)
             return [nil]
           else
@@ -252,7 +240,7 @@ module Construqt
               return [nu]
             else
               delta = nu.class.new(nu.section)
-              (nu.sections.keys + old.sections.keys).sort.each do |k,v|
+              (nu.sections.keys + old.sections.keys).uniq.sort.each do |k,v|
                 nu_section=nu.sections[k]
                 old_section=old.sections[k]
                 comps = (nu_section||old_section).class.compare(nu_section, old_section)
@@ -417,6 +405,12 @@ module Construqt
         end
 
         def self.compare(nu, old)
+          unless (nu.nil? || old.nil?)
+            if (nu.serialize==old.serialize)
+              return []
+            end
+          end
+
           nu_ports=nu.nil? ? {} : nu.integrate
           old_ports=old.nil? ? {} : old.integrate
 
