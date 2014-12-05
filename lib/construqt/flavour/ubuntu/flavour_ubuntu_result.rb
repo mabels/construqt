@@ -553,6 +553,9 @@ then
 fi
 BASH
           out += @result.map do |fname, block|
+            if host.files
+              next [] if host.files.find{|file| file.path == fname && file.kind_of?(Construqt::Resources::SkipFile) }
+            end
             text = block.flatten.select{|i| !(i.nil? || i.strip.empty?) }.join("\n")
             next if text.strip.empty?
             Util.write_str(text, @host.name, fname)
