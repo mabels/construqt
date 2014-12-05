@@ -1,7 +1,7 @@
-CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'..'
-["#{CONSTRUQT_PATH}/ipaddress/lib","#{CONSTRUQT_PATH}/construqt"].each{|path| $LOAD_PATH.unshift(path) }
+CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'.'
+["#{CONSTRUQT_PATH}/construqt/lib"].each{|path| $LOAD_PATH.unshift(path) }
 
-require("construqt/construqt.rb")
+require("construqt")
 
 module Construqt
   module Flavour

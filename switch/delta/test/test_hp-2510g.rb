@@ -1,9 +1,9 @@
-CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'..'
-["#{CONSTRUQT_PATH}/ipaddress/lib","#{CONSTRUQT_PATH}/construqt"].each{|path| $LOAD_PATH.unshift(path) }
+CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'.'
+["#{CONSTRUQT_PATH}/construqt/lib"].each{|path| $LOAD_PATH.unshift(path) }
 
 require "test/unit"
-require "construqt/construqt.rb"
-require "switch-delta/test/test_ciscian.rb"
+require "construqt"
+require_relative "test_ciscian.rb"
 
 module Construqt
   module Flavour
