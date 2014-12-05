@@ -13,12 +13,13 @@ module Construqt
         def commit
         end
 
-        def expand_device_name(device)
+        def expand_vlan_device_name(device)
+          expand_device_name(device, { "po" => "Trk%s", "ge" => "%s" })
+        end
+
+        def expand_device_name(device, map={ "po" => "Trk%s", "ge" => "ethernet %s" })
           return device.delegate.dev_name if device.delegate.dev_name
-          pattern = (({
-                        "po" => "Trk%s",
-                        "ge" => "ethernet %s"
-          })[device.name[0..1]])
+          pattern = map[device.name[0..1]]
           throw "device not expandable #{device.name}" unless pattern
           pattern%device.name[2..-1]
         end
@@ -39,7 +40,7 @@ module Construqt
         end
 
         def add_bond(bond)
-          throw "not implemented yet"
+          @result.add("trunk", TrunkVerb).add("{+ports}" => bond.interfaces.map{|i| i.delegate.number }, "{*channel}" => bond.delegate.number)
         end
 
         def add_vlan(vlan)
@@ -47,13 +48,12 @@ module Construqt
             next unless vlan.delegate.description && !vlan.delegate.description.empty?
             throw "vlan name too long, max 32 chars" if vlan.delegate.description.length > 32
             section.add("name", Ciscian::SingleValueVerb).add(vlan.delegate.description)
-
-
             vlan.interfaces.each do |port|
+
               section.add({
                             true => "tagged",
                             false => "untagged"
-              }[port.template.is_tagged?(vlan.vlan_id)], Ciscian::RangeVerb).add(port.delegate.number)
+              }[port.template.is_tagged?(vlan.vlan_id)], Ciscian::RangeVerb).add(expand_vlan_device_name(port))
             end
 
             if vlan.delegate.address
@@ -104,8 +104,6 @@ module Construqt
             ["no trunk {-ports}", "trunk {+ports} Trk{*channel} Trunk"]
           end
         end
-
-
       end
 
       Construqt::Flavour::Ciscian.add_dialect(Hp2510g)
