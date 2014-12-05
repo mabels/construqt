@@ -152,6 +152,11 @@ module Construqt
           self
         end
 
+        def yes
+          @no=nil
+          self
+        end
+
         def self.parse_line(line, lines, section, result)
           regexp = line.to_s.strip.end_with?("\"") ? /^(.*) (\"[^"]+\")$/ : /^(.*) ([^\s"]+)$/
           if (line.to_s.strip =~ regexp)
@@ -222,6 +227,11 @@ module Construqt
           @no
         end
 
+        def yes
+          @no=nil
+          self
+        end
+
         def serialize
           block=[]
           block << "#{@no}#{section.to_s}"
@@ -275,6 +285,11 @@ module Construqt
           self
         end
 
+        def yes
+          @no=nil
+          self
+        end
+
         def serialize
           if @no
             ["#{@no}#{section}"]
@@ -310,6 +325,11 @@ module Construqt
 
         def no
           @no="no "
+          self
+        end
+
+        def yes
+          @no=nil
           self
         end
 

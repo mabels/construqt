@@ -221,9 +221,9 @@ module Construqt
               @result.add(section) { |_section| _section.add("line") }
             end
 
-            @result.host.interfaces.values.each do |iface|
-              @result.add(k
-            end
+            #@result.host.interfaces.values.each do |iface|
+            #  @result.add(k
+            #end
 
 
 
