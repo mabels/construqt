@@ -357,9 +357,8 @@ module Construqt
             vlan_id=vlan.delegate.vlan_id
             vlan.interfaces.each do |iface|
               @result.add("interface #{expand_device_name(iface)}") do |section|
-                if iface.template.is_tagged?(vlan_id)
-                  section.add("switchport trunk allowed vlan", Ciscian::RangeVerb).add(vlan_id)
-                else
+                section.add("switchport trunk allowed vlan", Ciscian::RangeVerb).add(vlan_id)
+                unless iface.template.is_tagged?(vlan_id)
                   section.add("switchport trunk native vlan").add(vlan_id)
                 end
               end
