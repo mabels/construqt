@@ -41,10 +41,11 @@ module Construqt
 
         def add_bond(bond)
           @result.add("trunk", TrunkVerb).add("{+ports}" => bond.interfaces.map{|i| i.delegate.number }, "{*channel}" => bond.delegate.number)
+          @result.add("spanning-tree #{expand_vlan_device_name(bond)} priority 4")
         end
 
         def add_vlan(vlan)
-          @result.add("vlan #{vlan.delegate.vlan_id}") do |section|
+          @result.add("vlan #{vlan.delegate.vlan_id} jumbo") do |section|
             next unless vlan.delegate.description && !vlan.delegate.description.empty?
             throw "vlan name too long, max 32 chars" if vlan.delegate.description.length > 32
             section.add("name", Ciscian::SingleValueVerb).add(vlan.delegate.description)
