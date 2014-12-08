@@ -161,7 +161,7 @@ module Construqt
           self.section=section
         end
 
-        def add(verb, clazz = MultiValueVerb)
+        def add(verb, clazz = SingleValueVerb)
           section_key=Result.normalize_section_key(verb.to_s)
           self.sections[section_key] ||= clazz.new(section_key)
 
@@ -172,7 +172,6 @@ module Construqt
         end
 
         def self.parse_line(line, lines, section, result)
-          #binding.pry if line.start_with?("interface")
           if [/^\s*(no\s+|)interface/, /^\s*(no\s+|)vlan/].find{|i| line.to_s.match(i) }
             resultline=Result::Lines::Line.new(result.dialect.clear_interface(line), line.nr)
             section.add(resultline.to_s) do |_section|
@@ -218,7 +217,7 @@ module Construqt
 
         def serialize
           block=[]
-          if (!self.sections.empty? &&(!@no || section.include?("vlan")))
+          if (!self.sections.empty? || (@no && section.strip.start_with?("vlan")))
             block << "#{@no}#{section.to_s}"
             unless (@no)
               block += render_verbs(self.sections)
@@ -251,43 +250,6 @@ module Construqt
               end
               return [delta]
             end
-          end
-        end
-      end
-
-      class MultiValueVerb
-        attr_accessor :section,:values
-        def initialize(section)
-          self.section=section
-          self.values = []
-        end
-
-        def add(value)
-          self.values << value
-          self
-        end
-
-        def no
-          @no="no "
-          self
-        end
-
-        def serialize
-          if @no
-            ["#{@no}#{section}"]
-          else
-            ["#{section} #{values.join(",")}"]
-          end
-        end
-
-        def self.compare(nu, old)
-          return [nu] unless old
-          return [old.no] unless nu
-          throw "classes must match #{nu.class.name} != #{old.class.name}" unless nu.class == old.class
-          if (nu.serialize==old.serialize)
-            [nil]
-          else
-            [nu]
           end
         end
       end

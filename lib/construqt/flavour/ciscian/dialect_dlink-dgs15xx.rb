@@ -94,7 +94,6 @@ module Construqt
           end
         end
 
-
         class Ipv4RouteVerb < PatternBasedVerb
           def self.section
             "ip route"
@@ -108,6 +107,16 @@ module Construqt
 
           def self.patterns
             ["no ip route {-routedefs}", "ip route {+routedefs}"]
+          end
+        end
+
+        class IpHttpServerVerb < SingleValueVerb
+          def self.parse_line(line, lines, section, result)
+            regexp = /^\s*((no|) ip http server)$/
+            if (line.to_s.strip =~ regexp)
+              section.add(line.to_s, Ciscian::SingleValueVerb)
+              return true
+            end
           end
         end
 
@@ -189,7 +198,8 @@ module Construqt
               MtuVerb,
               SwitchPortTrunkAllowedVlan,
               ChannelGroupVerb,
-              Ipv4RouteVerb
+              Ipv4RouteVerb,
+              IpHttpServerVerb
             ].find do |i|
               i.parse_line(line, lines, section, result)
             end
@@ -332,7 +342,7 @@ module Construqt
               next unless iface.delegate.address
               iface.delegate.address.routes.each do |route|
                 ip = route.dst.ipv6? ? "ipv6" : "ip"
-                @result.add("#{ip} route #{route.dst.to_string} vlan#{iface.delegate.vlan_id} #{route.via.to_s}", Ciscian::SingleValueVerb)
+                @result.add("#{ip} route #{route.dst.to_string.upcase} vlan#{iface.delegate.vlan_id} #{route.via.to_s.upcase}", Ciscian::SingleValueVerb)
               end
             end
           end
@@ -363,12 +373,12 @@ module Construqt
             @result.add("interface vlan #{vlan.delegate.vlan_id}") do |section|
               if vlan.delegate.address
                 if vlan.delegate.address.first_ipv4
-                  section.add("ip address").add(vlan.delegate.address.first_ipv4.to_string)
+                  section.add("ip address").add(vlan.delegate.address.first_ipv4.to_string.upcase)
                 elsif vlan.delegate.address.dhcpv4?
                   section.add("ip address").add("dhcp-bootp")
                 end
                 if vlan.delegate.address.first_ipv6
-                  section.add("ipv6 address").add(vlan.delegate.address.first_ipv6.to_string)
+                  section.add("ipv6 address").add(vlan.delegate.address.first_ipv6.to_string.upcase)
                 elsif vlan.delegate.address.dhcpv6?
                   section.add("ipv6 address").add("dhcp-bootp")
                 end
