@@ -186,10 +186,10 @@ module Construqt
           CONFIG
 
           expected = <<-CONFIG
+          no vlan 1
           vlan 101
           tagged 1-20,Trk1
           exit
-          no vlan 1
           CONFIG
 
           assert_equal_config(expected, create_delta_config("hp-2510g", old_config, nu_config))
