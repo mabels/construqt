@@ -1,10 +1,3 @@
-CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'.'
-["#{CONSTRUQT_PATH}/construqt/lib"].each{|path| $LOAD_PATH.unshift(path) }
-
-puts $LOAD_PATH
-
-require "test/unit"
-require "construqt"
 require_relative "test_ciscian.rb"
 
 module Construqt
