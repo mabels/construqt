@@ -49,7 +49,7 @@ module Construqt
         end
 
         def add_vlan(vlan)
-          @result.add("vlan #{vlan.delegate.vlan_id} jumbo") do |section|
+          @result.add("vlan #{vlan.delegate.vlan_id}") do |section|
             next unless vlan.delegate.description && !vlan.delegate.description.empty?
             throw "vlan name too long, max 32 chars" if vlan.delegate.description.length > 32
             section.add("name", Ciscian::SingleValueVerb).add(vlan.delegate.description)
