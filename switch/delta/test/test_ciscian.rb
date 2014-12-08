@@ -1,3 +1,9 @@
+CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'.'
+["#{CONSTRUQT_PATH}/construqt/lib"].each{|path| $LOAD_PATH.unshift(path) }
+
+require "test/unit"
+require "construqt"
+
 module Construqt
   module Flavour
     module Ciscian
@@ -33,6 +39,12 @@ module Construqt
           result_to_string(compare_result)
         end
       end
+
+
+
+
+
     end
   end
+
 end

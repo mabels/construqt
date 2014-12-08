@@ -1,8 +1,3 @@
-CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'.'
-["#{CONSTRUQT_PATH}/construqt/lib"].each{|path| $LOAD_PATH.unshift(path) }
-
-require "test/unit"
-require "construqt"
 require_relative "test_ciscian.rb"
 
 module Construqt
@@ -172,6 +167,29 @@ module Construqt
           tagged 2-3
           no tagged 1
           exit
+          CONFIG
+
+          assert_equal_config(expected, create_delta_config("hp-2510g", old_config, nu_config))
+        end
+
+        def test_interface_ranges3
+          old_config = <<-CONFIG
+          vlan 1
+          tagged 1-20
+          exit
+          CONFIG
+
+          nu_config = <<-CONFIG
+          vlan 101
+          tagged 1-20,Trk1
+          exit
+          CONFIG
+
+          expected = <<-CONFIG
+          vlan 101
+          tagged 1-20,Trk1
+          exit
+          no vlan 1
           CONFIG
 
           assert_equal_config(expected, create_delta_config("hp-2510g", old_config, nu_config))
