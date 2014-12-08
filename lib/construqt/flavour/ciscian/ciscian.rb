@@ -35,23 +35,28 @@ module Construqt
               @nr = nr
             end
           end
+
           def initialize(lines)
             @lines = []
             lines.each_with_index do |line, idx|
               @lines << Line.new(line.strip, idx)
             end
+
             @pos = 0
           end
+
           def shift
             @pos += 1
             @lines[@pos-1]
           end
         end
+
         def parse(lines)
           lines = Lines.new(lines)
           while line = lines.shift
             parse_line(line, lines, self, self)
           end
+
           self
         end
 
@@ -94,7 +99,10 @@ module Construqt
           @sections[section_key] ||= clazz.new(section_key)
           if Result.starts_with_no(section.to_s)
             @sections[section_key].no
+          else
+            @sections[section_key].yes
           end
+
           yield(@sections[section_key])  if block_given?
           @sections[section_key]
         end
@@ -139,6 +147,11 @@ module Construqt
         def no
           @no="no"
           self.value=nil
+          self
+        end
+
+        def yes
+          @no=nil
           self
         end
 
@@ -192,6 +205,7 @@ module Construqt
                 end
               end
             end
+
             return true
           end
         end
@@ -202,6 +216,7 @@ module Construqt
             verb = sections[key]
             block << verb.serialize.map{|i| "  #{i}"}
           end
+
           block
         end
 
@@ -215,6 +230,11 @@ module Construqt
           @no
         end
 
+        def yes
+          @no=nil
+          self
+        end
+
         def serialize
           block=[]
           if (!self.sections.empty? || (@no && section.strip.start_with?("vlan")))
@@ -224,6 +244,7 @@ module Construqt
               block << "exit"
             end
           end
+
           block
         end
 
@@ -248,6 +269,7 @@ module Construqt
                   delta.sections[comp.section] = comp
                 end
               end
+
               return [delta]
             end
           end
@@ -262,13 +284,18 @@ module Construqt
         end
 
         def add(value)
-          throw "must be a number \'#{value}\'" unless /^\d+$/.match(value.to_s)
-          self.values << value.to_i
+          #throw "must be a number \'#{value}\'" unless /^\d+$/.match(value.to_s)
+          self.values << value #.to_i
           self
         end
 
         def no
           @no="no "
+          self
+        end
+
+        def yes
+          @no=nil
           self
         end
 
@@ -300,6 +327,9 @@ module Construqt
           self.changes=[]
         end
 
+        def yes
+        end
+
         def add(entry)
           changes << entry
           self
@@ -316,6 +346,7 @@ module Construqt
           patterns.each do |pattern|
             variables+=find_variables(pattern)
           end
+
           return variables
         end
 
@@ -349,6 +380,7 @@ module Construqt
               var_regex = "#{Construqt::Util::PORTS_DEF_REGEXP}" unless var_regex
               regex=regex.gsub(var, var_regex)
             end
+
             regex=regex.gsub(" ", "\\s+")
             regex="^"+regex+"$"
             if (matchdata=line.match(regex))
@@ -360,9 +392,11 @@ module Construqt
                   values[variables[i-1]]=[matchdata[i]]
                 end
               end
+
               return values
             end
           end
+
           return false
         end
 
@@ -420,6 +454,7 @@ module Construqt
               end
             end
           end
+
           return key_var
         end
 
@@ -500,6 +535,7 @@ module Construqt
               end
             end
           end
+
           output_patterns << empty_pattern if output_patterns.empty? && !empty_pattern.nil?
           return output_patterns
         end
@@ -517,14 +553,18 @@ module Construqt
           sets.each do |key_val,value_sets|
             determine_output_patterns(value_sets).each do |pattern|
               index = 0
-              i=0
+              i = 0
               begin
                 substitution=false
                 result = pattern
-                i+=1
+                i += 1
                 self.class.find_variables(pattern).each do |v|
                   if (group)
-                    result = result.gsub(v, Construqt::Util.createRangeDefinition(value_sets[v])) unless value_sets[v].nil? || value_sets[v].empty?
+                    if (!value_sets[v].kind_of?(Array) && (self.class.is_value?(v) || self.class.is_key_value?(v)))
+                      result = result.gsub(v, value_sets[v].to_s) unless value_sets[v].nil? || value_sets[v].to_s.empty?
+                    else
+                      result = result.gsub(v, Construqt::Util.createRangeDefinition(value_sets[v])) unless value_sets[v].nil? || value_sets[v].empty?
+                    end
                   else
                     if (index < value_sets[v].length)
                       result = result.gsub(v, value_sets[v][index])
@@ -532,11 +572,13 @@ module Construqt
                     end
                   end
                 end
+
                 buffer << result if self.class.find_variables(result).empty?
                 index+=1
               end while substitution
             end
           end
+
           return buffer
         end
       end
@@ -549,6 +591,7 @@ module Construqt
         def header(host)
           "# this is a generated file do not edit!!!!!"
         end
+
         def footer(host)
           "# this is a generated file do not edit!!!!!"
         end
