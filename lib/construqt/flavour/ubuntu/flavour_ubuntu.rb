@@ -282,6 +282,7 @@ auth requisite pam_deny.so
 PAM
           #binding.pry
           host.delegate.files && host.delegate.files.each do |file|
+            next if file.kind_of?(Construqt::Resources::SkipFile)
             if host.result.replace(nil, file.data, file.right, *file.path)
               Construqt.logger.warn("the file #{file.path} was overriden!")
             end

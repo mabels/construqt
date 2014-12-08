@@ -248,94 +248,9 @@ module Construqt
               @result.add(verb, Ciscian::SingleValueVerb)
             end
 
-            # ["line console", "line telnet", "line ssh"].each do |section|
-            #   @result.add(section) { |_section| _section.add("line") }
-            # end
-
-            # @result.host.interfaces.values.each do |iface|
-            #   @result.add(k
-            # end
-
-
-
-
-            #             "enable password level 15 7 <>"
-            #             "username root password 7 <>"
-            #             "username root password 15"
-            #
-            #             "autoconfig",
-            #             ["clock timezone", "+ 1"],
-            #             "no clock summer-time"
-            #             "sntp interval 720"
-            #             "ddp report-timer 30",
-            #             "debug"
-            #             "debug reboot"
-            #             "dim"
-            #             "ignore"
-            #             "instance 16 vlans"
-            #             no power-saving link-detection
-            #             no dim led
-            #             no power-saving hibernation
-            #             no power-saving dim-led
-            #             no power-saving port-shutdown
-            #
-            #
-            #             "ddp"
-            #             "no power-saving eee"
-            #             "no snmp-server trap-sending"
-            #             "no speed"
-            #             "spanning-tree guard"
-            #             "spanning-tree mst hello-time"
-            #
-            #
-            #            "ip arp gratuitous"
-            #            "ip dhcp relay information option format circuit-id default"
-            #            "ip dhcp relay information option format remote-id default"
-            #            "ip dhcp relay information policy replace"
-            #            "ip domain"
-            #            "ip http service-port"
-            #            "ip http timeout-policy idle"
-            #            "ip ssh"
-            #            "ip telnet"
-            #            "ip telnet service-port"
-            #            "port-channel load-balance"
-            #            "power-saving"
-            #            "service"
-            #
-            #            "snmp-server community private  view CommunityView"
-            #            "snmp-server community public  view CommunityView"
-            #            "snmp-server contact"
-            #            "snmp-server enable traps rmon falling-alarm"
-            #            "snmp-server enable traps snmp rising-alarm"
-            #            "snmp-server engineID local"
-            #            "snmp-server group initial"
-            #            "snmp-server group initial v3  noauth read restricted notify"
-            #            "snmp-server group private v1 read CommunityView write CommunityView notify"
-            #            "snmp-server group private v2c read CommunityView write CommunityView notify"
-            #            "snmp-server group public v1 read CommunityView notify"
-            #            "snmp-server group public v2c read CommunityView notify"
-            #            "snmp-server location"
-            #            "snmp-server response"
-            #            "snmp-server service-port"
-            #            "snmp-server user initial"
-            #            "snmp-server user initial initial"
-            #            "snmp-server view CommunityView 1"
-            #            "snmp-server view CommunityView 1.3.6.1.6.3"
-            #            "snmp-server view CommunityView 1.3.6.1.6.3.1"
-            #            "snmp-server view restricted 1.3.6.1.2.1.1"
-            #            "snmp-server view restricted 1.3.6.1.2.1.11"
-            #            "snmp-server view restricted 1.3.6.1.6.3.10.2.1"
-            #            "snmp-server view restricted 1.3.6.1.6.3.11.2.1"
-            #            "snmp-server view restricted 1.3.6.1.6.3.15.1.1"
-            #            "sntp"
-            #            "sntp interval"
-            #            "spanning-tree mode"
-            #            "spanning-tree mst"
-            #            "ssh user root authentication-method"
-            #            "username root password 7"
-            #            "username root privilege"
-            #
-
+            ["line console", "line telnet", "line ssh"].each do |section|
+              @result.add(section) { |_section| _section.add("line") }
+            end
 
             @result.add("snmp-server name", Ciscian::SingleValueVerb).add(@result.host.name)
             @result.host.interfaces.values.each do |iface|
@@ -388,9 +303,8 @@ module Construqt
             vlan_id=vlan.delegate.vlan_id
             vlan.interfaces.each do |iface|
               @result.add("interface #{expand_device_name(iface)}") do |section|
-                if iface.template.is_tagged?(vlan_id)
-                  section.add("switchport trunk allowed vlan", Ciscian::RangeVerb).add(vlan_id)
-                else
+                section.add("switchport trunk allowed vlan", Ciscian::RangeVerb).add(vlan_id)
+                unless iface.template.is_tagged?(vlan_id)
                   section.add("switchport trunk native vlan").add(vlan_id)
                 end
               end

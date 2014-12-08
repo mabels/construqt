@@ -61,7 +61,7 @@ module Construqt
 
       def fqdn(name)
         throw "name must set" unless name
-        _name = name.gsub(/[\s_]+/, '-')
+        _name = name.gsub(/[\s_\.]+/, '-')
         return "#{_name}.#{self.domain}" unless _name.include?('.')
         return _name
       end

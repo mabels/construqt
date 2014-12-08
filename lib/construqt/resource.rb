@@ -12,6 +12,10 @@ module Construqt
       attr_accessor :data
     end
 
+    class SkipFile
+      attr_accessor :path
+    end
+
     def initialize(region)
       @region = region
       @files = {}
@@ -19,6 +23,12 @@ module Construqt
 
     def add_from_file(src_fname, right, key, *path)
       add_file(IO.read(src_fname), right, key, *path)
+    end
+
+    def add_skip_file(fname)
+      sf = SkipFile.new
+      sf.path = fname
+      sf
     end
 
     def add_file(data, right, key, *path)
