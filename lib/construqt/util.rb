@@ -157,6 +157,9 @@ module Construqt
     end
 
     def self.indent(body, ident)
+      if ident.kind_of?(Fixnum)
+        ident = (1..ident).to_a.map{' '}.join('')
+      end
       body.lines.map { |line| ident+line.chomp.strip }.join("\n")
     end
   end
