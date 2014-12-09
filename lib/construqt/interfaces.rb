@@ -103,7 +103,7 @@ module Construqt
       end
 
       cfg['interfaces'].each do |interface|
-        throw "interface need priority #{interface}" unless interface.priority
+        throw "interface need priority #{interface.name}" unless interface.priority
         throw "interface not found:#{name}" unless interface
         cfg['clazz'] = "vrrp"
         cfg['interface'] = interface
