@@ -1,14 +1,14 @@
-CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'..'
-["#{CONSTRUQT_PATH}/ipaddress/lib","#{CONSTRUQT_PATH}/construqt"].each{|path| $LOAD_PATH.unshift(path) }
+CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'.'
+["#{CONSTRUQT_PATH}/construqt/lib"].each{|path| $LOAD_PATH.unshift(path) }
 
-require("construqt/construqt.rb")
+require("construqt")
 
 module Construqt
   module Flavour
     module Ciscian
 
       def self.putsResult(result)
-        puts("--- RESULT ---")
+
         if result.sections
           result.sections.sections.values.each do |section|
             puts section.serialize
@@ -35,7 +35,9 @@ module Construqt
       newResult.parse(newConfig)
 
       compareResult=Result.compare(newResult, oldResult)
-      putsResult(compareResult)
+
+      puts("--- RESULT ---v2")
+      puts(compareResult.serialize)
 
     end
   end

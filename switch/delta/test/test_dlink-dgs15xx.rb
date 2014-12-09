@@ -1,9 +1,4 @@
-CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'..'
-["#{CONSTRUQT_PATH}/ipaddress/lib","#{CONSTRUQT_PATH}/construqt"].each{|path| $LOAD_PATH.unshift(path) }
-
-require "test/unit"
-require "construqt/construqt.rb"
-require "switch-delta/test/test_ciscian.rb"
+require_relative "test_ciscian.rb"
 
 module Construqt
   module Flavour
@@ -108,6 +103,25 @@ module Construqt
           nu_config = <<-CONFIG
           interface ethernet 1/0/1
           switchport trunk native vlan 100
+          exit
+          CONFIG
+
+          expected = <<-CONFIG
+          CONFIG
+
+          assert_equal_config(expected, create_delta_config("dlink-dgs15xx", old_config, nu_config))
+        end
+
+        def test_no_changes2
+          old_config = <<-CONFIG
+          interface ethernet 1/0/1
+          switchport trunk allowed vlan 100
+          exit
+          CONFIG
+
+          nu_config = <<-CONFIG
+          interface ethernet 1/0/1
+          switchport trunk allowed vlan 100
           exit
           CONFIG
 
