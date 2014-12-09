@@ -94,7 +94,6 @@ module Construqt
           end
         end
 
-
         class Ipv4RouteVerb < PatternBasedVerb
           def self.section
             "ip route"
@@ -108,6 +107,16 @@ module Construqt
 
           def self.patterns
             ["no ip route {-routedefs}", "ip route {+routedefs}"]
+          end
+        end
+
+        class IpHttpServerVerb < SingleValueVerb
+          def self.parse_line(line, lines, section, result)
+            regexp = /^\s*((no|) ip http server)$/
+            if (line.to_s.strip =~ regexp)
+              section.add(line.to_s, Ciscian::SingleValueVerb)
+              return true
+            end
           end
         end
 
@@ -189,10 +198,32 @@ module Construqt
               MtuVerb,
               SwitchPortTrunkAllowedVlan,
               ChannelGroupVerb,
-              Ipv4RouteVerb
+              Ipv4RouteVerb,
+              IpHttpServerVerb
             ].find do |i|
               i.parse_line(line, lines, section, result)
             end
+          end
+
+          def sort_section_keys(keys)
+            return keys.sort do |a,b|
+              a = a.to_s
+              b = b.to_s
+              match_a=/^(.*[^\d])(\d+)$/.match(a)||[nil,a,1]
+              match_b=/^(.*[^\d])(\d+)$/.match(b)||[nil,b,1]
+              #puts match_a, match_b, a, b
+              ret=0
+              ret = rate_higher("vlan", match_a[1], match_b[1]) if ret==0
+              ret = rate_higher("interface port-channel", match_a[1], match_b[1]) if ret==0
+              ret = rate_higher("interface vlan", match_a[1], match_b[1]) if ret==0
+              ret = match_a[1]<=>match_b[1] if ret==0
+              ret = match_a[2].to_i<=>match_b[2].to_i if ret==0
+              ret
+            end
+          end
+
+          def rate_higher(prefix, a, b)
+            return a.start_with?(prefix) ^ b.start_with?(prefix) ? (a.start_with?(prefix) ? -1 : 1) : 0
           end
 
           def expand_device_name(device)
@@ -221,97 +252,12 @@ module Construqt
               @result.add(section) { |_section| _section.add("line") }
             end
 
-            #@result.host.interfaces.values.each do |iface|
-            #  @result.add(k
-            #end
-
-
-
-
-#             "enable password level 15 7 <>"
-#             "username root password 7 <>"
-#             "username root password 15"
-#
-#             "autoconfig",
-#             ["clock timezone", "+ 1"],
-#             "no clock summer-time"
-#             "sntp interval 720"
-#             "ddp report-timer 30",
-#             "debug"
-#             "debug reboot"
-#             "dim"
-#             "ignore"
-#             "instance 16 vlans"
-  #             no power-saving link-detection
-  #             no dim led
-  #             no power-saving hibernation
-  #             no power-saving dim-led
-  #             no power-saving port-shutdown
-#
-#
-#             "ddp"
-#             "no power-saving eee"
-#             "no snmp-server trap-sending"
-#             "no speed"
-#             "spanning-tree guard"
-#             "spanning-tree mst hello-time"
-#
-#
-#            "ip arp gratuitous"
-#            "ip dhcp relay information option format circuit-id default"
-#            "ip dhcp relay information option format remote-id default"
-#            "ip dhcp relay information policy replace"
-#            "ip domain"
-#            "ip http service-port"
-#            "ip http timeout-policy idle"
-#            "ip ssh"
-#            "ip telnet"
-#            "ip telnet service-port"
-#            "port-channel load-balance"
-#            "power-saving"
-#            "service"
-#
-#            "snmp-server community private  view CommunityView"
-#            "snmp-server community public  view CommunityView"
-#            "snmp-server contact"
-#            "snmp-server enable traps rmon falling-alarm"
-#            "snmp-server enable traps snmp rising-alarm"
-#            "snmp-server engineID local"
-#            "snmp-server group initial"
-#            "snmp-server group initial v3  noauth read restricted notify"
-#            "snmp-server group private v1 read CommunityView write CommunityView notify"
-#            "snmp-server group private v2c read CommunityView write CommunityView notify"
-#            "snmp-server group public v1 read CommunityView notify"
-#            "snmp-server group public v2c read CommunityView notify"
-#            "snmp-server location"
-#            "snmp-server response"
-#            "snmp-server service-port"
-#            "snmp-server user initial"
-#            "snmp-server user initial initial"
-#            "snmp-server view CommunityView 1"
-#            "snmp-server view CommunityView 1.3.6.1.6.3"
-#            "snmp-server view CommunityView 1.3.6.1.6.3.1"
-#            "snmp-server view restricted 1.3.6.1.2.1.1"
-#            "snmp-server view restricted 1.3.6.1.2.1.11"
-#            "snmp-server view restricted 1.3.6.1.6.3.10.2.1"
-#            "snmp-server view restricted 1.3.6.1.6.3.11.2.1"
-#            "snmp-server view restricted 1.3.6.1.6.3.15.1.1"
-#            "sntp"
-#            "sntp interval"
-#            "spanning-tree mode"
-#            "spanning-tree mst"
-#            "ssh user root authentication-method"
-#            "username root password 7"
-#            "username root privilege"
-#
-
-
             @result.add("snmp-server name", Ciscian::SingleValueVerb).add(@result.host.name)
             @result.host.interfaces.values.each do |iface|
               next unless iface.delegate.address
               iface.delegate.address.routes.each do |route|
                 ip = route.dst.ipv6? ? "ipv6" : "ip"
-                @result.add("#{ip} route #{route.dst.to_string} vlan#{iface.delegate.vlan_id} #{route.via.to_s}", Ciscian::SingleValueVerb)
+                @result.add("#{ip} route #{route.dst.to_string.upcase} vlan#{iface.delegate.vlan_id} #{route.via.to_s.upcase}", Ciscian::SingleValueVerb)
               end
             end
           end
@@ -342,12 +288,12 @@ module Construqt
             @result.add("interface vlan #{vlan.delegate.vlan_id}") do |section|
               if vlan.delegate.address
                 if vlan.delegate.address.first_ipv4
-                  section.add("ip address").add(vlan.delegate.address.first_ipv4.to_string)
+                  section.add("ip address").add(vlan.delegate.address.first_ipv4.to_string.upcase)
                 elsif vlan.delegate.address.dhcpv4?
                   section.add("ip address").add("dhcp-bootp")
                 end
                 if vlan.delegate.address.first_ipv6
-                  section.add("ipv6 address").add(vlan.delegate.address.first_ipv6.to_string)
+                  section.add("ipv6 address").add(vlan.delegate.address.first_ipv6.to_string.upcase)
                 elsif vlan.delegate.address.dhcpv6?
                   section.add("ipv6 address").add("dhcp-bootp")
                 end

@@ -128,7 +128,7 @@ module Construqt
       ranges.join(",")
     end
 
-    PORTS_DEF_REGEXP = "([^\\d\\s]*[\\d,-]+)+"
+    PORTS_DEF_REGEXP = "((?:[^\\d\\s]*[\\d,-]+)+)"
     PORT_NAME_REGEXP="^(.*?)(\\d+)$"
     def self.expandRangeDefinition(list_str)
       ports = list_str.strip.split(",").map do |range_def|

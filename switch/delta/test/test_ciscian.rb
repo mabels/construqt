@@ -1,3 +1,9 @@
+CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'.'
+["#{CONSTRUQT_PATH}/construqt/lib"].each{|path| $LOAD_PATH.unshift(path) }
+
+require "test/unit"
+require "construqt"
+
 module Construqt
   module Flavour
     module Ciscian
@@ -5,7 +11,7 @@ module Construqt
         def result_to_string(result)
           config = []
           if result.sections
-            result.sections.sections.values.each do |section|
+            result.sections.values.each do |section|
               config << section.serialize
             end
           end
@@ -33,6 +39,12 @@ module Construqt
           result_to_string(compare_result)
         end
       end
+
+
+
+
+
     end
   end
+
 end
