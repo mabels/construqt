@@ -39,7 +39,7 @@ module Construqt
         self.ips = []
         self.host = nil
         self.interface = nil
-        self.routes = []
+        @routes = []
         self.tags = []
         @loopback = @dhcpv4 = @dhcpv6 = false
         @name = nil
@@ -119,13 +119,50 @@ module Construqt
         self
       end
 
+
+      def routes
+        @routes.map do |i|
+            if i.kind_of?(Route)
+              i
+            else
+              ret = []
+              [OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV6),
+                              :via => Construqt::Tags.ips_net(i.via_tag, Construqt::Addresses::IPV6)),
+               OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV4),
+                              :via => Construqt::Tags.ips_net(i.via_tag, Construqt::Addresses::IPV4))].each do |blocks|
+                 next unless blocks.via
+                 next unless blocks.via.first
+                 next unless blocks.dsts
+                 next if blocks.dsts.empty?
+                 blocks.dsts.each do |dst|
+                   ret << build_route(dst.to_string, blocks.via.first.to_s, i.options)
+                 end
+              end
+              ret
+            end
+        end.flatten
+      end
       #    @nameservers = []
       #    def add_nameserver(ip)
       #      @nameservers << IPAddress.parse(ip)
       #      self
       #    end
+      #
+      #
+      class TagRoute
+        attr_reader :dst_tag, :via_tag, :options
+        def initialize(dst_tag, via_tag, options)
+          @dst_tag = dst_tag
+          @via_tag = via_tag
+          @options = options
+        end
+      end
 
-      attr_accessor :routes
+      def add_route_from_tags(dst_tags, src_tags, options = {})
+        @routes << TagRoute.new(dst_tags, src_tags, options)
+        self
+      end
+
       def add_routes(addr_s, via, options = {})
         addrs = addr_s.kind_of?(Array) ? addr_s : [addr_s]
         addrs.each do |addr|
@@ -141,7 +178,17 @@ module Construqt
         self
       end
 
-      def add_route(dst, via, option = {})
+      class Route
+        attr_reader :dst, :via, :type, :metric
+        def initialize(dst, via, type, metric)
+          @dst = dst
+          @via = via
+          @type = type
+          @metric = metric
+        end
+      end
+
+      def build_route(dst, via, option = {})
         #puts "DST => "+dst.class.name+":"+dst.to_s
         (unused, dst) = self.merge_tag(dst) { |dst| IPAddress.parse(dst) }
         metric = option['metric']
@@ -155,11 +202,14 @@ module Construqt
             via = IPAddress.parse(via)
             throw "different type #{dst} #{via}" unless dst.ipv4? == via.ipv4? && dst.ipv6? == via.ipv6?
           end
-
           type = nil
         end
+        Route.new(dst, via, type, metric)
+      end
 
-        self.routes << OpenStruct.new("dst" => dst, "via" => via, "type" => type, "metric" => metric)
+
+      def add_route(dst, via, option = {})
+        @routes << build_route(dst, via, option)
         self
       end
 
