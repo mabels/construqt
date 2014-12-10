@@ -93,6 +93,38 @@ module Construqt
           assert_equal_config(expected, create_delta_config("dlink-dgs15xx", old_config, nu_config))
         end
 
+        def test_dont_remove_non_virtual_interfaces
+          old_config = <<-CONFIG
+          interface ethernet 1/0/1
+          exit
+          CONFIG
+
+          nu_config = <<-CONFIG
+          CONFIG
+
+          expected = <<-CONFIG
+          CONFIG
+
+          assert_equal_config(expected, create_delta_config("dlink-dgs15xx", old_config, nu_config))
+        end
+
+        def test_remove_virtual_interfaces
+          old_config = <<-CONFIG
+          interface port-channel 12
+          exit
+          CONFIG
+
+          nu_config = <<-CONFIG
+          CONFIG
+
+          expected = <<-CONFIG
+          no interface port-channel 12
+          CONFIG
+
+          assert_equal_config(expected, create_delta_config("dlink-dgs15xx", old_config, nu_config))
+        end
+
+
         def test_no_changes1
           old_config = <<-CONFIG
           interface ethernet 1/0/1
@@ -202,6 +234,7 @@ module Construqt
 
           expected = <<-CONFIG
           interface ethernet 1/0/2
+          no channel-group
           channel-group 13 mode active
           exit
           CONFIG
@@ -229,11 +262,12 @@ module Construqt
           CONFIG
 
           expected = <<-CONFIG
-          interface ethernet 1/0/1
-          channel-group 14 mode active
-          exit
           no interface port-channel 13
           interface port-channel 14
+          exit
+          interface ethernet 1/0/1
+          no channel-group
+          channel-group 14 mode active
           exit
           CONFIG
 

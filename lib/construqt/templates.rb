@@ -18,6 +18,23 @@ module Construqt
 
         throw "vlan with id #{vlan_id} not found in template #{self}"
       end
+
+      def is_untagged?(vlan_id)
+        self.vlans.each do |vlan|
+          return vlan.untagged? if vlan.vlan_id == vlan_id
+        end
+
+        throw "vlan with id #{vlan_id} not found in template #{self}"
+      end
+
+      def is_nountagged?(vlan_id)
+        self.vlans.each do |vlan|
+          return vlan.nountagged? if vlan.vlan_id == vlan_id
+        end
+
+        throw "vlan with id #{vlan_id} not found in template #{self}"
+      end
+
     end
 
     def find(name)

@@ -14,7 +14,27 @@ module Construqt
         end
 
         def sort_section_keys(keys)
-          keys
+          return keys.sort do |a,b|
+            a = a.to_s
+            b = b.to_s
+            match_a=/^(.*[^\d])(\d+)$/.match(a)||[nil,a,1]
+            match_b=/^(.*[^\d])(\d+)$/.match(b)||[nil,b,1]
+            #puts match_a, match_b, a, b
+            ret=0
+            ret = rate_higher("hostname", match_a[1], match_b[1]) if ret==0
+            ret = rate_higher("snmp", match_a[1], match_b[1]) if ret==0
+            ret = rate_higher("trunk", match_a[1], match_b[1]) if ret==0
+            ret = rate_higher("max-vlans", match_a[1], match_b[1]) if ret==0
+            ret = rate_higher("vlan", match_a[1], match_b[1]) if ret==0
+            ret = rate_higher("vlan", match_a[1], match_b[1]) if ret==0
+            ret = match_a[1]<=>match_b[1] if ret==0
+            ret = match_a[2].to_i<=>match_b[2].to_i if ret==0
+            ret
+          end
+        end
+
+        def rate_higher(prefix, a, b)
+          return a.start_with?(prefix) ^ b.start_with?(prefix) ? (a.start_with?(prefix) ? -1 : 1) : 0
         end
 
         def expand_vlan_device_name(device)
@@ -29,7 +49,7 @@ module Construqt
         end
 
         def add_host(host)
-          @result.add("hostname", Ciscian::SingleValueVerb).add(@result.host.name)
+          @result.add("hostname", Ciscian::SingleValueVerb).add(@result.host.name).quotes
           @result.add("max-vlans", Ciscian::SingleValueVerb).add(64)
           @result.add("snmp-server community \"public\" Unrestricted", Ciscian::SingleValueVerb)
           @result.host.interfaces.values.each do |iface|
@@ -44,7 +64,7 @@ module Construqt
         end
 
         def add_bond(bond)
-          @result.add("trunk", TrunkVerb).add("{+ports}" => bond.interfaces.map{|i| i.delegate.number }, "{*channel}" => bond.delegate.number)
+          @result.add("trunk", TrunkVerb).add("{+ports}" => bond.interfaces.map{|i| i.delegate.number }, "{*channel}" => bond.delegate.number, "{=mode}"=>"LACP")
           @result.add("spanning-tree #{expand_vlan_device_name(bond)} priority 4")
         end
 
@@ -52,18 +72,25 @@ module Construqt
           @result.add("vlan #{vlan.delegate.vlan_id}") do |section|
             next unless vlan.delegate.description && !vlan.delegate.description.empty?
             throw "vlan name too long, max 32 chars" if vlan.delegate.description.length > 32
-            section.add("name", Ciscian::SingleValueVerb).add(vlan.delegate.description)
+            section.add("name", Ciscian::SingleValueVerb).add(vlan.delegate.description).quotes
+            section.add("jumbo")
             vlan.interfaces.each do |port|
-
-              section.add({
-                            true => "tagged",
-                            false => "untagged"
-              }[port.template.is_tagged?(vlan.vlan_id)], Ciscian::RangeVerb).add(expand_vlan_device_name(port))
+              range=nil
+              if port.template.is_tagged?(vlan.vlan_id)
+                range=section.add("tagged", Tagged)
+                range.add("{+ports}" => [expand_vlan_device_name(port)])
+              elsif port.template.is_untagged?(vlan.vlan_id)
+                range=section.add("tagged", Tagged)
+                range.add("{+uports}" => [expand_vlan_device_name(port)])
+              elsif port.template.is_nountagged?(vlan.vlan_id)
+                range=section.add("tagged", Tagged)
+                range.add("{-uports}" => [expand_vlan_device_name(port)])
+              end
             end
 
             if vlan.delegate.address
               if vlan.delegate.address.first_ipv4
-                section.add("ip address").add(vlan.delegate.address.first_ipv4.to_string)
+                section.add("ip address").add(vlan.delegate.address.first_ipv4.to_s + " " + vlan.delegate.address.first_ipv4.netmask)
               elsif vlan.delegate.address.dhcpv4?
                 section.add("ip address").add("dhcp-bootp")
               end
@@ -83,6 +110,10 @@ module Construqt
             split = /^([^0-9]+)([0-9].*)$/.match(i)
             split ? split[1..-1] : i
           end.flatten.join(' ')
+        end
+
+        def is_virtual?(line)
+          line.include?("vlan")
         end
 
         def block_end?(line)
@@ -105,8 +136,14 @@ module Construqt
             "trunk"
           end
 
+          def self.find_regex(variable)
+            {
+              "mode" => "(Trunk|LACP)"
+            }[variable]
+          end
+
           def self.patterns
-            ["no trunk {-ports}", "trunk {+ports} Trk{*channel} Trunk"]
+            ["no trunk {-ports}", "trunk {+ports} Trk{*channel} {=mode}"]
           end
         end
       end
