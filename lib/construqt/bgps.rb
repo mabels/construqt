@@ -99,7 +99,7 @@ module Construqt
           #puts addr.inspect
           addrs.each do |net|
             next unless family.is?.call(net)
-            out = ({ 'network' => Construqt::Addresses::Address.new.add_ip(net) }).merge(cfg)
+            out = ({ 'network' => Construqt::Addresses::Address.new.add_ip(net.to_string) }).merge(cfg)
             out['prefix_length'] = [net.prefix,family.max_prefix] if addr_sub_prefix
             @list << out
           end
