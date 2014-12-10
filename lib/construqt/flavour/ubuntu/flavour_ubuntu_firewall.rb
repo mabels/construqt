@@ -125,14 +125,19 @@ module Construqt
           end
         end
 
+
+        def self.filter_routes(routes, family)
+          routes.map{|i| i.dst }.select{|i| family == Construqt::Addresses::IPV6 ? i.ipv6? : i.ipv4? }
+        end
+
         def self.write_table(iptables, rule, to_from)
           family = iptables=="ip6tables" ? Construqt::Addresses::IPV6 : Construqt::Addresses::IPV4
           if rule.from_interface?
-            #binding.pry
-            from_list = IPAddress::IPv4::summarize(
-              *(iptables=="ip6tables" ? to_from.get_interface.address.v6s : to_from.get_interface.address.v4s).map do |adr|
-                adr.to_string
-              end)
+            networks = iptables=="ip6tables" ? to_from.get_interface.address.v6s : to_from.get_interface.address.v4s
+            if rule.from_route?
+              networks += self.filter_routes(to_from.get_interface.address.routes, family)
+            end
+            from_list = IPAddress::IPv4::summarize(*networks)
           else
             from_list = Construqt::Tags.ips_net(rule.get_from_net, family)
           end
@@ -209,7 +214,7 @@ module Construqt
             if rule.to_source? && rule.postrouting?
               src = iface.address.ips.select{|ip| ip.ipv4?}.first
               throw "missing ipv4 address and postrouting and to_source is used #{ifname}" unless src
-              to_from = ToFrom.new.only_in_out(rule).end_to("--to-source #{src}")
+              to_from = ToFrom.new.bind_interface(ifname, iface, rule).only_in_out(rule).end_to("--to-source #{src}")
                 .ifname(ifname).factory(writer.ipv4.postrouting)
               write_table("iptables", rule, to_from)
             end
