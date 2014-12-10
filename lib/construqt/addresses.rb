@@ -128,8 +128,8 @@ module Construqt
               ret = []
               [OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV6),
                               :via => Construqt::Tags.ips_net(i.via_tag, Construqt::Addresses::IPV6)),
-               OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV6),
-                              :via => Construqt::Tags.ips_net(i.via_tag, Construqt::Addresses::IPV6))].each do |blocks|
+               OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV4),
+                              :via => Construqt::Tags.ips_net(i.via_tag, Construqt::Addresses::IPV4))].each do |blocks|
                  next unless blocks.via
                  next unless blocks.via.first
                  next unless blocks.dsts
