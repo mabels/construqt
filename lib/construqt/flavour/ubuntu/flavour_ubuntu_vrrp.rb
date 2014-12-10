@@ -26,7 +26,7 @@ GLOBAL
           ret << "  priority #{my_iface.priority}"
           ret << "  authentication {"
           ret << "        auth_type PASS"
-          ret << "        auth_pass fw"
+          ret << "        auth_pass #{iface.password||"fw"}"
           ret << "  }"
           ret << "  virtual_ipaddress {"
           iface.address.ips.each do |ip|
@@ -36,6 +36,7 @@ GLOBAL
           ret << "  }"
           if iface.services && !iface.services.empty?
             ret << "  notify /etc/network/vrrp.#{iface.name}.sh"
+            ret << "  notify_stop /etc/network/vrrp.#{iface.name}.stop.sh"
             writer = host.result.etc_network_interfaces.get(iface)
             iface.services.each do |service|
               Services.get_renderer(service).interfaces(host, my_iface.name, my_iface, writer)
