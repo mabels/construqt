@@ -91,7 +91,7 @@ module Construqt
           Util.write_str(self.serialize().join("\n"), File.join(@host.name, "#{@host.fname||self.dialect.class.name}.cfg"))
         end
 
-        def add(section, clazz=NestedSection)
+        def add(section, clazz=SingleValueVerb)
           throw "section is nil" unless section
           section = Lines::Line.new(section, -1) unless section.kind_of?(Lines::Line)
           section_key=Result.normalize_section_key(section.to_s)
@@ -196,7 +196,7 @@ module Construqt
         def self.parse_line(line, lines, section, result)
           if [/^\s*(no\s+|)interface/, /^\s*(no\s+|)vlan/].find{|i| line.to_s.match(i) }
             resultline=Result::Lines::Line.new(result.dialect.clear_interface(line), line.nr)
-            section.add(resultline.to_s) do |_section|
+            section.add(resultline.to_s, NestedSection) do |_section|
               _section.virtual if result.dialect.is_virtual?(resultline.to_s)
               while _line = lines.shift
                 break if result.dialect.block_end?(_line.to_s)
@@ -209,7 +209,7 @@ module Construqt
               if (ports.length>1)
                 section_to_split=section.sections.delete(resultline.to_s)
                 ports.each do |port|
-                  section.add(line.to_s.gsub(/#{Construqt::Util::PORTS_DEF_REGEXP}/, port)) do |_section|
+                  section.add(line.to_s.gsub(/#{Construqt::Util::PORTS_DEF_REGEXP}/, port), NestedSection) do |_section|
                     _section.sections.merge!(section_to_split.sections)
                   end
                 end

@@ -49,15 +49,26 @@ module Construqt
         end
 
         def add_host(host)
-          @result.add("hostname", Ciscian::SingleValueVerb).add(@result.host.name).quotes
-          @result.add("max-vlans", Ciscian::SingleValueVerb).add(64)
-          @result.add("snmp-server community \"public\" Unrestricted", Ciscian::SingleValueVerb)
+          @result.add("hostname").add(@result.host.name).quotes
+          @result.add("max-vlans").add(64)
+          @result.add("snmp-server community \"public\" Unrestricted")
           @result.host.interfaces.values.each do |iface|
             next unless iface.delegate.address
             iface.delegate.address.routes.each do |route|
-              @result.add("ip route #{route.dst.to_s} #{route.dst.netmask} #{route.via.to_s}", Ciscian::SingleValueVerb)
+              @result.add("ip route #{route.dst.to_s} #{route.dst.netmask} #{route.via.to_s}")
             end
           end
+
+          if host.delegate.sntp
+            @result.add("sntp server").add(host.delegate.sntp)
+            @result.add("timesync sntp")
+            @result.add("sntp unicast")
+          end
+
+          if host.delegate.logging
+            @result.add("logging").add(host.delegate.logging)
+          end
+
         end
 
         def add_device(device)
@@ -72,7 +83,7 @@ module Construqt
           @result.add("vlan #{vlan.delegate.vlan_id}") do |section|
             next unless vlan.delegate.description && !vlan.delegate.description.empty?
             throw "vlan name too long, max 32 chars" if vlan.delegate.description.length > 32
-            section.add("name", Ciscian::SingleValueVerb).add(vlan.delegate.description).quotes
+            section.add("name").add(vlan.delegate.description).quotes
             section.add("jumbo")
             vlan.interfaces.each do |port|
               range=nil

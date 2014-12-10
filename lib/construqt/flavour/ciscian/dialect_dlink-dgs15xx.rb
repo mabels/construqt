@@ -260,7 +260,7 @@ module Construqt
               @result.add(verb, Ciscian::SingleValueVerb)
             end
 
-            @result.add("snmp-server name", Ciscian::SingleValueVerb).add(@result.host.name)
+            @result.add("snmp-server name").add(@result.host.name)
             @result.host.interfaces.values.each do |iface|
               next unless iface.delegate.address
               iface.delegate.address.routes.each do |route|
