@@ -90,23 +90,19 @@ module Construqt
       def addr_v_(cfg)
         [OpenStruct.new({:code=>4, :is? => lambda {|i| i.ipv4? }, :max_prefix=>32}),
          OpenStruct.new({:code=>6, :is? => lambda {|i| i.ipv6? }, :max_prefix=>128})].each do |family|
-          addr = cfg["addr_v#{family.code}"]
-          next unless addr
+          addrs = cfg["addr_v#{family.code}"]
+          next unless addrs
           cfg.delete("addr_v#{family.code}")
           addr_sub_prefix = cfg['addr_sub_prefix']
           cfg.delete('addr_sub_prefix')
+          throw "addrs must be array" unless addrs.kind_of?([].class)
           #puts addr.inspect
-          (addr.kind_of?(Construqt::Addresses::Address) ? [addr] : addr).each do |addr|
-            addr.ips.each do |net|
-              next unless family.is?.call(net)
-              network = Construqt::Addresses::Address.new
-              network.add_ip(net.to_string)
-              cfg = { 'network' => network }.merge(cfg)
-              cfg['prefix_length'] = [net.prefix,family.max_prefix] if addr_sub_prefix
-              @list << cfg
-            end
+          addrs.each do |net|
+            next unless family.is?.call(net)
+            out = ({ 'network' => Construqt::Addresses::Address.new.add_ip(net.to_string) }).merge(cfg)
+            out['prefix_length'] = [net.prefix,family.max_prefix] if addr_sub_prefix
+            @list << out
           end
-
           nil
         end
       end
