@@ -52,6 +52,10 @@ module Construqt
             "channel-group"
           end
 
+          def always_select_empty_pattern
+            true
+          end
+
           def self.patterns
             ["no channel-group", "channel-group {+channel} mode active"]
           end
@@ -97,6 +101,10 @@ module Construqt
         class Ipv4RouteVerb < PatternBasedVerb
           def self.section
             "ip route"
+          end
+
+          def group?
+            false
           end
 
           def self.find_regex(variable)
@@ -188,6 +196,10 @@ module Construqt
             end.flatten.join(' ')
           end
 
+          def is_virtual?(line)
+            line.start_with?("vlan") || line.include?("port-channel")
+          end
+
           def parse_line(line, lines, section, result)
             [
               WtfEnd,
@@ -246,10 +258,6 @@ module Construqt
               "no debug enable"
             ].each do |verb|
               @result.add(verb, Ciscian::SingleValueVerb)
-            end
-
-            ["line console", "line telnet", "line ssh"].each do |section|
-              @result.add(section) { |_section| _section.add("line") }
             end
 
             @result.add("snmp-server name", Ciscian::SingleValueVerb).add(@result.host.name)

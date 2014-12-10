@@ -103,7 +103,7 @@ module Construqt
             @sections[section_key].yes
           end
 
-          yield(@sections[section_key])  if block_given?
+          yield(@sections[section_key]) if block_given?
           @sections[section_key]
         end
 
@@ -129,7 +129,8 @@ module Construqt
         end
 
         def serialize
-          [[@no, section , value].compact.join(" ")]
+          val = @quotes ? "\"#{value}\"" : value
+          [[@no, section , val].compact.join(" ")]
         end
 
         def self.compare(nu, old)
@@ -142,6 +143,7 @@ module Construqt
 
         def add(value)
           self.value=value
+          self
         end
 
         def no
@@ -155,12 +157,19 @@ module Construqt
           self
         end
 
+        def quotes
+          @quotes=true
+          self
+        end
+
         def self.parse_line(line, lines, section, result)
-          regexp = line.to_s.strip.end_with?("\"") ? /^\s*((no|).*) (\"[^"]+\")$/ : /^\s*((no|).*) ([^\s"]+)$/
+          quotes = line.to_s.strip.end_with?("\"")
+          regexp = quotes ? /^\s*((no|).*) \"([^"]+)\"$/ : /^\s*((no|).*) ([^\s"]+)$/
           if (line.to_s.strip =~ regexp)
             key=$1
             val=$3
-            section.add(key, Ciscian::SingleValueVerb).add(val)
+            sec = section.add(key, Ciscian::SingleValueVerb).add(val)
+            sec.quotes if quotes
           else
             section.add(line.to_s, Ciscian::SingleValueVerb)
           end
@@ -188,6 +197,7 @@ module Construqt
           if [/^\s*(no\s+|)interface/, /^\s*(no\s+|)vlan/].find{|i| line.to_s.match(i) }
             resultline=Result::Lines::Line.new(result.dialect.clear_interface(line), line.nr)
             section.add(resultline.to_s) do |_section|
+              _section.virtual if result.dialect.is_virtual?(resultline.to_s)
               while _line = lines.shift
                 break if result.dialect.block_end?(_line.to_s)
                 result.parse_line(_line, lines, _section, result)
@@ -235,9 +245,14 @@ module Construqt
           self
         end
 
+        def virtual
+          @virtual=true
+          self
+        end
+
         def serialize
           block=[]
-          if (!self.sections.empty? || (@no && section.strip.start_with?("vlan")))
+          if (!self.sections.empty? || (self.sections.empty? && @virtual) || (@no && @virtual))
             block << "#{@no}#{section.to_s}"
             unless (@no)
               block += render_verbs(self.sections)
@@ -312,7 +327,7 @@ module Construqt
 
         def serialize
           if @no
-            ["#{@no}#{section}"]
+            ["#{@no}#{section} #{Construqt::Util.createRangeDefinition(values)}"]
           else
             ["#{section} #{Construqt::Util.createRangeDefinition(values)}"]
           end
@@ -519,6 +534,10 @@ module Construqt
           return sets
         end
 
+        def always_select_empty_pattern
+          false
+        end
+
         def determine_output_patterns(value_sets)
           output_patterns=[]
           empty_pattern = nil
@@ -536,19 +555,17 @@ module Construqt
             end
           end
 
-          output_patterns << empty_pattern if output_patterns.empty? && !empty_pattern.nil?
+          output_patterns.unshift(empty_pattern) if (output_patterns.empty? || self.always_select_empty_pattern) && !empty_pattern.nil?
           return output_patterns
+        end
+
+        def group?
+          true
         end
 
         def serialize
           buffer = []
           sets = integrate
-
-          # deactivate grouping, if one variable has a custom regex (i.e. is not a range definition)
-          group=true
-          self.class.variables(self.class.patterns).each do |v|
-            group=false unless self.class.find_regex(self.class.extract_varname(v)).nil?
-          end
 
           sets.each do |key_val,value_sets|
             determine_output_patterns(value_sets).each do |pattern|
@@ -559,7 +576,7 @@ module Construqt
                 result = pattern
                 i += 1
                 self.class.find_variables(pattern).each do |v|
-                  if (group)
+                  if (self.group?)
                     if (!value_sets[v].kind_of?(Array) && (self.class.is_value?(v) || self.class.is_key_value?(v)))
                       result = result.gsub(v, value_sets[v].to_s) unless value_sets[v].nil? || value_sets[v].to_s.empty?
                     else

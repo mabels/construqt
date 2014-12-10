@@ -13,20 +13,31 @@ module Construqt
       end
 
       def tagged?
-        @tagged
+        !@nountagged && @tagged
       end
 
       def tagged
         @tagged=true
+        @nountagged=false
         self
       end
 
       def untagged?
-        !@tagged
+        !@nountagged && !@tagged
       end
 
       def untagged
         @tagged = false
+        @nountagged=false
+        self
+      end
+
+      def nountagged?
+        @nountagged
+      end
+
+      def nountagged
+        @nountagged=true
         self
       end
     end
