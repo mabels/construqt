@@ -138,11 +138,11 @@ UML
           end
         end
 
-        iface.delegate.firewalls && iface.delegate.firewalls.each_with_index do |fw, idx|
+        iface.delegate && iface.delegate.firewalls && iface.delegate.firewalls.each_with_index do |fw, idx|
           out << "fw(#{idx}) = \"#{fw.name}\""
         end
 
-        (iface.tags+tags).sort.uniq.each_with_index do |tag, idx|
+        iface.tags && (iface.tags+tags).sort.uniq.each_with_index do |tag, idx|
           out << "tag(#{idx}) = \"#{tag}\""
         end
 
