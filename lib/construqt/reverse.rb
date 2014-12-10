@@ -21,6 +21,7 @@ def render_iface(ifaces, routes)
   ifaces.interfaces.map do |iface|
     next [] if iface.name == 'lo'
     next [] if iface.ips.empty?
+    #binding.pry
     out = <<RUBY
   region.interfaces.add_device(host, "#{iface.name}", "mtu" => 1500,
       'mac_address' => #{iface.mac_address},
