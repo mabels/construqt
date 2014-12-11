@@ -39,9 +39,10 @@ public class ApplyConfig {
 			List<String> results = result.get(60, TimeUnit.SECONDS);
 			int errors = 0;
 			for (String line : results) {
-				String errorMessage = line.trim();
+				String errorMessage = Util
+						.replaceAllTerminalControlCharacters(line);
 				if (!errorMessage.isEmpty()) {
-					System.err.println(line);
+					System.err.println(errorMessage);
 					errors++;
 				}
 			}
@@ -57,4 +58,5 @@ public class ApplyConfig {
 			connector.disconnect();
 		}
 	}
+
 }

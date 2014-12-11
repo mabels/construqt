@@ -18,7 +18,7 @@ import me.construqt.ciscian.chatter.steps.generic.Step;
 import me.construqt.ciscian.chatter.steps.generic.SwitchStep;
 import me.construqt.ciscian.chatter.steps.generic.WaitForStep;
 
-public class HpProcurveSwitchChatter extends GenericCiscoFlavourSwitchChatter {
+public class Hp2510gSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 
 	@Override
 	protected void enterManagementMode(final String username,
@@ -63,7 +63,7 @@ public class HpProcurveSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 				});
 
 		getOutputConsumer().addStep(
-				new CollectOutputStep(false, "" + (char) 27));
+				new CollectOutputStep(true, "# "));
 	}
 
 	@Override

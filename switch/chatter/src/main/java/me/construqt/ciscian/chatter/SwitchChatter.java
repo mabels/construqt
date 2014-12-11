@@ -28,10 +28,21 @@ public abstract class SwitchChatter implements Closeable {
 	protected SwitchChatter() {
 	}
 
+	private static String convertFlavourName(String flavour) {
+		int i = -1;
+		flavour = flavour.substring(0, 1).toUpperCase() + flavour.substring(1);
+		while ((i = flavour.indexOf('-')) >= 0) {
+			flavour = flavour.substring(0, i)
+					+ flavour.substring(i + 1, i + 2).toUpperCase()
+					+ flavour.substring(i + 2);
+		}
+		return flavour;
+	}
+
 	public static SwitchChatter create(String flavour, InputStream is,
 			OutputStream os, boolean debug) {
-		String clazz = "me.construqt.ciscian.chatter.flavour." + flavour
-				+ "SwitchChatter";
+		String clazz = "me.construqt.ciscian.chatter.flavour."
+				+ convertFlavourName(flavour) + "SwitchChatter";
 
 		try {
 			SwitchChatter switchChatter = (SwitchChatter) Class.forName(clazz)
@@ -94,7 +105,7 @@ public abstract class SwitchChatter implements Closeable {
 	protected abstract void retrieveConfig();
 
 	protected abstract void exit();
-	
+
 	protected abstract void saveRunningConfig();
 
 }
