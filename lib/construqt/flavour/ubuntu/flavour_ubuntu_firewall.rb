@@ -289,15 +289,20 @@ module Construqt
           end
         end
 
-        def self.create(host, ifname, iface)
-          throw 'interface must set' unless ifname
-          writer = iface.host.result.etc_network_iptables
+        def self.create_from_iface(ifname, iface, writer)
           iface.firewalls && iface.firewalls.each do |firewall|
             firewall.get_raw && Firewall.write_raw(firewall.get_raw, ifname, iface, writer.raw)
             firewall.get_nat && Firewall.write_nat(firewall.get_nat, ifname, iface, writer.nat)
             firewall.get_forward && Firewall.write_forward(firewall.get_forward, ifname, iface, writer.filter)
             firewall.get_host && Firewall.write_host(firewall.get_host, ifname, iface, writer.filter)
           end
+        end
+
+        def self.create(host, ifname, iface)
+          throw 'interface must set' unless ifname
+          writer = iface.host.result.etc_network_iptables
+          create_from_iface(ifname, iface, writer)
+          create_from_iface(ifname, iface.delegate.vrrp.delegate, writer) if iface.delegate.vrrp
         end
       end
     end
