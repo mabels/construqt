@@ -15,6 +15,14 @@ global_defs {
 GLOBAL
         end
 
+        class RouteService
+          attr_accessor :name, :rt
+          def initialize(name, rt)
+            self.name = name
+            self.rt = rt
+          end
+        end
+
         def build_config(host, iface)
           iface = iface.delegate
           my_iface = iface.interfaces.find{|iface| iface.host == host }
@@ -26,16 +34,22 @@ GLOBAL
           ret << "  priority #{my_iface.priority}"
           ret << "  authentication {"
           ret << "        auth_type PASS"
-          ret << "        auth_pass fw"
+          ret << "        auth_pass #{iface.password||"fw"}"
           ret << "  }"
           ret << "  virtual_ipaddress {"
           iface.address.ips.each do |ip|
             ret << "    #{ip.to_string} dev #{my_iface.name}"
           end
+          iface.address.routes.each do |rt|
+            iface.services << RouteService.new("#{iface.name}-#{rt.dst.to_string}-#{rt.via}", rt)
+#  region.services.add(Construqt::Services::DhcpV6Relay.new("V8-DHCPV6RELAY").add_server("2a04:2f80:a:131::d6c9%v131"))
+          end
+
 
           ret << "  }"
           if iface.services && !iface.services.empty?
             ret << "  notify /etc/network/vrrp.#{iface.name}.sh"
+            ret << "  notify_stop /etc/network/vrrp.#{iface.name}.stop.sh"
             writer = host.result.etc_network_interfaces.get(iface)
             iface.services.each do |service|
               Services.get_renderer(service).interfaces(host, my_iface.name, my_iface, writer)

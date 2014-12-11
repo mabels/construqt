@@ -429,6 +429,11 @@ BLOCK
         def commit(result)
           @interfaces.keys.sort.each do |ifname|
             vrrp = @interfaces[ifname]
+            result.add(self, <<VRRP, Construqt::Resources::Rights::ROOT_0755, "etc", "network", "vrrp.#{ifname}.stop.sh")
+#!/bin/bash
+#{vrrp.render_backups}
+exit 0
+VRRP
             result.add(self, <<VRRP, Construqt::Resources::Rights::ROOT_0755, "etc", "network", "vrrp.#{ifname}.sh")
 #!/bin/bash
 
