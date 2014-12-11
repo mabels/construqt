@@ -180,15 +180,6 @@ module Construqt
           def add_host(host)
           end
 
-          def add_device(device)
-            @result.add("interface #{expand_device_name(device)}", NestedSection) do |section|
-              section.add("flowcontrol").add("off")
-              section.add("max-rcv-frame-size").add(device.delegate.mtu)
-              section.add("snmp trap").add("link-status")
-              section.add("switchport mode").add("trunk")
-            end
-          end
-
           def clear_interface(line)
             line.to_s.split(/\s+/).map do |i|
               split = /^([^0-9]+)([0-9].*)$/.match(i)
@@ -270,12 +261,14 @@ module Construqt
             end
           end
 
-          def add_device(device)
+          def add_device(device, bond=false)
             @result.add("interface #{expand_device_name(device)}", NestedSection) do |section|
-              section.add("flowcontrol").add("off")
-              section.add("max-rcv-frame-size").add(device.delegate.mtu)
-              section.add("snmp trap").add("link-status")
               section.add("switchport mode").add("trunk")
+              unless bond
+                section.add("flowcontrol").add("off")
+                section.add("max-rcv-frame-size").add(device.delegate.mtu)
+                section.add("snmp trap").add("link-status")
+              end
             end
           end
 
@@ -285,6 +278,7 @@ module Construqt
                 section.add("channel-group", ChannelGroupVerb).add({"{+channel}" => [bond.name[2..-1]]})
               end
             end
+            self.add_device(bond, true)
           end
 
           def add_vlan(vlan)
