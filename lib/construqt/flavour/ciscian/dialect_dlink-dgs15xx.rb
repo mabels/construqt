@@ -143,7 +143,7 @@ module Construqt
         class Line
           def self.parse_line(line, lines, section, result)
             return false unless ['line '].find{|i| line.to_s.start_with?(i) }
-            section.add(line) do |_section|
+            section.add(line, NestedSection) do |_section|
               while line = lines.shift
                 break if result.dialect.block_end?(line.to_s)
                 result.parse_line(line, lines, _section, result)
@@ -288,12 +288,12 @@ module Construqt
           end
 
           def add_vlan(vlan)
-            @result.add("vlan #{vlan.delegate.vlan_id}") do |section|
+            @result.add("vlan #{vlan.delegate.vlan_id}", NestedSection) do |section|
               next unless vlan.delegate.description && !vlan.delegate.description.empty?
               throw "vlan name too long, max 32 chars" if vlan.delegate.description.length > 32
               section.add("name").add(vlan.delegate.description)
             end
-            @result.add("interface vlan #{vlan.delegate.vlan_id}") do |section|
+            @result.add("interface vlan #{vlan.delegate.vlan_id}", NestedSection) do |section|
               if vlan.delegate.address
                 if vlan.delegate.address.first_ipv4
                   section.add("ip address").add(vlan.delegate.address.first_ipv4.to_string.upcase)
