@@ -13,7 +13,8 @@ require 'securerandom'
 module Construqt
 
   @logger = Logger.new(STDOUT)
-  @logger.level = Logger::DEBUG
+  @LOGLEVEL||=Logger::DEBUG
+  @logger.level = @LOGLEVEL
 
   def self.log_level(level)
     @logger.level = level
