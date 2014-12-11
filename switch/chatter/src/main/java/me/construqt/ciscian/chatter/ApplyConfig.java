@@ -14,8 +14,6 @@ import me.construqt.ciscian.chatter.connectors.ConnectorFactory;
 
 public class ApplyConfig {
 	public static void apply(CLIOptions options) throws Exception {
-		// String user = args[2];
-		// String pass = args[3];
 		Connector connector = ConnectorFactory.createConnector(options.connect,
 				options.user, options.password);
 		ConnectResult connect = connector.connect();
@@ -41,11 +39,11 @@ public class ApplyConfig {
 			List<String> results = result.get(60, TimeUnit.SECONDS);
 			int errors = 0;
 			for (String line : results) {
-				int errorMessage = line.indexOf("Invalid");
-				if (errorMessage >= 0) {
+				String errorMessage = line.trim();
+				if (!errorMessage.isEmpty()) {
 					System.err.println(line);
+					errors++;
 				}
-				errors++;
 			}
 			if (errors > 0) {
 				System.exit(1);

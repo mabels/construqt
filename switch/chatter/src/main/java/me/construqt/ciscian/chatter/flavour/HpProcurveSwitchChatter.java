@@ -2,6 +2,7 @@ package me.construqt.ciscian.chatter.flavour;
 
 import java.io.PrintWriter;
 
+import me.construqt.ciscian.chatter.steps.flavoured.Enable;
 import me.construqt.ciscian.chatter.steps.flavoured.EnterInput;
 import me.construqt.ciscian.chatter.steps.flavoured.Exit;
 import me.construqt.ciscian.chatter.steps.flavoured.HpDisablePaging;
@@ -20,11 +21,13 @@ import me.construqt.ciscian.chatter.steps.generic.WaitForStep;
 public class HpProcurveSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 
 	@Override
-	protected void enterManagementMode(final String username, final String password) {
+	protected void enterManagementMode(final String username,
+			final String password) {
 		getOutputConsumer().addStep(new SwitchStep( //
 				new Case("Press any key to continue") {
 					public Step[] then() {
-						return new Step[] { new EnterInput("") };
+						return new Step[] { new EnterInput(""), new Enable(),
+								new PasswordPrompt(), new EnterInput(password) };
 					}
 				}, new Case("Username:") {
 					public Step[] then() {
