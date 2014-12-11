@@ -15,6 +15,14 @@ global_defs {
 GLOBAL
         end
 
+        class RouteService
+          attr_accessor :name, :rt
+          def initialize(name, rt)
+            self.name = name
+            self.rt = rt
+          end
+        end
+
         def build_config(host, iface)
           iface = iface.delegate
           my_iface = iface.interfaces.find{|iface| iface.host == host }
@@ -32,6 +40,11 @@ GLOBAL
           iface.address.ips.each do |ip|
             ret << "    #{ip.to_string} dev #{my_iface.name}"
           end
+          iface.address.routes.each do |rt|
+            iface.services << RouteService.new("#{iface.name}-#{rt.dst.to_string}-#{rt.via}", rt)
+#  region.services.add(Construqt::Services::DhcpV6Relay.new("V8-DHCPV6RELAY").add_server("2a04:2f80:a:131::d6c9%v131"))
+          end
+
 
           ret << "  }"
           if iface.services && !iface.services.empty?

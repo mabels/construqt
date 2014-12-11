@@ -32,6 +32,7 @@ module Construqt
       #    binding.pry
       cfg['clazz'] ||= "device"
       cfg['address'] ||= nil
+      cfg['firewalls'] ||= []
       (dev_name, iface) = Construqt::Tags.add(dev_name) { |name| host.flavour.create_interface(name, cfg) }
       #    iface.clazz.attach = iface
       host.interfaces[dev_name] = iface
@@ -97,7 +98,11 @@ module Construqt
     def add_vrrp(name, cfg)
       nets = {}
       cfg['address'].ips.each do |adr|
-        throw "only host ip's are allowed #{adr.to_s}" if adr.ipv4? && adr.prefix != 32
+        if adr.ipv4? && adr.prefix != 32
+          unless cfg['address'].routes.find{ |rt| adr.include?(rt.via) }
+            throw "only host ip's are allowed #{adr.to_s} with prefix != 32 or route"
+          end
+        end
         throw "only host ip's are allowed #{adr.to_s}" if adr.ipv6? && adr.prefix != 128
         nets[adr.network.to_s] = true
       end
@@ -109,6 +114,7 @@ module Construqt
         cfg['interface'] = interface
         throw "vrrp interface does not have within the same network" if nets.length == interface.address.ips.select { |adr| nets[adr.network.to_s] }.length
         dev = add_device(interface.host, name, cfg)
+#        interface.firewalls.push(*(dev.firewalls || []))
         interface.vrrp = dev
         dev.address.interface = nil
         dev.address.host = nil
