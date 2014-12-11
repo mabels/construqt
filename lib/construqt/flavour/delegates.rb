@@ -9,6 +9,7 @@ module Construqt
 
       def delegate=(a)
         throw "delegate needs to be !nil" unless a
+        a.delegate = self
         @delegate = a
       end
 
@@ -26,6 +27,10 @@ module Construqt
 
       def vrrp
         @vrrp
+      end
+
+      def firewalls
+        self.delegate.firewalls
       end
 
       def description
