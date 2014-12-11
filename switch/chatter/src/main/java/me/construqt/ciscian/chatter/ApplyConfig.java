@@ -23,7 +23,7 @@ public class ApplyConfig {
 
 		final SwitchChatter sc = SwitchChatter.create(options.flavour,
 				connect.getInputStream(), connect.getOutputStream(),
-				options.debug);
+				options.debug, false);
 
 		// setup steps
 		sc.enterManagementMode(options.user, options.password);

@@ -19,7 +19,7 @@ public class RetrieveConfig {
 
 		final SwitchChatter sc = SwitchChatter.create(options.flavour,
 				connect.getInputStream(), connect.getOutputStream(),
-				options.debug);
+				options.debug, true);
 
 		// setup steps
 		sc.enterManagementMode(options.user, options.password);

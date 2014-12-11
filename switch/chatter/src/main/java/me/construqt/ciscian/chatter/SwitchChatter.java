@@ -40,14 +40,14 @@ public abstract class SwitchChatter implements Closeable {
 	}
 
 	public static SwitchChatter create(String flavour, InputStream is,
-			OutputStream os, boolean debug) {
+			OutputStream os, boolean debug, boolean showProgress) {
 		String clazz = "me.construqt.ciscian.chatter.flavour."
 				+ convertFlavourName(flavour) + "SwitchChatter";
 
 		try {
 			SwitchChatter switchChatter = (SwitchChatter) Class.forName(clazz)
 					.newInstance();
-			switchChatter.initialize(is, os, debug);
+			switchChatter.initialize(is, os, debug, showProgress);
 			return switchChatter;
 		} catch (ClassNotFoundException e) {
 			System.err.println("Flavour " + flavour
@@ -62,11 +62,11 @@ public abstract class SwitchChatter implements Closeable {
 		return new PrintWriter(os, true);
 	}
 
-	public void initialize(InputStream is, OutputStream os, boolean debug) {
+	public void initialize(InputStream is, OutputStream os, boolean debug, boolean showProgress) {
 		this.is = is;
 		this.os = os;
 		this.executorService = Executors.newSingleThreadExecutor();
-		this.outputConsumer = new OutputConsumer(debug, getPrintWriter());
+		this.outputConsumer = new OutputConsumer(debug, getPrintWriter(), showProgress);
 	}
 
 	public void close() {
