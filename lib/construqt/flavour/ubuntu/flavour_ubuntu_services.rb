@@ -133,12 +133,35 @@ RADV
           end
         end
 
+        class RouteService
+          def initialize(service)
+            @service = service
+          end
+
+          def up(ifname)
+            "/sbin/ip route add #{@service.rt.dst.to_string} via #{@service.rt.via}"
+          end
+
+          def down(ifname)
+            "/sbin/ip route del #{@service.rt.dst.to_string} via #{@service.rt.via}"
+          end
+
+          def vrrp(host, ifname, iface)
+            #binding.pry
+            host.result.etc_network_vrrp(iface.name).add_master(up(ifname)).add_backup(down(ifname))
+          end
+
+          def interfaces(host, ifname, iface, writer)
+          end
+        end
+
         def self.get_renderer(service)
           factory = {
             Construqt::Services::DhcpV4Relay => DhcpV4Relay,
             Construqt::Services::DhcpV6Relay => DhcpV6Relay,
             Construqt::Services::Radvd => Radvd,
-            Construqt::Services::ConntrackD => ConntrackD
+            Construqt::Services::ConntrackD => ConntrackD,
+            Construqt::Flavour::Ubuntu::Vrrp::RouteService => RouteService
           }
           found = factory.keys.find{ |i| service.kind_of?(i) }
           throw "service type unknown #{service.name} #{service.class.name}" unless found
