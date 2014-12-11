@@ -51,7 +51,11 @@ module Construqt
         def add_host(host)
           @result.add("hostname").add(@result.host.name).quotes
           @result.add("max-vlans").add(64)
-          @result.add("snmp-server community \"public\" Unrestricted")
+          @result.add("snmp-server community \"public\"")
+
+          #enable ssh per default
+          @result.add("ip ssh")
+
           @result.host.interfaces.values.each do |iface|
             next unless iface.delegate.address
             iface.delegate.address.routes.each do |route|
@@ -80,7 +84,7 @@ module Construqt
         end
 
         def add_vlan(vlan)
-          @result.add("vlan #{vlan.delegate.vlan_id}") do |section|
+          @result.add("vlan #{vlan.delegate.vlan_id}", NestedSection) do |section|
             next unless vlan.delegate.description && !vlan.delegate.description.empty?
             throw "vlan name too long, max 32 chars" if vlan.delegate.description.length > 32
             section.add("name").add(vlan.delegate.description).quotes
@@ -105,6 +109,10 @@ module Construqt
               elsif vlan.delegate.address.dhcpv4?
                 section.add("ip address").add("dhcp-bootp")
               end
+            end
+
+            if vlan.delegate.igmp
+              section.add("ip igmp")
             end
           end
         end
