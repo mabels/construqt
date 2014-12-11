@@ -181,7 +181,7 @@ module Construqt
           end
 
           def add_device(device)
-            @result.add("interface #{expand_device_name(device)}") do |section|
+            @result.add("interface #{expand_device_name(device)}", NestedSection) do |section|
               section.add("flowcontrol").add("off")
               section.add("max-rcv-frame-size").add(device.delegate.mtu)
               section.add("snmp trap").add("link-status")
@@ -271,7 +271,7 @@ module Construqt
           end
 
           def add_device(device)
-            @result.add("interface #{expand_device_name(device)}") do |section|
+            @result.add("interface #{expand_device_name(device)}", NestedSection) do |section|
               section.add("flowcontrol").add("off")
               section.add("max-rcv-frame-size").add(device.delegate.mtu)
               section.add("snmp trap").add("link-status")
@@ -281,7 +281,7 @@ module Construqt
 
           def add_bond(bond)
             bond.interfaces.each do |iface|
-              @result.add("interface #{expand_device_name(iface)}") do |section|
+              @result.add("interface #{expand_device_name(iface)}", NestedSection) do |section|
                 section.add("channel-group", ChannelGroupVerb).add({"{+channel}" => [bond.name[2..-1]]})
               end
             end
@@ -310,7 +310,7 @@ module Construqt
 
             vlan_id=vlan.delegate.vlan_id
             vlan.interfaces.each do |iface|
-              @result.add("interface #{expand_device_name(iface)}") do |section|
+              @result.add("interface #{expand_device_name(iface)}", NestedSection) do |section|
                 section.add("switchport trunk allowed vlan", Ciscian::RangeVerb).add(vlan_id)
                 unless iface.template.is_tagged?(vlan_id)
                   section.add("switchport trunk native vlan").add(vlan_id)
