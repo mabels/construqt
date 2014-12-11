@@ -1,3 +1,5 @@
+require_relative("deploy_template")
+
 module Construqt
   module Flavour
     module Ciscian
@@ -89,6 +91,9 @@ module Construqt
         def commit
           self.dialect.commit
           Util.write_str(self.serialize().join("\n"), File.join(@host.name, "#{@host.fname||self.dialect.class.name}.cfg"))
+          external=@host.id.interfaces.first.address
+          external_ip=external.first_ipv4.nil? ? external.first_ipv6.to_s : external.first_ipv4.to_s
+          DeployTemplate.write_template(@host, self.dialect.class.name, external_ip, "root", @host.region.hosts.default_password)
         end
 
         def add(section, clazz=SingleValueVerb)
