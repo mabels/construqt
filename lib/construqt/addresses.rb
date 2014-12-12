@@ -18,6 +18,64 @@ module Construqt
       @network
     end
 
+
+    # hier frieht die hoelle zu!!!
+    class CqIpAddress
+      attr_reader :ipaddr, :container
+      def initialize(ipaddr, container)
+        @ipaddr = ipaddr
+        @container = container
+      end
+      def ipv4?
+        @ipaddr.ipv4?
+      end
+      def ipv6?
+        @ipaddr.ipv6?
+      end
+      def include?(a)
+        @ipaddr.include?(a)
+      end
+      def prefix
+        @ipaddr.prefix
+      end
+      def network
+        @ipaddr.network
+      end
+      def to_i
+        @ipaddr.to_i
+      end
+      def to_s
+        @ipaddr.to_s
+      end
+      def to_string
+        @ipaddr.to_string
+      end
+      def to_u32
+        @ipaddr.to_u32
+      end
+      def first
+        @ipaddr.first
+      end
+      def last
+        @ipaddr.last
+      end
+      def groups
+        @ipaddr.groups
+      end
+      def compressed
+        @ipaddr.compressed
+      end
+      def reverse
+        @ipaddr.reverse
+      end
+      def address
+        @ipaddr.address
+      end
+      def netmask
+        @ipaddr.netmask
+      end
+    end
+
     class Address
       attr_accessor :host
       attr_accessor :interface
@@ -111,7 +169,7 @@ module Construqt
           elsif LOOOPBACK == ip
             @loopback = true
           else
-            (unused, ip) = self.merge_tag(ip) { |ip| IPAddress.parse(ip) }
+            (unused, ip) = self.merge_tag(ip) { |ip| CqIpAddress.new(IPAddress.parse(ip), self) }
             self.ips << ip
           end
         end
@@ -190,7 +248,7 @@ module Construqt
 
       def build_route(dst, via, option = {})
         #puts "DST => "+dst.class.name+":"+dst.to_s
-        (unused, dst) = self.merge_tag(dst) { |dst| IPAddress.parse(dst) }
+        (unused, dst) = self.merge_tag(dst) { |dst| CqIpAddress.new(IPAddress.parse(dst), self) }
         metric = option['metric']
         if via == UNREACHABLE
           via = nil
@@ -199,7 +257,7 @@ module Construqt
           if via.nil?
             via = nil
           else
-            via = IPAddress.parse(via)
+            (unused, via) = self.merge_tag(via) { |via| CqIpAddress.new(IPAddress.parse(via), self) }
             throw "different type #{dst} #{via}" unless dst.ipv4? == via.ipv4? && dst.ipv6? == via.ipv6?
           end
           type = nil
