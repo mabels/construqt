@@ -41,9 +41,9 @@ GLOBAL
             ret << "    #{ip.to_string} dev #{my_iface.name}"
           end
           iface.address.routes.each do |rt|
-            binding.pry
-            iface.services << RouteService.new("#{iface.name}-#{rt.dst.to_string}-#{rt.via}", rt)
-#  region.services.add(Construqt::Services::DhcpV6Relay.new("V8-DHCPV6RELAY").add_server("2a04:2f80:a:131::d6c9%v131"))
+            key = "#{iface.name}-#{rt.dst.to_string}-#{rt.via}"
+            next if iface.services.find{ |i| i.name == key }
+            iface.services << RouteService.new(key, rt)
           end
 
 

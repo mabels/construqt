@@ -164,7 +164,6 @@ RADV
           end
 
           def vrrp(host, ifname, iface)
-            binding.pry
             host.result.etc_network_vrrp(iface.name).add_master(up(ifname)).add_backup(down(ifname))
           end
 
