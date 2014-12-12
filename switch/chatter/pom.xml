@@ -55,6 +55,22 @@
 		</resources>
 		<plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.3.2</version>
+                <executions>
+                    <execution>
+                        <id>default</id>
+                        <goals>
+                            <goal>perform</goal>
+                        </goals>
+                        <configuration>
+                            <pomFileName>switch/chatter/pom.xml</pomFileName>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
               <groupId>com.github.github</groupId>
               <artifactId>site-maven-plugin</artifactId>
               <version>0.10</version>
