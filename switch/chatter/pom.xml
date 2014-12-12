@@ -16,9 +16,9 @@
 	</properties>
 
     <scm>
-      <connection>scm:https://github.com/pepe79/construqt.git</connection>
-      <url>scm:https://github.com/pepe79/construqt.git</url>
-      <developerConnection>scm:https://github.com/pepe79/construqt.git</developerConnection>
+      <connection>scm:git:pepe79@github.com:pepe79/construqt.git</connection>
+      <url>scm:git:pepe79@github.com:pepe79/construqt.git</url>
+      <developerConnection>scm:git:pepe79@github.com:pepe79/construqt.git</developerConnection>
     </scm>
 
     <distributionManagement>
