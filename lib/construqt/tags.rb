@@ -31,9 +31,9 @@ module Construqt
     end
 
     def self.ips_net(tag, family)
-      ip_module = family==Construqt::Addresses::IPV4 ? IPAddress::IPv4: IPAddress::IPv6
-      IPAddress::IPv4::summarize(*(@tags[tag]||[]).map do |obj|
-        if obj.kind_of?(IPAddress)
+      #ip_module = family==Construqt::Addresses::IPV4 ? IPAddress::IPv4: IPAddress::IPv6
+      IPAddress.summarize((@tags[tag]||[]).map do |obj|
+        if obj.kind_of?(IPAddress) || obj.kind_of?(Construqt::Addresses::CqIpAddress)
           obj
         elsif obj.respond_to? :ips
           obj.ips
