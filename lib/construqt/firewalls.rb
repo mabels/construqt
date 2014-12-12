@@ -36,7 +36,8 @@ module Construqt
           chainable_attr :output, true, false, lambda {|i| @prerouting = false; input_only(false); output_only(true) }
           chainable_attr :output_only, true
           chainable_attr :interface
-          chainable_attr :from_interface, true, false
+          chainable_attr :from_my_net, true, false
+          chainable_attr :to_my_net, true, false
           chainable_attr_value :from_net, nil
           chainable_attr_value :to, nil
           chainable_attr_value :to_net, nil
@@ -92,7 +93,8 @@ module Construqt
           chainable_attr :output_only
           chainable_attr :to_source
           chainable_attr :interface
-          chainable_attr :from_interface, true, false
+          chainable_attr :from_my_net, true, false
+          chainable_attr :to_my_net, true, false
           chainable_attr_value :from_net, nil
           chainable_attr_value :to_net, nil
           chainable_attr_value :action, nil
@@ -154,7 +156,8 @@ module Construqt
           chainable_attr :connection
           chainable_attr :input_only, true, true
           chainable_attr :output_only, true, true
-          chainable_attr :from_interface, true, false
+          chainable_attr :from_my_net, true, false
+          chainable_attr :to_my_net, true, false
           chainable_attr :from_route, true, false
           chainable_attr :connection
           chainable_attr :tcp
