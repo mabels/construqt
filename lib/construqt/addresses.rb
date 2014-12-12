@@ -159,7 +159,7 @@ module Construqt
       end
 
       def add_ip(ip, region = "")
-        throw "please give a ip #{ip}" unless ip
+        throw "please give a ip #{ip}" if ip.nil?
         if ip
           #puts ">>>>> #{ip} #{ip.class.name}"
           if DHCPV4 == ip
@@ -169,6 +169,7 @@ module Construqt
           elsif LOOOPBACK == ip
             @loopback = true
           else
+            throw "please give a ip #{ip} as string!" unless ip.kind_of?(String)
             (unused, ip) = self.merge_tag(ip) { |ip| CqIpAddress.new(IPAddress.parse(ip), self) }
             self.ips << ip
           end
