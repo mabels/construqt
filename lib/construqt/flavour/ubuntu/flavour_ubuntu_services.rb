@@ -8,24 +8,34 @@ module Construqt
             @service = service
           end
 
-          def up(ifname)
-            "/usr/sbin/dhcrelay -pf /run/dhcrelay-v4.#{ifname}.pid -q -4 -i #{ifname} #{@service.servers.map{|i| i.to_s}.join(' ')}"
+          def up(ifname, inbounds, upstreams)
+            minus_i = (["-i #{ifname}"] + inbounds.map { |cqip| "-i #{cqip.container.interface.name}" }).join(' ')
+            servers = upstreams.map{ |cqip| cqip.to_s }.join(' ')
+            "/usr/sbin/dhcrelay -pf /run/dhcrelay-v4.#{ifname}.pid -q -4 #{minus_i} #{servers}"
           end
 
-          def down(ifname)
+          def down(ifname, inbounds, upstreams)
             "kill `cat /run/dhcrelay-v4.#{ifname}.pid`"
           end
 
-          def vrrp(host, ifname, iface)
-            host.result.etc_network_vrrp(iface.name).add_master(up(ifname)).add_backup(down(ifname))
+          def vrrp(host, ifname, vrrp)
+            inbounds = Construqt::Tags.find(@service.inbound_tag).select{ |cqip| cqip.container.interface.host == host && cqip.ipv4? }
+            return if inbounds.empty?
+            iface = vrrp.interfaces.find{|_| _.host == host }
+            return unless iface
+            upstreams = Construqt::Tags.find(@service.upstream_tag).select{ |cqip| cqip.ipv4? }
+            return if upstreams.empty?
+            host.result.etc_network_vrrp(iface.name).add_master(up(ifname, inbounds, upstreams))
+                                                    .add_backup(down(ifname, inbounds, upstreams))
           end
 
           def interfaces(host, ifname, iface, writer)
-            #binding.pry
-            return unless iface.address && iface.address.first_ipv4
-            return if @service.servers.empty?
-            writer.lines.up(up(ifname))
-            writer.lines.down(down(ifname))
+            inbounds = Construqt::Tags.find(@service.inbound_tag).select{ |cqip| cqip.container.interface.host == host && cqip.ipv4? }
+            return if inbounds.empty?
+            upstreams = Construqt::Tags.find(@service.upstream_tag).select{ |cqip| cqip.ipv4? }
+            return if upstreams.empty?
+            writer.lines.up(up(ifname, inbounds, upstreams))
+            writer.lines.down(down(ifname, inbounds, upstreams))
           end
         end
 
@@ -34,28 +44,35 @@ module Construqt
             @service = service
           end
 
-          def up(iface, ifname)
-            "/usr/sbin/dhcrelay -pf /run/dhcrelay-v6.#{ifname}.pid -q -6 -l #{iface.address.first_ipv6.to_s}%#{ifname} #{@service.servers.map{|i| "-u #{i.ip}%#{i.iface}" }.join(' ')}"
+          def up(ifname, inbounds, upstreams)
+            minus_l = inbounds.map { |cqip| "-l #{cqip}%#{cqip.container.interface.name}" }.join(' ')
+            minus_o = upstreams.map{ |cqip| "-u #{cqip}%#{ifname}" }.join(' ')
+            "/usr/sbin/dhcrelay -pf /run/dhcrelay-v6.#{ifname}.pid -q -6 #{minus_l} #{minus_o}"
           end
 
-          def down(iface, ifname)
+          def down(ifname, inbounds, upstreams)
             "kill `cat /run/dhcrelay-v6.#{ifname}.pid`"
           end
 
-          def vrrp(host, ifname, iface)
-            host.result.etc_network_vrrp(iface.name).add_master(up(iface, ifname)).add_backup(down(iface, ifname))
+          def vrrp(host, ifname, vrrp)
+            inbounds = Construqt::Tags.find(@service.inbound_tag).select{ |cqip| cqip.container.interface.host == host && cqip.ipv6? }
+            return if inbounds.empty?
+            iface = vrrp.interfaces.find{|_| _.host == host }
+            return unless iface
+            #binding.pry
+            upstreams = Construqt::Tags.find(@service.upstream_tag).select{ |cqip| cqip.ipv6? }
+            return if upstreams.empty?
+            host.result.etc_network_vrrp(iface.name).add_master(up(ifname, inbounds, upstreams))
+                                                    .add_backup(down(ifname, inbounds, upstreams))
           end
 
           def interfaces(host, ifname, iface, writer)
-            return unless iface.address && iface.address.first_ipv6
-            return if @service.servers.empty?
-            @service.servers.each do |server|
-              unless @service.services.region.interfaces.find(host, server.iface)
-                throw "DhcpV6Relay interface with name #{service.iface} not found on #{host.name}"
-              end
-            end
-            writer.lines.up(up(iface, ifname))
-            writer.lines.down(down(iface, ifname))
+            inbounds = Construqt::Tags.find(@service.inbound_tag).select{ |cqip| cqip.container.interface.host == host && cqip.ipv6? }
+            return if inbounds.empty?
+            upstreams = Construqt::Tags.find(@service.upstream_tag).select{ |cqip| cqip.ipv6? }
+            return if upstreams.empty?
+            writer.lines.up(up(ifname, inbounds, upstreams))
+            writer.lines.down(down(ifname, inbounds, upstreams))
           end
         end
 
@@ -147,7 +164,7 @@ RADV
           end
 
           def vrrp(host, ifname, iface)
-            #binding.pry
+            binding.pry
             host.result.etc_network_vrrp(iface.name).add_master(up(ifname)).add_backup(down(ifname))
           end
 

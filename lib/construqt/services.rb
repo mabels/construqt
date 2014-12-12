@@ -8,40 +8,24 @@ module Construqt
     end
 
     class DhcpV4Relay
-      attr_accessor :servers, :name, :services
-      def initialize(name)
-        self.name = name
-        self.servers = []
-      end
-      def add_server(ip)
-        ip = IPAddress.parse(ip)
-        throw "ip must be a v4 address" unless ip.ipv4?
-        self.servers << ip
-        self
+      attr_reader :name, :inbound_tag, :upstream_tag
+      attr_accessor :services
+      def initialize(name, inbound_tag, upstream_tag)
+        @name = name
+        @inbound_tag = inbound_tag
+        @upstream_tag = upstream_tag
       end
     end
     class DhcpV6Relay
-      attr_accessor :servers, :name, :services
-      def initialize(name)
-        self.name = name
-        self.servers = []
-      end
-      class Server
-        attr_accessor :ip, :iface
-      end
-      def add_server(name)
-        (ip, iface) = name.split("%")
-        throw "ip not set #{name}" unless ip
-        ip = IPAddress.parse(ip)
-        throw "ip must be a v6 address" unless ip.ipv6?
-        throw "iface not set #{name}" if iface.nil? || iface.empty?
-        server = Server.new
-        server.ip = ip
-        server.iface = iface
-        self.servers << server
-        self
+      attr_reader :name, :inbound_tag, :upstream_tag
+      attr_accessor :services
+      def initialize(name, inbound_tag, upstream_tag)
+        @name = name
+        @inbound_tag = inbound_tag
+        @upstream_tag = upstream_tag
       end
     end
+
     class Radvd
       attr_accessor :servers, :name, :services
       def initialize(name)
