@@ -132,17 +132,25 @@ module Construqt
 
         def self.write_table(iptables, rule, to_from)
           family = iptables=="ip6tables" ? Construqt::Addresses::IPV6 : Construqt::Addresses::IPV4
-          if rule.from_interface?
+          if rule.from_my_net?
             networks = iptables=="ip6tables" ? to_from.get_interface.address.v6s : to_from.get_interface.address.v4s
             if rule.from_route?
               networks += self.filter_routes(to_from.get_interface.address.routes, family)
             end
-            from_list = IPAddress::IPv4::summarize(*networks)
+            from_list = IPAddress.summarize(networks)
           else
             from_list = Construqt::Tags.ips_net(rule.get_from_net, family)
           end
 
-          to_list = Construqt::Tags.ips_net(rule.get_to_net, family)
+          if rule.to_my_net?
+            networks = iptables=="ip6tables" ? to_from.get_interface.address.v6s : to_from.get_interface.address.v4s
+            if rule.from_route?
+              networks += self.filter_routes(to_from.get_interface.address.routes, family)
+            end
+            to_list = IPAddress.summarize(networks)
+          else
+            to_list = Construqt::Tags.ips_net(rule.get_to_net, family)
+          end
           #puts ">>>>>#{from_list.inspect}"
           #puts ">>>>>#{state.inspect} end_to:#{state.end_to}:#{state.end_from}:#{state.middle_to}#{state.middle_from}"
           action_i = action_o = rule.get_action
@@ -158,6 +166,7 @@ module Construqt
           end
 
           if to_list.length > 1
+            # work on these do a better hashing
             action_o = "I.#{to_from.get_ifname}.#{rule.object_id.to_s(32)}"
             action_i = "O.#{to_from.get_ifname}.#{rule.object_id.to_s(32)}"
             to_list.each do |ip|
@@ -246,13 +255,12 @@ module Construqt
             end
 
             protocol_loop(rule).each do |protocol|
-              #binding.pry
               to_from = ToFrom.new.bind_interface(ifname, iface, rule).only_in_out(rule)
               to_from.push_begin_to(protocol)
               to_from.push_begin_from(protocol)
               if rule.get_ports && !rule.get_ports.empty?
-                to_from.push_middle_from("-dports #{rule.get_ports.join(",")}")
-                to_from.push_middle_to("-dports #{rule.get_ports.join(",")}")
+                to_from.push_middle_from("-m multiport --dports #{rule.get_ports.join(",")}")
+                to_from.push_middle_to("-m multiport --sports #{rule.get_ports.join(",")}")
               end
 
               if rule.connection?
