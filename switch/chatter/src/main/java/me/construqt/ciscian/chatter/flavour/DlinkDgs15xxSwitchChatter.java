@@ -16,7 +16,7 @@ import me.construqt.ciscian.chatter.steps.generic.WaitForStep;
 public class DlinkDgs15xxSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 
 	@Override
-	protected void enterManagementMode(String user, String password) {
+	protected void enterManagementMode(final String user,final  String password) {
 		getOutputConsumer().addStep(new SwitchStep( //
 				new Case(">") {
 					public Step[] then() {
