@@ -16,6 +16,26 @@ module Construqt
         @nat = Nat.new(self)
         @forward = Forward.new(self)
         @host = Host.new(self)
+        @ipv4 = true
+        @ipv6 = true
+      end
+
+      def ipv4?
+        @ipv4
+      end
+      def only_ipv4
+        @ipv4 = true
+        @ipv6 = false
+        self.clone
+      end
+
+      def ipv6?
+        @ipv6
+      end
+      def only_ipv6
+        @ipv4 = false
+        @ipv6 = true
+        self.clone
       end
 
       def name
@@ -42,6 +62,7 @@ module Construqt
           chainable_attr_value :to, nil
           chainable_attr_value :to_net, nil
           chainable_attr_value :action, nil
+
 
           def initialize
             @from_is = nil
@@ -216,9 +237,9 @@ module Construqt
         end
 
         class HostEntry < Forward::ForwardEntry
-          include Util::Chainable
-          chainable_attr :from_host
-          chainable_attr :to_host
+          #include Util::Chainable
+          alias_method :from_me, :from_my_net
+          alias_method :to_me, :to_my_net
         end
 
         def add
