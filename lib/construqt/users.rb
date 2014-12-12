@@ -12,6 +12,10 @@ module Construqt
       @users[name] = OpenStruct.new(cfg)
     end
 
+    def find(name)
+      @users[name]
+    end
+
     def all
       @users.values
     end

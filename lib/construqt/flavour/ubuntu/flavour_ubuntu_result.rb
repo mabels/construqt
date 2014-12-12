@@ -225,13 +225,23 @@ OTHER
         class Entry
           class Header
             MODE_MANUAL = :manual
-            MODE_DHCP = :dhcp
             MODE_LOOPBACK = :loopback
+            MODE_DHCP = :dhcp
             PROTO_INET6 = :inet6
             PROTO_INET4 = :inet
             AUTO = :auto
             def mode(mode)
               @mode = mode
+              self
+            end
+
+            def dhcpv4
+              @mode = MODE_DHCP
+              self
+            end
+
+            def dhcpv6
+              @dhcpv6 = true
               self
             end
 
@@ -263,9 +273,11 @@ OTHER
 
             def commit
               return "" if @entry.skip_interfaces?
+              ipv6_dhcp = "iface #{get_interface_name} inet6 dhcp" if @dhcpv6
               out = <<OUT
 # #{@entry.iface.clazz}
 #{@auto ? "auto #{get_interface_name}" : ""}
+#{ipv6_dhcp||""}
 iface #{get_interface_name} #{@protocol.to_s} #{@mode.to_s}
   up   /bin/bash /etc/network/#{get_interface_name}-up.iface
   down /bin/bash /etc/network/#{get_interface_name}-down.iface

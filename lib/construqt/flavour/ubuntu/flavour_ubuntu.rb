@@ -39,7 +39,8 @@ module Construqt
             return
           end
 
-          writer.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_DHCP) if iface.address.dhcpv4?
+          writer.header.dhcpv4 if iface.address.dhcpv4?
+          writer.header.dhcpv6 if iface.address.dhcpv6?
           writer.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_LOOPBACK) if iface.address.loopback?
           lines.add(iface.flavour) if iface.flavour
           iface.address.ips.each do |ip|
