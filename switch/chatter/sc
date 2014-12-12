@@ -1,3 +1,23 @@
 #!/bin/bash
 DIR=$(dirname $0)
-java -Djava.net.preferIPv4Stack=false -jar $DIR/target/chatter-0.0.1-SNAPSHOT-jar-with-dependencies.jar $1 $2 $3 $4 $5 $6 $7 $8
+
+SNAPSHOT_PATH="$DIR/target/chatter-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
+RELEASE_PATH="$DIR/target/chatter-0.0.1-jar-with-dependencies.jar"
+DOWNLOAD_URL="https://github.com/pepe79/construqt/raw/mvn-repo/me/construqt/ciscian/chatter/0.0.1/chatter-0.0.1-jar-with-dependencies.jar"
+
+if [ -e $SNAPSHOT_PATH ]
+then
+  >&2 echo "Using snapshot version of switch chatter."
+  SC_JAR=$SNAPSHOT_PATH
+else
+  if [ -e $RELEASE_PATH ]
+  then
+    >&2 echo "Using previously downloaded version of switch chatter."
+  else
+    >&2 echo "Downloading switch chatter jar..."
+    wget --no-verbose --directory-prefix="$DIR/target" $DOWNLOAD_URL
+  fi
+  SC_JAR=$RELEASE_PATH
+fi
+
+java -Djava.net.preferIPv4Stack=false -jar $SC_JAR $1 $2 $3 $4 $5 $6 $7 $8
