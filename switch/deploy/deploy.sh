@@ -48,6 +48,13 @@ echo "success."
 #load current config from switch and save it to temp file
 echo -n "Loading config from switch..."
 sc $FLAVOUR ssh://$IP:22 $USER $PASS read > $CURRENT_CONFIG
+if [ $? != 0 ]
+  then
+    echo "failed."
+    echo "an error occured while performing switch chatter."
+    exit 1
+fi
+
 echo "success"
 
 cat $CURRENT_CONFIG | ruby $DELTA_SCRIPT $FLAVOUR $NEW_CONFIG > $DELTA_CONFIG
