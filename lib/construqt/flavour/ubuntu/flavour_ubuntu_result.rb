@@ -305,8 +305,8 @@ OUT
               @lines += block.each_line.map{|i| i.strip }.select{|i| !i.empty? }
             end
 
-            def write_s(direction, blocks)
-              @entry.result.add(self.class, <<BLOCK, Construqt::Resources::Rights::ROOT_0755, "etc", "network", "#{@entry.header.get_interface_name}-#{direction}.iface")
+            def write_s(component, direction, blocks)
+              @entry.result.add(self.class, <<BLOCK, Construqt::Resources::Rights.root_0755(component), "etc", "network", "#{@entry.header.get_interface_name}-#{direction}.iface")
 #!/bin/bash
 exec > >(logger -t "#{@entry.header.get_interface_name}-#{direction}") 2>&1
 #{blocks.join("\n")}
@@ -316,8 +316,8 @@ BLOCK
             end
 
             def commit
-              write_s("up", @ups)
-              write_s("down", @downs)
+              write_s(@entry.iface.class.name, "up", @ups)
+              write_s(@entry.iface.class.name, "down", @downs)
               sections = @lines.inject({}) {|r, line| key = line.split(/\s+/).first; r[key] ||= []; r[key] << line; r }
               sections.keys.sort.map do |key|
                 if sections[key]
@@ -441,12 +441,12 @@ BLOCK
         def commit(result)
           @interfaces.keys.sort.each do |ifname|
             vrrp = @interfaces[ifname]
-            result.add(self, <<VRRP, Construqt::Resources::Rights::ROOT_0755, "etc", "network", "vrrp.#{ifname}.stop.sh")
+            result.add(self, <<VRRP, Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::VRRP), "etc", "network", "vrrp.#{ifname}.stop.sh")
 #!/bin/bash
 #{vrrp.render_backups}
 exit 0
 VRRP
-            result.add(self, <<VRRP, Construqt::Resources::Rights::ROOT_0755, "etc", "network", "vrrp.#{ifname}.sh")
+            result.add(self, <<VRRP, Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::VRRP), "etc", "network", "vrrp.#{ifname}.sh")
 #!/bin/bash
 
 TYPE=$1
@@ -532,12 +532,54 @@ VRRP
           '/'+File.dirname(fname)+"/.#{File.basename(fname)}.import"
         end
 
+        def component_to_packages(component)
+          cp = Construqt::Resources::Component
+          ret = {
+            cp::UNREF => {},
+            "Construqt::Flavour::DeviceDelegate" => {},
+            "Construqt::Flavour::Ubuntu::Bond" => { "ifenslave" => true },
+            "Construqt::Flavour::VlanDelegate" => { "vlan" => true },
+            "Construqt::Flavour::Ubuntu::Gre" => { },
+            "Construqt::Flavour::BridgeDelegate" => { "bridge-utils" => true },
+            cp::NTP => { "ntpd" => true},
+            cp::USB_MODESWITCH => { "usb-modeswitch" => true, "usb-modeswitch-data" => true },
+            cp::VRRP => { "keepalived" => true },
+            cp::FW4 => { "iptables" => true, "ulogd2" => true },
+            cp::FW6 => { "iptables" => true, "ulogd2" => true },
+            cp::IPSEC => { "racoon" => true },
+            cp::SSH => { "openssh-server" => true },
+            cp::BGP => { "bird" => true },
+            cp::OPENVPN => { "openvpn" => true },
+            cp::DNS => { "bind9" => true },
+            cp::RADVD => { "radvd" => true },
+            cp::CONNTRACKD => { "conntrackd" => true, "conntrack" => true }
+          }[component]
+          throw "Component with name not found #{component}" unless ret
+          ret
+        end
+
         def commit
-          add(EtcNetworkIptables, etc_network_iptables.commitv4, Construqt::Resources::Rights::ROOT_0644, "etc", "network", "iptables.cfg")
-          add(EtcNetworkIptables, etc_network_iptables.commitv6, Construqt::Resources::Rights::ROOT_0644, "etc", "network", "ip6tables.cfg")
-          add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construqt::Resources::Rights::ROOT_0644, "etc", "network", "interfaces")
-          add(EtcConntrackdConntrackd, etc_conntrackd_conntrackd.commit, Construqt::Resources::Rights::ROOT_0644, "etc", "conntrack", "conntrackd.conf")
+          add(EtcNetworkIptables, etc_network_iptables.commitv4, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4), "etc", "network", "iptables.cfg")
+          add(EtcNetworkIptables, etc_network_iptables.commitv6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6), "etc", "network", "ip6tables.cfg")
+          add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construqt::Resources::Rights.root_0644, "etc", "network", "interfaces")
+          add(EtcConntrackdConntrackd, etc_conntrackd_conntrackd.commit, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::CONNTRACKD), "etc", "conntrack", "conntrackd.conf")
           @etc_network_vrrp.commit(self)
+
+          components = @result.values.inject({
+            "language-pack-en" => true,
+            "language-pack-de" => true,
+            "git" => true,
+            "aptitude" => true,
+            "traceroute" => true,
+            "tcpdump" => true,
+            "strace" => true,
+            "lsof" => true,
+            "ifstat" => true,
+            "mtr-tiny" => true,
+            "openssl" => true,
+          }) do |r, block|
+            r.merge(component_to_packages(block.right[:component]))
+          end.keys
           out = [<<BASH]
 #!/bin/bash
 hostname=`hostname`
@@ -553,8 +595,7 @@ else
  echo Configure Host #{@host.name}
 fi
 updates=''
-for i in language-pack-en language-pack-de git aptitude traceroute vlan bridge-utils tcpdump mtr-tiny \\
-bird keepalived strace iptables conntrack openssl racoon ulogd2 ifenslave conntrackd conntrack bind9
+for i in #{components.join(" ")}
 do
  dpkg -l $i > /dev/null 2> /dev/null
  if [ $? != 0 ]
