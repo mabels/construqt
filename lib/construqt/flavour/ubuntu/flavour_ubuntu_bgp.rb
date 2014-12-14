@@ -11,9 +11,9 @@ module Construqt
           return if host.bgps.empty?
           # binding.pry
           bird_v4 = self.header_bird(host, OpenStruct.new(:net_clazz => IPAddress::IPv4, :filter => lambda {|ip| ip.ipv4? }))
-          host.result.add(self, bird_v4, Construqt::Resources::Rights::ROOT_0644, "etc", "bird", "bird.conf")
+          host.result.add(self, bird_v4, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird.conf")
           bird_v6 = self.header_bird(host, OpenStruct.new(:net_clazz => IPAddress::IPv6, :filter => lambda {|ip| ip.ipv6? }))
-          host.result.add(self, bird_v6, Construqt::Resources::Rights::ROOT_0644, "etc", "bird", "bird6.conf")
+          host.result.add(self, bird_v6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird6.conf")
         end
 
         def self.header_bird(host, mode)
@@ -66,7 +66,7 @@ BGP
 
         def build_bird_conf
           if self.my.address.first_ipv4 && self.other.my.address.first_ipv4
-            self.my.host.result.add(self, <<BGP, Construqt::Resources::Rights::ROOT_0644, "etc", "bird", "bird.conf")
+            self.my.host.result.add(self, <<BGP, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird.conf")
 protocol bgp #{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)} {
         description "#{self.my.host.name} <=> #{self.other.host.name}";
         direct;
@@ -85,7 +85,7 @@ BGP
         def build_bird6_conf
           #      binding.pry
           if self.my.address.first_ipv6 && self.other.my.address.first_ipv6
-            self.my.host.result.add(self, <<BGP, Construqt::Resources::Rights::ROOT_0644, "etc", "bird", "bird6.conf")
+            self.my.host.result.add(self, <<BGP, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird6.conf")
 protocol bgp #{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)} {
         description "#{self.my.host.name} <=> #{self.other.host.name}";
         direct;

@@ -134,16 +134,28 @@ module Construqt
       dev
     end
 
-    def find(host_or_name, iface_name)
+    def _find(host_or_name, iface_name)
       if host_or_name.kind_of?(String)
         host = @region.hosts.find(host_or_name)
-        throw "host not found #{host_or_name}" unless host
+        return [nil, nil] unless host
       else
         host = host_or_name
       end
-
       iface = host.interfaces[iface_name]
-      throw "interface not found for #{iface_name}:#{host.name}" unless iface
+      return [host, nil] unless iface
+      [host, iface]
+    end
+
+    def find!(host_or_name, iface_name)
+      (host, iface) = _find(host_or_name, iface_name)
+      return nil if host.nil? || iface.nil?
+      iface
+    end
+
+    def find(host_or_name, iface_name)
+      (host, iface) = _find(host_or_name, iface_name)
+      throw "host not found #{host_or_name}" if host.nil?
+      throw "interface not found for #{iface_name}:#{host.name}" if iface.nil?
       iface
     end
 

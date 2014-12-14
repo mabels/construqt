@@ -8,7 +8,7 @@ module Construqt
         end
 
         def self.header(host)
-          host.result.add(self, <<GLOBAL, Construqt::Resources::Rights::ROOT_0644, "etc", "keepalived", "keepalived.conf")
+          host.result.add(self, <<GLOBAL, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::VRRP), "etc", "keepalived", "keepalived.conf")
 global_defs {
   lvs_id #{host.name}
 }
@@ -59,7 +59,7 @@ GLOBAL
           end
 
           ret << "}"
-          host.result.add(self, ret.join("\n"), Construqt::Resources::Rights::ROOT_0644, "etc", "keepalived", "keepalived.conf")
+          host.result.add(self, ret.join("\n"), Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::VRRP), "etc", "keepalived", "keepalived.conf")
         end
       end
     end
