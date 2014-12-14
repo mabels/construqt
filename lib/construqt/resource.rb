@@ -1,9 +1,30 @@
 module Construqt
   class Resources
+    module Component
+      UNREF = :unref
+      NTP = :ntp
+      USB_MODESWITCH = :usb_modeswitch
+      VRRP = :vrrp
+      FW4 = :fw4
+      FW6 = :fw6
+      IPSEC = :ipsec
+      SSH = :ssh
+      BGP = :bgp
+      OPENVPN = :openvpn
+      DNS = :dns
+      RADVD = :radvd
+      CONNTRACKD = :conntrackd
+    end
     module Rights
-      ROOT_0600 = OpenStruct.new :right => "0600", :owner => 'root'
-      ROOT_0644 = OpenStruct.new :right => "0644", :owner => 'root'
-      ROOT_0755 = OpenStruct.new :right => "0755", :owner => 'root'
+      def self.root_0600(component = Component::UNREF)
+        OpenStruct.new :right => "0600", :owner => 'root', :component => component
+      end
+      def self.root_0644(component = Component::UNREF)
+        OpenStruct.new :right => "0644", :owner => 'root', :component => component
+      end
+      def self.root_0755(component = Component::UNREF)
+        OpenStruct.new :right => "0755", :owner => 'root', :component => component
+      end
     end
 
     class Resource
