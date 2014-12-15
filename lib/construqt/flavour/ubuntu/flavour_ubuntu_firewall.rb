@@ -232,14 +232,26 @@ module Construqt
 
         def self.protocol_loop(rule)
           protocol_loop = []
-          if !rule.tcp? && !rule.udp?
-            protocol_loop << ''
-          else
-            protocol_loop << '-p tcp' if rule.tcp?
-            protocol_loop << '-p udp' if rule.udp?
+          {
+            'tcp' => rule.tcp?,
+            'udp' => rule.udp?,
+            'esp' => rule.esp?,
+            'ah' => rule.ah?,
+            'icmp' => rule.icmp?
+          }.each do |proto, enabled|
+            protocol_loop << "-p #{proto}" if enabled
           end
-
+          protocol_loop = [''] if protocol_loop.empty?
           protocol_loop
+        end
+
+        def self.icmp_type(family, type)
+          {
+            Construqt::Firewalls::ICMP::PingRequest => {
+                :v4 => "-m icmp --icmp-type 8/0",
+                :v6 => "--icmpv6-type 128"
+            }
+          }[type][family]
         end
 
         def self.write_forward(fw, forward, ifname, iface, writer)
@@ -255,21 +267,32 @@ module Construqt
             end
 
             protocol_loop(rule).each do |protocol|
-              to_from = ToFrom.new.bind_interface(ifname, iface, rule).assign_in_out(rule)
-              to_from.push_begin_to(protocol)
-              to_from.push_begin_from(protocol)
-              if rule.get_ports && !rule.get_ports.empty?
-                to_from.push_middle_from("-m multiport --dports #{rule.get_ports.join(",")}")
-                to_from.push_middle_to("-m multiport --sports #{rule.get_ports.join(",")}")
-              end
+              {:v4 => { :enabled => fw.ipv4?, :table => "iptables", :writer => writer.ipv4.forward },
+               :v6 => { :enabled => fw.ipv6?, :table => "ip6tables", :writer => writer.ipv6.forward }}.each do |family, cfg|
+                next unless cfg[:enabled]
+                to_from = ToFrom.new.bind_interface(ifname, iface, rule).assign_in_out(rule)
+                if protocol == "-p icmp" && family == :v6
+                  my_protocol = "-p icmpv6"
+                else
+                  my_protocol = protocol
+                end
+                to_from.push_begin_to(my_protocol)
+                to_from.push_begin_from(my_protocol)
 
-              if rule.connection?
-                to_from.push_middle_from("-m state --state NEW,ESTABLISHED")
-                to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
-              end
+                if rule.get_ports && !rule.get_ports.empty?
+                  to_from.push_middle_from("-m multiport --dports #{rule.get_ports.join(",")}")
+                  to_from.push_middle_to("-m multiport --sports #{rule.get_ports.join(",")}")
+                end
+                if rule.icmp? && rule.get_type
+                  to_from.push_middle_from(icmp_type(family, rule.get_type))
+                end
 
-              fw.ipv4? && write_table("iptables", rule, to_from.factory(writer.ipv4.forward))
-              fw.ipv6? && write_table("ip6tables", rule, to_from.factory(writer.ipv6.forward))
+                if rule.connection?
+                  to_from.push_middle_from("-m state --state NEW,ESTABLISHED")
+                  to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
+                end
+                write_table(cfg[:table], rule, to_from.factory(cfg[:writer]))
+              end
             end
           end
         end
@@ -290,29 +313,38 @@ module Construqt
 
             protocol_loop(rule).each do |protocol|
               [{
-                :from_to => ToFrom.new.bind_interface(ifname, iface, rule).input_only,
+                :from_to => lambda { ToFrom.new.bind_interface(ifname, iface, rule).input_only },
                 :writer4 => !rule.from_is_inbound? ? writer.ipv4.input : writer.ipv4.output,
                 :writer6 => !rule.from_is_inbound? ? writer.ipv6.input : writer.ipv6.output
               },{
-                :from_to => ToFrom.new.bind_interface(ifname, iface, rule).output_only,
+                :from_to => lambda { ToFrom.new.bind_interface(ifname, iface, rule).output_only },
                 :writer4 => rule.from_is_inbound? ? writer.ipv4.input : writer.ipv4.output,
                 :writer6 => rule.from_is_inbound? ? writer.ipv6.input : writer.ipv6.output
               }].each do |to_from_writer|
-                to_from = to_from_writer[:from_to]
-                to_from.push_begin_to(protocol)
-                to_from.push_begin_from(protocol)
-                if rule.get_ports && !rule.get_ports.empty?
-                  to_from.push_middle_from("-m multiport --dports #{rule.get_ports.join(",")}")
-                  to_from.push_middle_to("-m multiport --sports #{rule.get_ports.join(",")}")
+                {:v4 => { :enabled => fw.ipv4?, :table => "iptables", :writer => to_from_writer[:writer4]},
+                 :v6 => { :enabled => fw.ipv6?, :table => "ip6tables", :writer => to_from_writer[:writer6] }}.each do |family, cfg|
+                  to_from = to_from_writer[:from_to].call
+                  next unless cfg[:enabled]
+                  if protocol == "-p icmp" && family == :v6
+                    my_protocol = "-p icmpv6"
+                  else
+                    my_protocol = protocol
+                  end
+                  to_from.push_begin_to(my_protocol)
+                  to_from.push_begin_from(my_protocol)
+                  if rule.get_ports && !rule.get_ports.empty?
+                    to_from.push_middle_from("-m multiport --dports #{rule.get_ports.join(",")}")
+                    to_from.push_middle_to("-m multiport --sports #{rule.get_ports.join(",")}")
+                  end
+                  if rule.icmp? && rule.get_type
+                    to_from.push_middle_from(icmp_type(family, rule.get_type))
+                  end
+                  if rule.connection?
+                    to_from.push_middle_from("-m state --state NEW,ESTABLISHED")
+                    to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
+                  end
+                  write_table(cfg[:table], rule, to_from.factory(cfg[:writer]))
                 end
-
-                if rule.connection?
-                  to_from.push_middle_from("-m state --state NEW,ESTABLISHED")
-                  to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
-                end
-
-                fw.ipv4? && write_table("iptables", rule, to_from.factory(to_from_writer[:writer4]))
-                fw.ipv6? && write_table("ip6tables", rule, to_from.factory(to_from_writer[:writer6]))
               end
             end
           end
