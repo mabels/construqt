@@ -151,6 +151,16 @@ module Construqt
           else
             to_list = Construqt::Tags.ips_net(rule.get_to_net, family)
           end
+          if rule.get_to_net_addr
+            adr = IPAddress.parse(rule.get_to_net_addr)
+            to_list << adr if adr.ipv6? && family == Construqt::Addresses::IPV6
+            to_list << adr if adr.ipv4? && family == Construqt::Addresses::IPV4
+          end
+          if rule.get_from_net_addr
+            adr = IPAddress.parse(rule.get_from_net_addr)
+            from_list << adr if adr.ipv6? && family == Construqt::Addresses::IPV6
+            from_list << adr if adr.ipv4? && family == Construqt::Addresses::IPV4
+          end
           #puts ">>>>>#{from_list.inspect}"
           #puts ">>>>>#{state.inspect} end_to:#{state.end_to}:#{state.end_from}:#{state.middle_to}#{state.middle_from}"
           action_i = action_o = rule.get_action
@@ -297,6 +307,43 @@ module Construqt
           end
         end
 
+        def self.create_link_local(fw, ifname, iface, rule, writer)
+          return unless fw.ipv6?
+          # fe80::/64
+          # ff02::/16 dest
+          i_to_from = ToFrom.new.bind_interface(ifname, iface, rule).input_only
+          i_rule = rule.clone
+          i_to_from.push_begin_to("-p icmpv6")
+          i_rule.to_net_addr("fe80::/64")
+          i_rule.from_net_addr("ff02::/16")
+          i_to_from.push_middle_to("--icmpv6-type 135")
+          write_table("ip6tables", i_rule, i_to_from.factory(writer.ipv6.input))
+
+          i_to_from = ToFrom.new.bind_interface(ifname, iface, rule).input_only
+          i_rule = rule.clone
+          i_to_from.push_begin_to("-p icmpv6")
+          i_rule.to_net_addr("fe80::/64")
+          i_rule.from_net_addr("fe80::/64")
+          i_to_from.push_middle_to("--icmpv6-type 136")
+          write_table("ip6tables", i_rule, i_to_from.factory(writer.ipv6.input))
+
+          o_to_from = ToFrom.new.bind_interface(ifname, iface, rule).output_only
+          o_to_from.push_begin_to("-p icmpv6")
+          o_rule = rule.clone
+          o_rule.from_net_addr("fe80::/64")
+          o_rule.to_net_addr("ff02::/16")
+          o_to_from.push_middle_from("--icmpv6-type 136")
+          write_table("ip6tables", o_rule, o_to_from.factory(writer.ipv6.output))
+
+          o_to_from = ToFrom.new.bind_interface(ifname, iface, rule).output_only
+          o_to_from.push_begin_to("-p icmpv6")
+          o_rule = rule.clone
+          o_rule.from_net_addr("fe80::/64")
+          o_rule.to_net_addr("fe80::/64")
+          o_to_from.push_middle_from("--icmpv6-type 136")
+          write_table("ip6tables", o_rule, o_to_from.factory(writer.ipv6.output))
+        end
+
         def self.write_host(fw, host, ifname, iface, writer)
           host.rules.each do |rule|
             if rule.get_log
@@ -310,6 +357,7 @@ module Construqt
               fw.ipv6? && write_table("ip6tables", nflog_rule, l_in_to_from.factory(writer.ipv6.input))
               fw.ipv6? && write_table("ip6tables", nflog_rule, l_out_to_from.factory(writer.ipv6.output))
             end
+            next create_link_local(fw, ifname, iface, rule, writer) if rule.link_local?
 
             protocol_loop(rule).each do |protocol|
               [{
@@ -325,6 +373,9 @@ module Construqt
                  :v6 => { :enabled => fw.ipv6?, :table => "ip6tables", :writer => to_from_writer[:writer6] }}.each do |family, cfg|
                   to_from = to_from_writer[:from_to].call
                   next unless cfg[:enabled]
+
+
+
                   if protocol == "-p icmp" && family == :v6
                     my_protocol = "-p icmpv6"
                   else

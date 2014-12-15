@@ -185,6 +185,7 @@ module Construqt
           chainable_attr :to_my_net, true, false
           chainable_attr :from_route, true, false
           chainable_attr :connection
+          chainable_attr :link_local
           chainable_attr :icmp
           chainable_attr :esp
           chainable_attr :ah
@@ -193,7 +194,9 @@ module Construqt
           chainable_attr :type, nil
           chainable_attr_value :log, nil
           chainable_attr_value :from_net, nil
+          chainable_attr_value :from_net_addr, nil
           chainable_attr_value :to_net, nil
+          chainable_attr_value :to_net_addr, nil
           chainable_attr_value :action, nil
 
           def initialize
