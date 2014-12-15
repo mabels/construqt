@@ -490,6 +490,10 @@ VRRP
           @host
         end
 
+        def add_component(component)
+          Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::CONNTRACKD)
+        end
+
         def empty?(name)
           not @result[name]
         end

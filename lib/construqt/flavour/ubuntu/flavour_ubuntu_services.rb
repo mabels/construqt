@@ -25,8 +25,9 @@ module Construqt
             return unless iface
             upstreams = Construqt::Tags.find(@service.upstream_tag).select{ |cqip| cqip.ipv4? }
             return if upstreams.empty?
-            host.result.etc_network_vrrp(iface.name).add_master(up(ifname, inbounds, upstreams))
+            host.result.etc_network_vrrp(vrrp.name).add_master(up(ifname, inbounds, upstreams))
                                                     .add_backup(down(ifname, inbounds, upstreams))
+            host.result.add_component(Construqt::Resources::Component::DHCPRELAY)
           end
 
           def interfaces(host, ifname, iface, writer)
@@ -36,6 +37,7 @@ module Construqt
             return if upstreams.empty?
             writer.lines.up(up(ifname, inbounds, upstreams))
             writer.lines.down(down(ifname, inbounds, upstreams))
+            host.result.add_component(Construqt::Resources::Component::DHCPRELAY)
           end
         end
 
@@ -62,8 +64,9 @@ module Construqt
             #binding.pry
             upstreams = Construqt::Tags.find(@service.upstream_tag).select{ |cqip| cqip.ipv6? }
             return if upstreams.empty?
-            host.result.etc_network_vrrp(iface.name).add_master(up(ifname, inbounds, upstreams))
+            host.result.etc_network_vrrp(vrrp.name).add_master(up(ifname, inbounds, upstreams))
                                                     .add_backup(down(ifname, inbounds, upstreams))
+            host.result.add_component(Construqt::Resources::Component::DHCPRELAY)
           end
 
           def interfaces(host, ifname, iface, writer)
@@ -73,6 +76,7 @@ module Construqt
             return if upstreams.empty?
             writer.lines.up(up(ifname, inbounds, upstreams))
             writer.lines.down(down(ifname, inbounds, upstreams))
+            host.result.add_component(Construqt::Resources::Component::DHCPRELAY)
           end
         end
 
