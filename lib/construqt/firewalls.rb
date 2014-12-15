@@ -16,6 +16,26 @@ module Construqt
         @nat = Nat.new(self)
         @forward = Forward.new(self)
         @host = Host.new(self)
+        @ipv4 = true
+        @ipv6 = true
+      end
+
+      def ipv4?
+        @ipv4
+      end
+      def only_ipv4
+        @ipv4 = true
+        @ipv6 = false
+        self.clone
+      end
+
+      def ipv6?
+        @ipv6
+      end
+      def only_ipv6
+        @ipv4 = false
+        @ipv6 = true
+        self.clone
       end
 
       def name
@@ -36,11 +56,13 @@ module Construqt
           chainable_attr :output, true, false, lambda {|i| @prerouting = false; input_only(false); output_only(true) }
           chainable_attr :output_only, true
           chainable_attr :interface
-          chainable_attr :from_interface, true, false
+          chainable_attr :from_my_net, true, false
+          chainable_attr :to_my_net, true, false
           chainable_attr_value :from_net, nil
           chainable_attr_value :to, nil
           chainable_attr_value :to_net, nil
           chainable_attr_value :action, nil
+
 
           def initialize
             @from_is = nil
@@ -92,7 +114,8 @@ module Construqt
           chainable_attr :output_only
           chainable_attr :to_source
           chainable_attr :interface
-          chainable_attr :from_interface, true, false
+          chainable_attr :from_my_net, true, false
+          chainable_attr :to_my_net, true, false
           chainable_attr_value :from_net, nil
           chainable_attr_value :to_net, nil
           chainable_attr_value :action, nil
@@ -154,7 +177,8 @@ module Construqt
           chainable_attr :connection
           chainable_attr :input_only, true, true
           chainable_attr :output_only, true, true
-          chainable_attr :from_interface, true, false
+          chainable_attr :from_my_net, true, false
+          chainable_attr :to_my_net, true, false
           chainable_attr :from_route, true, false
           chainable_attr :connection
           chainable_attr :tcp
@@ -213,9 +237,9 @@ module Construqt
         end
 
         class HostEntry < Forward::ForwardEntry
-          include Util::Chainable
-          chainable_attr :from_host
-          chainable_attr :to_host
+          #include Util::Chainable
+          alias_method :from_me, :from_my_net
+          alias_method :to_me, :to_my_net
         end
 
         def add

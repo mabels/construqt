@@ -22,7 +22,7 @@ module Construqt
             end
           end
           return if addrs.empty?
-          host.result.add(self, <<HEADER, Construqt::Resources::Rights::ROOT_0644, "etc", "racoon", "racoon.conf")
+          host.result.add(self, <<HEADER, Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "racoon", "racoon.conf")
 # do not edit generated file
 path pre_shared_key "/etc/racoon/psk.txt";
 path certificate "/etc/racoon/certs";
@@ -49,7 +49,7 @@ HEADER
 
         def build_racoon_config(remote_ip)
           #binding.pry
-          self.host.result.add(self, <<RACOON, Construqt::Resources::Rights::ROOT_0644, "etc", "racoon", "racoon.conf")
+          self.host.result.add(self, <<RACOON, Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "racoon", "racoon.conf")
 # #{self.cfg.name}
 remote #{remote_ip} {
   exchange_mode main;
@@ -77,7 +77,7 @@ RACOON
             other_ip_str = other_ip.to_string
           end
 
-          self.host.result.add(self, <<RACOON, Construqt::Resources::Rights::ROOT_0644, "etc", "racoon", "racoon.conf")
+          self.host.result.add(self, <<RACOON, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::IPSEC), "etc", "racoon", "racoon.conf")
 sainfo address #{my_ip_str} any address #{other_ip_str} any {
 pfs_group 5;
 encryption_algorithm aes256;
@@ -89,14 +89,14 @@ RACOON
         end
 
         def from_to_ipsec_conf(dir, remote_my, remote_other, my, other)
-          host.result.add(self, "# #{self.cfg.name} #{dir}", Construqt::Resources::Rights::ROOT_0644, "etc", "ipsec-tools.d", "ipsec.conf")
+          host.result.add(self, "# #{self.cfg.name} #{dir}", Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec-tools.d", "ipsec.conf")
           if my.network.to_s == other.network.to_s
             spdadd = "spdadd #{my.to_s} #{other.to_s}  any -P #{dir}  ipsec esp/tunnel/#{remote_my}-#{remote_other}/unique;"
           else
             spdadd = "spdadd #{my.to_string} #{other.to_string}  any -P #{dir}  ipsec esp/tunnel/#{remote_my}-#{remote_other}/unique;"
           end
 
-          host.result.add(self, spdadd, Construqt::Resources::Rights::ROOT_0644, "etc", "ipsec-tools.d", "ipsec.conf")
+          host.result.add(self, spdadd, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec-tools.d", "ipsec.conf")
         end
 
         def build_policy(remote_my, remote_other, my, other)
@@ -131,12 +131,12 @@ RACOON
           if self.other.remote.first_ipv6
             build_racoon_config(self.other.remote.first_ipv6.to_s)
             host.result.add(self, psk(self.other.remote.first_ipv6.to_s, cfg),
-                            Construqt::Resources::Rights::ROOT_0600, "etc", "racoon", "psk.txt")
+                            Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "racoon", "psk.txt")
             build_policy(self.remote.first_ipv6.to_s, self.other.remote.first_ipv6.to_s, self.my, self.other.my)
           elsif self.other.remote.first_ipv4
             build_racoon_config(self.other.remote.first_ipv4.to_s)
             host.result.add(self, psk(self.other.remote.first_ipv4.to_s, cfg),
-                            Construqt::Resources::Rights::ROOT_0600, "etc", "racoon", "psk.txt")
+                            Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "racoon", "psk.txt")
             build_policy(self.remote.first_ipv4.to_s, self.other.remote.first_ipv4.to_s, self.my, self.other.my)
           else
             throw "ipsec need a remote address"

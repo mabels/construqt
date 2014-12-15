@@ -99,7 +99,7 @@ module Construqt
             return unless iface.address && iface.address.first_ipv6
             writer.lines.up(up(ifname))
             writer.lines.down(down(ifname))
-            host.result.add(self, <<RADV, Construqt::Resources::Rights::ROOT_0644, "etc", "network", "radvd.#{ifname}.conf")
+            host.result.add(self, <<RADV, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::RADVD), "etc", "network", "radvd.#{ifname}.conf")
 interface #{ifname}
 {
         AdvManagedFlag on;
@@ -164,7 +164,6 @@ RADV
           end
 
           def vrrp(host, ifname, iface)
-            binding.pry
             host.result.etc_network_vrrp(iface.name).add_master(up(ifname)).add_backup(down(ifname))
           end
 

@@ -115,6 +115,7 @@ module Construqt
                                                                    "address-families" => "ip",
                                                                    "default-originate" => self.default_originate,
                                                                    "remote-address" => self.other.my.address.first_ipv4,
+                                                                   "use-bfd" => self.cfg.use_bfd.kind_of?(false.class) ? false : true,
                                                                    "tcp-md5-key" => self.cfg.password,
                                                                    "in-filter" => "v4-"+self.filter['in'].name,
                                                                    "out-filter" => "v4-"+self.filter['out'].name)
@@ -124,6 +125,7 @@ module Construqt
                                                                    "remote-as" => self.other.as.num,
                                                                    "address-families" => "ipv6",
                                                                    "remote-address" => self.other.my.address.first_ipv6,
+                                                                   "use-bfd" => self.cfg.use_bfd.kind_of?(false.class) ? false : true,
                                                                    "tcp-md5-key" => self.cfg.password,
                                                                    "in-filter" => "v6-"+self.filter['in'].name,
                                                                    "out-filter" => "v6-"+self.filter['out'].name)
