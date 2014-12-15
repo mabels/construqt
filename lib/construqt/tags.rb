@@ -25,7 +25,7 @@ module Construqt
 
     def self.find(tag, clazz = nil)
       #binding.pry
-      ret = (@tags[tag] || []).select{|o| clazz.nil? || o.kind_of?(clazz) }
+      ret = (@tags[tag] || []).select{|o| clazz.nil? || o.instance_of?(clazz.class) || (clazz.kind_of?(Proc) && clazz.call(o)) }
       Construqt.logger.warn("tag #{tag} #{clazz.inspect} empty result") if ret.empty?
       ret
     end
@@ -53,8 +53,8 @@ module Construqt
           nil
         end
       end.flatten.compact.select do |i|
-        (family==Construqt::Addresses::IPV4 && i.ipv4?) ||
-          (family==Construqt::Addresses::IPV6 && i.ipv6?)
+        (((family==Construqt::Addresses::IPV4||family==IPAddress::IPv4) && i.ipv4?) ||
+         ((family==Construqt::Addresses::IPV6||family==IPAddress::IPv6) && i.ipv6?))
       end)
     end
   end
