@@ -33,6 +33,7 @@ module Construqt
       cfg['clazz'] ||= "device"
       cfg['address'] ||= nil
       cfg['firewalls'] ||= []
+      cfg['firewalls'] = cfg['firewalls'].map{|i| i.kind_of?(String) ? Construqt::Firewalls.find(i) : i }
       (dev_name, iface) = Construqt::Tags.add(dev_name) { |name| host.flavour.create_interface(name, cfg) }
       #    iface.clazz.attach = iface
       host.interfaces[dev_name] = iface

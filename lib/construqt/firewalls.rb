@@ -9,6 +9,10 @@ module Construqt
       DROP = :DROP
     end
 
+    module ICMP
+      PingRequest = :ping_request
+    end
+
     class Firewall
       def initialize(name)
         @name = name
@@ -181,8 +185,12 @@ module Construqt
           chainable_attr :to_my_net, true, false
           chainable_attr :from_route, true, false
           chainable_attr :connection
+          chainable_attr :icmp
+          chainable_attr :esp
+          chainable_attr :ah
           chainable_attr :tcp
           chainable_attr :udp
+          chainable_attr :type, nil
           chainable_attr_value :log, nil
           chainable_attr_value :from_net, nil
           chainable_attr_value :to_net, nil
