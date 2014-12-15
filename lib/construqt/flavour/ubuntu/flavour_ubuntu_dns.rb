@@ -70,18 +70,18 @@ OUT
           include = {}
           forward.each do |domain, lines|
             include[domain] = "/etc/bind/tables/#{domain}.forward"
-            host.result.add(self, write_header(host.region, domain), Construqt::Resources::Rights::ROOT_0644, "etc/bind/tables", "#{domain}.forward")
-            host.result.add(self, lines.sort.join("\n"), Construqt::Resources::Rights::ROOT_0644, "etc/bind/tables", "#{domain}.forward")
+            host.result.add(self, write_header(host.region, domain), Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DNS), "etc/bind/tables", "#{domain}.forward")
+            host.result.add(self, lines.sort.join("\n"), Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DNS), "etc/bind/tables", "#{domain}.forward")
           end
 
           reverse.each do |domain, lines|
             include[domain.rev_domains.first] = "/etc/bind/tables/#{domain}.reverse"
-            host.result.add(self, write_header(host.region, domain.rev_domains.first), Construqt::Resources::Rights::ROOT_0644, "etc/bind/tables", "#{domain.to_s}.reverse")
-            host.result.add(self, lines.values.sort.join("\n"), Construqt::Resources::Rights::ROOT_0644, "etc/bind/tables", "#{domain.to_s}.reverse")
+            host.result.add(self, write_header(host.region, domain.rev_domains.first), Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DNS), "etc/bind/tables", "#{domain.to_s}.reverse")
+            host.result.add(self, lines.values.sort.join("\n"), Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DNS), "etc/bind/tables", "#{domain.to_s}.reverse")
           end
 
           include.each do |domain,path|
-            host.result.add(self, <<DNS, Construqt::Resources::Rights::ROOT_0644, "etc/bind/named.conf.local")
+            host.result.add(self, <<DNS, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DNS), "etc/bind/named.conf.local")
 zone "#{domain.to_s}" {
         type master;
         file "#{path}";

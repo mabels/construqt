@@ -8,7 +8,7 @@ module Construqt
         end
 
         def self.header(host)
-          host.result.add(self, <<GLOBAL, Construqt::Resources::Rights::ROOT_0644, "etc", "keepalived", "keepalived.conf")
+          host.result.add(self, <<GLOBAL, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::VRRP), "etc", "keepalived", "keepalived.conf")
 global_defs {
   lvs_id #{host.name}
 }
@@ -41,9 +41,9 @@ GLOBAL
             ret << "    #{ip.to_string} dev #{my_iface.name}"
           end
           iface.address.routes.each do |rt|
-            binding.pry
-            iface.services << RouteService.new("#{iface.name}-#{rt.dst.to_string}-#{rt.via}", rt)
-#  region.services.add(Construqt::Services::DhcpV6Relay.new("V8-DHCPV6RELAY").add_server("2a04:2f80:a:131::d6c9%v131"))
+            key = "#{iface.name}-#{rt.dst.to_string}-#{rt.via}"
+            next if iface.services.find{ |i| i.name == key }
+            iface.services << RouteService.new(key, rt)
           end
 
 
@@ -59,7 +59,7 @@ GLOBAL
           end
 
           ret << "}"
-          host.result.add(self, ret.join("\n"), Construqt::Resources::Rights::ROOT_0644, "etc", "keepalived", "keepalived.conf")
+          host.result.add(self, ret.join("\n"), Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::VRRP), "etc", "keepalived", "keepalived.conf")
         end
       end
     end

@@ -39,7 +39,8 @@ module Construqt
             return
           end
 
-          writer.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_DHCP) if iface.address.dhcpv4?
+          writer.header.dhcpv4 if iface.address.dhcpv4?
+          writer.header.dhcpv6 if iface.address.dhcpv6?
           writer.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_LOOPBACK) if iface.address.loopback?
           lines.add(iface.flavour) if iface.flavour
           iface.address.ips.each do |ip|
@@ -142,7 +143,7 @@ BOND
         end
 
         def build_config(host, unused)
-          host.result.add(self, <<SCTL, Construqt::Resources::Rights::ROOT_0644, "etc", "sysctl.conf")
+          host.result.add(self, <<SCTL, Construqt::Resources::Rights.root_0644, "etc", "sysctl.conf")
 net.ipv4.conf.all.forwarding = 1
 net.ipv4.conf.default.forwarding = 1
 net.ipv4.vs.pmtu_disc=1
@@ -151,7 +152,7 @@ net.ipv6.conf.all.autoconf=0
 net.ipv6.conf.all.accept_ra=0
 net.ipv6.conf.all.forwarding=1
 SCTL
-          host.result.add(self, <<HOSTS, Construqt::Resources::Rights::ROOT_0644, "etc", "hosts")
+          host.result.add(self, <<HOSTS, Construqt::Resources::Rights.root_0644, "etc", "hosts")
 127.0.0.1       localhost
 ::1             localhost ip6-localhost ip6-loopback
 fe00::0         ip6-localnet
@@ -161,12 +162,12 @@ ff02::2         ip6-allrouters
 
 127.0.1.1       #{host.name} #{host.region.network.fqdn(host.name)}
 HOSTS
-          host.result.add(self, host.name, Construqt::Resources::Rights::ROOT_0644, "etc", "hostname")
-          host.result.add(self, "# WTF resolvconf", Construqt::Resources::Rights::ROOT_0644, "etc", "resolvconf", "resolv.conf.d", "orignal");
+          host.result.add(self, host.name, Construqt::Resources::Rights.root_0644, "etc", "hostname")
+          host.result.add(self, "# WTF resolvconf", Construqt::Resources::Rights.root_0644, "etc", "resolvconf", "resolv.conf.d", "orignal");
           host.result.add(self,
                           (host.region.network.dns_resolver.nameservers.ips.map{|i| "nameserver #{i.to_s}" }+
                            ["search #{host.region.network.dns_resolver.search.join(' ')}"]).join("\n"),
-                          Construqt::Resources::Rights::ROOT_0644, "etc", "resolv.conf")
+                          Construqt::Resources::Rights.root_0644, "etc", "resolv.conf")
           #binding.pry
           Dns.build_config(host) if host.delegate.dns_server
           akeys = []
@@ -178,11 +179,11 @@ HOSTS
             skeys << "#{u.shadow}" if u.shadow
           end
 
-          host.result.add(self, skeys.join(), Construqt::Resources::Rights::ROOT_0644, "etc", "shadow.merge")
-          host.result.add(self, akeys.join(), Construqt::Resources::Rights::ROOT_0644, "root", ".ssh", "authorized_keys")
-          host.result.add(self, ykeys.join("\n"), Construqt::Resources::Rights::ROOT_0644, "etc", "yubikey_mappings")
+          #host.result.add(self, skeys.join(), Construqt::Resources::Rights.root_0644, "etc", "shadow.merge")
+          host.result.add(self, akeys.join(), Construqt::Resources::Rights.root_0644, "root", ".ssh", "authorized_keys")
+          host.result.add(self, ykeys.join("\n"), Construqt::Resources::Rights.root_0644, "etc", "yubikey_mappings")
 
-          host.result.add(self, <<SSH , Construqt::Resources::Rights::ROOT_0644, "etc", "ssh", "sshd_config")
+          host.result.add(self, <<SSH , Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::SSH), "etc", "ssh", "sshd_config")
 # Package generated configuration file
 # See the sshd_config(5) manpage for details
 
@@ -272,7 +273,7 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 # and ChallengeResponseAuthentication to 'no'.
 UsePAM yes
 SSH
-          host.result.add(self, <<PAM , Construqt::Resources::Rights::ROOT_0644, "etc", "pam.d", "openvpn")
+          host.result.add(self, <<PAM , Construqt::Resources::Rights::root_0644, "etc", "pam.d", "openvpn")
           #{host.delegate.yubikey ? '':'# '}auth required pam_yubico.so id=16 authfile=/etc/yubikey_mappings
 auth [success=1 default=ignore] pam_unix.so nullok_secure try_first_pass
 auth requisite pam_deny.so
