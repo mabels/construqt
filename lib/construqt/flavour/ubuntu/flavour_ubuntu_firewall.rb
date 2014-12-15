@@ -312,7 +312,7 @@ module Construqt
           # fe80::/64
           # ff02::/16 dest
           i_to_from = ToFrom.new.bind_interface(ifname, iface, rule).input_only
-          i_rule = rule.clone
+          i_rule = rule.clone.from_my_net
           i_to_from.push_begin_to("-p icmpv6")
           i_rule.to_net_addr("fe80::/64")
           i_rule.from_net_addr("ff02::/16")
@@ -320,7 +320,7 @@ module Construqt
           write_table("ip6tables", i_rule, i_to_from.factory(writer.ipv6.input))
 
           i_to_from = ToFrom.new.bind_interface(ifname, iface, rule).input_only
-          i_rule = rule.clone
+          i_rule = rule.clone.from_my_net
           i_to_from.push_begin_to("-p icmpv6")
           i_rule.to_net_addr("fe80::/64")
           i_rule.from_net_addr("fe80::/64")
@@ -329,15 +329,15 @@ module Construqt
 
           o_to_from = ToFrom.new.bind_interface(ifname, iface, rule).output_only
           o_to_from.push_begin_from("-p icmpv6")
-          o_rule = rule.clone
+          o_rule = rule.clone.from_my_net
           o_rule.from_net_addr("fe80::/64")
           o_rule.to_net_addr("ff02::/16")
-          o_to_from.push_middle_from("--icmpv6-type 136")
+          o_to_from.push_middle_from("--icmpv6-type 135")
           write_table("ip6tables", o_rule, o_to_from.factory(writer.ipv6.output))
 
           o_to_from = ToFrom.new.bind_interface(ifname, iface, rule).output_only
           o_to_from.push_begin_from("-p icmpv6")
-          o_rule = rule.clone
+          o_rule = rule.clone.from_my_net
           o_rule.from_net_addr("fe80::/64")
           o_rule.to_net_addr("fe80::/64")
           o_to_from.push_middle_from("--icmpv6-type 136")
