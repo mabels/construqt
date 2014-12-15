@@ -151,15 +151,17 @@ module Construqt
           else
             to_list = Construqt::Tags.ips_net(rule.get_to_net, family)
           end
-          if rule.get_to_net_addr
-            adr = IPAddress.parse(rule.get_to_net_addr)
-            to_list << adr if adr.ipv6? && family == Construqt::Addresses::IPV6
-            to_list << adr if adr.ipv4? && family == Construqt::Addresses::IPV4
+          unless rule.get_to_net_addr.empty?
+            addrs = rule.get_to_net_addr.map { |i| IPAddress.parse(i) }.select { |i|
+              (i.ipv6? && family == Construqt::Addresses::IPV6) || (i.ipv4? && family == Construqt::Addresses::IPV4)
+            }
+            to_list = IPAddress.summarize(to_list + addrs)
           end
-          if rule.get_from_net_addr
-            adr = IPAddress.parse(rule.get_from_net_addr)
-            from_list << adr if adr.ipv6? && family == Construqt::Addresses::IPV6
-            from_list << adr if adr.ipv4? && family == Construqt::Addresses::IPV4
+          unless rule.get_from_net_addr.empty?
+            addrs = rule.get_from_net_addr.map { |i| IPAddress.parse(i) }.select { |i|
+              (i.ipv6? && family == Construqt::Addresses::IPV6) || (i.ipv4? && family == Construqt::Addresses::IPV4)
+            }
+            from_list = IPAddress.summarize(from_list + addrs)
           end
           #puts ">>>>>#{from_list.inspect}"
           #puts ">>>>>#{state.inspect} end_to:#{state.end_to}:#{state.end_from}:#{state.middle_to}#{state.middle_from}"
@@ -331,7 +333,7 @@ module Construqt
           o_to_from.push_begin_from("-p icmpv6")
           o_rule = rule.clone.from_my_net.to_my_net
           o_rule.from_net_addr("fe80::/64")
-          o_rule.to_net_addr("ff02::/16")
+          o_rule.to_net_addr("ff02::/16", "fe80::/64")
           o_to_from.push_middle_from("--icmpv6-type 135")
           write_table("ip6tables", o_rule, o_to_from.factory(writer.ipv6.output))
 
