@@ -317,7 +317,7 @@ module Construqt
           i_rule = rule.clone.from_my_net.to_my_net
           i_to_from.push_begin_to("-p icmpv6")
           i_rule.to_net_addr("fe80::/64")
-          i_rule.from_net_addr("ff02::/16")
+          i_rule.from_net_addr("ff02::/16", "fe80::/64")
           i_to_from.push_middle_to("--icmpv6-type 135")
           write_table("ip6tables", i_rule, i_to_from.factory(writer.ipv6.input))
 
