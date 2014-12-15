@@ -328,7 +328,7 @@ module Construqt
           write_table("ip6tables", i_rule, i_to_from.factory(writer.ipv6.input))
 
           o_to_from = ToFrom.new.bind_interface(ifname, iface, rule).output_only
-          o_to_from.push_begin_to("-p icmpv6")
+          o_to_from.push_begin_from("-p icmpv6")
           o_rule = rule.clone
           o_rule.from_net_addr("fe80::/64")
           o_rule.to_net_addr("ff02::/16")
@@ -336,7 +336,7 @@ module Construqt
           write_table("ip6tables", o_rule, o_to_from.factory(writer.ipv6.output))
 
           o_to_from = ToFrom.new.bind_interface(ifname, iface, rule).output_only
-          o_to_from.push_begin_to("-p icmpv6")
+          o_to_from.push_begin_from("-p icmpv6")
           o_rule = rule.clone
           o_rule.from_net_addr("fe80::/64")
           o_rule.to_net_addr("fe80::/64")
