@@ -578,7 +578,7 @@ VRRP
             "mtr-tiny" => true,
             "openssl" => true,
           }) do |r, block|
-            r.merge(component_to_packages(block.right[:component]))
+            r.merge(component_to_packages(block.right.component))
           end.keys
           out = [<<BASH]
 #!/bin/bash
