@@ -75,6 +75,7 @@ module Construqt
 
         class RawEntry
           include Util::Chainable
+          include FromToNetAddr
           chainable_attr :prerouting, true, false, lambda{|i| @output = false; input_only(true); output_only(false) }
           chainable_attr :input_only, true
           chainable_attr :output, true, false, lambda {|i| @prerouting = false; input_only(false); output_only(true) }
