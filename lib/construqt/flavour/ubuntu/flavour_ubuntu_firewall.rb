@@ -149,7 +149,11 @@ module Construqt
             end
             to_list = IPAddress.summarize(networks)
           else
-            to_list = Construqt::Tags.ips_net(rule.get_to_net, family)
+            if rule.get_to_host
+              to_list = Construqt::Tags.ips_hosts(rule.get_to_host, family)
+            else
+              to_list = Construqt::Tags.ips_net(rule.get_to_net, family)
+            end
           end
           unless rule.get_to_net_addr.empty?
             addrs = rule.get_to_net_addr.map { |i| IPAddress.parse(i) }.select { |i|
