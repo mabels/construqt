@@ -298,7 +298,7 @@ PAM
 
         def build_config(host, gre)
           gre_delegate = gre.delegate
-          #      binding.pry
+          binding.pry
           cfg = nil
           if gre_delegate.local.first_ipv6
             cfg = OpenStruct.new(:prefix=>6, :my=>gre_delegate.local.first_ipv6, :other => gre_delegate.remote.first_ipv6, :mode => "ip6gre")
@@ -319,6 +319,8 @@ PAM
           writer = host.result.etc_network_interfaces.get(gre_delegate)
           writer.skip_interfaces.header.interface_name(iname)
           writer.lines.up("ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}")
+          #writer.lines.up("ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}")
+          #/sbin/ip -6 tunnel add gt4nactr01 mode ip4ip6 remote 2a04:2f80:f:f003::2 local 2a04:2f80:f:f003::1
           #      writer.lines.up("ip -#{cfg.prefix} link set dev #{iname} up")
           Device.build_config(host, gre)
           #      Device.add_address(host, iname, iface, writer.lines, writer)
