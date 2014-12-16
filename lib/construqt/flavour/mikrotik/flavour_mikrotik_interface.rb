@@ -62,10 +62,37 @@ module Construqt
           end
         end
 
+        def self.render_firewall_mangle(host, iface)
+          cfg = {
+            "in-interface" => iface.name,
+            "new-routing-mark" => iface.routing_table,
+            "chain" => "prerouting",
+            "action" => "mark-routing"
+          }
+          cfg['comment'] = "tag interface #{cfg['in-interface']} with routing-mark #{cfg['new-routing-mark']} CONSTRUQT"
+
+          default = {
+            "chain" => Schema.identifier.required,
+            "action" => Schema.identifier.required,
+            "new-routing-mark" => Schema.identifier.required,
+            "in-interface" => Schema.identifier.required,
+            "comment" => Schema.string.required.key(1),
+          }
+
+          host.result.render_mikrotik(default, cfg, "ipv6", "firewall", "mangle")
+          host.result.render_mikrotik(default, cfg, "ip", "firewall", "mangle")
+        end
+
+
         def self.build_config(host, iface)
+          if iface.routing_table
+            render_firewall_mangle(host, iface)
+          end
+
           #name = File.join(host.name, "interface", "device")
           #ret = []
           #ret += self.clazz.build_config(host, iface||self)
+
           if !(iface.address.nil? || iface.address.ips.empty?)
             iface.address.ips.each do |ip|
               render_ip(host, iface, ip)

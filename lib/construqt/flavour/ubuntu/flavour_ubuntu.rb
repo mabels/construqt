@@ -298,7 +298,6 @@ PAM
 
         def build_config(host, gre)
           gre_delegate = gre.delegate
-          binding.pry
           cfg = nil
           if gre_delegate.local.first_ipv6
             cfg = OpenStruct.new(:prefix=>6, :my=>gre_delegate.local.first_ipv6, :other => gre_delegate.remote.first_ipv6, :mode => "ip6gre")
