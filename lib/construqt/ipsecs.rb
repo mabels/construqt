@@ -34,6 +34,7 @@ module Construqt
       add_connection(cfg, 'left', 'right', Util.add_gre_prefix(cfg['right']['host'].name))
       add_connection(cfg, 'right', 'left', Util.add_gre_prefix(cfg['left'].host.name))
       cfg['name'] = name
+      cfg['transport_family'] ||= Construqt::Addresses::IPV6
       cfg = @ipsecs[name] = Ipsec.new(cfg)
       cfg.left.other = cfg.right
       cfg.left.cfg = cfg
