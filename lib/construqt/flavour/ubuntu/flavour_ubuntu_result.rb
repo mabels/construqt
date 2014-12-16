@@ -490,6 +490,10 @@ VRRP
           @host
         end
 
+        def add_component(component)
+          @result[component] ||= ArrayWithRight.new(Construqt::Resources::Rights.root_0644(component))
+        end
+
         def empty?(name)
           not @result[name]
         end
@@ -552,7 +556,8 @@ VRRP
             cp::OPENVPN => { "openvpn" => true },
             cp::DNS => { "bind9" => true },
             cp::RADVD => { "radvd" => true },
-            cp::CONNTRACKD => { "conntrackd" => true, "conntrack" => true }
+            cp::CONNTRACKD => { "conntrackd" => true, "conntrack" => true },
+            cp::DHCPRELAY => { "isc-dhcp-relay" => true }
           }[component]
           throw "Component with name not found #{component}" unless ret
           ret

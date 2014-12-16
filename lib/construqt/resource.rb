@@ -14,6 +14,7 @@ module Construqt
       DNS = :dns
       RADVD = :radvd
       CONNTRACKD = :conntrackd
+      DHCPRELAY = :dhcprelay
     end
     module Rights
       def self.root_0600(component = Component::UNREF)

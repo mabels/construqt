@@ -9,6 +9,30 @@ module Construqt
       DROP = :DROP
     end
 
+    module ICMP
+      PingRequest = :ping_request
+    end
+
+    module FromToNetAddr
+      def from_net_addr(*adr)
+        @from_net_addr ||= []
+        @from_net_addr += adr
+        self
+      end
+      def get_from_net_addr
+        @from_net_addr || []
+      end
+
+      def to_net_addr(*adr)
+        @to_net_addr ||= []
+        @to_net_addr += adr
+        self
+      end
+      def get_to_net_addr
+        @to_net_addr || []
+      end
+    end
+
     class Firewall
       def initialize(name)
         @name = name
@@ -108,6 +132,7 @@ module Construqt
 
         class NatEntry
           include Util::Chainable
+          include FromToNetAddr
           chainable_attr :prerouting, true, false, lambda{|i| @postrouting = false; input_only(true); output_only(false) }
           chainable_attr :input_only
           chainable_attr :postrouting, true, false, lambda{|i| @prerouting = false; input_only(false); output_only(true) }
@@ -173,6 +198,8 @@ module Construqt
 
         class ForwardEntry
           include Util::Chainable
+          include FromToNetAddr
+
           chainable_attr :interface
           chainable_attr :connection
           chainable_attr :input_only, true, true
@@ -181,8 +208,13 @@ module Construqt
           chainable_attr :to_my_net, true, false
           chainable_attr :from_route, true, false
           chainable_attr :connection
+          chainable_attr :link_local
+          chainable_attr :icmp
+          chainable_attr :esp
+          chainable_attr :ah
           chainable_attr :tcp
           chainable_attr :udp
+          chainable_attr :type, nil
           chainable_attr_value :log, nil
           chainable_attr_value :from_net, nil
           chainable_attr_value :to_net, nil
