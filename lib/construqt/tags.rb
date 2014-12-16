@@ -30,24 +30,22 @@ module Construqt
       ret
     end
 
-    def self.ips_net(tag, family)
-      #ip_module = family==Construqt::Addresses::IPV4 ? IPAddress::IPv4: IPAddress::IPv6
-      IPAddress.summarize((@tags[tag]||[]).map do |obj|
+    def self.ips_adr(tag, family)
+      (@tags[tag]||[]).map do |obj|
         if obj.kind_of?(IPAddress) || obj.kind_of?(Construqt::Addresses::CqIpAddress)
           obj
         elsif obj.respond_to? :ips
           obj.ips
         elsif obj.kind_of?(Construqt::Flavour::HostDelegate)
-          #binding.pry
           res = obj.interfaces.values.map do |i|
             i.delegate.address.ips.map do |a|
-              prefix = a.ipv4? ? 32 : 128
-              ret = IPAddress.parse("#{a.to_s}/#{prefix}")
-              puts "ADR=#{tag} #{ret.to_string} #{a.to_s}"
-              ret
+              #prefix = a.ipv4? ? 32 : 128
+              #ret = IPAddress.parse("#{a.to_s}/#{prefix}")
+              #ret
+              a
             end
-          end.flatten
-          puts "HOST=>#{tag} #{res.map{|i| i.to_string }}"
+          end
+          #puts "HOST=>#{tag} #{res.map{|i| i.to_string }}"
           res
         else
           nil
@@ -55,7 +53,15 @@ module Construqt
       end.flatten.compact.select do |i|
         (((family==Construqt::Addresses::IPV4||family==IPAddress::IPv4) && i.ipv4?) ||
          ((family==Construqt::Addresses::IPV6||family==IPAddress::IPv6) && i.ipv6?))
-      end)
+      end
+    end
+
+    def self.ips_hosts(tag, family)
+      IPAddress.summarize(ips_adr(tag, family).map{|i| IPAddress.parse("#{i.to_s}/#{i.ipv4? ? 32 : 128}") })
+    end
+
+    def self.ips_net(tag, family)
+      IPAddress.summarize(ips_adr(tag, family).map{|i| i.network })
     end
   end
 end
