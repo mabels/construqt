@@ -186,15 +186,16 @@ module Construqt
             else
               ret = []
               [OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV6),
-                              :via => Construqt::Tags.ips_net(i.via_tag, Construqt::Addresses::IPV6)),
+                              :vias => Construqt::Tags.ips_hosts(i.via_tag, Construqt::Addresses::IPV6)),
                OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV4),
-                              :via => Construqt::Tags.ips_net(i.via_tag, Construqt::Addresses::IPV4))].each do |blocks|
-                 next unless blocks.via
-                 next unless blocks.via.first
+                              :vias => Construqt::Tags.ips_hosts(i.via_tag, Construqt::Addresses::IPV4))].each do |blocks|
+                 next unless blocks.vias
                  next unless blocks.dsts
                  next if blocks.dsts.empty?
-                 blocks.dsts.each do |dst|
-                   ret << build_route(dst.to_string, blocks.via.first.to_s, i.options)
+                 blocks.vias.each do |via|
+                   blocks.dsts.each do |dst|
+                     ret << build_route(dst.to_string, via.to_s, i.options)
+                   end
                  end
               end
               ret
