@@ -43,12 +43,16 @@ module Construqt
           end
 
           cfg['distance'] = rt.metric if rt.metric
+
+          cfg['routing-mark'] = rt.routing_table if rt.routing_table
+
           default = {
             "dst-address" => Schema.network.required.key(0),
             "gateway" => Schema.address,
             "type" => Schema.identifier,
             "distance" => Schema.int,
-            "comment" => Schema.string.required.key(1)
+            "comment" => Schema.string.required.key(1),
+            "routing-mark" => Schema.identifier
           }
           cfg['comment'] = "#{cfg['dst-address']} via #{cfg['gateway']} CONSTRUQT"
           if rt.dst.ipv6?
