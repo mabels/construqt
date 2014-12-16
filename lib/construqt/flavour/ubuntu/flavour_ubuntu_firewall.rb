@@ -151,6 +151,18 @@ module Construqt
           else
             to_list = Construqt::Tags.ips_net(rule.get_to_net, family)
           end
+          unless rule.get_to_net_addr.empty?
+            addrs = rule.get_to_net_addr.map { |i| IPAddress.parse(i) }.select { |i|
+              (i.ipv6? && family == Construqt::Addresses::IPV6) || (i.ipv4? && family == Construqt::Addresses::IPV4)
+            }
+            to_list = IPAddress.summarize(to_list + addrs)
+          end
+          unless rule.get_from_net_addr.empty?
+            addrs = rule.get_from_net_addr.map { |i| IPAddress.parse(i) }.select { |i|
+              (i.ipv6? && family == Construqt::Addresses::IPV6) || (i.ipv4? && family == Construqt::Addresses::IPV4)
+            }
+            from_list = IPAddress.summarize(from_list + addrs)
+          end
           #puts ">>>>>#{from_list.inspect}"
           #puts ">>>>>#{state.inspect} end_to:#{state.end_to}:#{state.end_from}:#{state.middle_to}#{state.middle_from}"
           action_i = action_o = rule.get_action
@@ -232,14 +244,26 @@ module Construqt
 
         def self.protocol_loop(rule)
           protocol_loop = []
-          if !rule.tcp? && !rule.udp?
-            protocol_loop << ''
-          else
-            protocol_loop << '-p tcp' if rule.tcp?
-            protocol_loop << '-p udp' if rule.udp?
+          {
+            'tcp' => rule.tcp?,
+            'udp' => rule.udp?,
+            'esp' => rule.esp?,
+            'ah' => rule.ah?,
+            'icmp' => rule.icmp?
+          }.each do |proto, enabled|
+            protocol_loop << "-p #{proto}" if enabled
           end
-
+          protocol_loop = [''] if protocol_loop.empty?
           protocol_loop
+        end
+
+        def self.icmp_type(family, type)
+          {
+            Construqt::Firewalls::ICMP::PingRequest => {
+                :v4 => "-m icmp --icmp-type 8/0",
+                :v6 => "--icmpv6-type 128"
+            }
+          }[type][family]
         end
 
         def self.write_forward(fw, forward, ifname, iface, writer)
@@ -255,23 +279,72 @@ module Construqt
             end
 
             protocol_loop(rule).each do |protocol|
-              to_from = ToFrom.new.bind_interface(ifname, iface, rule).assign_in_out(rule)
-              to_from.push_begin_to(protocol)
-              to_from.push_begin_from(protocol)
-              if rule.get_ports && !rule.get_ports.empty?
-                to_from.push_middle_from("-m multiport --dports #{rule.get_ports.join(",")}")
-                to_from.push_middle_to("-m multiport --sports #{rule.get_ports.join(",")}")
-              end
+              {:v4 => { :enabled => fw.ipv4?, :table => "iptables", :writer => writer.ipv4.forward },
+               :v6 => { :enabled => fw.ipv6?, :table => "ip6tables", :writer => writer.ipv6.forward }}.each do |family, cfg|
+                next unless cfg[:enabled]
+                to_from = ToFrom.new.bind_interface(ifname, iface, rule).assign_in_out(rule)
+                if protocol == "-p icmp" && family == :v6
+                  my_protocol = "-p icmpv6"
+                else
+                  my_protocol = protocol
+                end
+                to_from.push_begin_to(my_protocol)
+                to_from.push_begin_from(my_protocol)
 
-              if rule.connection?
-                to_from.push_middle_from("-m state --state NEW,ESTABLISHED")
-                to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
-              end
+                if rule.get_ports && !rule.get_ports.empty?
+                  to_from.push_middle_from("-m multiport --dports #{rule.get_ports.join(",")}")
+                  to_from.push_middle_to("-m multiport --sports #{rule.get_ports.join(",")}")
+                end
+                if rule.icmp? && rule.get_type
+                  to_from.push_middle_from(icmp_type(family, rule.get_type))
+                end
 
-              fw.ipv4? && write_table("iptables", rule, to_from.factory(writer.ipv4.forward))
-              fw.ipv6? && write_table("ip6tables", rule, to_from.factory(writer.ipv6.forward))
+                if rule.connection?
+                  to_from.push_middle_from("-m state --state NEW,ESTABLISHED")
+                  to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
+                end
+                write_table(cfg[:table], rule, to_from.factory(cfg[:writer]))
+              end
             end
           end
+        end
+
+        def self.create_link_local(fw, ifname, iface, rule, writer)
+          return unless fw.ipv6?
+          # fe80::/64
+          # ff02::/16 dest
+          i_to_from = ToFrom.new.bind_interface(ifname, iface, rule).input_only
+          i_rule = rule.clone.from_my_net.to_my_net
+          i_to_from.push_begin_to("-p icmpv6")
+          i_rule.to_net_addr("fe80::/64")
+          i_rule.from_net_addr("ff02::/16", "fe80::/64")
+          i_to_from.push_middle_to("--icmpv6-type 135")
+          write_table("ip6tables", i_rule, i_to_from.factory(writer.ipv6.input))
+
+          i_to_from = ToFrom.new.bind_interface(ifname, iface, rule).input_only
+          i_rule = rule.clone.from_my_net.to_my_net
+          i_to_from.push_begin_to("-p icmpv6")
+          i_rule.to_net_addr("fe80::/64")
+          i_rule.from_net_addr("fe80::/64")
+          i_to_from.push_middle_to("--icmpv6-type 136")
+          write_table("ip6tables", i_rule, i_to_from.factory(writer.ipv6.input))
+
+          o_to_from = ToFrom.new.bind_interface(ifname, iface, rule).output_only
+          o_to_from.push_begin_from("-p icmpv6")
+          o_rule = rule.clone.from_my_net.to_my_net
+          o_rule.from_net_addr("fe80::/64")
+          o_rule.to_net_addr("ff02::/16", "fe80::/64")
+          o_to_from.push_middle_from("--icmpv6-type 135")
+          write_table("ip6tables", o_rule, o_to_from.factory(writer.ipv6.output))
+
+          #binding.pry
+          o_to_from = ToFrom.new.bind_interface(ifname, iface, rule).output_only
+          o_to_from.push_begin_from("-p icmpv6")
+          o_rule = rule.clone.from_my_net.to_my_net
+          o_rule.from_net_addr("fe80::/64")
+          o_rule.to_net_addr("fe80::/64")
+          o_to_from.push_middle_from("--icmpv6-type 136")
+          write_table("ip6tables", o_rule, o_to_from.factory(writer.ipv6.output))
         end
 
         def self.write_host(fw, host, ifname, iface, writer)
@@ -287,32 +360,45 @@ module Construqt
               fw.ipv6? && write_table("ip6tables", nflog_rule, l_in_to_from.factory(writer.ipv6.input))
               fw.ipv6? && write_table("ip6tables", nflog_rule, l_out_to_from.factory(writer.ipv6.output))
             end
+            next create_link_local(fw, ifname, iface, rule, writer) if rule.link_local?
 
             protocol_loop(rule).each do |protocol|
               [{
-                :from_to => ToFrom.new.bind_interface(ifname, iface, rule).input_only,
+                :from_to => lambda { ToFrom.new.bind_interface(ifname, iface, rule).input_only },
                 :writer4 => !rule.from_is_inbound? ? writer.ipv4.input : writer.ipv4.output,
                 :writer6 => !rule.from_is_inbound? ? writer.ipv6.input : writer.ipv6.output
               },{
-                :from_to => ToFrom.new.bind_interface(ifname, iface, rule).output_only,
+                :from_to => lambda { ToFrom.new.bind_interface(ifname, iface, rule).output_only },
                 :writer4 => rule.from_is_inbound? ? writer.ipv4.input : writer.ipv4.output,
                 :writer6 => rule.from_is_inbound? ? writer.ipv6.input : writer.ipv6.output
               }].each do |to_from_writer|
-                to_from = to_from_writer[:from_to]
-                to_from.push_begin_to(protocol)
-                to_from.push_begin_from(protocol)
-                if rule.get_ports && !rule.get_ports.empty?
-                  to_from.push_middle_from("-m multiport --dports #{rule.get_ports.join(",")}")
-                  to_from.push_middle_to("-m multiport --sports #{rule.get_ports.join(",")}")
-                end
+                {:v4 => { :enabled => fw.ipv4?, :table => "iptables", :writer => to_from_writer[:writer4]},
+                 :v6 => { :enabled => fw.ipv6?, :table => "ip6tables", :writer => to_from_writer[:writer6] }}.each do |family, cfg|
+                  to_from = to_from_writer[:from_to].call
+                  next unless cfg[:enabled]
 
-                if rule.connection?
-                  to_from.push_middle_from("-m state --state NEW,ESTABLISHED")
-                  to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
-                end
 
-                fw.ipv4? && write_table("iptables", rule, to_from.factory(to_from_writer[:writer4]))
-                fw.ipv6? && write_table("ip6tables", rule, to_from.factory(to_from_writer[:writer6]))
+
+                  if protocol == "-p icmp" && family == :v6
+                    my_protocol = "-p icmpv6"
+                  else
+                    my_protocol = protocol
+                  end
+                  to_from.push_begin_to(my_protocol)
+                  to_from.push_begin_from(my_protocol)
+                  if rule.get_ports && !rule.get_ports.empty?
+                    to_from.push_middle_from("-m multiport --dports #{rule.get_ports.join(",")}")
+                    to_from.push_middle_to("-m multiport --sports #{rule.get_ports.join(",")}")
+                  end
+                  if rule.icmp? && rule.get_type
+                    to_from.push_middle_from(icmp_type(family, rule.get_type))
+                  end
+                  if rule.connection?
+                    to_from.push_middle_from("-m state --state NEW,ESTABLISHED")
+                    to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
+                  end
+                  write_table(cfg[:table], rule, to_from.factory(cfg[:writer]))
+                end
               end
             end
           end
