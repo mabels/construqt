@@ -99,11 +99,12 @@ RACOON
           host.result.add(self, spdadd, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec-tools.d", "ipsec.conf")
         end
 
-        def build_policy(remote_my, remote_other, my, other)
+        def build_policy(family, remote_my, remote_other, my, other)
           #binding.pry
           my.ips.each do |my_ip|
             other.ips.each do |other_ip|
-              next unless (my_ip.ipv6? && my_ip.ipv6? == other_ip.ipv6?) || (my_ip.ipv4? && my_ip.ipv4? == other_ip.ipv4?)
+              next unless self.cfg.transport_family == Construqt::Addresses::IPV6 && (my_ip.ipv6? && my_ip.ipv6? == other_ip.ipv6?) ||
+                          self.cfg.transport_family == Construqt::Addresses::IPV4 && (my_ip.ipv4? && my_ip.ipv4? == other_ip.ipv4?)
               from_to_ipsec_conf("out", remote_my, remote_other, my_ip, other_ip)
               from_to_sainfo(my_ip, other_ip)
             end
@@ -111,7 +112,8 @@ RACOON
 
           other.ips.each do |other_ip|
             my.ips.each do |my_ip|
-              next unless (my_ip.ipv6? && my_ip.ipv6? == other_ip.ipv6?) || (my_ip.ipv4? && my_ip.ipv4? == other_ip.ipv4?)
+              next unless self.cfg.transport_family == Construqt::Addresses::IPV6 && (my_ip.ipv6? && my_ip.ipv6? == other_ip.ipv6?) ||
+                          self.cfg.transport_family == Construqt::Addresses::IPV4 && (my_ip.ipv4? && my_ip.ipv4? == other_ip.ipv4?)
               from_to_ipsec_conf("in", remote_other, remote_my, other_ip, my_ip)
               from_to_sainfo(other_ip, my_ip)
             end
@@ -127,19 +129,20 @@ RACOON
 
         def build_config(unused, unused2)
           #      build_gre_config()
-          #binding.pry
-          if self.other.remote.first_ipv6
+          if self.cfg.transport_family == Construqt::Addresses::IPV6
+            throw "we need a remote ipv6 address #{self.cfg.name}" unless self.other.remote.first_ipv6
+            throw "we need a local ipv6 address #{self.cfg.name}" unless self.remote.first_ipv6
             build_racoon_config(self.other.remote.first_ipv6.to_s)
             host.result.add(self, psk(self.other.remote.first_ipv6.to_s, cfg),
                             Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "racoon", "psk.txt")
-            build_policy(self.remote.first_ipv6.to_s, self.other.remote.first_ipv6.to_s, self.my, self.other.my)
-          elsif self.other.remote.first_ipv4
+            build_policy(self.cfg.transport_family, self.remote.first_ipv6.to_s, self.other.remote.first_ipv6.to_s, self.my, self.other.my)
+          else
+            throw "we need a remote ipv4 address #{self.cfg.name}" unless self.other.remote.first_ipv4
+            throw "we need a local ipv4 address #{self.cfg.name}" unless self.remote.first_ipv4
             build_racoon_config(self.other.remote.first_ipv4.to_s)
             host.result.add(self, psk(self.other.remote.first_ipv4.to_s, cfg),
                             Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "racoon", "psk.txt")
-            build_policy(self.remote.first_ipv4.to_s, self.other.remote.first_ipv4.to_s, self.my, self.other.my)
-          else
-            throw "ipsec need a remote address"
+            build_policy(self.cfg.transport_family, self.remote.first_ipv4.to_s, self.other.remote.first_ipv4.to_s, self.my, self.other.my)
           end
         end
       end
