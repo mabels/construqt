@@ -84,6 +84,15 @@ module Construqt
           writer.lines.down("ip link set dev #{ifname} down")
           add_address(host, ifname, iface.delegate, writer.lines, writer) #unless iface.address.nil? || iface.address.ips.empty?
           add_services(host, ifname, iface.delegate, writer)
+          host.ipsecs.find do |ipsec|
+            if ipsec.left.remote.interface == iface || ipsec.right.remote.interface == iface
+              writer.lines.up("/etc/init.d/racoon start")
+              writer.lines.down("/etc/init.d/racoon restart")
+              true
+            else
+              false
+            end
+          end
         end
       end
 
@@ -298,7 +307,6 @@ PAM
 
         def build_config(host, gre)
           gre_delegate = gre.delegate
-          binding.pry
           cfg = nil
           if gre_delegate.local.first_ipv6
             cfg = OpenStruct.new(:prefix=>6, :my=>gre_delegate.local.first_ipv6, :other => gre_delegate.remote.first_ipv6, :mode => "ip6gre")
