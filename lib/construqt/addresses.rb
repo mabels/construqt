@@ -132,7 +132,7 @@ module Construqt
       end
 
       def tag(tag)
-        self.tags << tag
+        self.tags += tag.split("#")
         self
       end
 

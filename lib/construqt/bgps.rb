@@ -111,6 +111,7 @@ module Construqt
         cfg = {}.merge(cfg)
         cfg['rule'] = 'accept'
         addr_v_(cfg)
+        throw "we need a network attribute" unless cfg['network']
         @list << cfg if cfg['network']
       end
 
@@ -118,6 +119,7 @@ module Construqt
         cfg = {}.merge(cfg)
         cfg['rule'] = 'reject'
         addr_v_(cfg)
+        throw "we need a network attribute" unless cfg['network']
         @list << cfg if cfg['network']
       end
     end
