@@ -20,10 +20,11 @@ module Construqt
 
     # hier frieht die hoelle zu!!!
     class CqIpAddress
-      attr_reader :ipaddr, :container
-      def initialize(ipaddr, container)
+      attr_reader :ipaddr, :container, :options
+      def initialize(ipaddr, container, options)
         @ipaddr = ipaddr
         @container = container
+        @options = options
       end
 
       def <=>(oth)
@@ -258,7 +259,7 @@ module Construqt
         nil
       end
 
-      def add_ip(ip, region = "")
+      def add_ip(ip, options = {})
         throw "please give a ip #{ip}" if ip.nil?
         if ip
           #puts ">>>>> #{ip} #{ip.class.name}"
@@ -270,7 +271,7 @@ module Construqt
             @loopback = true
           else
             throw "please give a ip #{ip} as string!" unless ip.kind_of?(String)
-            (unused, ip) = self.merge_tag(ip) { |ip| CqIpAddress.new(IPAddress.parse(ip), self) }
+            (unused, ip) = self.merge_tag(ip) { |ip| CqIpAddress.new(IPAddress.parse(ip), self, options) }
             self.ips << ip
           end
         end
@@ -354,10 +355,10 @@ module Construqt
         end
       end
 
-      def build_route(dst, via, option = {})
+      def build_route(dst, via, options = {})
         #puts "DST => "+dst.class.name+":"+dst.to_s
-        (unused, dst) = self.merge_tag(dst) { |dst| CqIpAddress.new(IPAddress.parse(dst), self) }
-        metric = option['metric']
+        (unused, dst) = self.merge_tag(dst) { |dst| CqIpAddress.new(IPAddress.parse(dst), self, options) }
+        metric = options['metric']
         if via == UNREACHABLE
           via = nil
           type = 'unreachable'
@@ -365,7 +366,7 @@ module Construqt
           if via.nil?
             via = nil
           else
-            (unused, via) = self.merge_tag(via) { |via| CqIpAddress.new(IPAddress.parse(via), self) }
+            (unused, via) = self.merge_tag(via) { |via| CqIpAddress.new(IPAddress.parse(via), self, options) }
             throw "different type #{dst} #{via}" unless dst.ipv4? == via.ipv4? && dst.ipv6? == via.ipv6?
           end
 

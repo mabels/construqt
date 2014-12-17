@@ -62,7 +62,16 @@ module Construqt
           end
         end
 
-        def self.render_firewall_mangle(host, iface)
+        def self.checkIpv6Adresses(iface, ip=nil)
+          ips = ip.nil? ? iface.address.ips : [ip]
+          ips.each do |_ip|
+            throw "ipv6 addresses are not supported for firewall mangle action=mark-routing: interface-name=#{iface.name}" if _ip.ipv6?
+          end
+        end
+
+        def self.render_firewall_mangle_in_interface(host, iface)
+          checkIpv6Adresses(iface)
+
           cfg = {
             "in-interface" => iface.name,
             "new-routing-mark" => iface.routing_table,
@@ -79,22 +88,45 @@ module Construqt
             "comment" => Schema.string.required.key(1),
           }
 
-          host.result.render_mikrotik(default, cfg, "ipv6", "firewall", "mangle")
+          host.result.render_mikrotik(default, cfg, "ip", "firewall", "mangle")
+        end
+
+        def self.render_firewall_mangle_src_address(host, iface, ip)
+          checkIpv6Adresses(iface, ip)
+
+          cfg = {
+            "in-interface" => iface.name,
+            "src-address" => ip,
+            "new-routing-mark" => ip.options["routing_table"],
+            "chain" => "prerouting",
+            "action" => "mark-routing"
+          }
+          cfg['comment'] = "tag interface #{cfg['in-interface']} and src-address #{cfg['src-address']} with routing-mark #{cfg['new-routing-mark']} CONSTRUQT"
+
+          default = {
+            "chain" => Schema.identifier.required,
+            "action" => Schema.identifier.required,
+            "new-routing-mark" => Schema.identifier.required,
+            "in-interface" => Schema.identifier.required,
+            "src-address" => Schema.network.required,
+            "comment" => Schema.string.required.key(1),
+          }
+
+
           host.result.render_mikrotik(default, cfg, "ip", "firewall", "mangle")
         end
 
 
         def self.build_config(host, iface)
           if iface.routing_table
-            render_firewall_mangle(host, iface)
+            render_firewall_mangle_in_interface(host, iface)
           end
-
-          #name = File.join(host.name, "interface", "device")
-          #ret = []
-          #ret += self.clazz.build_config(host, iface||self)
 
           if !(iface.address.nil? || iface.address.ips.empty?)
             iface.address.ips.each do |ip|
+              if ip.options["routing_table"]
+                render_firewall_mangle_src_address(host, iface, ip)
+              end
               render_ip(host, iface, ip)
             end
 
