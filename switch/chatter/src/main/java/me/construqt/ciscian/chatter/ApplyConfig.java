@@ -14,8 +14,6 @@ import me.construqt.ciscian.chatter.connectors.ConnectorFactory;
 
 public class ApplyConfig {
 	public static void apply(CLIOptions options) throws Exception {
-		// String user = args[2];
-		// String pass = args[3];
 		Connector connector = ConnectorFactory.createConnector(options.connect,
 				options.user, options.password);
 		ConnectResult connect = connector.connect();
@@ -25,7 +23,7 @@ public class ApplyConfig {
 
 		final SwitchChatter sc = SwitchChatter.create(options.flavour,
 				connect.getInputStream(), connect.getOutputStream(),
-				options.debug);
+				options.debug, false);
 
 		// setup steps
 		sc.enterManagementMode(options.user, options.password);
@@ -41,11 +39,12 @@ public class ApplyConfig {
 			List<String> results = result.get(60, TimeUnit.SECONDS);
 			int errors = 0;
 			for (String line : results) {
-				int errorMessage = line.indexOf("Invalid");
-				if (errorMessage >= 0) {
-					System.err.println(line);
+				String errorMessage = Util
+						.replaceAllTerminalControlCharacters(line);
+				if (!errorMessage.isEmpty()) {
+					System.err.println(errorMessage);
+					errors++;
 				}
-				errors++;
 			}
 			if (errors > 0) {
 				System.exit(1);
@@ -59,4 +58,5 @@ public class ApplyConfig {
 			connector.disconnect();
 		}
 	}
+
 }

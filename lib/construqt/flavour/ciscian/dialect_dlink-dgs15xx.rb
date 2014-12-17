@@ -52,6 +52,10 @@ module Construqt
             "channel-group"
           end
 
+          def always_select_empty_pattern
+            true
+          end
+
           def self.patterns
             ["no channel-group", "channel-group {+channel} mode active"]
           end
@@ -99,6 +103,10 @@ module Construqt
             "ip route"
           end
 
+          def group?
+            false
+          end
+
           def self.find_regex(variable)
             {
               "routedefs" => "(\\S+\\s+\\S+\\s+\\S+)"
@@ -135,7 +143,7 @@ module Construqt
         class Line
           def self.parse_line(line, lines, section, result)
             return false unless ['line '].find{|i| line.to_s.start_with?(i) }
-            section.add(line) do |_section|
+            section.add(line, NestedSection) do |_section|
               while line = lines.shift
                 break if result.dialect.block_end?(line.to_s)
                 result.parse_line(line, lines, _section, result)
@@ -172,20 +180,15 @@ module Construqt
           def add_host(host)
           end
 
-          def add_device(device)
-            @result.add("interface #{expand_device_name(device)}") do |section|
-              section.add("flowcontrol").add("off")
-              section.add("max-rcv-frame-size").add(device.delegate.mtu)
-              section.add("snmp trap").add("link-status")
-              section.add("switchport mode").add("trunk")
-            end
-          end
-
           def clear_interface(line)
             line.to_s.split(/\s+/).map do |i|
               split = /^([^0-9]+)([0-9].*)$/.match(i)
               split ? split[1..-1] : i
             end.flatten.join(' ')
+          end
+
+          def is_virtual?(line)
+            line.start_with?("vlan") || line.include?("port-channel")
           end
 
           def parse_line(line, lines, section, result)
@@ -248,11 +251,7 @@ module Construqt
               @result.add(verb, Ciscian::SingleValueVerb)
             end
 
-            ["line console", "line telnet", "line ssh"].each do |section|
-              @result.add(section) { |_section| _section.add("line") }
-            end
-
-            @result.add("snmp-server name", Ciscian::SingleValueVerb).add(@result.host.name)
+            @result.add("snmp-server name").add(@result.host.name)
             @result.host.interfaces.values.each do |iface|
               next unless iface.delegate.address
               iface.delegate.address.routes.each do |route|
@@ -262,30 +261,33 @@ module Construqt
             end
           end
 
-          def add_device(device)
-            @result.add("interface #{expand_device_name(device)}") do |section|
-              section.add("flowcontrol").add("off")
-              section.add("max-rcv-frame-size").add(device.delegate.mtu)
-              section.add("snmp trap").add("link-status")
+          def add_device(device, bond=false)
+            @result.add("interface #{expand_device_name(device)}", NestedSection) do |section|
               section.add("switchport mode").add("trunk")
+              unless bond
+                section.add("flowcontrol").add("off")
+                section.add("max-rcv-frame-size").add(device.delegate.mtu)
+                section.add("snmp trap").add("link-status")
+              end
             end
           end
 
           def add_bond(bond)
             bond.interfaces.each do |iface|
-              @result.add("interface #{expand_device_name(iface)}") do |section|
+              @result.add("interface #{expand_device_name(iface)}", NestedSection) do |section|
                 section.add("channel-group", ChannelGroupVerb).add({"{+channel}" => [bond.name[2..-1]]})
               end
             end
+            self.add_device(bond, true)
           end
 
           def add_vlan(vlan)
-            @result.add("vlan #{vlan.delegate.vlan_id}") do |section|
+            @result.add("vlan #{vlan.delegate.vlan_id}", NestedSection) do |section|
               next unless vlan.delegate.description && !vlan.delegate.description.empty?
               throw "vlan name too long, max 32 chars" if vlan.delegate.description.length > 32
               section.add("name").add(vlan.delegate.description)
             end
-            @result.add("interface vlan #{vlan.delegate.vlan_id}") do |section|
+            @result.add("interface vlan #{vlan.delegate.vlan_id}", NestedSection) do |section|
               if vlan.delegate.address
                 if vlan.delegate.address.first_ipv4
                   section.add("ip address").add(vlan.delegate.address.first_ipv4.to_string.upcase)
@@ -302,7 +304,7 @@ module Construqt
 
             vlan_id=vlan.delegate.vlan_id
             vlan.interfaces.each do |iface|
-              @result.add("interface #{expand_device_name(iface)}") do |section|
+              @result.add("interface #{expand_device_name(iface)}", NestedSection) do |section|
                 section.add("switchport trunk allowed vlan", Ciscian::RangeVerb).add(vlan_id)
                 unless iface.template.is_tagged?(vlan_id)
                   section.add("switchport trunk native vlan").add(vlan_id)

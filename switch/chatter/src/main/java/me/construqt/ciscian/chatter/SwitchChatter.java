@@ -28,15 +28,26 @@ public abstract class SwitchChatter implements Closeable {
 	protected SwitchChatter() {
 	}
 
+	private static String convertFlavourName(String flavour) {
+		int i = -1;
+		flavour = flavour.substring(0, 1).toUpperCase() + flavour.substring(1);
+		while ((i = flavour.indexOf('-')) >= 0) {
+			flavour = flavour.substring(0, i)
+					+ flavour.substring(i + 1, i + 2).toUpperCase()
+					+ flavour.substring(i + 2);
+		}
+		return flavour;
+	}
+
 	public static SwitchChatter create(String flavour, InputStream is,
-			OutputStream os, boolean debug) {
-		String clazz = "me.construqt.ciscian.chatter.flavour." + flavour
-				+ "SwitchChatter";
+			OutputStream os, boolean debug, boolean showProgress) {
+		String clazz = "me.construqt.ciscian.chatter.flavour."
+				+ convertFlavourName(flavour) + "SwitchChatter";
 
 		try {
 			SwitchChatter switchChatter = (SwitchChatter) Class.forName(clazz)
 					.newInstance();
-			switchChatter.initialize(is, os, debug);
+			switchChatter.initialize(is, os, debug, showProgress);
 			return switchChatter;
 		} catch (ClassNotFoundException e) {
 			System.err.println("Flavour " + flavour
@@ -51,11 +62,11 @@ public abstract class SwitchChatter implements Closeable {
 		return new PrintWriter(os, true);
 	}
 
-	public void initialize(InputStream is, OutputStream os, boolean debug) {
+	public void initialize(InputStream is, OutputStream os, boolean debug, boolean showProgress) {
 		this.is = is;
 		this.os = os;
 		this.executorService = Executors.newSingleThreadExecutor();
-		this.outputConsumer = new OutputConsumer(debug, getPrintWriter());
+		this.outputConsumer = new OutputConsumer(debug, getPrintWriter(), showProgress);
 	}
 
 	public void close() {
@@ -94,7 +105,7 @@ public abstract class SwitchChatter implements Closeable {
 	protected abstract void retrieveConfig();
 
 	protected abstract void exit();
-	
+
 	protected abstract void saveRunningConfig();
 
 }

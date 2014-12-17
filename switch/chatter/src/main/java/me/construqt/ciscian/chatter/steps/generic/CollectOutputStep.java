@@ -2,6 +2,8 @@ package me.construqt.ciscian.chatter.steps.generic;
 
 import java.io.PrintWriter;
 
+import me.construqt.ciscian.chatter.Util;
+
 import org.apache.commons.lang.StringEscapeUtils;
 
 public class CollectOutputStep implements Step {
@@ -10,14 +12,22 @@ public class CollectOutputStep implements Step {
 
 	private String collected;
 
+	private boolean rejectLastLine;
+
 	public CollectOutputStep(boolean rejectLastLine, String... endMarkers) {
+		this.rejectLastLine = rejectLastLine;
 		this.endMarkers = endMarkers;
 	}
 
 	@Override
-	public int performStep(StringBuffer buffer, PrintWriter pw, OutputConsumer outputConsumer) {
+	public int performStep(StringBuffer buffer, PrintWriter pw,
+			OutputConsumer outputConsumer) {
 		int index = findLastIndex(buffer);
 		collected = buffer.substring(0, index);
+		if (rejectLastLine) {
+			collected = collected.substring(0, collected.lastIndexOf("\n"));
+		}
+		collected = Util.replaceAllTerminalControlCharacters(collected);
 		return index + 1;
 	}
 
