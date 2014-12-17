@@ -24,12 +24,16 @@ module Construqt
             end
           end
           return if addrs.empty?
-          #binding.pry
-          #ifaces.values.each do |iface|
-          #  writer_local = host.result.etc_network_interfaces.get(iface)
-          #  writer_local.lines.up("/etc/init.d/racoon start")
-          #  writer_local.lines.down("/etc/init.d/racoon restart")
-          #end
+          host.result.add(self, <<HEADER, Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "default", "racoon")
+# do not edit generated file
+#
+# this a a evil hack to avoid a raise condition on starting the
+# OS racoon in the same moment like our
+if [ $STARTED_BY_CONSTRUQT != "" ]
+then
+  exit 0
+fi
+HEADER
 
           host.result.add(self, <<HEADER, Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "racoon", "racoon.conf")
 # do not edit generated file

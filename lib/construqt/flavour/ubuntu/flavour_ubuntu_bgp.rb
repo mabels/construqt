@@ -57,7 +57,9 @@ BGP
               nets.each do |ip|
                 next unless mode.filter.call(ip)
                 ip_str = ip.to_string
-                if rule['prefix_length']
+                if rule['addr_sub_prefix']
+                  ip_str = "#{ip.to_string}{#{ip.prefix},#{ip.ipv4? ? 32 : 128}}"
+                elsif rule['prefix_length']
                   ip_str = "#{ip.to_string}{#{rule['prefix_length'].first},#{rule['prefix_length'].last}}"
                 end
 
