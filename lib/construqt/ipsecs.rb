@@ -48,14 +48,15 @@ module Construqt
       cfg.left.interface = cfg.left.my.host.region.interfaces.add_gre(cfg.left.my.host, cfg.left.other.host.name,
                                                                       "address" => cfg.left.my,
                                                                       "local" => cfg.left.remote,
-                                                                      "remote" => cfg.right.remote
+                                                                      "remote" => cfg.right.remote,
+                                                                      "ipsec" => cfg
                                                                      )
       cfg.right.interface = cfg.left.my.host.region.interfaces.add_gre(cfg.right.my.host, cfg.right.other.host.name,
                                                                        "address" => cfg.right.my,
                                                                        "local" => cfg.right.remote,
-                                                                       "remote" => cfg.left.remote
+                                                                       "remote" => cfg.left.remote,
+                                                                       "ipsec" => cfg
                                                                       )
-      #binding.pry
       cfg
     end
 
