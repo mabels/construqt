@@ -557,7 +557,7 @@ VRRP
             cp::DNS => { "bind9" => true },
             cp::RADVD => { "radvd" => true },
             cp::CONNTRACKD => { "conntrackd" => true, "conntrack" => true },
-            cp::DHCPRELAY => { "isc-dhcp-relay" => true }
+            cp::DHCPRELAY => { "isc-dhcp-relay" => true, "dhcp-helper" => true }
           }[component]
           throw "Component with name not found #{component}" unless ret
           ret
