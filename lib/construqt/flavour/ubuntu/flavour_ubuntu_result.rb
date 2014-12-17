@@ -310,9 +310,9 @@ OUT
 #!/bin/bash
 exec > >(logger -t "#{@entry.header.get_interface_name}-#{direction}") 2>&1
 #{blocks.join("\n")}
-iptables-restore < /etc/network/iptables.cfg
-ip6tables-restore < /etc/network/ip6tables.cfg
 BLOCK
+#iptables-restore < /etc/network/iptables.cfg
+#ip6tables-restore < /etc/network/ip6tables.cfg
             end
 
             def commit
