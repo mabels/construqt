@@ -33,6 +33,32 @@ module Construqt
       end
     end
 
+    module InputOutputOnly
+      # the big side effect
+
+      def input_only?
+        (!@set && true) || @input_only
+      end
+
+      def output_only?
+        (!@set && true) || @output_only
+      end
+
+      def input_only
+        @set = true
+        @input_only = true
+        @output_only = false
+        self
+      end
+
+      def output_only
+        @set = true
+        @input_only = false
+        @output_only = true
+        self
+      end
+    end
+
     class Firewall
       def initialize(name)
         @name = name
@@ -76,10 +102,9 @@ module Construqt
         class RawEntry
           include Util::Chainable
           include FromToNetAddr
-          chainable_attr :prerouting, true, false, lambda{|i| @output = false; input_only(true); output_only(false) }
-          chainable_attr :input_only, true
-          chainable_attr :output, true, false, lambda {|i| @prerouting = false; input_only(false); output_only(true) }
-          chainable_attr :output_only, true
+          include InputOutputOnly
+          chainable_attr :prerouting, true, false, lambda{|i| @output = false; input_only }
+          chainable_attr :output, true, false, lambda {|i| @prerouting = false; output_only }
           chainable_attr :interface
           chainable_attr :from_my_net, true, false
           chainable_attr :to_my_net, true, false
@@ -134,10 +159,9 @@ module Construqt
         class NatEntry
           include Util::Chainable
           include FromToNetAddr
-          chainable_attr :prerouting, true, false, lambda{|i| @postrouting = false; input_only(true); output_only(false) }
-          chainable_attr :input_only
-          chainable_attr :postrouting, true, false, lambda{|i| @prerouting = false; input_only(false); output_only(true) }
-          chainable_attr :output_only
+          include InputOutputOnly
+          chainable_attr :prerouting, true, false, lambda{|i| @postrouting = false; input_only }
+          chainable_attr :postrouting, true, false, lambda{|i| @prerouting = false; output_only }
           chainable_attr :to_source
           chainable_attr :interface
           chainable_attr :from_my_net, true, false
@@ -200,11 +224,10 @@ module Construqt
         class ForwardEntry
           include Util::Chainable
           include FromToNetAddr
+          include InputOutputOnly
 
           chainable_attr :interface
           chainable_attr :connection
-          chainable_attr :input_only, true, true
-          chainable_attr :output_only, true, true
           chainable_attr :from_my_net, true, false
           chainable_attr :to_my_net, true, false
           chainable_attr :from_route, true, false

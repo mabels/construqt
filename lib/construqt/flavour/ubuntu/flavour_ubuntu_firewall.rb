@@ -174,6 +174,7 @@ module Construqt
 #           to_list = try_tags_as_ipaddress(to_list, family, rule.get_to_net, rule.get_to_host)
           end
           unless rule.get_to_net_addr.empty?
+            #binding.pry
             addrs = rule.get_to_net_addr.map { |i| IPAddress.parse(i) }.select { |i|
               (i.ipv6? && family == Construqt::Addresses::IPV6) || (i.ipv4? && family == Construqt::Addresses::IPV4)
             }
@@ -386,21 +387,21 @@ module Construqt
 
             protocol_loop(rule).each do |protocol|
               [{
+                :doit    => rule.input_only?,
                 :from_to => lambda { ToFrom.new.bind_interface(ifname, iface, rule).input_only },
                 :writer4 => !rule.from_is_inbound? ? writer.ipv4.input : writer.ipv4.output,
                 :writer6 => !rule.from_is_inbound? ? writer.ipv6.input : writer.ipv6.output
               },{
+                :doit    => rule.output_only?,
                 :from_to => lambda { ToFrom.new.bind_interface(ifname, iface, rule).output_only },
                 :writer4 => rule.from_is_inbound? ? writer.ipv4.input : writer.ipv4.output,
                 :writer6 => rule.from_is_inbound? ? writer.ipv6.input : writer.ipv6.output
               }].each do |to_from_writer|
+                next unless to_from_writer[:doit]
                 {:v4 => { :enabled => fw.ipv4?, :table => "iptables", :writer => to_from_writer[:writer4]},
                  :v6 => { :enabled => fw.ipv6?, :table => "ip6tables", :writer => to_from_writer[:writer6] }}.each do |family, cfg|
                   to_from = to_from_writer[:from_to].call
                   next unless cfg[:enabled]
-
-
-
                   if protocol == "-p icmp" && family == :v6
                     my_protocol = "-p icmpv6"
                   else
