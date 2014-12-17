@@ -29,6 +29,10 @@ module Construqt
         @vrrp
       end
 
+      def ipsec
+        self.delegate.ipsec
+      end
+
       def firewalls
         self.delegate.firewalls
       end

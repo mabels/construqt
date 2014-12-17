@@ -10,9 +10,11 @@ module Construqt
         def self.header(host)
           #binding.pry
           addrs = {}
+          ifaces = {}
           host.ipsecs.each do |ipsec|
             [ipsec.left, ipsec.right].each do |iface|
               next if iface.host != host
+              ifaces[iface.remote.interface.name] = iface.remote.interface
               if iface.remote.first_ipv4
                 addrs[iface.remote.first_ipv4.to_s] = "isakmp #{iface.remote.first_ipv4.to_s} [500];"
               end
@@ -22,6 +24,13 @@ module Construqt
             end
           end
           return if addrs.empty?
+          #binding.pry
+          #ifaces.values.each do |iface|
+          #  writer_local = host.result.etc_network_interfaces.get(iface)
+          #  writer_local.lines.up("/etc/init.d/racoon start")
+          #  writer_local.lines.down("/etc/init.d/racoon restart")
+          #end
+
           host.result.add(self, <<HEADER, Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "racoon", "racoon.conf")
 # do not edit generated file
 path pre_shared_key "/etc/racoon/psk.txt";
@@ -103,8 +112,8 @@ RACOON
           #binding.pry
           my.ips.each do |my_ip|
             other.ips.each do |other_ip|
-              next unless self.cfg.transport_family == Construqt::Addresses::IPV6 && (my_ip.ipv6? && my_ip.ipv6? == other_ip.ipv6?) ||
-                          self.cfg.transport_family == Construqt::Addresses::IPV4 && (my_ip.ipv4? && my_ip.ipv4? == other_ip.ipv4?)
+              next unless (family == Construqt::Addresses::IPV6 && (my_ip.ipv6? && my_ip.ipv6? == other_ip.ipv6?)) ||
+                          (family == Construqt::Addresses::IPV4 && (my_ip.ipv4? && my_ip.ipv4? == other_ip.ipv4?))
               from_to_ipsec_conf("out", remote_my, remote_other, my_ip, other_ip)
               from_to_sainfo(my_ip, other_ip)
             end
@@ -112,8 +121,8 @@ RACOON
 
           other.ips.each do |other_ip|
             my.ips.each do |my_ip|
-              next unless self.cfg.transport_family == Construqt::Addresses::IPV6 && (my_ip.ipv6? && my_ip.ipv6? == other_ip.ipv6?) ||
-                          self.cfg.transport_family == Construqt::Addresses::IPV4 && (my_ip.ipv4? && my_ip.ipv4? == other_ip.ipv4?)
+              next unless (family == Construqt::Addresses::IPV6 && (my_ip.ipv6? && my_ip.ipv6? == other_ip.ipv6?)) ||
+                          (family == Construqt::Addresses::IPV4 && (my_ip.ipv4? && my_ip.ipv4? == other_ip.ipv4?))
               from_to_ipsec_conf("in", remote_other, remote_my, other_ip, my_ip)
               from_to_sainfo(other_ip, my_ip)
             end
