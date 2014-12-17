@@ -1,6 +1,10 @@
 CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'.'
 ["#{CONSTRUQT_PATH}/construqt/lib"].each{|path| $LOAD_PATH.unshift(path) }
 
+module Construqt
+  @LOGLEVEL=3 #ERROR
+end
+
 require("construqt")
 
 module Construqt
@@ -15,6 +19,8 @@ module Construqt
           end
         end
       end
+
+      Construqt.log_level(Logger::INFO)
 
       host=Host.new({"dialect" => ARGV[0]})
       #remove flavour argument
@@ -36,7 +42,6 @@ module Construqt
 
       compareResult=Result.compare(newResult, oldResult)
 
-      puts("--- RESULT ---v2")
       puts(compareResult.serialize)
 
     end

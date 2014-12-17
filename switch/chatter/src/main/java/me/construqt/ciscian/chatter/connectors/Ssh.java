@@ -25,7 +25,7 @@ public class Ssh implements Connector {
 	private String pass;
 
 	public Ssh(String connectString, String user, String pass) {
-		Pattern p = Pattern.compile("ssh://([^:]*):?(\\d*)");
+		Pattern p = Pattern.compile("ssh://(.*):(\\d*)");
 		Matcher m = p.matcher(connectString);
 		if (m.matches()) {
 			this.host = m.group(1);
@@ -47,12 +47,12 @@ public class Ssh implements Connector {
 
 			@Override
 			public void showMessage(String message) {
-				System.err.println(message);
+				// System.err.println(message);
 			}
 
 			@Override
 			public boolean promptYesNo(String message) {
-				System.err.println(message);
+				// System.err.println(message);
 				return true;
 			}
 
@@ -63,7 +63,7 @@ public class Ssh implements Connector {
 
 			@Override
 			public boolean promptPassphrase(String message) {
-				System.err.println(message);
+				// System.err.println(message);
 				return true;
 			}
 
@@ -93,6 +93,5 @@ public class Ssh implements Connector {
 		channel.disconnect();
 		session.disconnect();
 	}
-
 
 }

@@ -408,9 +408,6 @@ OUT
       def self.create_interface(name, cfg)
         cfg['name'] = name
         clazz(cfg['clazz']).new(cfg)
-        #cfg['name'] = name
-        #iface = Interface.new(cfg)
-        #iface
       end
 
       def self.create_bgp(cfg)

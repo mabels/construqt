@@ -3,3 +3,5 @@
 **/.settings
 **/target/*
 *.orig
+/switch/delta/simple-dlink
+/switch/delta/simple-dlink2

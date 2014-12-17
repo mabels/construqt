@@ -239,12 +239,13 @@ module Construqt
       end
 
       class Route
-        attr_reader :dst, :via, :type, :metric
-        def initialize(dst, via, type, metric)
+        attr_reader :dst, :via, :type, :metric, :routing_table
+        def initialize(dst, via, type, metric, routing_table)
           @dst = dst
           @via = via
           @type = type
           @metric = metric
+          @routing_table = routing_table
         end
       end
 
@@ -264,7 +265,7 @@ module Construqt
           end
           type = nil
         end
-        Route.new(dst, via, type, metric)
+        Route.new(dst, via, type, metric, option["routing-table"])
       end
 
 

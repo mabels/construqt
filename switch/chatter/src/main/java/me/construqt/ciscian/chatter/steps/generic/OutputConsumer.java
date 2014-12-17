@@ -20,11 +20,15 @@ public class OutputConsumer extends java.io.FilterWriter {
 
 	private PrintWriter printWriter;
 
-	public OutputConsumer(boolean debugOnStdErr, PrintWriter printWriter) {
+	private boolean showProgress;
+
+	public OutputConsumer(boolean debugOnStdErr, PrintWriter printWriter,
+			boolean showProgress) {
 		super(new StringWriter());
 		consoleWriter = debugOnStdErr ? new PrintWriter(System.err, true)
 				: new PrintWriter(new NullWriter(), true);
 		this.printWriter = printWriter;
+		this.showProgress = showProgress;
 	}
 
 	public void addStep(Step step) {
@@ -35,13 +39,36 @@ public class OutputConsumer extends java.io.FilterWriter {
 	@Override
 	public void write(int c) throws IOException {
 		super.write(c);
-		consoleWriter.write(c);
+		consoleWriter.write(sanitize(c));
 		consoleWriter.flush();
 		checkExpected();
 	}
 
+	private int sanitize(int c) {
+		if (c == 27) {
+			c = '+';
+		}
+		return c;
+	}
+
+	private char[] sanitize(char[] c) {
+		char[] s = new char[c.length];
+		for (int i = 0; i < s.length; i++) {
+			s[i] = (char) sanitize(c[i]);
+		}
+		return s;
+	}
+
+	private String sanitize(String c) {
+		return String.copyValueOf(sanitize(c.toCharArray()));
+	}
+
 	private void checkExpected() {
-		consoleWriter.print("[check expected called]");
+		if (showProgress) {
+			System.err.print(".");
+		}
+		
+		consoleWriter.print("\n[check expected called]");
 		consoleWriter.flush();
 		try {
 			out.flush();
@@ -50,7 +77,7 @@ public class OutputConsumer extends java.io.FilterWriter {
 		}
 		StringBuffer buffer = ((StringWriter) out).getBuffer();
 		Step step = getCurrentStep();
-		consoleWriter.print("[check expected " + step + "]");
+		consoleWriter.print("\n[check expected " + step + "]");
 		consoleWriter.flush();
 		if (step != null) {
 			boolean succeeded = step.check(buffer);
@@ -89,7 +116,7 @@ public class OutputConsumer extends java.io.FilterWriter {
 	@Override
 	public void write(char[] cbuf, int off, int len) throws IOException {
 		super.write(cbuf, off, len);
-		consoleWriter.write(cbuf, off, len);
+		consoleWriter.write(sanitize(cbuf), off, len);
 		consoleWriter.flush();
 		checkExpected();
 	}
@@ -97,7 +124,7 @@ public class OutputConsumer extends java.io.FilterWriter {
 	@Override
 	public void write(String str, int off, int len) throws IOException {
 		super.write(str, off, len);
-		consoleWriter.write(str, off, len);
+		consoleWriter.write(sanitize(str), off, len);
 		consoleWriter.flush();
 		checkExpected();
 	}
