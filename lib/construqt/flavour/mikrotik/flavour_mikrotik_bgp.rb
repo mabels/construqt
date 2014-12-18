@@ -14,7 +14,16 @@ module Construqt
             host.result.add("set [ find chain=#{v4_name.inspect} ] comment=to_remove", nil, "routing", "filter")
             host.result.add("set [ find chain=#{v6_name.inspect} ] comment=to_remove", nil, "routing", "filter")
             filter.list.each do |rule|
-              rule['network'].ips.each do |ip|
+              nets = rule['network']
+              if nets.kind_of?(String)
+                #binding.pry
+                nets = Construqt::Tags.find(nets, Construqt::Addresses::IPV4) + Construqt::Tags.find(nets, Construqt::Addresses::IPV6)
+                #            puts ">>>>>>>>>> #{nets.map{|i| i.class.name}}"
+                nets = IPAddress::summarize(nets)
+              else
+                nets = nets.ips
+              end
+              nets.each do |ip|
                 prefix_len = ""
                 if rule['prefix_length']
                   prefix_len = "prefix-length=#{rule['prefix_length'].first}-#{rule['prefix_length'].last}"
