@@ -49,13 +49,16 @@ module Construqt
           end
 
           def up(ifname, inbounds, upstreams)
-            minus_l = inbounds.map { |cqip| "-l #{cqip}%#{cqip.container.interface.name}" }.join(' ')
-            minus_o = upstreams.map{ |cqip| "-u #{cqip}%#{ifname}" }.join(' ')
-            "/usr/sbin/dhcrelay -pf /run/dhcrelay-v6.#{ifname}.pid -q -6 #{minus_l} #{minus_o}"
+            inbound_ifs = inbounds.map { |cqip| "#{cqip.container.interface.name}" }.join(' ')
+            minus_s = upstreams.map{ |cqip| "-s #{cqip}" }.join(' ')
+            minus_r = upstreams.map{ |cqip| "-r #{ifname}" }.join(' ')
+            #"/usr/sbin/dhcrelay -pf /run/dhcrelay-v6.#{ifname}.pid -q -6 #{minus_l} #{minus_o}"
+            "/usr/sbin/dhcp6relay -d -p /run/dhcp6relay-v6.#{ifname}.pid #{minus_s} #{minus_r} #{inbound_ifs}"
           end
 
           def down(ifname, inbounds, upstreams)
-            "kill `cat /run/dhcrelay-v6.#{ifname}.pid`"
+            #"kill `cat /run/dhcrelay-v6.#{ifname}.pid`"
+            "kill `cat /run/dhcp6relay-v6.#{ifname}.pid`"
           end
 
           def vrrp(host, ifname, vrrp)
@@ -118,7 +121,7 @@ interface #{ifname}
         prefix #{iface.address.first_ipv6.network.to_string}
         {
                 AdvOnLink on;
-                AdvAutonomous off;
+                AdvAutonomous #{@service.adv_autonomous? ? "on" : "off"};
                 AdvRouterAddr on;
         };
 
