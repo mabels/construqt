@@ -126,6 +126,7 @@ module Construqt
           end
           def from_is(direction)
             @from_is = direction
+            self
           end
         end
 
@@ -182,6 +183,7 @@ module Construqt
           end
           def from_is(direction)
             @from_is = direction
+            self
           end
         end
 
@@ -257,6 +259,7 @@ module Construqt
           end
           def from_is(direction)
             @from_is = direction
+            self
           end
 
           def port(port)
