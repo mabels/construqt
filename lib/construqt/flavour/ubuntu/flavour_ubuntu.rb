@@ -152,6 +152,10 @@ BOND
         end
 
         def build_config(host, unused)
+          host.result.add(self, <<UDEV, Construqt::Resources::Rights.root_0644, "etc", "udev", "rules.d", "23-persistent-vnet.rules")
+# Construqt UDEV for container mtu
+SUBSYSTEM=="net", ACTION=="add", KERNEL=="vnet*", ATTR{mtu}="#{host.interfaces.values.map { |iface| iface.mtu.to_i || 1500 }.max}"
+UDEV
           host.result.add(self, <<SCTL, Construqt::Resources::Rights.root_0644, "etc", "sysctl.conf")
 net.ipv4.conf.all.forwarding = 1
 net.ipv4.conf.default.forwarding = 1
