@@ -49,6 +49,10 @@ module Construqt
         self.delegate.name
       end
 
+      def mtu
+        self.delegate.mtu
+      end
+
       def address
         self.delegate.address
       end
