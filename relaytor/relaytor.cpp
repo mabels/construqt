@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 
+#define _ELPP_NO_DEFAULT_LOG_FILE
 #define _ELPP_SYSLOG
 #include "easylogging++.h"
 #include <syslog.h>
@@ -39,9 +40,27 @@
 #include <netdb.h>
 #include <getopt.h>
 
+class RelayTorWriter : el::base::NoCopy {
+  public:
+    RelayTorWriter(void) {}
 
-class Formatter
-{
+    // RelayTor manipulator
+    inline RelayTorWriter& operator<<(std::ostream& (*)(std::ostream&)) {
+      return *this;
+    }
+
+    template <typename T>
+      inline RelayTorWriter& operator<<(const T&) {
+        return *this;
+      }
+};
+
+//#define L(level) _ELPP_WRITE_LOG(RelayTorWriter, level)
+static const char *activeLoggerId = el::base::consts::kDefaultLoggerId;
+static el::base::DispatchAction activeDispatchAction = el::base::DispatchAction::NormalLog;
+#define L(LEVEL) C##LEVEL(el::base::Writer, activeDispatchAction, activeLoggerId)
+
+class Formatter {
   public:
     Formatter() {}
     ~Formatter() {}
@@ -209,6 +228,102 @@ namespace Dhcp {
     };
   }
 
+  namespace V6 {
+    class SocketAddr : public Dhcp::SocketAddr {
+      private:
+        struct in6_addr *addr;
+        struct in6_addr own;
+      public:
+        SocketAddr() : addr(&own) {
+        }
+        SocketAddr(struct in6_addr *_addr) : addr(_addr) {
+        }
+        virtual void assign(const Dhcp::SocketAddr &other) {
+          memcpy(addr, other.getConstBuf(), sizeof(*addr));
+        }
+        virtual const void *getConstBuf() const {
+          return addr;
+        }
+        virtual void *getBuf() {
+          return addr;
+        }
+        virtual std::string toString() const {
+          char dst[INET6_ADDRSTRLEN];
+          inet_ntop(AF_INET6, addr, dst, sizeof(dst));
+          return dst;
+        }
+        virtual bool isSet() const {
+          return memcmp(&(addr->s6_addr), &IN6ADDR_ANY_INIT, sizeof(addr->s6_addr));
+        }
+    };
+
+
+    struct Packet {
+      struct {
+        unsigned char op, htype, hlen, hops;
+        unsigned int xid;
+        unsigned short secs, flags;
+        struct in6_addr ciaddr, yiaddr, siaddr, giaddr;
+        unsigned char chaddr[16], sname[64], file[128];
+      } header;
+      unsigned char options[16384];
+    };
+
+    class Header : public Dhcp::Header {
+      private:
+        struct Packet packet;
+        SocketAddr giAddr;
+        SocketAddr yiAddr;
+        SocketAddr siAddr;
+        SocketAddr ciAddr;
+      public:
+        Header() :
+          giAddr(&packet.header.giaddr),
+          yiAddr(&packet.header.yiaddr),
+          siAddr(&packet.header.siaddr),
+          ciAddr(&packet.header.ciaddr) {
+          }
+        virtual ~Header() {}
+        virtual void *getPacket() {
+          return &packet;
+        }
+        virtual SocketAddr &getGiaddr() {
+          return giAddr;
+        }
+        virtual SocketAddr &getSiaddr() {
+          return siAddr;
+        }
+        virtual SocketAddr &getYiaddr() {
+          return yiAddr;
+        }
+        virtual SocketAddr &getCiaddr() {
+          return ciAddr;
+        }
+        virtual bool isRequest() const {
+          return packet.header.op == 1;
+        }
+        virtual bool isReply() const {
+          return packet.header.op == 2;
+        }
+        virtual bool incHops() {
+          return packet.header.hops++ > 20;
+        }
+
+        virtual size_t getPacketSize() const {
+          return sizeof(packet);
+        }
+        virtual int getXid() const {
+          return packet.header.xid;
+        }
+        virtual const unsigned char *getSname() {
+          return packet.header.sname;
+        }
+        virtual const unsigned char *getFile() {
+          return packet.header.file;
+        }
+    };
+  }
+
   class Request {
     private:
       int size = -1;
@@ -277,173 +392,344 @@ namespace Dhcp {
 
   namespace Linux {
 
-    class Relay : public Dhcp::Relay {
-      private:
-        short listenPort;
-        V4::SocketAddr serverIp;
-        short serverPort;
-        V4::SocketAddr gatewayIp;
-        size_t ifIndex = 0;
-        struct in_addr inIfaceSrcAddr;
-      public:
-        virtual ~Relay() { }
-        virtual size_t getIfIndex() const {
-          return ifIndex;
-        }
-        virtual const short getListenPort() const {
-          return listenPort;
-        }
-        virtual const short getServerPort() const {
-          return serverPort;
-        }
-        virtual const Dhcp::SocketAddr &getGatewayIp() const {
-          return gatewayIp;
-        }
-        virtual const Dhcp::SocketAddr &getServerIp() const {
-          return serverIp;
-        }
-        Relay(const char *inIface, short listenPort, const char *serverIp, short serverPort, const char *gatewayIp) {
-          const UdpSocket socket;
-          this->listenPort = listenPort;
-          this->serverPort = serverPort;
-          if (inet_pton(AF_INET, serverIp, this->serverIp.getBuf()) <= 0) {
-            throw std::invalid_argument(Formatter() << "can not parse address:" << serverIp);
+    namespace V4 {
+      class Relay : public Dhcp::Relay {
+        private:
+          short listenPort;
+          Dhcp::V4::SocketAddr serverIp;
+          short serverPort;
+          Dhcp::V4::SocketAddr gatewayIp;
+          size_t ifIndex = 0;
+          struct in_addr inIfaceSrcAddr;
+        public:
+          virtual ~Relay() { }
+          virtual size_t getIfIndex() const {
+            return ifIndex;
           }
-          if (inet_pton(AF_INET, gatewayIp, this->gatewayIp.getBuf()) <= 0) {
-            throw std::invalid_argument(Formatter() << "can not parse address:" << gatewayIp);
+          virtual const short getListenPort() const {
+            return listenPort;
           }
-          struct ifreq ifr;
-          ifr.ifr_addr.sa_family = AF_INET;
-          //bool found = false;
-          for(int idx = 1; true ; ++idx) {
-            ifr.ifr_ifindex = idx;
-            //LOG(DEBUG) << "ifidx=" << ifr.ifr_ifindex << ":" << sizeof(ifr.ifr_addr.sa_family);
-            if (ioctl(socket.fd, SIOCGIFNAME, &ifr) < 0) {
-              if (errno != ENODEV) {
-                throw std::invalid_argument(Formatter() << "can get interfaces name of idx:" << idx);
+          virtual const short getServerPort() const {
+            return serverPort;
+          }
+          virtual const Dhcp::SocketAddr &getGatewayIp() const {
+            return gatewayIp;
+          }
+          virtual const Dhcp::SocketAddr &getServerIp() const {
+            return serverIp;
+          }
+          Relay(const char *inIface, short listenPort, const char *serverIp, short serverPort, const char *gatewayIp) {
+            const UdpSocket socket;
+            this->listenPort = listenPort;
+            this->serverPort = serverPort;
+            if (inet_pton(AF_INET, serverIp, this->serverIp.getBuf()) <= 0) {
+              throw std::invalid_argument(Formatter() << "can not parse address:" << serverIp);
+            }
+            if (inet_pton(AF_INET, gatewayIp, this->gatewayIp.getBuf()) <= 0) {
+              throw std::invalid_argument(Formatter() << "can not parse address:" << gatewayIp);
+            }
+            struct ifreq ifr;
+            ifr.ifr_addr.sa_family = AF_INET;
+            //bool found = false;
+            for(int idx = 1; true ; ++idx) {
+              ifr.ifr_ifindex = idx;
+              //L(DEBUG) << "ifidx=" << ifr.ifr_ifindex << ":" << sizeof(ifr.ifr_addr.sa_family);
+              if (ioctl(socket.fd, SIOCGIFNAME, &ifr) < 0) {
+                if (errno != ENODEV) {
+                  throw std::invalid_argument(Formatter() << "can get interfaces name of idx:" << idx);
+                }
+                break;
               }
-              break;
-            }
-            //LOG(DEBUG) << ifr.ifr_name;
-            //LOG(DEBUG) << inIface;
-            //LOG(DEBUG) << sizeof(ifr.ifr_name);
-            //LOG(DEBUG) << "cmp=" <<strncmp(inIface, ifr.ifr_name, sizeof(ifr.ifr_name));
-            //LOG(DEBUG) << "idx=" <<ifIndex;
-            if (!strncmp(inIface, ifr.ifr_name, sizeof(ifr.ifr_name)) && ifIndex == 0) {
-              if (ioctl (socket.fd, SIOCGIFADDR, &ifr) < 0) {
-                throw std::invalid_argument(Formatter() << "can get interfaces address:" << ifr.ifr_name);
+              //L(DEBUG) << ifr.ifr_name;
+              //L(DEBUG) << inIface;
+              //L(DEBUG) << sizeof(ifr.ifr_name);
+              //L(DEBUG) << "cmp=" <<strncmp(inIface, ifr.ifr_name, sizeof(ifr.ifr_name));
+              //L(DEBUG) << "idx=" <<ifIndex;
+              if (!strncmp(inIface, ifr.ifr_name, sizeof(ifr.ifr_name)) && ifIndex == 0) {
+                if (ioctl (socket.fd, SIOCGIFADDR, &ifr) < 0) {
+                  throw std::invalid_argument(Formatter() << "can get interfaces address:" << ifr.ifr_name);
+                }
+                /*
+                   if (ioctl (socket.fd, SIOCGIFFLAGS, &ifr) < 0 || !(ifr.ifr_flags & IFF_BROADCAST)) {
+                   throw std::invalid_argument(Formatter() << "listenIf is not a broadcast device:" << ifr.ifr_name);
+                   }
+                   */
+                inIfaceSrcAddr = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr;
+                ifIndex = idx;
+                //found = true;
+                return;
               }
-              /*
-                 if (ioctl (socket.fd, SIOCGIFFLAGS, &ifr) < 0 || !(ifr.ifr_flags & IFF_BROADCAST)) {
-                 throw std::invalid_argument(Formatter() << "listenIf is not a broadcast device:" << ifr.ifr_name);
-                 }
-                 */
-              inIfaceSrcAddr = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr;
-              ifIndex = idx;
-              //found = true;
-              return;
+            }
+            //if (!found) {
+            throw std::invalid_argument(Formatter() << "Interface not found:" << inIface);
+            //}
+          }
+      };
+
+
+      class PacketSource : public Dhcp::PacketSource {
+        private:
+          std::list<std::unique_ptr<Dhcp::Relay>> relays;
+          UdpSocket sock;
+        public:
+          void addRelay(const char *inIface, short listenPort, const char *serverIp, const short serverPort, const char *gatewayIp) {
+            relays.push_back(std::unique_ptr<Dhcp::Relay>(new Relay(inIface, listenPort, serverIp, serverPort, gatewayIp)));
+          }
+          virtual std::list<std::unique_ptr<Dhcp::Relay>>& Relays() {
+            return relays;
+          }
+
+
+          virtual void Start() {
+            const int oneopt = 1;
+            if (setsockopt(sock.fd, SOL_IP, IP_PKTINFO, &oneopt, sizeof(oneopt)) < 0) {
+              throw std::system_error(std::error_code(errno,std::generic_category()), "can setsocketopt SOL_IP, IP_PKTINFO");
+            }
+            if (setsockopt(sock.fd, SOL_SOCKET, SO_BROADCAST, &oneopt, sizeof(oneopt)) < 0) {
+              throw std::system_error(std::error_code(errno,std::generic_category()), "can setsocketopt SOL_SOCKET, SO_BROADCAST");
+            }
+            const int mtuopt = IP_PMTUDISC_DONT;
+            if (setsockopt(sock.fd, SOL_IP, IP_MTU_DISCOVER, &mtuopt, sizeof(mtuopt)) < 0) {
+              throw std::system_error(std::error_code(errno,std::generic_category()), "can setsocketopt SOL_IP, IP_MTU_DISCOVER");
+            }
+            struct sockaddr_in saddr;
+            saddr.sin_family = AF_INET;
+            saddr.sin_port = htons(relays.front()->getListenPort());
+            saddr.sin_addr.s_addr = INADDR_ANY;
+            if (bind(sock.fd, (struct sockaddr *)&saddr, sizeof(struct sockaddr_in))) {
+              throw std::system_error(std::error_code(errno,std::generic_category()), Formatter() << "can bind udp port:" << relays.front()->getListenPort());
             }
           }
-          //if (!found) {
-          throw std::invalid_argument(Formatter() << "Interface not found:" << inIface);
-          //}
-        }
-    };
 
-
-    class V4PacketSource : public PacketSource {
-      private:
-        std::list<std::unique_ptr<Dhcp::Relay>> relays;
-        UdpSocket sock;
-      public:
-        void addRelay(const char *inIface, short listenPort, const char *serverIp, const short serverPort, const char *gatewayIp) {
-          relays.push_back(std::unique_ptr<Dhcp::Relay>(new Relay(inIface, listenPort, serverIp, serverPort, gatewayIp)));
-        }
-        virtual std::list<std::unique_ptr<Dhcp::Relay>>& Relays() {
-          return relays;
-        }
-
-
-        virtual void Start() {
-          const int oneopt = 1;
-          if (setsockopt(sock.fd, SOL_IP, IP_PKTINFO, &oneopt, sizeof(oneopt)) < 0) {
-            throw std::system_error(std::error_code(errno,std::generic_category()), "can setsocketopt SOL_IP, IP_PKTINFO");
-          }
-          if (setsockopt(sock.fd, SOL_SOCKET, SO_BROADCAST, &oneopt, sizeof(oneopt)) < 0) {
-            throw std::system_error(std::error_code(errno,std::generic_category()), "can setsocketopt SOL_SOCKET, SO_BROADCAST");
-          }
-          const int mtuopt = IP_PMTUDISC_DONT;
-          if (setsockopt(sock.fd, SOL_IP, IP_MTU_DISCOVER, &mtuopt, sizeof(mtuopt)) < 0) {
-            throw std::system_error(std::error_code(errno,std::generic_category()), "can setsocketopt SOL_IP, IP_MTU_DISCOVER");
-          }
-          struct sockaddr_in saddr;
-          saddr.sin_family = AF_INET;
-          saddr.sin_port = htons(relays.front()->getListenPort());
-          saddr.sin_addr.s_addr = INADDR_ANY;
-          if (bind(sock.fd, (struct sockaddr *)&saddr, sizeof(struct sockaddr_in))) {
-            throw std::system_error(std::error_code(errno,std::generic_category()), Formatter() << "can bind udp port:" << relays.front()->getListenPort());
-          }
-        }
-
-        virtual void Send(Request &request, const SocketAddr &serverIp, const short port) {
-          struct sockaddr_in saddr;
-          saddr.sin_family = AF_INET;
-          memcpy(&saddr.sin_addr, serverIp.getConstBuf(), sizeof(saddr.sin_addr));
-          saddr.sin_port = htons(port);
-          //LOG(DEBUG) << "s:addr=" << serverIp.toString() << ":port=" << port << ":xid=" << request.getHeader().getXid()
-          //<< ":ciaddr=" << request.getHeader().getCiaddr().toString() << ":yiaddr=" << request.getHeader().getYiaddr().toString()
-          //<< ":siaddr=" << request.getHeader().getSiaddr().toString() << ":giaddr=" << request.getHeader().getGiaddr().toString();
-          if (sendto(sock.fd, request.getPacket(), request.getSize(), 0, (struct sockaddr *)&saddr, sizeof(saddr)) < 0) {
-            throw std::system_error(std::error_code(errno,std::generic_category()), Formatter() << "can sendto:" << serverIp.toString() << ":" << port);
-          }
-        }
-
-        virtual std::unique_ptr<Request> Recv() {
-          std::unique_ptr<Request> request(new Request(new Dhcp::V4::Header(), sock));
-          struct sockaddr_in saddr;
-          V4::SocketAddr _saddr(&saddr.sin_addr);
-          struct msghdr msg;
-          struct iovec iov;
-          union {
-            struct cmsghdr align; /* this ensures alignment */
-            char control[CMSG_SPACE(sizeof(struct in_pktinfo))];
-          } control_u;
-
-          msg.msg_control = control_u.control;
-          msg.msg_controllen = sizeof(control_u);
-          msg.msg_name = &saddr;
-          msg.msg_namelen = sizeof(saddr);
-          msg.msg_iov = &iov;
-          msg.msg_iovlen = 1;
-          iov.iov_base = request->getPacket();
-          iov.iov_len = request->getPacketSize();
-
-          int size = recvmsg(this->sock.fd, &msg, 0);
-          if (size < 0) {
-            throw std::system_error(std::error_code(errno,std::generic_category()), "recvmsg failed");
-          }
-          for (struct cmsghdr *cmptr = CMSG_FIRSTHDR(&msg); cmptr; cmptr = CMSG_NXTHDR(&msg, cmptr)) {
-            if (cmptr->cmsg_level == SOL_IP && cmptr->cmsg_type == IP_PKTINFO) {
-              union {
-                unsigned char *c;
-                struct in_pktinfo *p;
-              } p;
-              p.c = CMSG_DATA(cmptr);
-              request->setIfIndex(p.p->ipi_ifindex);
-              request->setSize(size);
-              request->setSourcePort(ntohs(saddr.sin_port));
-              //LOG(DEBUG) << "r:Size:" << request->getSize() << ":Addr=" << _saddr.toString() << ":" << ntohs(saddr.sin_port)
-              //<< ":ifidx=" << request->getIfIndex() << ":name=" << request->getIfName()
-              //<< ":xid=" << request->getHeader().getXid() << ":ciaddr=" << request->getHeader().getCiaddr().toString()
-              //<< ":yiaddr=" << request->getHeader().getYiaddr().toString() << ":siaddr=" << request->getHeader().getSiaddr().toString()
-              //<< ":giaddr=" << request->getHeader().getGiaddr().toString();
-              return request;
+          virtual void Send(Request &request, const SocketAddr &serverIp, const short port) {
+            struct sockaddr_in saddr;
+            saddr.sin_family = AF_INET;
+            memcpy(&saddr.sin_addr, serverIp.getConstBuf(), sizeof(saddr.sin_addr));
+            saddr.sin_port = htons(port);
+            //L(DEBUG) << "s:addr=" << serverIp.toString() << ":port=" << port << ":xid=" << request.getHeader().getXid()
+            //<< ":ciaddr=" << request.getHeader().getCiaddr().toString() << ":yiaddr=" << request.getHeader().getYiaddr().toString()
+            //<< ":siaddr=" << request.getHeader().getSiaddr().toString() << ":giaddr=" << request.getHeader().getGiaddr().toString();
+            if (sendto(sock.fd, request.getPacket(), request.getSize(), 0, (struct sockaddr *)&saddr, sizeof(saddr)) < 0) {
+              throw std::system_error(std::error_code(errno,std::generic_category()), Formatter() << "can sendto:" << serverIp.toString() << ":" << port);
             }
           }
-          throw std::invalid_argument("no interface found in received packet");
-        }
-        virtual void Stop() { }
-    };
+
+          virtual std::unique_ptr<Request> Recv() {
+            std::unique_ptr<Request> request(new Request(new Dhcp::V4::Header(), sock));
+            struct sockaddr_in saddr;
+            Dhcp::V4::SocketAddr _saddr(&saddr.sin_addr);
+            struct msghdr msg;
+            struct iovec iov;
+            union {
+              struct cmsghdr align; /* this ensures alignment */
+              char control[CMSG_SPACE(sizeof(struct in_pktinfo))];
+            } control_u;
+
+            msg.msg_control = control_u.control;
+            msg.msg_controllen = sizeof(control_u);
+            msg.msg_name = &saddr;
+            msg.msg_namelen = sizeof(saddr);
+            msg.msg_iov = &iov;
+            msg.msg_iovlen = 1;
+            iov.iov_base = request->getPacket();
+            iov.iov_len = request->getPacketSize();
+
+            int size = recvmsg(this->sock.fd, &msg, 0);
+            if (size < 0) {
+              throw std::system_error(std::error_code(errno,std::generic_category()), "recvmsg failed");
+            }
+            for (struct cmsghdr *cmptr = CMSG_FIRSTHDR(&msg); cmptr; cmptr = CMSG_NXTHDR(&msg, cmptr)) {
+              if (cmptr->cmsg_level == SOL_IP && cmptr->cmsg_type == IP_PKTINFO) {
+                union {
+                  unsigned char *c;
+                  struct in_pktinfo *p;
+                } p;
+                p.c = CMSG_DATA(cmptr);
+                request->setIfIndex(p.p->ipi_ifindex);
+                request->setSize(size);
+                request->setSourcePort(ntohs(saddr.sin_port));
+                //L(DEBUG) << "r:Size:" << request->getSize() << ":Addr=" << _saddr.toString() << ":" << ntohs(saddr.sin_port)
+                //<< ":ifidx=" << request->getIfIndex() << ":name=" << request->getIfName()
+                //<< ":xid=" << request->getHeader().getXid() << ":ciaddr=" << request->getHeader().getCiaddr().toString()
+                //<< ":yiaddr=" << request->getHeader().getYiaddr().toString() << ":siaddr=" << request->getHeader().getSiaddr().toString()
+                //<< ":giaddr=" << request->getHeader().getGiaddr().toString();
+                return request;
+              }
+            }
+            throw std::invalid_argument("no interface found in received packet");
+          }
+          virtual void Stop() { }
+      };
+    }
+    namespace V6 {
+      class Relay : public Dhcp::Relay {
+        private:
+          short listenPort;
+          Dhcp::V6::SocketAddr serverIp;
+          short serverPort;
+          Dhcp::V6::SocketAddr gatewayIp;
+          size_t ifIndex = 0;
+          struct in_addr inIfaceSrcAddr;
+        public:
+          virtual ~Relay() { }
+          virtual size_t getIfIndex() const {
+            return ifIndex;
+          }
+          virtual const short getListenPort() const {
+            return listenPort;
+          }
+          virtual const short getServerPort() const {
+            return serverPort;
+          }
+          virtual const Dhcp::SocketAddr &getGatewayIp() const {
+            return gatewayIp;
+          }
+          virtual const Dhcp::SocketAddr &getServerIp() const {
+            return serverIp;
+          }
+          Relay(const char *inIface, short listenPort, const char *serverIp, short serverPort, const char *gatewayIp) {
+            const UdpSocket socket;
+            this->listenPort = listenPort;
+            this->serverPort = serverPort;
+            if (inet_pton(AF_INET, serverIp, this->serverIp.getBuf()) <= 0) {
+              throw std::invalid_argument(Formatter() << "can not parse address:" << serverIp);
+            }
+            if (inet_pton(AF_INET, gatewayIp, this->gatewayIp.getBuf()) <= 0) {
+              throw std::invalid_argument(Formatter() << "can not parse address:" << gatewayIp);
+            }
+            struct ifreq ifr;
+            ifr.ifr_addr.sa_family = AF_INET;
+            //bool found = false;
+            for(int idx = 1; true ; ++idx) {
+              ifr.ifr_ifindex = idx;
+              //L(DEBUG) << "ifidx=" << ifr.ifr_ifindex << ":" << sizeof(ifr.ifr_addr.sa_family);
+              if (ioctl(socket.fd, SIOCGIFNAME, &ifr) < 0) {
+                if (errno != ENODEV) {
+                  throw std::invalid_argument(Formatter() << "can get interfaces name of idx:" << idx);
+                }
+                break;
+              }
+              //L(DEBUG) << ifr.ifr_name;
+              //L(DEBUG) << inIface;
+              //L(DEBUG) << sizeof(ifr.ifr_name);
+              //L(DEBUG) << "cmp=" <<strncmp(inIface, ifr.ifr_name, sizeof(ifr.ifr_name));
+              //L(DEBUG) << "idx=" <<ifIndex;
+              if (!strncmp(inIface, ifr.ifr_name, sizeof(ifr.ifr_name)) && ifIndex == 0) {
+                if (ioctl (socket.fd, SIOCGIFADDR, &ifr) < 0) {
+                  throw std::invalid_argument(Formatter() << "can get interfaces address:" << ifr.ifr_name);
+                }
+                /*
+                   if (ioctl (socket.fd, SIOCGIFFLAGS, &ifr) < 0 || !(ifr.ifr_flags & IFF_BROADCAST)) {
+                   throw std::invalid_argument(Formatter() << "listenIf is not a broadcast device:" << ifr.ifr_name);
+                   }
+                   */
+                inIfaceSrcAddr = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr;
+                ifIndex = idx;
+                //found = true;
+                return;
+              }
+            }
+            //if (!found) {
+            throw std::invalid_argument(Formatter() << "Interface not found:" << inIface);
+            //}
+          }
+      };
+
+
+      class PacketSource : public Dhcp::PacketSource {
+        private:
+          std::list<std::unique_ptr<Dhcp::Relay>> relays;
+          UdpSocket sock;
+        public:
+          void addRelay(const char *inIface, short listenPort, const char *serverIp, const short serverPort, const char *gatewayIp) {
+            relays.push_back(std::unique_ptr<Dhcp::Relay>(new Relay(inIface, listenPort, serverIp, serverPort, gatewayIp)));
+          }
+          virtual std::list<std::unique_ptr<Dhcp::Relay>>& Relays() {
+            return relays;
+          }
+
+
+          virtual void Start() {
+            const int oneopt = 1;
+            if (setsockopt(sock.fd, SOL_IP, IP_PKTINFO, &oneopt, sizeof(oneopt)) < 0) {
+              throw std::system_error(std::error_code(errno,std::generic_category()), "can setsocketopt SOL_IP, IP_PKTINFO");
+            }
+            if (setsockopt(sock.fd, SOL_SOCKET, SO_BROADCAST, &oneopt, sizeof(oneopt)) < 0) {
+              throw std::system_error(std::error_code(errno,std::generic_category()), "can setsocketopt SOL_SOCKET, SO_BROADCAST");
+            }
+            const int mtuopt = IP_PMTUDISC_DONT;
+            if (setsockopt(sock.fd, SOL_IP, IP_MTU_DISCOVER, &mtuopt, sizeof(mtuopt)) < 0) {
+              throw std::system_error(std::error_code(errno,std::generic_category()), "can setsocketopt SOL_IP, IP_MTU_DISCOVER");
+            }
+            struct sockaddr_in saddr;
+            saddr.sin_family = AF_INET;
+            saddr.sin_port = htons(relays.front()->getListenPort());
+            saddr.sin_addr.s_addr = INADDR_ANY;
+            if (bind(sock.fd, (struct sockaddr *)&saddr, sizeof(struct sockaddr_in))) {
+              throw std::system_error(std::error_code(errno,std::generic_category()), Formatter() << "can bind udp port:" << relays.front()->getListenPort());
+            }
+          }
+
+          virtual void Send(Request &request, const SocketAddr &serverIp, const short port) {
+            struct sockaddr_in saddr;
+            saddr.sin_family = AF_INET;
+            memcpy(&saddr.sin_addr, serverIp.getConstBuf(), sizeof(saddr.sin_addr));
+            saddr.sin_port = htons(port);
+            //L(DEBUG) << "s:addr=" << serverIp.toString() << ":port=" << port << ":xid=" << request.getHeader().getXid()
+            //<< ":ciaddr=" << request.getHeader().getCiaddr().toString() << ":yiaddr=" << request.getHeader().getYiaddr().toString()
+            //<< ":siaddr=" << request.getHeader().getSiaddr().toString() << ":giaddr=" << request.getHeader().getGiaddr().toString();
+            if (sendto(sock.fd, request.getPacket(), request.getSize(), 0, (struct sockaddr *)&saddr, sizeof(saddr)) < 0) {
+              throw std::system_error(std::error_code(errno,std::generic_category()), Formatter() << "can sendto:" << serverIp.toString() << ":" << port);
+            }
+          }
+
+          virtual std::unique_ptr<Request> Recv() {
+            std::unique_ptr<Request> request(new Request(new Dhcp::V6::Header(), sock));
+            struct sockaddr6_in saddr;
+            V6::SocketAddr _saddr(&saddr.sin_addr);
+            struct msghdr msg;
+            struct iovec iov;
+            union {
+              struct cmsghdr align; /* this ensures alignment */
+              char control[CMSG_SPACE(sizeof(struct in_pktinfo))];
+            } control_u;
+
+            msg.msg_control = control_u.control;
+            msg.msg_controllen = sizeof(control_u);
+            msg.msg_name = &saddr;
+            msg.msg_namelen = sizeof(saddr);
+            msg.msg_iov = &iov;
+            msg.msg_iovlen = 1;
+            iov.iov_base = request->getPacket();
+            iov.iov_len = request->getPacketSize();
+
+            int size = recvmsg(this->sock.fd, &msg, 0);
+            if (size < 0) {
+              throw std::system_error(std::error_code(errno,std::generic_category()), "recvmsg failed");
+            }
+            for (struct cmsghdr *cmptr = CMSG_FIRSTHDR(&msg); cmptr; cmptr = CMSG_NXTHDR(&msg, cmptr)) {
+              if (cmptr->cmsg_level == SOL_IP && cmptr->cmsg_type == IP_PKTINFO) {
+                union {
+                  unsigned char *c;
+                  struct in_pktinfo *p;
+                } p;
+                p.c = CMSG_DATA(cmptr);
+                request->setIfIndex(p.p->ipi_ifindex);
+                request->setSize(size);
+                request->setSourcePort(ntohs(saddr.sin_port));
+                //L(DEBUG) << "r:Size:" << request->getSize() << ":Addr=" << _saddr.toString() << ":" << ntohs(saddr.sin_port)
+                //<< ":ifidx=" << request->getIfIndex() << ":name=" << request->getIfName()
+                //<< ":xid=" << request->getHeader().getXid() << ":ciaddr=" << request->getHeader().getCiaddr().toString()
+                //<< ":yiaddr=" << request->getHeader().getYiaddr().toString() << ":siaddr=" << request->getHeader().getSiaddr().toString()
+                //<< ":giaddr=" << request->getHeader().getGiaddr().toString();
+                return request;
+              }
+            }
+            throw std::invalid_argument("no interface found in received packet");
+          }
+          virtual void Stop() { }
+      };
+    }
   }
   class RelayTor {
     private:
@@ -505,7 +791,7 @@ namespace Dhcp {
                 continue;
               }
               if (dr->getHeader().isRequest()) {
-                LOG(DEBUG) << "Process Request(" << dr->getHeader().getXid() << ")";
+                L(DEBUG) << "Process Request(" << dr->getHeader().getXid() << ")";
                 Xid xid(now, dr->getSourcePort());
                 if (!processRequest(dr, now, xid)) {
                   continue;
@@ -513,16 +799,16 @@ namespace Dhcp {
                 xids[dr->getHeader().getXid()] = xid;
               }
               if (dr->getHeader().isReply()) {
-                LOG(DEBUG) << "Process Replay(" << dr->getHeader().getXid() << ")";
+                L(DEBUG) << "Process Replay(" << dr->getHeader().getXid() << ")";
                 const auto& xid = xids.find(dr->getHeader().getXid());
                 if (xid == xids.end()) {
-                  LOG(DEBUG) << "No Xid found for " << dr->getHeader().getXid();
+                  L(DEBUG) << "No Xid found for " << dr->getHeader().getXid();
                   continue;
                 }
                 if (dr->getHeader().getCiaddr().isSet()) {
                   ps.Send(*dr, dr->getHeader().getCiaddr(), xid->second.getSourcePort());
                 } else {
-                  LOG(DEBUG) << "No Ciaddr set for " << dr->getHeader().getXid();
+                  L(DEBUG) << "No Ciaddr set for " << dr->getHeader().getXid();
                 }
               }
               ps.Stop();
@@ -605,7 +891,7 @@ void daemonizer(const char *pidfname) {
       exit(0);
     }
     else {
-      LOG(ERROR) << "First fork failed: %m";
+      L(ERROR) << "First fork failed: %m";
     }
   }
   setsid();
@@ -615,7 +901,7 @@ void daemonizer(const char *pidfname) {
     if (pid > 0) {
       exit(0);
     } else {
-      LOG(ERROR) << "Second fork failed: %m";
+      L(ERROR) << "Second fork failed: %m";
     }
   }
   close(0);
@@ -632,13 +918,18 @@ void daemonizer(const char *pidfname) {
   }
   std::ofstream pidstream;
   pidstream.open(pidfname, std::ios::trunc);
-  //  throw std::system_error(std::error_code(errno,std::generic_category()), Formatter() << "unable to create:" << pidfname);
-  //}
   pidstream << getpid() << std::endl;
   pidstream.close();
-  }
+}
 
 _INITIALIZE_EASYLOGGINGPP
+
+/*
+   std::string basename(const char *path) {
+   int idx = path.rindex(path, '/');
+   return std::string(&path[idx < 0 ? 0 : idx+1])
+   }
+   */
 
 int getopter(int argc, char **argv, Dhcp::Linux::V4PacketSource& linuxV4PacketSource) {
   int c;
@@ -664,7 +955,7 @@ int getopter(int argc, char **argv, Dhcp::Linux::V4PacketSource& linuxV4PacketSo
           if (params.size() != 5) {
             throw std::invalid_argument(Formatter() << "can not parse parameter need 4 %:" << optarg);
           }
-          LOG(INFO) << "addRelay(" << params[0] << "," << params[1] << "," << params[2] << "," << params[3] << "," << params[4];
+          L(INFO) << "addRelay(" << params[0] << "," << params[1] << "," << params[2] << "," << params[3] << "," << params[4];
           linuxV4PacketSource.addRelay(params[0].c_str(), (short)std::stoi(params[1]),
               params[2].c_str(), (short)std::stoi(params[3]), params[4].c_str());
         }
@@ -672,11 +963,12 @@ int getopter(int argc, char **argv, Dhcp::Linux::V4PacketSource& linuxV4PacketSo
 
       case 'd':
         {
-          _INIT_SYSLOG(argv[0], LOG_PID | LOG_CONS | LOG_PERROR, LOG_USER);
-          LOG(INFO) << "starting relaytor as daemon:" << argv[0];
-          SYSLOG(INFO) << "starting relaytor as daemon:" << argv[0];
+          L(INFO) << "starting relaytor as daemon:" << basename(argv[0]);
+          activeLoggerId = el::base::consts::kSysLogLoggerId;
+          activeDispatchAction = el::base::DispatchAction::SysLog;
           daemonizer(optarg);
-          SYSLOG(INFO) << "starting relaytor as daemon";
+          _INIT_SYSLOG(basename(argv[0]), LOG_PID | LOG_CONS | LOG_PERROR, LOG_USER);
+          L(INFO) << "started relaytor as daemon";
         }
         break;
 
@@ -694,16 +986,21 @@ int main(int argc, char **argv) {
 
 
   try {
-    Dhcp::Linux::V4PacketSource linuxV4PacketSource;
+    Dhcp::Linux::V4::PacketSource linuxV4PacketSource;
+    Dhcp::Linux::V6::PacketSource linuxV6PacketSource;
     bool found = false;
-    getopter(argc, argv, linuxV4PacketSource);
+    getopter(argc, argv, linuxV4PacketSource, linuxV6PacketSource);
     if (linuxV4PacketSource.Relays().begin() == linuxV4PacketSource.Relays().end()) {
+      throw std::invalid_argument("need atleast one argument");
+    }
+    if (linuxV6PacketSource.Relays().begin() == linuxV6PacketSource.Relays().end()) {
       throw std::invalid_argument("need atleast one argument");
     }
     Dhcp::RelayTor relayTor;
     relayTor.addPacketSource(linuxV4PacketSource);
+    relayTor.addPacketSource(linuxV6PacketSource);
     relayTor.run();
   } catch (const std::exception& e) {
-    LOG(ERROR) << e.what();
+    L(ERROR) << e.what();
   }
 }

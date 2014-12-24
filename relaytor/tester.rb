@@ -48,13 +48,14 @@ sock.close
 client_port = Random.rand(2**14) + 27395
 relay_port = client_port + 1
 server_port = client_port + 2
-relaytor = "./relaytor -r #{"lo" || if_parameter.ifname}%#{relay_port}%#{if_parameter.addr}%#{server_port}%#{if_parameter.addr} &"
+pid_fname = "/tmp/tester.#{$$}.pid"
+relaytor = "./relaytor -d #{pid_fname} -r #{"lo" || if_parameter.ifname}%#{relay_port}%#{if_parameter.addr}%#{server_port}%#{if_parameter.addr}"
 puts relaytor
 system relaytor
 loops=100000
 #  linuxV4PacketSource.addRelay("eth0", 67,  "192.168.176.1", 67, "192.168.176.110");
-ret = Process.fork
-if ret.nil?
+pid = Process.fork
+if pid.nil?
     sleep 1
     puts "client #{client_port}"
     sock = UDPSocket.new
@@ -100,9 +101,9 @@ if ret.nil?
         retry
       end
     end
-  system "kill $(cat my.pid)"
+  system "kill $(cat #{pid_fname})"
   puts "Client Completed"
-  Process.wait(pid)
+  Process.wait(ret)
 else
   puts "server #{server_port}"
   sock = UDPSocket.new
