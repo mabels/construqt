@@ -233,6 +233,7 @@ namespace Dhcp {
       private:
         struct in6_addr *addr;
         struct in6_addr own;
+        static const in6_addr zero = IN6ADDR_ANY_INIT
       public:
         SocketAddr() : addr(&own) {
         }
@@ -253,18 +254,15 @@ namespace Dhcp {
           return dst;
         }
         virtual bool isSet() const {
-          return memcmp(&(addr->s6_addr), &IN6ADDR_ANY_INIT, sizeof(addr->s6_addr));
+          return memcmp(&(addr->s6_addr), &zero, sizeof(addr->s6_addr));
         }
     };
 
 
     struct Packet {
       struct {
-        unsigned char op, htype, hlen, hops;
-        unsigned int xid;
-        unsigned short secs, flags;
-        struct in6_addr ciaddr, yiaddr, siaddr, giaddr;
-        unsigned char chaddr[16], sname[64], file[128];
+        uint8_t type;
+        uint8_t xid[3];
       } header;
       unsigned char options[16384];
     };
@@ -569,7 +567,7 @@ namespace Dhcp {
           short serverPort;
           Dhcp::V6::SocketAddr gatewayIp;
           size_t ifIndex = 0;
-          struct in_addr inIfaceSrcAddr;
+          struct in6_addr inIfaceSrcAddr;
         public:
           virtual ~Relay() { }
           virtual size_t getIfIndex() const {
@@ -686,7 +684,7 @@ namespace Dhcp {
           virtual std::unique_ptr<Request> Recv() {
             std::unique_ptr<Request> request(new Request(new Dhcp::V6::Header(), sock));
             struct sockaddr6_in saddr;
-            V6::SocketAddr _saddr(&saddr.sin_addr);
+            Dhcp::V6::SocketAddr _saddr(&saddr.sin_addr);
             struct msghdr msg;
             struct iovec iov;
             union {
@@ -931,7 +929,9 @@ _INITIALIZE_EASYLOGGINGPP
    }
    */
 
-int getopter(int argc, char **argv, Dhcp::Linux::V4PacketSource& linuxV4PacketSource) {
+int getopter(int argc, char **argv, 
+    Dhcp::Linux::V4::PacketSource& linuxV4PacketSource,
+    Dhcp::Linux::V6::PacketSource& linuxV6PacketSource) {
   int c;
   int digit_optind = 0;
 
@@ -939,7 +939,8 @@ int getopter(int argc, char **argv, Dhcp::Linux::V4PacketSource& linuxV4PacketSo
     int this_option_optind = optind ? optind : 1;
     int option_index = 0;
     static struct option long_options[] = {
-      {"relay",   required_argument, 0,  0 },
+      {"ipv4",   required_argument, 0,  0 },
+      {"ipv6",   required_argument, 0,  0 },
       {"daemon",   required_argument, 0,  0 },
       {0,         0,                 0,  0 }
     };
@@ -949,7 +950,7 @@ int getopter(int argc, char **argv, Dhcp::Linux::V4PacketSource& linuxV4PacketSo
       break;
 
     switch (c) {
-      case 'r':
+      case '4':
         {
           std::vector<std::string> params = split(optarg, '%');
           if (params.size() != 5) {
@@ -957,6 +958,18 @@ int getopter(int argc, char **argv, Dhcp::Linux::V4PacketSource& linuxV4PacketSo
           }
           L(INFO) << "addRelay(" << params[0] << "," << params[1] << "," << params[2] << "," << params[3] << "," << params[4];
           linuxV4PacketSource.addRelay(params[0].c_str(), (short)std::stoi(params[1]),
+              params[2].c_str(), (short)std::stoi(params[3]), params[4].c_str());
+        }
+        break;
+
+      case '6':
+        {
+          std::vector<std::string> params = split(optarg, '%');
+          if (params.size() != 5) {
+            throw std::invalid_argument(Formatter() << "can not parse parameter need 4 %:" << optarg);
+          }
+          L(INFO) << "addRelay(" << params[0] << "," << params[1] << "," << params[2] << "," << params[3] << "," << params[4];
+          linuxV6PacketSource.addRelay(params[0].c_str(), (short)std::stoi(params[1]),
               params[2].c_str(), (short)std::stoi(params[3]), params[4].c_str());
         }
         break;
@@ -990,10 +1003,8 @@ int main(int argc, char **argv) {
     Dhcp::Linux::V6::PacketSource linuxV6PacketSource;
     bool found = false;
     getopter(argc, argv, linuxV4PacketSource, linuxV6PacketSource);
-    if (linuxV4PacketSource.Relays().begin() == linuxV4PacketSource.Relays().end()) {
-      throw std::invalid_argument("need atleast one argument");
-    }
-    if (linuxV6PacketSource.Relays().begin() == linuxV6PacketSource.Relays().end()) {
+    if (linuxV4PacketSource.Relays().begin() == linuxV4PacketSource.Relays().end() &&
+        linuxV6PacketSource.Relays().begin() == linuxV6PacketSource.Relays().end()) {
       throw std::invalid_argument("need atleast one argument");
     }
     Dhcp::RelayTor relayTor;
