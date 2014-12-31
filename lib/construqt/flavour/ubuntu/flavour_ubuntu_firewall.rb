@@ -442,8 +442,8 @@ module Construqt
           create_from_iface(ifname, iface, writer)
           create_from_iface(ifname, iface.delegate.vrrp.delegate, writer) if iface.delegate.vrrp
           writer_local = host.result.etc_network_interfaces.get(iface)
-          writer_local.lines.up("iptables-restore < /etc/network/iptables.cfg")
-          writer_local.lines.up("ip6tables-restore < /etc/network/ip6tables.cfg")
+          writer_local.lines.up("iptables-restore < /etc/network/iptables.cfg") unless writer.empty_v4?
+          writer_local.lines.up("ip6tables-restore < /etc/network/ip6tables.cfg") unless writer.empty_v6?
         end
       end
     end
