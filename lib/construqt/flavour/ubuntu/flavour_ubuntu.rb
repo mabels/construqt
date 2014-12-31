@@ -84,15 +84,15 @@ module Construqt
           writer.lines.down("ip link set dev #{ifname} down")
           add_address(host, ifname, iface.delegate, writer.lines, writer) #unless iface.address.nil? || iface.address.ips.empty?
           add_services(host, ifname, iface.delegate, writer)
-          host.ipsecs.find do |ipsec|
-            if ipsec.left.remote.interface == iface || ipsec.right.remote.interface == iface
-              writer.lines.up("STARTED_BY_CONSTRUQT=yes /etc/init.d/racoon start")
-              writer.lines.down("STARTED_BY_CONSTRUQT=yes /etc/init.d/racoon restart")
-              true
-            else
-              false
-            end
-          end
+#          host.ipsecs.find do |ipsec|
+#            if ipsec.left.remote.interface == iface || ipsec.right.remote.interface == iface
+#              writer.lines.up("STARTED_BY_CONSTRUQT=yes /etc/init.d/racoon start")
+#              writer.lines.down("STARTED_BY_CONSTRUQT=yes /etc/init.d/racoon restart")
+#              true
+#            else
+#              false
+#            end
+#          end
         end
       end
 
@@ -346,7 +346,7 @@ PAM
       end
 
       def self.ipsec
-        Ipsec
+        StrongSwan::Ipsec
       end
       def self.bgp
         Bgp
@@ -393,7 +393,7 @@ PAM
       end
 
       def self.create_ipsec(cfg)
-        Ipsec.new(cfg)
+        StrongSwan::Ipsec.new(cfg)
       end
     end
   end
