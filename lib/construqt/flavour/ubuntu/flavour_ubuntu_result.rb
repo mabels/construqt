@@ -571,7 +571,7 @@ VRRP
             cp::VRRP => { "keepalived" => true },
             cp::FW4 => { "iptables" => true, "ulogd2" => true },
             cp::FW6 => { "iptables" => true, "ulogd2" => true },
-            cp::IPSEC => { "racoon" => true },
+            cp::IPSEC => { "strongswan" => true },
             cp::SSH => { "openssh-server" => true },
             cp::BGP => { "bird" => true },
             cp::OPENVPN => { "openvpn" => true },
