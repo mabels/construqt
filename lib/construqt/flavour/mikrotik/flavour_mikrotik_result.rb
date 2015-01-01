@@ -45,7 +45,7 @@ module Construqt
 
           OpenStruct.new(
             :key => keys.keys.sort{|a,b| default[a].key_order <=> default[b].key_order }
-                        .map{|k| v=keys[k]; "#{k}=#{default[k].serialize(v)}"}.join(" && "),
+                        .map{|k| v=keys[k]; render_term(default, k, v) }.join(" && "),
             :result => result,
             :add_line => result.select{ |k,v|
               if default[k].kind_of?(Schema) && default[k].noset?
@@ -54,8 +54,16 @@ module Construqt
                 !(v.to_s.empty?)
               end
 
-            }.map{|k,v| "#{k}=#{default[k].serialize(v)}"}.sort.join(" ")
+            }.map{|k,v| render_term(default, k, v) }.sort.join(" ")
           )
+        end
+
+        def render_term(default, k, v)
+          if (v == Schema::DISABLE)
+            "!#{k}"
+          else
+            "#{k}=#{default[k].serialize(v)}"
+          end
         end
 
         def render_mikrotik_set_direct(default, cfg, *path)
@@ -82,6 +90,13 @@ module Construqt
           ret << "    :local record [get $found]"
           prepared.result.keys.sort.each do |key|
             next if prepared.result[key].nil?
+            if (prepared.result[key] == Schema::DISABLE)
+              ret << "    :if ([:len ($record->#{key.inspect})]!=0) do={"
+              ret << "       :put "+"/#{path.join(' ')} set [find #{prepared.key} ] !#{key}".inspect
+              ret << "       set $found !#{key}"
+              ret << "    }"
+              next
+            end
             val = default[key].serialize(prepared.result[key])
             next if val.to_s.empty?
             compare_val = default[key].serialize_compare(prepared.result[key])
