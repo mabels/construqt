@@ -197,27 +197,26 @@ HEADER
 
             leftsubnet = self.my.ips.map{|i| i.to_s }.join(',')
             rightsubnet = self.other.my.ips.map{|i| i.to_s }.join(',')
-
             self.host.result.add(self, <<RACOON, Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
 conn #{self.host.name}-#{self.other.host.name}
         left=#{transport_left}
         right=#{transport_right}
         leftsubnet=#{leftsubnet}
         rightsubnet=#{rightsubnet}
+        esp=aes256-sha1-modp1536
+        ike=aes256-sha1-modp1536
         compress=yes
-        closeaction=restart
+        ikelifetime=60m
+        keylife=20m
+        keyingtries=0
+        keyexchange=#{self.cfg.keyexchange || "ike"}
+        type=tunnel
+        authby=secret
         dpdaction=restart
         dpddelay=30s
         dpdtimeout=60s
-        esp=aes256-sha1-modp1536
-        ike=aes256-sha1-modp1536
-        ikelifetime=60m
-        keylife=20m
         rekeymargin=3m
-        keyingtries=1
-        keyexchange=ike
-        type=tunnel
-        authby=secret
+        closeaction=restart
         auto=start
 RACOON
           end
