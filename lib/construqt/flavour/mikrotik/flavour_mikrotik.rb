@@ -300,6 +300,7 @@ OUT
             "name"=>Schema.identifier.required.key,
             "local-address"=>Schema.address.required,
             "remote-address"=>Schema.address.required,
+            "keepalive" => Schema.identifiers.default(Schema::DISABLE),
             "mtu"=>Schema.int.default(1456)
 #            "l2mtu"=>Schema.int.default(65535)
           }
