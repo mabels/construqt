@@ -53,6 +53,10 @@ module Construqt
         self.delegate.address
       end
 
+      def address=(a)
+        self.delegate.address=a
+      end
+
       def template
         self.delegate.template
       end
@@ -63,6 +67,10 @@ module Construqt
 
       def priority
         self.delegate.priority
+      end
+
+      def priority=(a)
+        self.delegate.priority=a
       end
 
       def clazz
@@ -283,58 +291,6 @@ module Construqt
       include Delegate
       def initialize(template)
         self.delegate = template
-      end
-    end
-
-    class InterfaceDelegate
-      include Delegate
-      def initialize(interface)
-        self.delegate = interface
-      end
-
-      def clazz
-        self.delegate.clazz
-      end
-
-      def _ident
-        self.clazz.ident
-        #        "#{self.delegate.clazz.name}_#{self.name}"
-      end
-
-      def name
-        self.delegate.name
-      end
-
-      def address
-        self.delegate.address
-      end
-
-      def priority
-        self.delegate.priority
-      end
-
-      def host
-        self.delegate.host
-      end
-
-      def network
-        self.delegate.network
-      end
-
-      def cable
-        self.delegate.cable
-      end
-
-      def cable=(a)
-        self.delegate.cable = a
-      end
-
-      def template
-        self.delegate.template
-      end
-
-      def interfaces
-        self.delegate.interfaces
       end
     end
 
