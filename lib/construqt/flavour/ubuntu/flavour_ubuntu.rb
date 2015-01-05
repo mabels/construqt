@@ -17,25 +17,14 @@ module Construqt
 
       Flavour.add(self)
 
-      #  class Interface < OpenStruct
-      #    def initialize(cfg)
-      #      super(cfg)
-      #    end
-
-      #    def build_config(host, iface)
-      #      self.clazz.build_config(host, iface||self)
-      #    end
-
-      #  end
-
       class Device < OpenStruct
         def initialize(cfg)
           super(cfg)
         end
 
-        def self.add_address(host, ifname, iface, lines, writer)
+        def self.add_address(host, ifname, iface, lines, writer, family)
           if iface.address.nil?
-            Firewall.create(host, ifname, iface)
+            Firewall.create(host, ifname, iface, family)
             return
           end
 
@@ -44,55 +33,51 @@ module Construqt
           writer.header.mode(EtcNetworkInterfaces::Entry::Header::MODE_LOOPBACK) if iface.address.loopback?
           lines.add(iface.flavour) if iface.flavour
           iface.address.ips.each do |ip|
-            lines.up("ip addr add #{ip.to_string} dev #{ifname}")
-            lines.down("ip addr del #{ip.to_string} dev #{ifname}")
+            if family.nil? ||
+               (!family.nil? && family == Construqt::Addresses::IPV6 && ip.ipv6?) ||
+               (!family.nil? && family == Construqt::Addresses::IPV4 && ip.ipv4?)
+              lines.up("ip addr add #{ip.to_string} dev #{ifname}")
+              lines.down("ip addr del #{ip.to_string} dev #{ifname}")
+            end
           end
 
           iface.address.routes.each do |route|
-            if route.metric
-              metric = " metric #{route.metric}"
-            else
-              metric = ""
+            if family.nil? ||
+                (!family.nil? && family == Construqt::Addresses::IPV6 && route.via.ipv6?) ||
+                (!family.nil? && family == Construqt::Addresses::IPV4 && route.via.ipv4?)
+              if route.metric
+                metric = " metric #{route.metric}"
+              else
+                metric = ""
+              end
+              lines.up("ip route add #{route.dst.to_string} via #{route.via.to_s}#{metric}")
+              lines.down("ip route del #{route.dst.to_string} via #{route.via.to_s}#{metric}")
             end
-            lines.up("ip route add #{route.dst.to_string} via #{route.via.to_s}#{metric}")
-            lines.down("ip route del #{route.dst.to_string} via #{route.via.to_s}#{metric}")
           end
 
-          Firewall.create(host, ifname, iface)
+          Firewall.create(host, ifname, iface, family)
         end
 
         def build_config(host, iface)
           self.class.build_config(host, iface)
         end
 
-        def self.add_services(host, ifname, iface, writer)
+        def self.add_services(host, ifname, iface, writer, family)
           iface.services && iface.services.each do |service|
-            Services.get_renderer(service).interfaces(host, ifname, iface, writer)
+            Services.get_renderer(service).interfaces(host, ifname, iface, writer, family)
           end
         end
 
-        def self.build_config(host, iface)
+        def self.build_config(host, iface, ifname = nil, family = nil)
           #      binding.pry
-          writer = host.result.etc_network_interfaces.get(iface)
+          writer = host.result.etc_network_interfaces.get(iface, ifname)
           writer.header.protocol(EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
-          #binding.pry #unless iface.delegate
           writer.lines.add(iface.delegate.flavour) if iface.delegate.flavour
-          ifname = writer.header.get_interface_name
-          #      ifaces.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_DHCP4) if iface.address.dhcpv4?
-          #      ifaces.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_LOOOPBACK) if iface.address.loopback?
+          ifname = ifname || writer.header.get_interface_name
           writer.lines.up("ip link set mtu #{iface.delegate.mtu} dev #{ifname} up")
           writer.lines.down("ip link set dev #{ifname} down")
-          add_address(host, ifname, iface.delegate, writer.lines, writer) #unless iface.address.nil? || iface.address.ips.empty?
-          add_services(host, ifname, iface.delegate, writer)
-#          host.ipsecs.find do |ipsec|
-#            if ipsec.left.remote.interface == iface || ipsec.right.remote.interface == iface
-#              writer.lines.up("STARTED_BY_CONSTRUQT=yes /etc/init.d/racoon start")
-#              writer.lines.down("STARTED_BY_CONSTRUQT=yes /etc/init.d/racoon restart")
-#              true
-#            else
-#              false
-#            end
-#          end
+          add_address(host, ifname, iface.delegate, writer.lines, writer, family)
+          add_services(host, ifname, iface.delegate, writer, family)
         end
       end
 
@@ -307,32 +292,50 @@ PAM
 
         def build_config(host, gre)
           gre_delegate = gre.delegate
-          cfg = nil
+          prepare = { }
+#          binding.pry
           if gre_delegate.local.first_ipv6
-            cfg = OpenStruct.new(:prefix=>6, :my=>gre_delegate.local.first_ipv6, :other => gre_delegate.remote.first_ipv6, :mode => "ip6gre")
-          elsif gre_delegate.local.first_ipv4
-            cfg = OpenStruct.new(:prefix=>4, :my=>gre_delegate.local.first_ipv4, :other => gre_delegate.remote.first_ipv4, :mode => "ipgre")
+            prepare[6] = OpenStruct.new(:prefix=>6, :family => Construqt::Addresses::IPV6,
+                                    :my=>gre_delegate.local.first_ipv6,
+                                    :other => gre_delegate.other.interface.delegate.local.first_ipv6,
+                                    :remote => gre_delegate.remote.first_ipv6||gre_delegate.remote.first_ipv4,
+                                    :mode => "ip6gre")
           end
 
-          throw "need a local address #{host.name}:#{gre_delegate.name}" unless cfg
-          local_iface = host.interfaces.values.find { |iface| iface.address && iface.address.match_network(cfg.my) }
-          throw "need a interface with address #{host.name}:#{cfg.my}" unless local_iface
-          iname = Util.clean_if("gt#{cfg.prefix}", gre_delegate.name)
+          if gre_delegate.local.first_ipv4
+            prepare[4] = OpenStruct.new(:prefix=>4, :family => Construqt::Addresses::IPV4,
+                                    :my=>gre_delegate.local.first_ipv4,
+                                    :other => gre_delegate.other.interface.delegate.local.first_ipv4,
+                                    :remote => gre_delegate.remote.first_ipv4||gre_delegate.remote.first_ipv6,
+                                    :mode => "gre")
+          end
 
-          writer_local = host.result.etc_network_interfaces.get(local_iface)
-          writer_local.lines.up("/bin/bash /etc/network/#{iname}-up.iface")
-          writer_local.lines.down("/bin/bash /etc/network/#{iname}-down.iface")
+          #ip -6 tunnel add gt6naspr01 mode ip6gre local 2a04:2f80:f:f003::2 remote 2a04:2f80:f:f003::1
+          #ip link set mtu 1500 dev gt6naspr01 up
+          #ip addr add 2a04:2f80:f:f003::2/64 dev gt6naspr01
+
+          #ip -4 tunnel add gt4naspr01 mode gre local 169.254.193.2 remote 169.254.193.1
+          #ip link set mtu 1500 dev gt4naspr01 up
+          #ip addr add 169.254.193.2/30 dev gt4naspr01
 
 
-          writer = host.result.etc_network_interfaces.get(gre_delegate)
-          writer.skip_interfaces.header.interface_name(iname)
-          writer.lines.up("ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}")
-          #writer.lines.up("ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}")
-          #/sbin/ip -6 tunnel add gt4nactr01 mode ip4ip6 remote 2a04:2f80:f:f003::2 local 2a04:2f80:f:f003::1
-          #      writer.lines.up("ip -#{cfg.prefix} link set dev #{iname} up")
-          Device.build_config(host, gre)
-          #      Device.add_address(host, iname, iface, writer.lines, writer)
-          writer.lines.down("ip -#{cfg.prefix} tunnel del #{iname}")
+          throw "need a local address #{host.name}:#{gre_delegate.name}" if prepare.empty?
+          prepare.values.each do |cfg|
+#            binding.pry
+            local_iface = host.interfaces.values.find { |iface| iface.address && iface.address.match_network(cfg.remote.ipaddr) }
+            throw "need a interface with address #{host.name}:#{cfg.my}" unless local_iface
+
+            iname = Util.clean_if("gt#{cfg.prefix}", gre_delegate.name)
+            writer_local = host.result.etc_network_interfaces.get(local_iface)
+            writer_local.lines.up("/bin/bash /etc/network/#{iname}-up.iface")
+            writer_local.lines.down("/bin/bash /etc/network/#{iname}-down.iface")
+
+            writer = host.result.etc_network_interfaces.get(gre, iname)
+            writer.skip_interfaces.header.interface_name(iname)
+            writer.lines.up("ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}")
+            Device.build_config(host, gre, iname, cfg.family)
+            writer.lines.down("ip -#{cfg.prefix} tunnel del #{iname}")
+          end
         end
       end
 
@@ -348,6 +351,7 @@ PAM
       def self.ipsec
         StrongSwan::Ipsec
       end
+
       def self.bgp
         Bgp
       end

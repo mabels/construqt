@@ -205,7 +205,7 @@ conn #{self.host.name}-#{self.other.host.name}
         rightsubnet=#{rightsubnet}
         esp=aes256-sha1-modp1536
         ike=aes256-sha1-modp1536
-        compress=yes
+        compress=no
         ikelifetime=60m
         keylife=20m
         keyingtries=0
@@ -213,8 +213,8 @@ conn #{self.host.name}-#{self.other.host.name}
         type=tunnel
         authby=secret
         dpdaction=restart
-        dpddelay=30s
-        dpdtimeout=60s
+        dpddelay=120s
+        dpdtimeout=180s
         rekeymargin=3m
         closeaction=restart
         auto=start

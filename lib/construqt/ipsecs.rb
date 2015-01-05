@@ -1,14 +1,22 @@
 
 module Construqt
   module Ipsecs
-    class Ipsec < OpenStruct
+    class Ipsec
+      attr_reader :rights, :lefts, :transport_family, :password, :name, :keyexchange
       def initialize(cfg)
-        super(cfg)
+        @cfg = cfg
+        @rights = @cfg['rights']
+        @lefts = @cfg['lefts']
+        @transport_family = @cfg['transport_family']
+        @password = @cfg['password']
+        @name = @cfg['name']
+        @keyexchange = @cfg['keyexchange']
       end
 
       def build_config()
-        self.left.build_config(nil, nil)
-        self.right.build_config(nil, nil)
+        (self.rights+self.lefts).each do |iface|
+          iface.build_config(nil, nil)
+        end
       end
 
       def ident
@@ -17,59 +25,90 @@ module Construqt
     end
 
     @ipsecs = {}
-    def self.add_connection(cfg, id, to_id, iname)
-      throw "my not found #{cfg[id].inspect}" unless cfg[id]['my']
-      throw "host not found #{cfg[id].inspect}" unless cfg[id]['host']
-      throw "remote not found #{cfg[id].inspect}" unless cfg[id]['remote']
-      cfg[id]['other'] = nil
-      cfg[id]['cfg'] = nil
-      cfg[id]['my'].host = cfg[id]['host']
-      cfg[id]['my'].name = "#{iname}-#{cfg[id]['host'].name}"
-      cfg[id]['interface'] = nil
-      cfg[id] = cfg[id]['host'].flavour.create_ipsec(cfg[id])
+    def self.add_connection(cfg, iname)
+      throw "my not found #{cfg.keys.inspect}" unless cfg['my']
+      throw "host not found #{cfg.keys.inspect}" unless cfg['host']
+      throw "remote not found #{cfg.keys.inspect}" unless cfg['remote']
+#      binding.pry if cfg['host'].name.start_with?("na-ct-r0")
+      cfg['other'] = nil
+      cfg['cfg'] = nil
+      cfg['my'].host = cfg['host']
+      cfg['my'].name = "#{iname}-#{cfg['host'].name}"
+      cfg['interface'] = nil
+      cfg['host'].flavour.create_ipsec(cfg)
     end
 
     def self.connection(name, cfg)
-      #    binding.pry
-      add_connection(cfg, 'left', 'right', Util.add_gre_prefix(cfg['right']['host'].name))
-      add_connection(cfg, 'right', 'left', Util.add_gre_prefix(cfg['left'].host.name))
+      cfg = {}.merge(cfg)
+      cfg['left']['hosts'] = ((cfg['left']['hosts']||[]) + [cfg['left']['host']]).compact
+      throw "left need atleast one host" if cfg['left']['hosts'].empty?
+      cfg['right']['hosts'] = ((cfg['right']['hosts']||[]) + [cfg['right']['host']]).compact
+      throw "right need atleast one host" if cfg['right']['hosts'].empty?
+
+      cfg['lefts'] = []
+      cfg['rights'] = []
+      cfg['left']['hosts'].each do |host|
+        my = cfg['left'].merge('host' => host, 'my' => cfg['left']['my'].clone)
+        my.delete('lefts')
+        my.delete('rights')
+        cfg['lefts'] << add_connection(my, Util.add_gre_prefix(cfg['right']['hosts'].map{|h| h.name}.join('-')))
+      end
+
+      cfg['right']['hosts'].each do |host|
+        my = cfg['right'].merge('host' => host, 'my' => cfg['right']['my'].clone)
+        my.delete('lefts')
+        my.delete('rights')
+        cfg['rights'] << add_connection(my, Util.add_gre_prefix(cfg['left']['hosts'].map{|h| h.name}.join('-')))
+      end
+
+      cfg.delete('left')
+      cfg.delete('right')
       cfg['name'] = name
       cfg['transport_family'] ||= Construqt::Addresses::IPV6
       cfg = @ipsecs[name] = Ipsec.new(cfg)
-      cfg.left.other = cfg.right
-      cfg.left.cfg = cfg
-      cfg.right.other = cfg.left
-      cfg.right.cfg = cfg
 
-      cfg.left.host.add_ipsec(cfg)
-      cfg.right.host.add_ipsec(cfg)
+      cfg.lefts.each do |left|
+        left.other = cfg.rights.first
+        left.cfg = cfg
+        left.host.add_ipsec(cfg)
+        left.interface = left.my.host.region.interfaces.add_gre(left.my.host, left.other.host.name,
+                                                                "address" => left.my,
+                                                                "local" => left.my,
+                                                                "other" => left.other,
+                                                                "remote" => left.remote,
+                                                                "ipsec" => cfg
+                                                               )
+      end
 
-      #puts "-------- #{cfg.left.my.host.name} - #{cfg.right.my.host.name}"
-      cfg.left.interface = cfg.left.my.host.region.interfaces.add_gre(cfg.left.my.host, cfg.left.other.host.name,
-                                                                      "address" => cfg.left.my,
-                                                                      "local" => cfg.left.remote,
-                                                                      "remote" => cfg.right.remote,
-                                                                      "ipsec" => cfg
-                                                                     )
-      cfg.right.interface = cfg.left.my.host.region.interfaces.add_gre(cfg.right.my.host, cfg.right.other.host.name,
-                                                                       "address" => cfg.right.my,
-                                                                       "local" => cfg.right.remote,
-                                                                       "remote" => cfg.left.remote,
-                                                                       "ipsec" => cfg
-                                                                      )
+      cfg.rights.each do |right|
+        right.other = cfg.lefts.first
+        right.cfg = cfg
+        right.host.add_ipsec(cfg)
+        right.interface = right.my.host.region.interfaces.add_gre(right.my.host, right.other.host.name,
+                                                                  "address" => right.my,
+                                                                  "local" => right.my,
+                                                                  "other" => right.other,
+                                                                  "remote" => right.remote,
+                                                                  "ipsec" => cfg
+                                                                 )
+      end
+
       cfg
     end
 
     def self.build_config()
       hosts = {}
       @ipsecs.values.each do |ipsec|
-        hosts[ipsec.left.host.object_id] ||= ipsec.left.host
-        hosts[ipsec.right.host.object_id] ||= ipsec.right.host
+        (ipsec.rights+ipsec.lefts).each do |iface|
+          hosts[iface.host.object_id] ||= iface.host
+        end
       end
+
       #binding.pry
       hosts.values.each do |host|
         host.flavour.ipsec.header(host) if host.flavour.ipsec.respond_to?(:header)
       end
+
       @ipsecs.each do |name, ipsec|
         ipsec.build_config()
       end

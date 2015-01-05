@@ -392,9 +392,9 @@ BLOCK
           end
         end
 
-        def get(iface)
-          throw "clazz needed #{iface.name}" unless iface.clazz
-          @entries[iface.name] ||= Entry.new(@result, iface)
+        def get(iface, name = nil)
+          throw "clazz needed #{name || iface.name}" unless iface.clazz
+          @entries[name || iface.name] ||= Entry.new(@result, iface)
         end
 
         def commit
@@ -565,6 +565,7 @@ VRRP
             "Construqt::Flavour::Ubuntu::Bond" => { "ifenslave" => true },
             "Construqt::Flavour::VlanDelegate" => { "vlan" => true },
             "Construqt::Flavour::Ubuntu::Gre" => { },
+            "Construqt::Flavour::GreDelegate" => {},
             "Construqt::Flavour::BridgeDelegate" => { "bridge-utils" => true },
             cp::NTP => { "ntpd" => true},
             cp::USB_MODESWITCH => { "usb-modeswitch" => true, "usb-modeswitch-data" => true },

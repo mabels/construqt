@@ -2,6 +2,7 @@ module Construqt
   class Interfaces
     def initialize(region)
       @region = region
+      @interfaces = {}
     end
 
     def setup_template(iface)
@@ -20,6 +21,7 @@ module Construqt
 
     def add_device(host, dev_name, cfg)
       throw "Host not found:#{dev_name}" unless host
+      binding.pry if host.interfaces[dev_name]
       throw "Interface is duplicated:#{host.name}:#{dev_name}" if host.interfaces[dev_name]
       throw "invalid name #{dev_name}" unless dev_name.match(/^[A-Za-z0-9\-\.]+$/)
       if match=/^.*[^\d](\d+)$/.match(dev_name)
@@ -39,6 +41,8 @@ module Construqt
       host.interfaces[dev_name] = iface
       host.interfaces[dev_name].address.interface = host.interfaces[dev_name] if host.interfaces[dev_name].address
       setup_template(iface) if iface.template
+      @interfaces[dev_name] ||= []
+      @interfaces[dev_name] << iface
       host.interfaces[dev_name]
     end
 
@@ -158,6 +162,12 @@ module Construqt
       throw "host not found #{host_or_name}" if host.nil?
       throw "interface not found for #{iface_name}:#{host.name}" if iface.nil?
       iface
+    end
+
+    def find_by_name(iface_name)
+      ret = @interfaces[iface_name]
+      throw "interfaces with name #{iface_name} not found" if ret.nil? or ret.empty?
+      ret
     end
 
     def build_config(hosts = nil)

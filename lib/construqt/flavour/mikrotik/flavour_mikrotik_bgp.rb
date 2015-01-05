@@ -2,9 +2,17 @@ module Construqt
   module Flavour
     module Mikrotik
 
-      class Bgp < OpenStruct
+      class Bgp
+        attr_accessor :delegate, :other, :cfg
+        attr_reader :host, :as, :default_originate, :filter, :my
         def initialize(cfg)
-          super(cfg)
+          @other = cfg['other']
+          @my = cfg['my']
+          @cfg = cfg['cfg']
+          @host = cfg['host']
+          @as = cfg['as']
+          @default_originate = cfg['default_originate']
+          @filter = cfg['filter']
         end
 
         def self.write_filter(host)
@@ -59,8 +67,9 @@ module Construqt
         def self.write_peer(host)
           as_s = {}
           Bgps.connections.each do |bgp|
-            as_s[bgp.left.as] ||= OpenStruct.new(:host => host) if bgp.left.my.host == host
-            as_s[bgp.right.as] ||= OpenStruct.new(:host => host) if bgp.right.my.host == host
+            (bgp.rights+bgp.lefts).each do |my|
+              as_s[my.as] ||= OpenStruct.new(:host => host) if my.host == host
+            end
           end
 
           as_s.each do |as, val|
