@@ -9,17 +9,19 @@ module Construqt
           end
 
           def up(ifname, inbounds, upstreams)
-            minus_i = (["-i #{ifname}"] + inbounds.map { |cqip| "-i #{cqip.container.interface.name}" }).join(' ')
-            servers = upstreams.map{ |cqip| cqip.to_s }.join(' ')
-            "/usr/sbin/dhcrelay -pf /run/dhcrelay-v4.#{ifname}.pid -q -4 #{minus_i} #{servers}"
+            minus_i = (inbounds.map { |cqip| "-i #{cqip.container.interface.name}" }).join(' ')
+            servers = upstreams.map{ |cqip| "-s #{cqip.to_s}" }.join(' ')
+            #"/usr/sbin/dhcrelay -pf /run/dhcrelay-v4.#{ifname}.pid -q -4 #{minus_i} #{servers}"
+            "/usr/sbin/dhcp-helper #{servers} #{minus_i} -r /run/dhcp-helper-v4.#{ifname}.pid"
           end
 
           def down(ifname, inbounds, upstreams)
-            "kill `cat /run/dhcrelay-v4.#{ifname}.pid`"
+            #"kill `cat /run/dhcrelay-v4.#{ifname}.pid`"
+            "kill `cat /run/dhcp-helper-v4.#{ifname}.pid`"
           end
 
           def vrrp(host, ifname, vrrp)
-            inbounds = Construqt::Tags.find(@service.inbound_tag).select{ |cqip| cqip.container.interface.host == host && cqip.ipv4? }
+            inbounds = Construqt::Tags.find(@service.inbound_tag).select{ |cqip| cqip.container.interface.host == host && cqip.ipv4? && !cqip.container.interface.name.empty? }
             return if inbounds.empty?
             iface = vrrp.interfaces.find{|_| _.host == host }
             return unless iface
@@ -47,13 +49,16 @@ module Construqt
           end
 
           def up(ifname, inbounds, upstreams)
-            minus_l = inbounds.map { |cqip| "-l #{cqip}%#{cqip.container.interface.name}" }.join(' ')
-            minus_o = upstreams.map{ |cqip| "-u #{cqip}%#{ifname}" }.join(' ')
-            "/usr/sbin/dhcrelay -pf /run/dhcrelay-v6.#{ifname}.pid -q -6 #{minus_l} #{minus_o}"
+            inbound_ifs = inbounds.map { |cqip| "#{cqip.container.interface.name}" }.join(' ')
+            minus_s = upstreams.map{ |cqip| "-s #{cqip}" }.join(' ')
+            minus_r = upstreams.map{ |cqip| "-r #{ifname}" }.join(' ')
+            #"/usr/sbin/dhcrelay -pf /run/dhcrelay-v6.#{ifname}.pid -q -6 #{minus_l} #{minus_o}"
+            "/usr/sbin/dhcp6relay -d -p /run/dhcp6relay-v6.#{ifname}.pid #{minus_s} #{minus_r} #{inbound_ifs}"
           end
 
           def down(ifname, inbounds, upstreams)
-            "kill `cat /run/dhcrelay-v6.#{ifname}.pid`"
+            #"kill `cat /run/dhcrelay-v6.#{ifname}.pid`"
+            "kill `cat /run/dhcp6relay-v6.#{ifname}.pid`"
           end
 
           def vrrp(host, ifname, vrrp)
@@ -116,7 +121,7 @@ interface #{ifname}
         prefix #{iface.address.first_ipv6.network.to_string}
         {
                 AdvOnLink on;
-                AdvAutonomous off;
+                AdvAutonomous #{@service.adv_autonomous? ? "on" : "off"};
                 AdvRouterAddr on;
         };
 

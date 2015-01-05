@@ -130,6 +130,22 @@ module Construqt
           routes.map{|i| i.dst }.select{|i| family == Construqt::Addresses::IPV6 ? i.ipv6? : i.ipv4? }
         end
 
+#        def self.try_tags_as_ipaddress(list, family, *possible_addrs)
+#          return list unless list.empty?
+#          ret = possible_addrs.map do |addr|
+#            next nil unless addr
+#            begin
+#              addr = IPAddress.parse(addr)
+#              next addr if (addr.ipv4? && family == Construqt::Addresses::IPV4) || (addr.ipv6? && family == Construqt::Addresses::IPV6)
+#              nil
+#            rescue Exception => e
+#              nil
+#            end
+#          end.compact
+#          binding.pry unless ret.empty?
+#          ret
+#        end
+
         def self.write_table(iptables, rule, to_from)
           family = iptables=="ip6tables" ? Construqt::Addresses::IPV6 : Construqt::Addresses::IPV4
           if rule.from_my_net?
@@ -140,6 +156,7 @@ module Construqt
             from_list = IPAddress.summarize(networks)
           else
             from_list = Construqt::Tags.ips_net(rule.get_from_net, family)
+#            from_list = try_tags_as_ipaddress(from_list, family, rule.get_from_net)
           end
 
           if rule.to_my_net?
@@ -154,8 +171,10 @@ module Construqt
             else
               to_list = Construqt::Tags.ips_net(rule.get_to_net, family)
             end
+#           to_list = try_tags_as_ipaddress(to_list, family, rule.get_to_net, rule.get_to_host)
           end
           unless rule.get_to_net_addr.empty?
+            #binding.pry
             addrs = rule.get_to_net_addr.map { |i| IPAddress.parse(i) }.select { |i|
               (i.ipv6? && family == Construqt::Addresses::IPV6) || (i.ipv4? && family == Construqt::Addresses::IPV4)
             }
@@ -368,21 +387,21 @@ module Construqt
 
             protocol_loop(rule).each do |protocol|
               [{
+                :doit    => rule.input_only?,
                 :from_to => lambda { ToFrom.new.bind_interface(ifname, iface, rule).input_only },
                 :writer4 => !rule.from_is_inbound? ? writer.ipv4.input : writer.ipv4.output,
                 :writer6 => !rule.from_is_inbound? ? writer.ipv6.input : writer.ipv6.output
               },{
+                :doit    => rule.output_only?,
                 :from_to => lambda { ToFrom.new.bind_interface(ifname, iface, rule).output_only },
                 :writer4 => rule.from_is_inbound? ? writer.ipv4.input : writer.ipv4.output,
                 :writer6 => rule.from_is_inbound? ? writer.ipv6.input : writer.ipv6.output
               }].each do |to_from_writer|
+                next unless to_from_writer[:doit]
                 {:v4 => { :enabled => fw.ipv4?, :table => "iptables", :writer => to_from_writer[:writer4]},
                  :v6 => { :enabled => fw.ipv6?, :table => "ip6tables", :writer => to_from_writer[:writer6] }}.each do |family, cfg|
                   to_from = to_from_writer[:from_to].call
                   next unless cfg[:enabled]
-
-
-
                   if protocol == "-p icmp" && family == :v6
                     my_protocol = "-p icmpv6"
                   else
@@ -423,8 +442,8 @@ module Construqt
           create_from_iface(ifname, iface, writer)
           create_from_iface(ifname, iface.delegate.vrrp.delegate, writer) if iface.delegate.vrrp
           writer_local = host.result.etc_network_interfaces.get(iface)
-          writer_local.lines.up("iptables-restore < /etc/network/iptables.cfg")
-          writer_local.lines.up("ip6tables-restore < /etc/network/ip6tables.cfg")
+          writer_local.lines.up("iptables-restore < /etc/network/iptables.cfg") unless writer.empty_v4?
+          writer_local.lines.up("ip6tables-restore < /etc/network/ip6tables.cfg") unless writer.empty_v6?
         end
       end
     end
