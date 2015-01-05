@@ -84,15 +84,15 @@ module Construqt
           writer.lines.down("ip link set dev #{ifname} down")
           add_address(host, ifname, iface.delegate, writer.lines, writer) #unless iface.address.nil? || iface.address.ips.empty?
           add_services(host, ifname, iface.delegate, writer)
-          host.ipsecs.find do |ipsec|
-            if ipsec.left.remote.interface == iface || ipsec.right.remote.interface == iface
-              writer.lines.up("/etc/init.d/racoon start")
-              writer.lines.down("/etc/init.d/racoon restart")
-              true
-            else
-              false
-            end
-          end
+#          host.ipsecs.find do |ipsec|
+#            if ipsec.left.remote.interface == iface || ipsec.right.remote.interface == iface
+#              writer.lines.up("STARTED_BY_CONSTRUQT=yes /etc/init.d/racoon start")
+#              writer.lines.down("STARTED_BY_CONSTRUQT=yes /etc/init.d/racoon restart")
+#              true
+#            else
+#              false
+#            end
+#          end
         end
       end
 
@@ -315,7 +315,7 @@ PAM
           end
 
           throw "need a local address #{host.name}:#{gre_delegate.name}" unless cfg
-          local_iface = host.interfaces.values.find { |iface| iface.address.match_network(cfg.my) }
+          local_iface = host.interfaces.values.find { |iface| iface.address && iface.address.match_network(cfg.my) }
           throw "need a interface with address #{host.name}:#{cfg.my}" unless local_iface
           iname = Util.clean_if("gt#{cfg.prefix}", gre_delegate.name)
 
@@ -346,7 +346,7 @@ PAM
       end
 
       def self.ipsec
-        Ipsec
+        StrongSwan::Ipsec
       end
       def self.bgp
         Bgp
@@ -393,7 +393,7 @@ PAM
       end
 
       def self.create_ipsec(cfg)
-        Ipsec.new(cfg)
+        StrongSwan::Ipsec.new(cfg)
       end
     end
   end

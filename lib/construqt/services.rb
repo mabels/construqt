@@ -27,7 +27,9 @@ module Construqt
     end
 
     class Radvd
+      include Construqt::Util::Chainable
       attr_accessor :servers, :name, :services
+      chainable_attr :adv_autonomous
       def initialize(name)
         self.name = name
       end

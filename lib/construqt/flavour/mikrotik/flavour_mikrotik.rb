@@ -236,7 +236,7 @@ TESTNAME
           host.result.render_mikrotik({
             "name" => Schema.identifier.required.key,
             "enc-algorithms" => Schema.identifier.default("aes-256-cbc"),
-            "lifetime" => Schema.interval.default("00:01:00"),
+            "lifetime" => Schema.interval.default("00:20:00"),
             "pfs-group"=> Schema.identifier.default("modp1536")
           }, {"name" => "s2b-proposal"}, "ip", "ipsec", "proposal")
           host.result.add("", "default=yes", "ip", "ipsec", "proposal")
@@ -300,6 +300,7 @@ OUT
             "name"=>Schema.identifier.required.key,
             "local-address"=>Schema.address.required,
             "remote-address"=>Schema.address.required,
+            "keepalive" => Schema.identifiers.default(Schema::DISABLE),
             "mtu"=>Schema.int.default(1456)
 #            "l2mtu"=>Schema.int.default(65535)
           }
