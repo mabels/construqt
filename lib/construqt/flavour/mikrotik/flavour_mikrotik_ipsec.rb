@@ -2,9 +2,16 @@
 module Construqt
   module Flavour
     module Mikrotik
-      class Ipsec < OpenStruct
+      class Ipsec
+        attr_accessor :delegate, :other, :cfg, :interface
+        attr_reader :host, :remote, :my
         def initialize(cfg)
-          super(cfg)
+          @host = cfg['host']
+          @remote = cfg['remote']
+          @other = cfg['other']
+          @cfg = cfg['cfg']
+          @my = cfg['my']
+          @interface = cfg['interface']
         end
 
         def set_ip_ipsec_peer(cfg)
