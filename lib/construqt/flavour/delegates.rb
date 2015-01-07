@@ -57,6 +57,10 @@ module Construqt
         self.delegate.address
       end
 
+      def address=(a)
+        self.delegate.address=a
+      end
+
       def template
         self.delegate.template
       end
@@ -67,6 +71,10 @@ module Construqt
 
       def priority
         self.delegate.priority
+      end
+
+      def priority=(a)
+        self.delegate.priority=a
       end
 
       def clazz
@@ -290,58 +298,6 @@ module Construqt
       end
     end
 
-    class InterfaceDelegate
-      include Delegate
-      def initialize(interface)
-        self.delegate = interface
-      end
-
-      def clazz
-        self.delegate.clazz
-      end
-
-      def _ident
-        self.clazz.ident
-        #        "#{self.delegate.clazz.name}_#{self.name}"
-      end
-
-      def name
-        self.delegate.name
-      end
-
-      def address
-        self.delegate.address
-      end
-
-      def priority
-        self.delegate.priority
-      end
-
-      def host
-        self.delegate.host
-      end
-
-      def network
-        self.delegate.network
-      end
-
-      def cable
-        self.delegate.cable
-      end
-
-      def cable=(a)
-        self.delegate.cable = a
-      end
-
-      def template
-        self.delegate.template
-      end
-
-      def interfaces
-        self.delegate.interfaces
-      end
-    end
-
     class IpsecDelegate
       include Delegate
       def initialize(ipsec)
@@ -385,7 +341,7 @@ module Construqt
       end
 
       def _ident
-        "Ipsec_#{cfg.left.interface.name}_#{cfg.right.interface.name}"
+        "Ipsec_#{cfg.lefts.first.interface.name}_#{cfg.rights.first.interface.name}"
       end
     end
 
@@ -428,7 +384,7 @@ module Construqt
       end
 
       def _ident
-        "Bgp_#{cfg.left.host.name}_#{cfg.left.my.name}_#{cfg.right.host.name}_#{cfg.right.my.name}"
+        "Bgp_#{cfg.lefts.first.host.name}_#{cfg.lefts.first.my.name}_#{cfg.rights.first.host.name}_#{cfg.rights.first.my.name}"
       end
     end
 

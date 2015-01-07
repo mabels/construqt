@@ -436,14 +436,14 @@ module Construqt
           end
         end
 
-        def self.create(host, ifname, iface)
+        def self.create(host, ifname, iface, family)
           throw 'interface must set' unless ifname
           writer = iface.host.result.etc_network_iptables
           create_from_iface(ifname, iface, writer)
           create_from_iface(ifname, iface.delegate.vrrp.delegate, writer) if iface.delegate.vrrp
-          writer_local = host.result.etc_network_interfaces.get(iface)
-          writer_local.lines.up("iptables-restore < /etc/network/iptables.cfg")
-          writer_local.lines.up("ip6tables-restore < /etc/network/ip6tables.cfg")
+          writer_local = host.result.etc_network_interfaces.get(iface, ifname)
+          writer_local.lines.up("iptables-restore < /etc/network/iptables.cfg") if !writer.empty_v4? && (family.nil? || family == Construqt::Addresses::IPV4)
+          writer_local.lines.up("ip6tables-restore < /etc/network/ip6tables.cfg") if !writer.empty_v6? && (family.nil? || family == Construqt::Addresses::IPV6)
         end
       end
     end
