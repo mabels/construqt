@@ -3,6 +3,7 @@ module Construqt
     module Mikrotik
 
       class Schema
+        DISABLE = :disable
         module Int
           def self.serialize_compare(schema, val)
             self.serialize(schema, val)

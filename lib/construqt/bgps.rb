@@ -1,17 +1,29 @@
 module Construqt
   module Bgps
-    class Bgp < OpenStruct
+    class Bgp
+      attr_accessor :lefts, :rights
+      attr_reader :use_bfd, :password, :name, :description
+      attr_reader :address, :delegate, :tags
       def initialize(cfg)
-        super(cfg)
+        @lefts = cfg['lefts']
+        @rights = cfg['rights']
+        @use_bfd = cfg['use_bfd']
+        @password = cfg['password']
+        @name = cfg['name']
+        @description = cfg['description']
+        @address = cfg['address']
+        @tags = cfg['tags']
+        @delegate = nil
       end
 
       def build_config()
-        self.left.build_config(nil, nil)
-        self.right.build_config(nil, nil)
+        (self.rights+self.lefts).each do |iface|
+          iface.build_config(nil, nil)
+        end
       end
 
       def ident
-        self.left.ident
+        self.lefts.first.ident
       end
     end
 
@@ -20,33 +32,57 @@ module Construqt
       @bgps.values
     end
 
-    def self.add_connection(cfg, id)
-      throw "my not found #{cfg[id]['my'].inspect}" unless cfg[id]['my']
-      throw "as not found #{cfg[id]['as'].inspect}" unless cfg[id]['as']
-      throw "as not a as #{cfg[id]['as'].inspect}" unless cfg[id]['as'].kind_of?(As)
+    def self.add_connection(cfg)
+      throw "my not found #{cfg['my'].inspect}" unless cfg['my']
+      throw "as not found #{cfg['as'].inspect}" unless cfg['as']
+      throw "as not a as #{cfg['as'].inspect}" unless cfg['as'].kind_of?(As)
       #throw "filter not found #{cfg.inspect}" unless cfg[id]['filter']
-      cfg[id]['filter'] ||= {}
-      cfg[id]['other'] = nil
-      cfg[id]['cfg'] = nil
-      cfg[id]['host'] = cfg[id]['my'].host
-      cfg[id] = cfg[id]['host'].flavour.create_bgp(cfg[id])
+      cfg['filter'] ||= {}
+      cfg['other'] = nil
+      cfg['cfg'] = nil
+      cfg['host'] = cfg['my'].host
+      cfg['host'].flavour.create_bgp(cfg)
     end
 
+
+
     def self.connection(name, cfg)
+      cfg = {}.merge(cfg)
+      cfg['left']['mys'] = ((cfg['left']['mys']||[]) + [cfg['left']['my']]).compact
+      throw "left need atleast one host" if cfg['left']['mys'].empty?
+      cfg['right']['mys'] = ((cfg['right']['mys']||[]) + [cfg['right']['my']]).compact
+      throw "right need atleast one host" if cfg['right']['mys'].empty?
+
       throw "filter not allowed" if cfg['filter']
       throw "duplicated name #{name}" if @bgps[name]
-      add_connection(cfg, 'left')
-      add_connection(cfg, 'right')
+      cfg['lefts'] = []
+      cfg['rights'] = []
+      cfg['left']['mys'].each do |iface|
+        my = cfg['left'].merge('my' => iface)
+        my.delete('lefts')
+        my.delete('rights')
+        cfg['lefts'] << add_connection(my)
+      end
+      cfg['right']['mys'].each do |iface|
+        my = cfg['right'].merge('my' => iface)
+        my.delete('lefts')
+        my.delete('rights')
+        cfg['rights'] << add_connection(my)
+      end
       cfg['name'] = name
-
+      cfg.delete('left')
+      cfg.delete('right')
       cfg = @bgps[name] = Bgp.new(cfg)
-      cfg.left.other = cfg.right
-      cfg.left.cfg = cfg
-      cfg.right.other = cfg.left
-      cfg.right.cfg = cfg
-
-      cfg.right.host.add_bgp(cfg)
-      cfg.left.host.add_bgp(cfg)
+      cfg.lefts.each do |left|
+        left.other = cfg.rights.first
+        left.cfg = cfg
+        left.host.add_bgp(cfg)
+      end
+      cfg.rights.each do |right|
+        right.other = cfg.lefts.first
+        right.cfg = cfg
+        right.host.add_bgp(cfg)
+      end
       cfg
     end
 
@@ -54,8 +90,9 @@ module Construqt
       #binding.pry
       hosts = {}
       @bgps.values.each do |bgp|
-        hosts[bgp.left.host.object_id] ||= bgp.left.host
-        hosts[bgp.right.host.object_id] ||= bgp.right.host
+        (bgp.rights+bgp.lefts).each do |iface|
+          hosts[iface.host.object_id] ||= iface.host
+        end
       end
       #binding.pry
       hosts.values.each do |host|

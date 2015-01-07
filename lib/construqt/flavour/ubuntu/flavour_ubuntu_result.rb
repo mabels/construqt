@@ -77,11 +77,23 @@ OTHER
           @filter = Section.new('filter')
         end
 
+        def empty_v4?
+          @mangle.empty_v4? && @nat.empty_v4? && @raw.empty_v4? && @filter.empty_v4?
+        end
+
+        def empty_v6?
+          @mangle.empty_v6? && @nat.empty_v6? && @raw.empty_v6? && @filter.empty_v6?
+        end
+
         class Section
           class Block
             def initialize(section)
               @section = section
               @rows = []
+            end
+
+            def empty?
+              @rows.empty?
             end
 
             class Row
@@ -168,6 +180,14 @@ OTHER
             @name = name
             @ipv4 = Block.new(self)
             @ipv6 = Block.new(self)
+          end
+
+          def empty_v4?
+            @ipv4.empty?
+          end
+
+          def empty_v6?
+            @ipv6.empty?
           end
 
           def name
@@ -310,6 +330,7 @@ OUT
 #!/bin/bash
 exec > >(logger -t "#{@entry.header.get_interface_name}-#{direction}") 2>&1
 #{blocks.join("\n")}
+exit 0
 BLOCK
 #iptables-restore < /etc/network/iptables.cfg
 #ip6tables-restore < /etc/network/ip6tables.cfg
@@ -371,9 +392,9 @@ BLOCK
           end
         end
 
-        def get(iface)
-          throw "clazz needed #{iface.name}" unless iface.clazz
-          @entries[iface.name] ||= Entry.new(@result, iface)
+        def get(iface, name = nil)
+          throw "clazz needed #{name || iface.name}" unless iface.clazz
+          @entries[name || iface.name] ||= Entry.new(@result, iface)
         end
 
         def commit
@@ -544,13 +565,14 @@ VRRP
             "Construqt::Flavour::Ubuntu::Bond" => { "ifenslave" => true },
             "Construqt::Flavour::VlanDelegate" => { "vlan" => true },
             "Construqt::Flavour::Ubuntu::Gre" => { },
+            "Construqt::Flavour::GreDelegate" => {},
             "Construqt::Flavour::BridgeDelegate" => { "bridge-utils" => true },
             cp::NTP => { "ntpd" => true},
             cp::USB_MODESWITCH => { "usb-modeswitch" => true, "usb-modeswitch-data" => true },
             cp::VRRP => { "keepalived" => true },
             cp::FW4 => { "iptables" => true, "ulogd2" => true },
             cp::FW6 => { "iptables" => true, "ulogd2" => true },
-            cp::IPSEC => { "racoon" => true },
+            cp::IPSEC => { "strongswan" => true },
             cp::SSH => { "openssh-server" => true },
             cp::BGP => { "bird" => true },
             cp::OPENVPN => { "openvpn" => true },
