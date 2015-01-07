@@ -59,6 +59,9 @@ module Construqt
       def last
         @ipaddr.last
       end
+      def broadcast
+        @ipaddr.broadcast
+      end
       def groups
         @ipaddr.groups
       end
@@ -81,6 +84,16 @@ module Construqt
       attr_accessor :interface
       attr_accessor :ips
       attr_accessor :tags
+
+      def ripe(value)
+        @ripe = value
+        self
+      end
+
+      def get_ripe
+        @ripe
+      end
+
       def dhcpv4?
         @dhcpv4
       end

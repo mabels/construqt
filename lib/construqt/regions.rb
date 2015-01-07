@@ -3,10 +3,11 @@ module Construqt
   module Regions
     @regions = {}
     class Region
-      attr_reader :name, :cables, :hosts, :interfaces, :users, :vlans, :network, :templates, :resources, :services
-      def initialize(name, network)
+      attr_reader :name, :cables, :hosts, :interfaces, :users, :vlans, :network, :templates, :resources, :services, :registry
+      def initialize(name, network, registry)
         @name = name
         @network = network
+        @registry = Construqt::Registry.new(self, registry)
         @vlans = Construqt::Vlans.new(self)
         @hosts = Construqt::Hosts.new(self)
         @interfaces = Construqt::Interfaces.new(self)
@@ -18,9 +19,9 @@ module Construqt
       end
     end
 
-    def self.add(name, network)
+    def self.add(name, network, registry = nil)
       throw "region names #{name} has to be unique" if @regions[name]
-      ret = Region.new(name, network)
+      ret = Region.new(name, network, registry)
       @regions[name] = ret
       ret
     end

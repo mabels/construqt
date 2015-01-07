@@ -243,6 +243,7 @@ module Construqt
           chainable_attr :type, nil
           chainable_attr_value :log, nil
           chainable_attr_value :from_net, nil
+          chainable_attr_value :from_host, nil
           chainable_attr_value :to_net, nil
           chainable_attr_value :to_host, nil
           chainable_attr_value :action, nil

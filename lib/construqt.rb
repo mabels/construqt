@@ -41,6 +41,8 @@ module Construqt
   # ugly but i need the logger during initialization
   require_relative 'construqt/util.rb'
   require_relative 'construqt/services.rb'
+  require_relative 'construqt/registry.rb'
+  require_relative 'construqt/registries/ripe.rb'
   require_relative 'construqt/networks.rb'
   require_relative 'construqt/addresses.rb'
   require_relative 'construqt/bgps.rb'
@@ -81,7 +83,10 @@ module Construqt
       Construqt::Ipsecs.build_config()
       Construqt::Bgps.build_config()
       hosts.inject({}) do |r, host|
-        r[host.region.name] ||= []
+        if r[host.region.name].nil?
+          host.region.registry && host.region.registry.produce
+          r[host.region.name] ||= []
+        end
         r[host.region.name] << host
         r
       end.values.each do |hosts|
