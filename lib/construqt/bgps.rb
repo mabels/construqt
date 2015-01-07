@@ -2,12 +2,18 @@ module Construqt
   module Bgps
     class Bgp
       attr_accessor :lefts, :rights
-      attr_reader :use_bfd, :password
+      attr_reader :use_bfd, :password, :name, :description
+      attr_reader :address, :delegate, :tags
       def initialize(cfg)
         @lefts = cfg['lefts']
         @rights = cfg['rights']
         @use_bfd = cfg['use_bfd']
         @password = cfg['password']
+        @name = cfg['name']
+        @description = cfg['description']
+        @address = cfg['address']
+        @tags = cfg['tags']
+        @delegate = nil
       end
 
       def build_config()
@@ -17,7 +23,7 @@ module Construqt
       end
 
       def ident
-        self.lefts.ident
+        self.lefts.first.ident
       end
     end
 

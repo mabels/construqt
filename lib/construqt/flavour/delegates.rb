@@ -337,7 +337,7 @@ module Construqt
       end
 
       def _ident
-        "Ipsec_#{cfg.left.interface.name}_#{cfg.right.interface.name}"
+        "Ipsec_#{cfg.lefts.first.interface.name}_#{cfg.rights.first.interface.name}"
       end
     end
 
@@ -380,7 +380,7 @@ module Construqt
       end
 
       def _ident
-        "Bgp_#{cfg.left.host.name}_#{cfg.left.my.name}_#{cfg.right.host.name}_#{cfg.right.my.name}"
+        "Bgp_#{cfg.lefts.first.host.name}_#{cfg.lefts.first.my.name}_#{cfg.rights.first.host.name}_#{cfg.rights.first.my.name}"
       end
     end
 

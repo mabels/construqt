@@ -254,14 +254,14 @@ UML
             "Opvn" => lambda do |node|
             end,
             "Ipsec" => lambda do |node|
-              [node.reference.left, node.reference.right].each do |iface|
+              [node.reference.lefts.first, node.reference.rights.first].each do |iface|
                 binding.pry unless @tree[iface.interface.ident]
                 node.connect @tree[iface.interface.ident]
               end
             end,
             "Bgp" => lambda do |node|
               #binding.pry
-              [node.reference.left, node.reference.right].each do |iface|
+              [node.reference.lefts.first, node.reference.rights.first].each do |iface|
                 node.connect @tree[iface.my.ident]
               end
             end,
