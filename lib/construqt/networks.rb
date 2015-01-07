@@ -2,6 +2,7 @@ module Construqt
   module Networks
 
     class Network
+      attr_reader :address, :phone
       def initialize(name)
         @name = name
         @networks = []
@@ -9,6 +10,15 @@ module Construqt
         @contact = "soa@construqt.org"
         @addresses = Construqt::Addresses.new(self)
         @dns_resolver = nil
+      end
+
+
+      def set_address(post_address)
+        @address = post_address
+      end
+
+      def set_phone(phone)
+        @phone = phone
       end
 
       def addresses

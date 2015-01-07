@@ -2,9 +2,16 @@ module Construqt
   module Flavour
     module Ubuntu
 
-      class Bgp < OpenStruct
+      class Bgp
+        attr_accessor :delegate, :other, :cfg
+        attr_reader :host, :my, :as, :filter
         def initialize(cfg)
-          super(cfg)
+          self.other = cfg['other']
+          self.cfg = cfg['cfg']
+          @host = cfg['host']
+          @my = cfg['my']
+          @as = cfg['as']
+          @filter = cfg['filter']
         end
 
         def self.header(host)
@@ -92,15 +99,14 @@ BGP
         end
 
         def build_bird6_conf
-          #      binding.pry
           if self.my.address.first_ipv6 && self.other.my.address.first_ipv6
             self.my.host.result.add(self, <<BGP, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird6.conf")
 protocol bgp #{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)} {
         description "#{self.my.host.name} <=> #{self.other.host.name}";
         direct;
         next hop self;
-            #{self.as == self.other.as ? '' : '#'}rr client;
-        local as #{self.as.num};
+        #{self.as == self.other.as ? '' : '#'}rr client;
+        local #{self.my.address.first_ipv6} as #{self.as.num};
         neighbor #{self.other.my.address.first_ipv6}  as #{self.other.as.num};
         password "#{Util.password(self.cfg.password)}";
         import #{self.filter['in'] ? "filter filter_"+self.filter['in'].name : "all"};
