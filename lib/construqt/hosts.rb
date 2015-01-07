@@ -77,6 +77,10 @@ module Construqt
       @hosts[name] = host
     end
 
+    def find!(name)
+      @hosts[name]
+    end
+
     def find(name)
       ret = @hosts[name]
       throw "host not found #{name}" unless ret
