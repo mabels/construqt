@@ -23,27 +23,34 @@ module Construqt
       @object_id_tags[obj.object_id]
     end
 
+    def self.resolv(tag)
+      return [] unless tag
+      ret = tag.split("#").map{|i| @tags[i.strip]}.compact.flatten
+      #binding.pry if tag == "ROOMS#V8-OFFICE"
+      ret
+    end
+
     def self.find(tag, clazz = nil)
-      #binding.pry
-      ret = (@tags[tag] || []).select{|o| clazz.nil? || o.instance_of?(clazz.class) || (clazz.kind_of?(Proc) && clazz.call(o)) }
+      ret = resolv(tag).select{|o| clazz.nil? || o.instance_of?(clazz.class) || (clazz.kind_of?(Proc) && clazz.call(o)) }
       Construqt.logger.warn("tag #{tag} #{clazz.inspect} empty result") if ret.empty?
       ret
     end
 
     def self.ips_adr(tag, family)
-      (@tags[tag]||[]).map do |obj|
+      resolv(tag).map do |obj|
         if obj.kind_of?(IPAddress) || obj.kind_of?(Construqt::Addresses::CqIpAddress)
           obj
         elsif obj.respond_to? :ips
           obj.ips
         elsif obj.kind_of?(Construqt::Flavour::HostDelegate)
           res = obj.interfaces.values.map do |i|
-            i.delegate.address.ips.map do |a|
+            i.delegate.address.ips
+            #.map do |a|
               #prefix = a.ipv4? ? 32 : 128
               #ret = IPAddress.parse("#{a.to_s}/#{prefix}")
               #ret
-              a
-            end
+            #  a
+            #end
           end
           #puts "HOST=>#{tag} #{res.map{|i| i.to_string }}"
           res
@@ -57,7 +64,13 @@ module Construqt
     end
 
     def self.ips_hosts(tag, family)
-      IPAddress.summarize(ips_adr(tag, family).map{|i| IPAddress.parse("#{i.to_s}/#{i.ipv4? ? 32 : 128}") })
+      IPAddress.summarize(ips_adr(tag, family).map do |i|
+        if i.network == i
+          nil
+        else
+          IPAddress.parse("#{i.to_s}/#{i.ipv4? ? 32 : 128}")
+        end
+      end.compact)
     end
 
     def self.ips_net(tag, family)

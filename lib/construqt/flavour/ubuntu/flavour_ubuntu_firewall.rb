@@ -130,21 +130,14 @@ module Construqt
           routes.map{|i| i.dst }.select{|i| family == Construqt::Addresses::IPV6 ? i.ipv6? : i.ipv4? }
         end
 
-#        def self.try_tags_as_ipaddress(list, family, *possible_addrs)
-#          return list unless list.empty?
-#          ret = possible_addrs.map do |addr|
-#            next nil unless addr
-#            begin
-#              addr = IPAddress.parse(addr)
-#              next addr if (addr.ipv4? && family == Construqt::Addresses::IPV4) || (addr.ipv6? && family == Construqt::Addresses::IPV6)
-#              nil
-#            rescue Exception => e
-#              nil
-#            end
-#          end.compact
-#          binding.pry unless ret.empty?
-#          ret
-#        end
+        def self.try_tags_as_ipaddress(family, net, host)
+          list = []
+          if host
+            list = Construqt::Tags.ips_hosts(host, family)
+          end
+          list += Construqt::Tags.ips_net(net, family)
+          IPAddress.summarize(list.map{|i| i.to_i == 0 ? nil : IPAddress.parse(i.to_s+"/#{i.ipv4? ? 32 : 128}") }.compact)
+        end
 
         def self.write_table(iptables, rule, to_from)
           family = iptables=="ip6tables" ? Construqt::Addresses::IPV6 : Construqt::Addresses::IPV4
@@ -155,8 +148,7 @@ module Construqt
             end
             from_list = IPAddress.summarize(networks)
           else
-            from_list = Construqt::Tags.ips_net(rule.get_from_net, family)
-#            from_list = try_tags_as_ipaddress(from_list, family, rule.get_from_net)
+            from_list = try_tags_as_ipaddress(family, rule.get_from_net, rule.get_from_host)
           end
 
           if rule.to_my_net?
@@ -166,12 +158,7 @@ module Construqt
             end
             to_list = IPAddress.summarize(networks)
           else
-            if rule.get_to_host
-              to_list = Construqt::Tags.ips_hosts(rule.get_to_host, family)
-            else
-              to_list = Construqt::Tags.ips_net(rule.get_to_net, family)
-            end
-#           to_list = try_tags_as_ipaddress(to_list, family, rule.get_to_net, rule.get_to_host)
+            to_list = try_tags_as_ipaddress(family, rule.get_to_net, rule.get_to_host)
           end
           unless rule.get_to_net_addr.empty?
             #binding.pry
