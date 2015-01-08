@@ -48,9 +48,6 @@ module Construqt
           end
         end
 
-        def nic_hdl
-          @values["nic-hdl"]
-        end
         def mnt_by
           @values["mnt-by"]
         end
@@ -81,9 +78,6 @@ module Construqt
               a
             end
           end.flatten.compact
-        end
-        def mnt_by
-          @values['mnt-by']
         end
         def referral_by
           @values['referral-by']
@@ -116,8 +110,14 @@ module Construqt
         def phone
           @values["phone"]
         end
+        def e_mail
+          @values["e-mail"]
+        end
         def abuse_mailbox
           @values["abuse-mailbox"]
+        end
+        def nic_hdl
+          @values["nic-hdl"]
         end
       end
 
@@ -153,6 +153,9 @@ module Construqt
         end
         def phone
           @values["phone"]
+        end
+        def nic_hdl
+          @values["nic-hdl"]
         end
       end
 
@@ -215,9 +218,6 @@ module Construqt
         end
         def status
           @values['status']
-        end
-        def mnt_by
-          @values['mnt_by']
         end
       end
 

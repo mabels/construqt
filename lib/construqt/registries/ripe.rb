@@ -17,20 +17,17 @@ module Construqt
         unless obj.kind_of?(Array)
           obj = [obj]
         end
-        obj.select{|i| !i.nil? && !i.empty? }.map do |o|
-          o.lines.map do |line|
-            "#{"%-15s"%(header+":")} #{line.respond_to?("nic_hdl") ? line.nic_dl : line.chomp}"
+        obj.select{|i| !i.nil? }.map do |o|
+          if o.respond_to?("nic_hdl")
+            o = o.nic_hdl
           end
-        end
-      end
-
-      def changed(registry)
-        user = registry.region.users.find(ENV['USER'] ||ENV['USERNAME'])
-        throw "user #{ENV['USER'] ||ENV['USERNAME']} not found" unless user
-        email = user.email
-        throw "user #{ENV['USER'] ||ENV['USERNAME']} has to have a email address" unless email
-        now = Time.new
-        "#{email} #{now.year}#{"%02d"%now.month}#{"%02d"%now.day}"
+          if o.respond_to?("mntner")
+            o = o.mntner
+          end
+          o.lines.map do |line|
+            "#{"%-15s"%(header+":")} #{line.chomp}"
+          end
+        end.compact
       end
 
       def render_mntner(region, mntner)
@@ -42,7 +39,6 @@ module Construqt
           render_ripe("auth", mntner.auth.map{|i| i.kind_of?(String) ? i : "PGPKEY-#{i.pgp_pub_key.id}"}),
           render_ripe("mnt-by", mntner.mnt_by),
           render_ripe("referral-by", mntner.referral_by),
-          render_ripe("changed", changed(region))
         ].flatten.compact.join("\n")+"\n", "ripe", "mntner", txt_file(mntner.mntner))
       end
 
@@ -54,7 +50,6 @@ module Construqt
           render_ripe("e-mail", person.email),
           render_ripe("nic-hdl", person.nic_hdl),
           render_ripe("mnt-by", person.mnt_by),
-          render_ripe("changed", changed(region))
         ].flatten.compact.join("\n")+"\n", "ripe", "persons", txt_file(person.person))
       end
 
@@ -67,7 +62,6 @@ module Construqt
           render_ripe("fingerpr", person.user.pgp_pub_key.fingerprint),
           render_ripe("certif", person.user.pgp_pub_key.key),
           render_ripe("mnt-by", person.mnt_by),
-          render_ripe("changed", changed(region))
         ].flatten.compact.join("\n")+"\n", "ripe", "key_cert", txt_file("PGPKEY-#{person.user.pgp_pub_key.id}"))
       end
 
@@ -76,12 +70,12 @@ module Construqt
           render_ripe("role", role.role),
           render_ripe("address", role.address),
           render_ripe("phone", role.phone),
+          render_ripe("e-mail", role.e_mail),
           render_ripe("admin-c", role.admin_c),
           render_ripe("tech-c", role.tech_c),
           render_ripe("nic-hdl", role.nic_hdl),
           render_ripe("mnt-by", role.mnt_by),
           render_ripe("abuse-mailbox", role.abuse_mailbox),
-          render_ripe("changed", changed(region))
         ].flatten.compact.join("\n")+"\n", "ripe", "role", txt_file(role.role))
       end
 
@@ -95,7 +89,6 @@ module Construqt
           render_ripe("tech-c", addr.tech_c),
           render_ripe("status", addr.status),
           render_ripe("mnt-by", addr.mnt_by),
-          render_ripe("changed", changed(region))
         ].flatten.compact.join("\n")+"\n", "ripe", "inetnum", txt_file("#{ip.to_s}-#{addr.netname}"))
       end
 
@@ -109,7 +102,6 @@ module Construqt
           render_ripe("tech-c", addr.tech_c),
           render_ripe("status", addr.status),
           render_ripe("mnt-by", addr.mnt_by),
-          render_ripe("changed", changed(region))
         ].flatten.compact.join("\n")+"\n", "ripe", "inetnum6", txt_file("#{ip.to_s}-#{addr.netname}"))
       end
 
