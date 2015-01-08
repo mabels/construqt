@@ -26,6 +26,16 @@ module Construqt
         @ipaddr = ipaddr
         @container = container
       end
+      def <=>(oth)
+        if oth.kind_of?(CqIpAddress)
+          ret = self.ipaddr <=> oth.ipaddr
+          #puts "CqIpAddress <=> #{self.ipaddr.to_string} <#{ret}> #{oth.ipaddr}"
+        else
+          ret = self.ipaddr <=> oth
+          #puts "IpAddress <=> #{self.ipaddr.to_string} <#{ret}> #{oth}"
+        end
+        ret
+      end
       def ipv4?
         @ipaddr.ipv4?
       end
@@ -121,6 +131,12 @@ module Construqt
           self.v4s.find{|nip| nip.include?(ip) }
         else
           self.v6s.find{|nip| nip.include?(ip) }
+        end
+      end
+
+      def match_address(ip)
+        self.ips.find do |nip|
+          nip.ipv4? == ip.ipv4? && (0 == (nip <=> ip))
         end
       end
 
@@ -288,7 +304,7 @@ module Construqt
       end
 
       def to_s
-        "<Address:Address #{@name}=>#{self.ips.map{|i| i.to_s}.join(":")}>"
+        "<Address:Address #{@name}=>[#{self.ips.map{|i| i.to_string}.join(",")}]>"
       end
     end
 

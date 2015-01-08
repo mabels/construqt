@@ -20,12 +20,12 @@ module Construqt
           bird_v4 = self.header_bird(host, OpenStruct.new(:net_clazz => lambda {|o|
             (o.kind_of?(IPAddress::IPv4)||o.kind_of?(Construqt::Addresses::CqIpAddress)) && o.ipv4?
           },
-                                                          :filter => lambda {|ip| ip.ipv4? }))
+          :filter => lambda {|ip| ip.ipv4? }))
           host.result.add(self, bird_v4, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird.conf")
           bird_v6 = self.header_bird(host, OpenStruct.new(:net_clazz => lambda {|o|
             (o.kind_of?(IPAddress::IPv6)||o.kind_of?(Construqt::Addresses::CqIpAddress)) && o.ipv6?
           },
-                                                          :filter => lambda {|ip| ip.ipv6? }))
+          :filter => lambda {|ip| ip.ipv6? }))
           host.result.add(self, bird_v6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird6.conf")
         end
 
@@ -82,8 +82,10 @@ BGP
 
         def build_bird_conf
           if self.my.address.first_ipv4 && self.other.my.address.first_ipv4
+            cname = "#{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)}"
+            write_start_stop(cname, self.my.address.first_ipv4, "gt4", "birdc")
             self.my.host.result.add(self, <<BGP, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird.conf")
-protocol bgp #{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)} {
+protocol bgp #{cname} {
         description "#{self.my.host.name} <=> #{self.other.host.name}";
         direct;
         next hop self;
@@ -98,14 +100,34 @@ BGP
           end
         end
 
+        def write_start_stop(cname, my_ip, gt, cmd)
+          local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(my_ip) }
+          if local_if.clazz == "vrrp"
+            writer = host.result.etc_network_vrrp(local_if.name)
+            writer.add_master("/usr/sbin/#{cmd} enable #{cname}", 2000)
+            writer.add_backup("/usr/sbin/#{cmd} disable #{cname}", -2000)
+          else
+            iname = local_if.name
+            if local_if.clazz == "gre"
+              iname = Util.clean_if(gt, iname)
+            end
+
+            writer = host.result.etc_network_interfaces.get(local_if, iname)
+            writer.lines.up("/usr/sbin/#{cmd} enable #{cname}", 2000)
+            writer.lines.down("/usr/sbin/#{cmd} disable #{cname}", -2000)
+          end
+        end
+
         def build_bird6_conf
           if self.my.address.first_ipv6 && self.other.my.address.first_ipv6
+            cname = "#{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)}"
+            write_start_stop(cname, self.my.address.first_ipv6, "gt6", "birdc6")
             self.my.host.result.add(self, <<BGP, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird6.conf")
-protocol bgp #{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)} {
+protocol bgp #{cname} {
         description "#{self.my.host.name} <=> #{self.other.host.name}";
         direct;
         next hop self;
-        #{self.as == self.other.as ? '' : '#'}rr client;
+            #{self.as == self.other.as ? '' : '#'}rr client;
         local #{self.my.address.first_ipv6} as #{self.as.num};
         neighbor #{self.other.my.address.first_ipv6}  as #{self.other.as.num};
         password "#{Util.password(self.cfg.password)}";

@@ -185,18 +185,38 @@ HEADER
 
           def build_config(unused, unused2)
             if self.cfg.transport_family == Construqt::Addresses::IPV6
+              local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(self.remote.first_ipv6) }
               transport_left=self.remote.first_ipv6.to_s
               transport_right=self.other.remote.first_ipv6.to_s
+              leftsubnet = self.my.ips.select{|i| i.ipv6? }.map{|i| i.to_s }.join(',')
+              rightsubnet = self.other.my.ips.select{|i| i.ipv6? }.map{|i| i.to_s }.join(',')
+              gt = "gt6"
             else
+              local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(self.remote.first_ipv4) }
               transport_left=self.remote.first_ipv4.to_s
               transport_right=self.other.remote.first_ipv4.to_s
+              leftsubnet = self.my.ips.select{|i| i.ipv4? }.map{|i| i.to_s }.join(',')
+              rightsubnet = self.other.my.ips.select{|i| i.ipv4? }.map{|i| i.to_s }.join(',')
+              gt = "gt4"
             end
+            if local_if.clazz == "vrrp"
+              writer = host.result.etc_network_vrrp(local_if.name)
+              writer.add_master("/usr/sbin/ipsec up #{self.host.name}-#{self.other.host.name}", 1000)
+              writer.add_backup("/usr/sbin/ipsec down #{self.host.name}-#{self.other.host.name}", -1000)
+            else
+              iname = local_if.name
+              if local_if.clazz == "gre"
+                iname = Util.clean_if(gt, iname)
+              end
+              writer = host.result.etc_network_interfaces.get(local_if, iname)
+              writer.lines.up("/usr/sbin/ipsec up #{self.host.name}-#{self.other.host.name}", 1000)
+              writer.lines.down("/usr/sbin/ipsec down #{self.host.name}-#{self.other.host.name}", -1000)
+            end
+
             host.result.add(self, psk(transport_right, cfg),
                                   Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC),
                                   "etc", "ipsec.secrets")
 
-            leftsubnet = self.my.ips.map{|i| i.to_s }.join(',')
-            rightsubnet = self.other.my.ips.map{|i| i.to_s }.join(',')
             self.host.result.add(self, <<RACOON, Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
 conn #{self.host.name}-#{self.other.host.name}
         left=#{transport_left}
