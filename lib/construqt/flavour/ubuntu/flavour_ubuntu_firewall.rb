@@ -136,7 +136,7 @@ module Construqt
             list = Construqt::Tags.ips_hosts(host, family)
           end
           list += Construqt::Tags.ips_net(net, family)
-          IPAddress.summarize(list.map{|i| i.to_i == 0 ? nil : IPAddress.parse(i.to_s+"/#{i.ipv4? ? 32 : 128}") }.compact)
+          IPAddress.summarize(list.map{|i| i.to_i == 0 ? nil : IPAddress.parse(i.to_string) }.compact)
         end
 
         def self.write_table(iptables, rule, to_from)
