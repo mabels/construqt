@@ -313,12 +313,12 @@ OUT
               @downs = []
             end
 
-            def up(block)
-              @ups += block.each_line.map{|i| i.strip }.select{|i| !i.empty? }
+            def up(block, order = 0)
+              @ups << [order, block.each_line.map{|i| i.strip }.select{|i| !i.empty? }]
             end
 
-            def down(block)
-              @downs += block.each_line.map{|i| i.strip }.select{|i| !i.empty? }
+            def down(block, order = 0)
+              @downs << [order, block.each_line.map{|i| i.strip }.select{|i| !i.empty? }]
             end
 
             def add(block)
@@ -336,9 +336,14 @@ BLOCK
 #ip6tables-restore < /etc/network/ip6tables.cfg
             end
 
+            def ordered_lines(lines)
+              result = lines.inject({}){ |r, l| r[l.first] ||=[]; r[l.first] << l.last; r }
+              result.keys.sort.map { |key| result[key] }.flatten
+            end
+
             def commit
-              write_s(@entry.iface.class.name, "up", @ups)
-              write_s(@entry.iface.class.name, "down", @downs)
+              write_s(@entry.iface.class.name, "up", ordered_lines(@ups))
+              write_s(@entry.iface.class.name, "down", ordered_lines(@downs))
               sections = @lines.inject({}) {|r, line| key = line.split(/\s+/).first; r[key] ||= []; r[key] << line; r }
               sections.keys.sort.map do |key|
                 if sections[key]
@@ -427,13 +432,13 @@ BLOCK
             @backups = []
           end
 
-          def add_master(master)
-            @masters << master
+          def add_master(master, order = 0)
+            @masters << [order, master]
             self
           end
 
-          def add_backup(backup)
-            @backups << backup
+          def add_backup(backup, order = 0)
+            @backups << [order, backup]
             self
           end
 
@@ -446,12 +451,17 @@ BLOCK
             end.join("\n")
           end
 
+          def ordered_lines(lines)
+            result = lines.inject({}){ |r, l| r[l.first] ||=[]; r[l.first] << l.last; r }
+            result.keys.sort.map { |key| result[key] }.flatten
+          end
+
           def render_masters
-            render(@masters, 'STARTING:')
+            render(ordered_lines(@masters), 'STARTING:')
           end
 
           def render_backups
-            render(@backups, 'STOPPING:')
+            render(ordered_lines(@backups), 'STOPPING:')
           end
         end
 
