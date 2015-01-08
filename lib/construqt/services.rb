@@ -7,6 +7,14 @@ module Construqt
       end
     end
 
+    class IpsecStartStop
+      attr_reader :name
+    end
+
+    class BgpStartStop
+      attr_reader :name
+    end
+
     class DhcpV4Relay
       attr_reader :name, :inbound_tag, :upstream_tag
       attr_accessor :services

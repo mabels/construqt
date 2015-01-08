@@ -69,8 +69,8 @@ BGP
                 elsif rule['prefix_length']
                   ip_str = "#{ip.to_string}{#{rule['prefix_length'].first},#{rule['prefix_length'].last}}"
                 end
-
-                ret = ret + "  if net ~ [ #{ip_str} ] then { print \"#{rule['rule']}:\",net; #{rule['rule']}; }\n"
+                #ret = ret + "  if net ~ [ #{ip_str} ] then { print \"#{rule['rule']}:\",net; #{rule['rule']}; }\n"
+                ret = ret + "  if net ~ [ #{ip_str} ] then { #{rule['rule']}; }\n"
               end
             end
 
@@ -106,6 +106,7 @@ BGP
             writer = host.result.etc_network_vrrp(local_if.name)
             writer.add_master("/usr/sbin/#{cmd} enable #{cname}", 2000)
             writer.add_backup("/usr/sbin/#{cmd} disable #{cname}", -2000)
+            local_if.services << Construqt::Services::BgpStartStop.new
           else
             iname = local_if.name
             if local_if.clazz == "gre"

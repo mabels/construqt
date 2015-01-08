@@ -29,6 +29,10 @@ module Construqt
         @vrrp
       end
 
+      def services
+        self.delegate.services
+      end
+
       def ipsec
         self.delegate.ipsec
       end

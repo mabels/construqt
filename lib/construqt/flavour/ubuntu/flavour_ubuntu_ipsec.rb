@@ -203,6 +203,7 @@ HEADER
               writer = host.result.etc_network_vrrp(local_if.name)
               writer.add_master("/usr/sbin/ipsec up #{self.host.name}-#{self.other.host.name}", 1000)
               writer.add_backup("/usr/sbin/ipsec down #{self.host.name}-#{self.other.host.name}", -1000)
+              local_if.services << Construqt::Services::IpsecStartStop.new
             else
               iname = local_if.name
               if local_if.clazz == "gre"
