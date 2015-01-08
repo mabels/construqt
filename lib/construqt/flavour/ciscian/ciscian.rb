@@ -568,6 +568,19 @@ module Construqt
           true
         end
 
+        def prefer_no_verbs?
+          false
+        end
+
+        def prefer_no_verbs_sort(buffer)
+          return buffer.sort do |a,b|
+            ret=0
+            ret = Construqt::Util.rate_higher("no ",a, b) if ret==0
+            ret = a<=>b if ret==0
+            ret
+          end
+        end
+
         def serialize
           buffer = []
           sets = integrate
@@ -600,6 +613,8 @@ module Construqt
               end while substitution
             end
           end
+
+          buffer = prefer_no_verbs_sort(buffer) if prefer_no_verbs?
 
           return buffer
         end
