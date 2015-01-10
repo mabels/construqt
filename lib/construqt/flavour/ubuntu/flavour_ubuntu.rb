@@ -68,13 +68,13 @@ module Construqt
           end
         end
 
-        def self.build_config(host, iface, ifname = nil, family = nil)
+        def self.build_config(host, iface, ifname = nil, family = nil, mtu = nil)
           #      binding.pry
           writer = host.result.etc_network_interfaces.get(iface, ifname)
           writer.header.protocol(EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
           writer.lines.add(iface.delegate.flavour) if iface.delegate.flavour
           ifname = ifname || writer.header.get_interface_name
-          writer.lines.up("ip link set mtu #{iface.delegate.mtu} dev #{ifname} up")
+          writer.lines.up("ip link set mtu #{mtu || iface.delegate.mtu} dev #{ifname} up")
           writer.lines.down("ip link set dev #{ifname} down")
           add_address(host, ifname, iface.delegate, writer.lines, writer, family)
           add_services(host, ifname, iface.delegate, writer, family)
@@ -312,15 +312,17 @@ PAM
             mode_v4 = "gre"
             prefix = 4
           end
-#          binding.pry
+          #binding.pry
           if gre_delegate.local.first_ipv6
             prepare[6] = OpenStruct.new(:gt => "gt6", :prefix=>prefix, :family => Construqt::Addresses::IPV6,
-                                        :my => my, :other => other, :remote => remote, :mode => mode_v6)
+                                        :my => my, :other => other, :remote => remote, :mode => mode_v6,
+                                        :mtu => gre.ipsec.mtu_v6 || 1460)
           end
 
           if gre_delegate.local.first_ipv4
             prepare[4] = OpenStruct.new(:gt => "gt4", :prefix=>prefix, :family => Construqt::Addresses::IPV4,
-                                    :my=>my, :other => other, :remote => remote, :mode => mode_v4)
+                                    :my=>my, :other => other, :remote => remote, :mode => mode_v4,
+                                    :mtu => gre.ipsec.mtu_v4 || 1476)
           end
           throw "need a local address #{host.name}:#{gre_delegate.name}" if prepare.empty?
 
@@ -344,7 +346,7 @@ PAM
             writer = host.result.etc_network_interfaces.get(gre, iname)
             writer.skip_interfaces.header.interface_name(iname)
             writer.lines.up("ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}")
-            Device.build_config(host, gre, iname, cfg.family)
+            Device.build_config(host, gre, iname, cfg.family, cfg.mtu)
             writer.lines.down("ip -#{cfg.prefix} tunnel del #{iname}")
           end
           local_ifaces.values.each do |val|

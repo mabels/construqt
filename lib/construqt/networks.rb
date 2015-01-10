@@ -36,8 +36,7 @@ module Construqt
       end
 
       def to_network(ip)
-        ret = (@networks.find{ |my| (ip.ipv6? == my.ipv6? && ip.ipv4? == my.ipv4?) && my.include?(ip) } || ip.network)
-        ret
+        @networks.find{ |my| (ip.ipv6? == my.ipv6? && ip.ipv4? == my.ipv4?) && my.include?(ip) }
       end
 
       def set_dns_resolver(nameservers, search)
