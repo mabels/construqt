@@ -4,7 +4,7 @@ module Construqt
     class Ipsec
       attr_reader :rights, :lefts, :transport_family, :password
       attr_reader :name, :keyexchange, :description, :address
-      attr_reader :delegate, :tags
+      attr_reader :delegate, :tags, :mtu_v4, :mtu_v6
       def initialize(cfg)
         @cfg = cfg
         @rights = @cfg['rights']
@@ -15,6 +15,8 @@ module Construqt
         @keyexchange = @cfg['keyexchange']
         @description = @cfg['description']
         @address = @cfg['address']
+        @mtu_v4 = @cfg['mtu_v4']
+        @mtu_v6 = @cfg['mtu_v6']
         @delegate = nil
         @tags = nil
       end

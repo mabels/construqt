@@ -69,6 +69,10 @@ module Construqt
       return str
     end
 
+    def self.get_serial_from_git
+      `git log --pretty=format:'%at' -1`.strip.chomp
+    end
+
     def self.password(a)
       a
     end
