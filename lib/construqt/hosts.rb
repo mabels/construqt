@@ -98,5 +98,4 @@ module Construqt
       Flavour.call_aspects("completed", nil, nil)
     end
   end
-
 end

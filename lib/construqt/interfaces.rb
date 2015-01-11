@@ -19,7 +19,21 @@ module Construqt
       end
     end
 
+    def attach_firewalls(iface, firewalls)
+      iface.firewalls = firewalls.map do |i|
+          if i.kind_of?(String)
+            ret = Construqt::Firewalls.find(i)
+          else
+            ret = i
+          end
+          throw "firewall not found for #{i} on #{iface.name}" unless ret.kind_of?(Construqt::Firewalls::Firewall)
+          ret.attach_iface(iface)
+      end
+    end
+
     def add_device(host, dev_name, cfg)
+      cfg = cfg.clone
+      delegates = {}
       throw "Host not found:#{dev_name}" unless host
       binding.pry if host.interfaces[dev_name]
       throw "Interface is duplicated:#{host.name}:#{dev_name}" if host.interfaces[dev_name]
@@ -35,10 +49,10 @@ module Construqt
       cfg['clazz'] ||= "device"
       cfg['address'] ||= nil
       cfg['services'] ||= []
-      cfg['firewalls'] ||= []
-      cfg['firewalls'] = cfg['firewalls'].map{|i| i.kind_of?(String) ? Construqt::Firewalls.find(i) : i }
+      delegates['firewalls'] = cfg.delete('firewalls')||[]
       (dev_name, iface) = Construqt::Tags.add(dev_name) { |name| host.flavour.create_interface(name, cfg) }
       #    iface.clazz.attach = iface
+      attach_firewalls(iface, delegates['firewalls'])
       host.interfaces[dev_name] = iface
       host.interfaces[dev_name].address.interface = host.interfaces[dev_name] if host.interfaces[dev_name].address
       setup_template(iface) if iface.template

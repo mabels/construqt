@@ -125,54 +125,14 @@ module Construqt
           end
         end
 
-
-        def self.filter_routes(routes, family)
-          routes.map{|i| i.dst }.select{|i| family == Construqt::Addresses::IPV6 ? i.ipv6? : i.ipv4? }
-        end
-
-        def self.try_tags_as_ipaddress(family, net, host)
-          list = []
-          if host
-            list = Construqt::Tags.ips_hosts(host, family)
-          end
-          list += Construqt::Tags.ips_net(net, family)
-          IPAddress.summarize(list.map{|i| i.to_i == 0 ? nil : IPAddress.parse(i.to_string) }.compact)
+        def self.ip_family(iptables)
+          iptables=="ip6tables" ? Construqt::Addresses::IPV6 : Construqt::Addresses::IPV4
         end
 
         def self.write_table(iptables, rule, to_from)
-          family = iptables=="ip6tables" ? Construqt::Addresses::IPV6 : Construqt::Addresses::IPV4
-          if rule.from_my_net?
-            networks = iptables=="ip6tables" ? to_from.get_interface.address.v6s : to_from.get_interface.address.v4s
-            if rule.from_route?
-              networks += self.filter_routes(to_from.get_interface.address.routes, family)
-            end
-            from_list = IPAddress.summarize(networks)
-          else
-            from_list = try_tags_as_ipaddress(family, rule.get_from_net, rule.get_from_host)
-          end
-
-          if rule.to_my_net?
-            networks = iptables=="ip6tables" ? to_from.get_interface.address.v6s : to_from.get_interface.address.v4s
-            if rule.from_route?
-              networks += self.filter_routes(to_from.get_interface.address.routes, family)
-            end
-            to_list = IPAddress.summarize(networks)
-          else
-            to_list = try_tags_as_ipaddress(family, rule.get_to_net, rule.get_to_host)
-          end
-          unless rule.get_to_net_addr.empty?
-            #binding.pry
-            addrs = rule.get_to_net_addr.map { |i| IPAddress.parse(i) }.select { |i|
-              (i.ipv6? && family == Construqt::Addresses::IPV6) || (i.ipv4? && family == Construqt::Addresses::IPV4)
-            }
-            to_list = IPAddress.summarize(to_list + addrs)
-          end
-          unless rule.get_from_net_addr.empty?
-            addrs = rule.get_from_net_addr.map { |i| IPAddress.parse(i) }.select { |i|
-              (i.ipv6? && family == Construqt::Addresses::IPV6) || (i.ipv4? && family == Construqt::Addresses::IPV4)
-            }
-            from_list = IPAddress.summarize(from_list + addrs)
-          end
+          family = ip_family(iptables)
+          from_list = rule.from_list(family)
+          to_list = rule.to_list(family)
           #puts ">>>>>#{from_list.inspect}"
           #puts ">>>>>#{state.inspect} end_to:#{state.end_to}:#{state.end_from}:#{state.middle_to}#{state.middle_from}"
           action_i = action_o = rule.get_action
@@ -253,17 +213,10 @@ module Construqt
         end
 
         def self.protocol_loop(rule)
-          protocol_loop = []
-          {
-            'tcp' => rule.tcp?,
-            'udp' => rule.udp?,
-            'esp' => rule.esp?,
-            'ah' => rule.ah?,
-            'icmp' => rule.icmp?
-          }.each do |proto, enabled|
+          rule.get_protocols.each do |proto, enabled|
             protocol_loop << "-p #{proto}" if enabled
           end
-          protocol_loop = [''] if protocol_loop.empty?
+          protocol_loop = [''] if rule.get_protocols
           protocol_loop
         end
 
@@ -415,7 +368,7 @@ module Construqt
         end
 
         def self.create_from_iface(ifname, iface, writer)
-          iface.firewalls && iface.firewalls.each do |firewall|
+          iface.delegate.firewalls.each do |firewall|
             firewall.get_raw && Firewall.write_raw(firewall, firewall.get_raw, ifname, iface, writer.raw)
             firewall.get_nat && Firewall.write_nat(firewall, firewall.get_nat, ifname, iface, writer.nat)
             firewall.get_forward && Firewall.write_forward(firewall, firewall.get_forward, ifname, iface, writer.filter)

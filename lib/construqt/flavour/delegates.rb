@@ -38,7 +38,11 @@ module Construqt
       end
 
       def firewalls
-        self.delegate.firewalls
+        @firewalls || []
+      end
+
+      def firewalls=(firewalls)
+        @firewalls = firewalls
       end
 
       def description
@@ -154,6 +158,16 @@ module Construqt
         @users = host.users || host.region.users
       end
 
+      def address
+        my = Construqt::Addresses::Address.new
+        self.interfaces.values.each do |i|
+          if i.address
+            my.add_addr(i.address)
+          end
+        end
+        my
+      end
+
       def _ident
         #binding.pry
         "Host_#{self.name}"
@@ -206,11 +220,13 @@ module Construqt
         #  header_clazzes[iface.class.name] ||= iface if iface.delegate.respond_to? :header
         #  footer_clazzes[iface.class.name] ||= iface if iface.delegate.respond_to? :footer
         #end
+
         #binding.pry
         self.flavour.pre_clazzes do |key, clazz|
           Flavour.call_aspects("#{key}.header", self, nil)
           clazz.header(self) if clazz.respond_to? :header
         end
+
         Flavour.call_aspects("host.commit", self, nil)
         self.result.commit
 
@@ -392,49 +408,57 @@ module Construqt
       end
     end
 
-#    class ResultDelegate
-#      include Delegate
-#      def initialize(result)
-#        self.delegate = result
-#      end
-#
-#      class Result
-#        include Delegate
-#        def initialize(result)
-#          #puts "Result=>#{self.class.name} #{result}"
-#          self.delegate = result
-#        end
-#
-#        def add(*args)
-#          delegate.add(*args)
-#        end
-#
-#      #  def commit
-#          #          Flavour.call_aspects("#{key}.header", host, nil)
-#          #          clazz.header(host)
-#
-#      #    binding.pry
-#      #    delegate.commit
-#          #          host = delegate.host
-#          #          clazzes = {}
-#          #          host.flavour.pre_clazzes { |key, clazz| clazzes[key] = host.flavour.clazz(key) }
-#          #          clazzes.each do |key, clazz|
-#          #            Flavour.call_aspects("#{key}.header", host, nil)
-#          #            clazz.header(host)
-#          #          end
-#
-#          #          Flavour.call_aspects("result.commit", nil, delegate)
-#          #          delegate.commit
-#          #          clazzes.each do |key, clazz|
-#          #            Flavour.call_aspects("#{key}.footer", host, nil)
-#          #            clazz.footer(host)
-#          #          end
-#      #  end
-#      end
-#
-#      def create(host)
-#        Result.new(self.delegate.new(host))
-#      end
-#    end
+    #    class ResultDelegate
+    #      include Delegate
+    #      def initialize(result)
+    #        self.delegate = result
+    #      end
+
+    #
+    #      class Result
+    #        include Delegate
+    #        def initialize(result)
+    #          #puts "Result=>#{self.class.name} #{result}"
+    #          self.delegate = result
+    #        end
+
+    #
+    #        def add(*args)
+    #          delegate.add(*args)
+    #        end
+
+    #
+    #      #  def commit
+    #          #          Flavour.call_aspects("#{key}.header", host, nil)
+    #          #          clazz.header(host)
+    #
+    #      #    binding.pry
+    #      #    delegate.commit
+    #          #          host = delegate.host
+    #          #          clazzes = {}
+    #          #          host.flavour.pre_clazzes { |key, clazz| clazzes[key] = host.flavour.clazz(key) }
+    #          #          clazzes.each do |key, clazz|
+    #          #            Flavour.call_aspects("#{key}.header", host, nil)
+    #          #            clazz.header(host)
+    #          #          end
+
+    #
+    #          #          Flavour.call_aspects("result.commit", nil, delegate)
+    #          #          delegate.commit
+    #          #          clazzes.each do |key, clazz|
+    #          #            Flavour.call_aspects("#{key}.footer", host, nil)
+    #          #            clazz.footer(host)
+    #          #          end
+
+    #      #  end
+
+    #      end
+
+    #
+    #      def create(host)
+    #        Result.new(self.delegate.new(host))
+    #      end
+
+    #    end
   end
 end
