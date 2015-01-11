@@ -18,7 +18,6 @@ module Construqt
       @network
     end
 
-
     # hier frieht die hoelle zu!!!
     class CqIpAddress
       attr_reader :ipaddr, :container
@@ -26,6 +25,7 @@ module Construqt
         @ipaddr = ipaddr
         @container = container
       end
+
       def <=>(oth)
         if oth.kind_of?(CqIpAddress)
           ret = self.ipaddr <=> oth.ipaddr
@@ -34,56 +34,74 @@ module Construqt
           ret = self.ipaddr <=> oth
           #puts "IpAddress <=> #{self.ipaddr.to_string} <#{ret}> #{oth}"
         end
+
         ret
       end
+
       def ipv4?
         @ipaddr.ipv4?
       end
+
       def ipv6?
         @ipaddr.ipv6?
       end
+
       def include?(a)
         @ipaddr.include?(a)
       end
+
       def prefix
         @ipaddr.prefix
       end
+
       def network
         @ipaddr.network
       end
+
       def to_i
         @ipaddr.to_i
       end
+
       def to_s
         @ipaddr.to_s
       end
+
       def to_string
         @ipaddr.to_string
       end
+
       def to_u32
         @ipaddr.to_u32
       end
+
       def first
         @ipaddr.first
       end
+
       def last
         @ipaddr.last
       end
+
       def broadcast
         @ipaddr.broadcast
       end
+
       def groups
         @ipaddr.groups
       end
+
       def compressed
         @ipaddr.compressed
       end
+
       def reverse
         @ipaddr.reverse
       end
+
       def address
         @ipaddr.address
       end
+
       def netmask
         @ipaddr.netmask
       end
@@ -116,14 +134,65 @@ module Construqt
         @loopback
       end
 
+      class Routes
+        attr_reader :routes
+        def initialize
+          @routes = []
+        end
+
+        def add_routes(routes)
+          @routes += routes.routes
+        end
+        def add(route)
+          throw "route has to be a Route or TagRoute is #{route.class.name}" unless route.kind_of?(Route) or route.kind_of?(TagRoute)
+          @routes << route
+        end
+
+        class Networks
+          def initialize
+            @networks = []
+          end
+          def add(net)
+            @networks << net
+          end
+          def v4s
+            IPAddress::summarize(@networks.select{|i| i.ipv4?})
+          end
+          def v6s
+            IPAddress::summarize(@networks.select{|i| i.ipv6?})
+          end
+        end
+
+        def dst_networks
+          ret = Networks.new
+          self.each do |rt|
+            ret.add(rt.dst)
+          end
+          ret
+        end
+
+        def each(&block)
+          @routes.each do |route|
+            route.resolv.each do |rt|
+              block.call(rt)
+            end
+          end
+        end
+      end
+
       def initialize()
         self.ips = []
         self.host = nil
         self.interface = nil
-        @routes = []
+        @routes = Routes.new
         self.tags = []
         @loopback = @dhcpv4 = @dhcpv6 = false
         @name = nil
+      end
+
+      def add_addr(addr)
+        @ips += addr.ips
+        @routes.add_routes(addr.routes)
       end
 
       def match_network(ip)
@@ -207,35 +276,16 @@ module Construqt
         self
       end
 
-
       def routes
-        @routes.map do |i|
-            if i.kind_of?(Route)
-              i
-            else
-              ret = []
-              [OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV6),
-                              :vias => Construqt::Tags.ips_hosts(i.via_tag, Construqt::Addresses::IPV6)),
-               OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV4),
-                              :vias => Construqt::Tags.ips_hosts(i.via_tag, Construqt::Addresses::IPV4))].each do |blocks|
-                 next unless blocks.vias
-                 next unless blocks.dsts
-                 next if blocks.dsts.empty?
-                 blocks.vias.each do |via|
-                   blocks.dsts.each do |dst|
-                     ret << build_route(dst.to_string, via.to_s, i.options)
-                   end
-                 end
-              end
-              ret
-            end
-        end.flatten
+        @routes
       end
+
       #    @nameservers = []
       #    def add_nameserver(ip)
       #      @nameservers << IPAddress.parse(ip)
       #      self
       #    end
+
       #
       #
       class TagRoute
@@ -244,6 +294,24 @@ module Construqt
           @dst_tag = dst_tag
           @via_tag = via_tag
           @options = options
+        end
+
+        def resolv
+          ret = []
+          [OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV6),
+                          :vias => Construqt::Tags.ips_hosts(i.via_tag, Construqt::Addresses::IPV6)),
+          OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV4),
+                         :vias => Construqt::Tags.ips_hosts(i.via_tag, Construqt::Addresses::IPV4))].each do |blocks|
+            next unless blocks.vias
+            next unless blocks.dsts
+            next if blocks.dsts.empty?
+            blocks.vias.each do |via|
+              blocks.dsts.each do |dst|
+                ret << build_route(dst.to_string, via.to_s, i.options)
+              end
+            end
+          end
+          ret
         end
       end
 
@@ -260,10 +328,12 @@ module Construqt
           else
             ips = [addr]
           end
+
           ips.each do |i|
             add_route(i.to_string, via, options)
           end
         end
+
         self
       end
 
@@ -275,6 +345,9 @@ module Construqt
           @type = type
           @metric = metric
           @routing_table = routing_table
+        end
+        def resolv
+          [self]
         end
       end
 
@@ -292,14 +365,15 @@ module Construqt
             (unused, via) = self.merge_tag(via) { |via| CqIpAddress.new(IPAddress.parse(via), self) }
             throw "different type #{dst} #{via}" unless dst.ipv4? == via.ipv4? && dst.ipv6? == via.ipv6?
           end
+
           type = nil
         end
+
         Route.new(dst, via, type, metric, option["routing-table"])
       end
 
-
       def add_route(dst, via, option = {})
-        @routes << build_route(dst, via, option)
+        @routes.add(build_route(dst, via, option))
         self
       end
 
@@ -347,6 +421,7 @@ module Construqt
       IPAddress::IPv4::summarize(*(nets.map{|i| IPAddress::IPv4.new(i) })).each do |i|
         v4_default_route.add_ip(i.to_string)
       end
+
       v4_default_route
     end
   end

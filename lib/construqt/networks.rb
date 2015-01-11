@@ -81,5 +81,9 @@ module Construqt
       throw "network with name #{name} exists" if @networks[name]
       @networks[name] = Network.new(name)
     end
+
+    def self.del(name)
+      @networks.delete(name)
+    end
   end
 end
