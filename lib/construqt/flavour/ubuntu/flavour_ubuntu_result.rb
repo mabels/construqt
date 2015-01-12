@@ -176,8 +176,10 @@ OTHER
             end
           end
 
+          attr_reader :jump_destinations
           def initialize(name)
             @name = name
+            @jump_destinations = {}
             @ipv4 = Block.new(self)
             @ipv6 = Block.new(self)
           end
