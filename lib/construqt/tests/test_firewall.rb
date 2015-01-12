@@ -59,7 +59,7 @@ class FirewallTest < Test::Unit::TestCase
   end
 
   def setup
-    @rule = Construqt::Firewalls::Firewall::Forward::ForwardEntry.new
+    @rule = Construqt::Firewalls::Firewall::Forward::ForwardEntry.new(nil)
     @rule.attached_interface = TEST_IF
   end
 
@@ -121,6 +121,8 @@ class FirewallTest < Test::Unit::TestCase
     @rule.from_host("@8.8.8.8/24")
     assert_nets ["8.8.8.8/32"], @rule.from_list(family)
     @rule.from_host("@8.8.8.8/24@8.8.4.4/24")
+    assert_nets ["8.8.4.4/32","8.8.8.8/32"], @rule.from_list(family)
+    @rule.from_host("@8.8.8.8@8.8.4.4")
     assert_nets ["8.8.4.4/32","8.8.8.8/32"], @rule.from_list(family)
     @rule.from_host("@www.slashdot.org")
     assert_nets ["216.34.181.48/32"], @rule.from_list(family)

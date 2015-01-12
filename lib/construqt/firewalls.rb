@@ -41,15 +41,17 @@ module Construqt
       chainable_attr :icmp
       chainable_attr :type, nil
 
-      def get_protocols
+      def get_protocols(family)
         protocols = {
           'tcp' => self.tcp?,
           'udp' => self.udp?,
           'esp' => self.esp?,
-          'ah' => self.ah?,
-          'icmp' => self.icmp?
+          'ah' => self.ah?
         }
-        protocols.keys.select{ |i| protocols[i] }
+        protocols[family == Construqt::Addresses::IPV6 ? 'icmpv6' : 'icmp'] = self.icmp?
+        ret = protocols.keys.select{ |i| protocols[i] }
+        #puts ">>>>>>#{protocols.inspect}=>#{ret.inspect}"
+        ret
       end
     end
 
@@ -85,22 +87,33 @@ module Construqt
     end
 
     module ToDestFromSource
-      def to_source(val=nil)
+      # NAT only ipv4
+      def to_source(val=:my_first)
         @to_source = val
         self
       end
 
-      def get_to_source
-        @to_source
+      def _to_dest_to_source(val)
+        addr = nil
+        if val == :my_first
+          addr = self.attached_interface.address.v4s.first
+        elsif defined?(val)
+          addr = FromTo.resolver(val, Construqt::Addresses::IPV4).first
+        end
+        addr ?  [addr] : []
       end
 
-      def to_dest(val=nil)
+      def get_to_source
+        _to_dest_to_source(@to_source)
+      end
+
+      def to_dest(val=:my_first)
         @to_dest = val
         self
       end
 
-      def get_to_source
-        @to_dest
+      def get_to_dest
+        _to_dest_to_source(@to_dest)
       end
     end
 
@@ -275,9 +288,9 @@ module Construqt
               ret += Construqt::Tags.ips_adr(types.join('#'), family)
             elsif type == '@'
               types.each do |name|
-                if '1' <= name[0] && name[0] <= '9'
+                begin
                   ret += [IPAddress.parse(name)]
-                else
+                rescue Exception => e
                   ress = dns.getresources name, family == Construqt::Addresses::IPV6 ? Resolv::DNS::Resource::IN::AAAA : Resolv::DNS::Resource::IN::A
                   throw "can not resolv #{name}" if ress.empty?
                   ret += ress.map{|i| IPAddress.parse(i.address.to_s) }
@@ -394,7 +407,9 @@ module Construqt
       end
 
       def postrouting
+        @input = false
         @postrouting = true
+        output_only
         self
       end
 
@@ -488,10 +503,15 @@ module Construqt
           include FromTo
           include InputOutputOnly
           include FromIsInOutBound
+
+          attr_reader :block
+          def initialize(block)
+            @block = block
+          end
         end
 
         def add
-          entry = RawEntry.new
+          entry = RawEntry.new(self)
           @rules << entry
           entry
         end
@@ -523,13 +543,19 @@ module Construqt
           include FromTo
           include InputOutputOnly
           include Ports
+          include Protocols
           include ToDestFromSource
           include ActionAndInterface
           include FromIsInOutBound
+
+          attr_reader :block
+          def initialize(block)
+            @block = block
+          end
         end
 
         def add
-          entry = NatEntry.new
+          entry = NatEntry.new(self)
           @rules << entry
           entry
         end
@@ -579,10 +605,15 @@ module Construqt
 
           chainable_attr :connection
           chainable_attr :link_local
+
+          attr_reader :block
+          def initialize(block)
+            @block = block
+          end
         end
 
         def add
-          entry = ForwardEntry.new
+          entry = ForwardEntry.new(self)
           #puts "ForwardEntry: #{@firewall.name} #{entry.input_only?} #{entry.output_only?}"
           @rules << entry
           entry
@@ -613,7 +644,7 @@ module Construqt
         end
 
         def add
-          entry = HostEntry.new
+          entry = HostEntry.new(self)
           #puts "ForwardEntry: #{@firewall.name} #{entry.input_only?} #{entry.output_only?}"
           @rules << entry
           entry
