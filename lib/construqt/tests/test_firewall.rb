@@ -545,6 +545,42 @@ class FirewallTest < Test::Unit::TestCase
                  "12.12.12.0/24"], rule.to_list(family)
   end
 
+  def test_from_is_outbound
+    rule = create_rule
+    to_from = create_to_from
+    rule.from_is_outbound
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
+
+    rule = rule.clone
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
+  end
+
+  def test_from_is_default
+    rule = create_rule
+    to_from = create_to_from
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
+
+    rule = rule.clone
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
+  end
+
+
+  def test_from_is_inbound
+    rule = create_rule
+    to_from = create_to_from
+    rule.from_is_inbound
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
+
+    rule = rule.clone
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
+  end
+
 
   def test_write_table_from_list_empty_to_list_empty
     rule = create_rule
