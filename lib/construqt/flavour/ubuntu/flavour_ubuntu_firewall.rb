@@ -414,7 +414,7 @@ module Construqt
           i_to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).input_only
           i_rule = rule.clone.from_my_net.to_my_net
           i_to_from.push_begin_to("-p icmpv6")
-          i_rule.to_net("#fe80::/64")
+          i_rule.to_net("@fe80::/64")
           i_rule.from_net("@ff02::/16@fe80::/64")
           write_table(ip_family_v6(fw), i_rule, i_to_from.factory(writer.ipv6.input))
 
