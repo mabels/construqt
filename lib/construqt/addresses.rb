@@ -172,11 +172,13 @@ module Construqt
         end
 
         def each(&block)
+          ret = []
           @routes.each do |route|
             route.resolv.each do |rt|
-              block.call(rt)
+              ret << block.call(rt)
             end
           end
+          ret
         end
       end
 
@@ -290,24 +292,25 @@ module Construqt
       #
       class TagRoute
         attr_reader :dst_tag, :via_tag, :options
-        def initialize(dst_tag, via_tag, options)
+        def initialize(dst_tag, via_tag, options, address)
           @dst_tag = dst_tag
           @via_tag = via_tag
           @options = options
+          @address = address
         end
 
         def resolv
           ret = []
-          [OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV6),
-                          :vias => Construqt::Tags.ips_hosts(i.via_tag, Construqt::Addresses::IPV6)),
-          OpenStruct.new(:dsts => Construqt::Tags.ips_net(i.dst_tag, Construqt::Addresses::IPV4),
-                         :vias => Construqt::Tags.ips_hosts(i.via_tag, Construqt::Addresses::IPV4))].each do |blocks|
+          [OpenStruct.new(:dsts => Construqt::Tags.ips_net(self.dst_tag, Construqt::Addresses::IPV6),
+                          :vias => Construqt::Tags.ips_hosts(self.via_tag, Construqt::Addresses::IPV6)),
+          OpenStruct.new(:dsts => Construqt::Tags.ips_net(self.dst_tag, Construqt::Addresses::IPV4),
+                         :vias => Construqt::Tags.ips_hosts(self.via_tag, Construqt::Addresses::IPV4))].each do |blocks|
             next unless blocks.vias
             next unless blocks.dsts
             next if blocks.dsts.empty?
             blocks.vias.each do |via|
               blocks.dsts.each do |dst|
-                ret << build_route(dst.to_string, via.to_s, i.options)
+                ret << @address.build_route(dst.to_string, via.to_s, self.options)
               end
             end
           end
@@ -316,7 +319,7 @@ module Construqt
       end
 
       def add_route_from_tags(dst_tags, src_tags, options = {})
-        @routes << TagRoute.new(dst_tags, src_tags, options)
+        @routes.add TagRoute.new(dst_tags, src_tags, options, self)
         self
       end
 

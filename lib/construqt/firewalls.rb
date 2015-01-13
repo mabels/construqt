@@ -41,6 +41,33 @@ module Construqt
       chainable_attr :icmp
       chainable_attr :type, nil
 
+      def ipv4
+        @ipv4=true
+        @ipv6=false
+        self
+      end
+      def ipv6
+        @ipv6=true
+        @ipv4=false
+        self
+      end
+
+      def ipv4?
+        if defined?(@ipv4)
+          @ipv4
+        else
+          true
+        end
+      end
+
+      def ipv6?
+        if defined?(@ipv6)
+          @ipv6
+        else
+          true
+        end
+      end
+
       def get_protocols(family)
         protocols = {
           'tcp' => self.tcp?,
@@ -511,6 +538,7 @@ module Construqt
 
         class RawEntry
           attr_accessor :attached_interface
+          include Protocols
           include ActionAndInterface
           include FromTo
           include InputOutputOnly
