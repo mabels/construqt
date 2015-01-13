@@ -8,7 +8,7 @@ module Construqt
 ; this is a generated file do not edit!!!!!
 ; for #{domain.to_s}
 $TTL 86400      ; 1 day
-#{domain}. IN SOA #{dns_server_conf.nameservers.first||"ns.#{host.region.network.domain}"}. #{region.network.contact}. (
+#{domain}. IN SOA #{dns_server_conf.nameservers.first||"ns.#{region.network.domain}"}. #{region.network.contact}. (
           #{dns_server_conf.serial||Time.now.to_i} ; serial
 10000      ; refresh (2 hours 46 minutes 40 seconds)
 3600       ; retry (1 hour)
@@ -85,6 +85,7 @@ OUT
           end
 
           dns_server_conf = OpenStruct.new({
+            "host" => host,
             "serial" => dns_server_conf_ref['serial'],
             "nameservers" => dns_server_conf_ref['nameservers']||[],
             "named_conf_local" => dns_server_conf_ref["named_conf_local"]||"named.conf.local",

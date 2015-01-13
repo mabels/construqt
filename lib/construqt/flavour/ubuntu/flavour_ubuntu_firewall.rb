@@ -185,6 +185,8 @@ module Construqt
 
         def self.write_table(family, rule, to_from)
           return if family.nil?
+          return unless (family == Construqt::Addresses::IPV4 && rule.ipv4?) || (family == Construqt::Addresses::IPV6 && rule.ipv6?)
+
           from_list = rule.from_list(family)
           to_list = rule.to_list(family)
           action_i = action_o = rule.get_action
