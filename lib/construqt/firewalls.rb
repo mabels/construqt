@@ -138,14 +138,24 @@ module Construqt
     end
 
     module Ports
-      def port(port)
-        @ports ||= []
-        @ports << port
+      def sport(port)
+        @sports ||= []
+        @sports << port
         self
       end
 
-      def get_ports
-        @ports ||= []
+      def get_sports
+        @sports ||= []
+      end
+
+      def dport(port)
+        @dports ||= []
+        @dports << port
+        self
+      end
+
+      def get_dports
+        @dports ||= []
       end
     end
 
@@ -289,7 +299,10 @@ module Construqt
             elsif type == '@'
               types.each do |name|
                 begin
-                  ret += [IPAddress.parse(name)]
+                  tmp = IPAddress.parse(name)
+                  if (tmp.ipv4? && family == Construqt::Addresses::IPV4) || (tmp.ipv6? && family == Construqt::Addresses::IPV6)
+                    ret += [tmp]
+                  end
                 rescue Exception => e
                   ress = dns.getresources name, family == Construqt::Addresses::IPV6 ? Resolv::DNS::Resource::IN::AAAA : Resolv::DNS::Resource::IN::A
                   throw "can not resolv #{name}" if ress.empty?
@@ -316,8 +329,7 @@ module Construqt
       end
 
       def self._list(family, iface, _host, _net, _me, _route, _my_net)
-        ipv6_family = Construqt::Addresses::IPV6
-        family_list_method = family==ipv6_family ? :v6s : :v4s
+        family_list_method = family==Construqt::Addresses::IPV6 ? :v6s : :v4s
         _list = []
         if _me # if my interface
           _list << to_host_addrs(to_ipaddrs(iface.address.send(family_list_method)))

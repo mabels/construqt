@@ -42,8 +42,8 @@ module Construqt
           end
 
           def assign_in_out(rule)
-            output_only if rule.output_only?
-            input_only if rule.input_only?
+            @output_only = rule.output_only?
+            @input_only = rule.input_only?
             self
           end
 
@@ -187,11 +187,7 @@ module Construqt
           return if family.nil?
           from_list = rule.from_list(family)
           to_list = rule.to_list(family)
-
-          #puts ">>>>>#{from_list.inspect}"
-          #puts ">>>>>#{state.inspect} end_to:#{state.end_to}:#{state.end_from}:#{state.middle_to}#{state.middle_from}"
           action_i = action_o = rule.get_action
-
 
           # cases
           #
@@ -267,12 +263,12 @@ module Construqt
           if to_list.size < from_list.size
             to_list.each do |to_ip|
               if to_from.output_only?
-                action = write_jump_destination("-s", to_list, to_from.get_end_from, to_from, rule)
+                action = write_jump_destination("-s", from_list, to_from.get_end_to, to_from, rule)
                 to_from.create_row.row("#{to_from.output_ifname}#{to_from.get_begin_from} -d #{to_ip.to_string}#{to_from.get_middle_from} -j #{action}")
               end
 
               if to_from.input_only?
-                action = write_jump_destination("-d", to_list, to_from.get_end_to, to_from, rule)
+                action = write_jump_destination("-d", from_list, to_from.get_end_to, to_from, rule)
                 to_from.create_row.row("#{to_from.input_ifname}#{to_from.get_begin_to} -s #{to_ip.to_string}#{to_from.get_middle_to} -j #{action}")
               end
             end
@@ -289,7 +285,7 @@ module Construqt
               end
 
               if to_from.input_only?
-                action = write_jump_destination("-s", to_list, to_from.get_end_to, to_from, rule)
+                action = write_jump_destination("-s", to_list, to_from.get_end_from, to_from, rule)
                 to_from.create_row.row("#{to_from.input_ifname}#{to_from.get_begin_to} -d #{from_ip.to_string}#{to_from.get_middle_to} -j #{action}")
               end
             end
@@ -337,7 +333,7 @@ module Construqt
             end
 
             rule.prerouting? && rule.get_to_dest.each do |dst|
-              binding.pry
+              #binding.pry
               to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).assign_in_out(rule).end_from("--to-dest #{dst}")
                 .ifname(ifname).factory(writer.ipv4.prerouting)
               protocol_loop(Construqt::Addresses::IPV4, rule).each do |protocol|
@@ -450,9 +446,22 @@ module Construqt
         def self.set_port_protocols(protocol, family, rule, to_from)
           to_from.push_begin_to(protocol)
           to_from.push_begin_from(protocol)
-          if rule.get_ports && !rule.get_ports.empty?
-            to_from.push_middle_from("-m multiport --dports #{rule.get_ports.join(",")}")
-            to_from.push_middle_to("-m multiport --sports #{rule.get_ports.join(",")}")
+
+          if (rule.get_dports && !rule.get_dports.empty?) ||
+             (rule.get_sports && !rule.get_sports.empty?)
+            to_from.push_middle_from("-m multiport")
+            to_from.push_middle_to("-m multiport")
+          end
+
+          if rule.get_dports && !rule.get_dports.empty?
+            to_from.push_middle_from("--dports #{rule.get_dports.join(",")}")
+            to_from.push_middle_to("--sports #{rule.get_dports.join(",")}")
+          end
+
+
+          if rule.get_sports && !rule.get_sports.empty?
+            to_from.push_middle_from("--sports #{rule.get_sports.join(",")}")
+            to_from.push_middle_to("--dports #{rule.get_sports.join(",")}")
           end
 
           if rule.icmp? && rule.get_type
@@ -463,7 +472,7 @@ module Construqt
         def self.write_host(fw, host, ifname, iface, writer)
           host.rules.each do |rule|
             if rule.get_log
-              binding.pry if iface.host.name == "admin-gw" and ifname == "v997"
+              #binding.pry if iface.host.name == "admin-gw" and ifname == "v997"
               nflog_rule = rule.clone.action("NFLOG")
               l_in_to_from = ToFrom.new.bind_interface(ifname, iface, nflog_rule).bind_section(writer).input_only
                 .end_from("--nflog-prefix o:#{rule.get_log}:#{ifname}")

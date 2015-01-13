@@ -165,7 +165,7 @@ OTHER
                   rows = v[chain]
                   table = !k.empty? ? "-A #{k}" : "-A #{chain}"
                   rows.each do |row|
-                    ret << "#{table} #{row.get_row}"
+                    ret << "#{table.strip} #{row.get_row.strip}"
                   end
                 end
               end
