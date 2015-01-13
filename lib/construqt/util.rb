@@ -128,6 +128,7 @@ module Construqt
       ranges = ranges.map do |range|
         range["from"] == range["to"] ? range["from"] : range["from"] +"-"+range["to"]
       end
+
       #puts "self.createRangeDefinition[#{ports}]=>#{ranges}"
       ranges.join(",")
     end
@@ -152,6 +153,7 @@ module Construqt
           throw "invalid range found #{range_def}"
         end
       end
+
       ports.flatten
     end
 
@@ -164,7 +166,16 @@ module Construqt
       if ident.kind_of?(Fixnum)
         ident = (1..ident).to_a.map{' '}.join('')
       end
+
       body.lines.map { |line| ident+line.chomp.strip }.join("\n")
+    end
+
+    def self.space_before(str)
+      if str.nil? or str.empty?
+        ""
+      else
+        " "+str.strip
+      end
     end
   end
 end

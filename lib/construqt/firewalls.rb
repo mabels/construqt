@@ -12,7 +12,7 @@ module Construqt
     end
 
     module ICMP
-      PingRequest = :ping_request
+      Ping = :ping
     end
 
     module AttachInterface
@@ -146,11 +146,19 @@ module Construqt
 
     module FromIsInOutBound
       def from_is_inbound?
-        @from_is == :inbound
+        if !defined?(@from_is)
+          true
+        else
+          @from_is == :inbound
+        end
       end
 
       def from_is_outbound?
-        @from_is == :outbound
+        if !defined?(@from_is)
+          false
+        else
+          @from_is == :outbound
+        end
       end
 
       def from_is_inbound
