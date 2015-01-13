@@ -17,10 +17,29 @@ module Construqt
           chainable_attr_value :factory, nil
           chainable_attr_value :ifname, nil
           chainable_attr_value :interface, nil
-          chainable_attr :output_only, true, false
-          chainable_attr :input_only, true, false
           chainable_attr_value :output_ifname_direction, "-i"
           chainable_attr_value :input_ifname_direction, "-o"
+
+
+          def output_only
+            @input_only = false
+            @output_only = true
+            self
+          end
+
+          def output_only?
+            defined?(@output_only) ? @output_only : true
+          end
+
+          def input_only
+            @input_only = true
+            @output_only = false
+            self
+          end
+
+          def input_only?
+            defined?(@input_only) ? @input_only : true
+          end
 
           def assign_in_out(rule)
             output_only if rule.output_only?
@@ -129,103 +148,155 @@ module Construqt
             @begin || @begin_from || @middle || @middle_from || @end || @end_from
           end
 
-          def factory!
+          def create_row
             get_factory.create
           end
         end
 
-        def self.ip_family(iptables)
-          iptables=="ip6tables" ? Construqt::Addresses::IPV6 : Construqt::Addresses::IPV4
+        def self.ip_family_v4(fw)
+          return Construqt::Addresses::IPV4 if fw.ipv4?
+          nil
         end
 
-        def self.calc_hash_value(to_list, to_from, rule)
+        def self.ip_family_v6(fw)
+          return Construqt::Addresses::IPV6 if fw.ipv6?
+          nil
+        end
+
+        def self.calc_hash_value(_prefix, _list, _end, to_from, rule)
           out = []
-          hmac_out = []
-          to_list.each do |ip|
-            if to_from.output_only?
-              out << "-d #{ip.to_string} -j #{rule.get_action}#{to_from.get_end_to}"
-              hmac_out << "#{to_from.get_output_ifname_direction} -d #{ip.to_string} -j #{rule.get_action}#{to_from.get_end_to}"
-            end
-
-            if to_from.input_only?
-              out << "-s #{ip.to_string} -j #{rule.get_action}#{to_from.get_end_from}"
-              hmac_out << "#{to_from.get_input_ifname_direction} -s #{ip.to_string} -j #{rule.get_action}#{to_from.get_end_from}"
-            end
+          _list.each do |ip|
+            out << "#{_prefix} #{ip.to_string} -j #{rule.get_action}#{_end}"
           end
-
-          OpenStruct.new(:rows => out, :hmac => Digest::MD5.base64digest(hmac_out.join("\n")).gsub(/[^a-zA-Z0-9]/,''))
+          OpenStruct.new(:rows => out, :hmac => Digest::MD5.base64digest(out.join("\n")).gsub(/[^a-zA-Z0-9]/,''))
         end
 
-        def self.write_jump_destination(to_list, to_from, rule)
-          result = calc_hash_value(to_list, to_from, rule)
+        def self.write_jump_destination(_prefix, _list, _end, to_from, rule)
+          result = calc_hash_value(_prefix, _list, _end, to_from, rule)
           # work on these do a better hashing
-          action_o = "#{result.hmac}"
-          action_i = "#{result.hmac}"
           unless to_from.section.jump_destinations[result.hmac]
             result.rows.each do |row|
-              if to_from.output_only?
-                to_from.factory!.table(action_o).row(row)
-              end
-
-              if to_from.input_only?
-                to_from.factory!.table(action_i).row(row)
-              end
+              to_from.create_row.table(result.hmac).row(row)
             end
-
             to_from.section.jump_destinations[result.hmac] = true
           end
-
-          [action_i, action_o]
+          result.hmac
         end
 
-        def self.write_table(iptables, rule, to_from)
-          family = ip_family(iptables)
+        def self.write_table(family, rule, to_from)
+          return if family.nil?
           from_list = rule.from_list(family)
           to_list = rule.to_list(family)
 
           #puts ">>>>>#{from_list.inspect}"
           #puts ">>>>>#{state.inspect} end_to:#{state.end_to}:#{state.end_from}:#{state.middle_to}#{state.middle_from}"
           action_i = action_o = rule.get_action
+
+
+          # cases
+          #
+          # to_list.empty? and from_list.empty?
+          #
           if to_list.empty? && from_list.empty?
-            #puts "write_table=>o:#{to_from.output_only?}:#{to_from.output_ifname} i:#{to_from.input_only?}:#{to_from.input_ifname}"
             if to_from.output_only?
-              to_from.factory!.row("#{to_from.output_ifname}#{to_from.get_begin_from}#{to_from.get_middle_to} -j #{rule.get_action}#{to_from.get_end_to}")
+              to_from.create_row.row("#{to_from.output_ifname}#{to_from.get_begin_from}#{to_from.get_middle_to} -j #{rule.get_action}#{to_from.get_end_to}")
             end
 
             if to_from.input_only?
-              to_from.factory!.row("#{to_from.input_ifname}#{to_from.get_begin_to}#{to_from.get_middle_from} -j #{rule.get_action}#{to_from.get_end_from}")
+              to_from.create_row.row("#{to_from.input_ifname}#{to_from.get_begin_to}#{to_from.get_middle_from} -j #{rule.get_action}#{to_from.get_end_from}")
+            end
+
+            return
+          end
+
+          #
+          # to_list.empty? and not from_list.empty?
+          #
+          if to_list.empty? && from_list.length > 0
+            from_list.each do |ip|
+              if to_from.output_only?
+                to_from.create_row.row("#{to_from.output_ifname}#{to_from.get_begin_from} -s #{ip.to_string}#{to_from.get_middle_from} -j #{action_o}#{to_from.get_end_to}")
+              end
+
+              if to_from.input_only?
+                to_from.create_row.row("#{to_from.input_ifname}#{to_from.get_begin_to} -d #{ip.to_string}#{to_from.get_middle_to} -j #{action_i}#{to_from.get_end_from}")
+              end
+            end
+
+            return
+          end
+
+          #
+          # not to_list.empty? and from_list.empty?
+          #
+          if to_list.length > 0 && from_list.empty?
+            to_list.each do |ip|
+              if to_from.output_only?
+                to_from.create_row.row("#{to_from.output_ifname}#{to_from.get_begin_from} -s #{ip.to_string}#{to_from.get_middle_from} -j #{action_o}#{to_from.get_end_to}")
+              end
+
+              if to_from.input_only?
+                to_from.create_row.row("#{to_from.input_ifname}#{to_from.get_begin_to} -d #{ip.to_string}#{to_from.get_middle_to} -j #{action_i}#{to_from.get_end_from}")
+              end
+            end
+
+            return
+          end
+
+          #
+          # to_list.size == 1 && to_list.size == from_list.size
+          #
+          if to_list.size == 1 && to_list.size == from_list.size
+            from_list.each do |from_ip|
+              to_list.each do |to_ip|
+                if to_from.output_only?
+                  to_from.create_row.row("#{to_from.output_ifname}#{to_from.get_begin_from} -s #{from_ip.to_string} -d #{to_ip.to_string}#{to_from.get_middle_from} -j #{action_o}#{to_from.get_end_to}")
+                end
+
+                if to_from.input_only?
+                  to_from.create_row.row("#{to_from.input_ifname}#{to_from.get_begin_to} -d #{from_ip.to_string} -s #{to_ip.to_string}#{to_from.get_middle_to} -j #{action_i}#{to_from.get_end_from}")
+                end
+              end
             end
             return
           end
 
-          if to_list.length > 1
-            action_i, action_o = write_jump_destination(to_list, to_from, rule)
-          elsif to_list.length == 1
-            from_dst = " -d #{to_list.first.to_string}"
-            to_src = " -s #{to_list.first.to_string}"
-          else
-            from_dst = to_src =""
-          end
-
-          if from_list.empty?
-            if to_from.output_only?
-              to_from.factory!.row("#{to_from.output_ifname}#{to_from.get_begin_from}#{from_dst}#{to_from.get_middle_from} -j #{action_o}#{to_from.get_end_to}")
-            end
-
-            if to_from.input_only?
-              to_from.factory!.row("#{to_from.input_ifname}#{to_from.get_begin_to}#{to_src}#{to_from.get_middle_to} -j #{action_i}#{to_from.get_end_from}")
-            end
-          else
-            from_list.each do |ip|
+          #
+          # to_list.size <= from_list.size
+          #
+          if to_list.size < from_list.size
+            to_list.each do |to_ip|
               if to_from.output_only?
-                to_from.factory!.row("#{to_from.output_ifname}#{to_from.get_begin_from} -s #{ip.to_string}#{from_dst}#{to_from.get_middle_from} -j #{action_o}#{to_from.get_end_to}")
+                action = write_jump_destination("-s", to_list, to_from.get_end_from, to_from, rule)
+                to_from.create_row.row("#{to_from.output_ifname}#{to_from.get_begin_from} -d #{to_ip.to_string}#{to_from.get_middle_from} -j #{action}")
               end
 
               if to_from.input_only?
-                to_from.factory!.row("#{to_from.input_ifname}#{to_from.get_begin_to}#{to_src} -d #{ip.to_string}#{to_from.get_middle_to} -j #{action_i}#{to_from.get_end_from}")
+                action = write_jump_destination("-d", to_list, to_from.get_end_to, to_from, rule)
+                to_from.create_row.row("#{to_from.input_ifname}#{to_from.get_begin_to} -s #{to_ip.to_string}#{to_from.get_middle_to} -j #{action}")
               end
             end
+            return
           end
+          #
+          # from_list.size <= to_list.size
+          #
+          if from_list.size <= to_list.size
+            from_list.each do |from_ip|
+              if to_from.output_only?
+                action = write_jump_destination("-d", to_list, to_from.get_end_from, to_from, rule)
+                to_from.create_row.row("#{to_from.output_ifname}#{to_from.get_begin_from} -s #{from_ip.to_string}#{to_from.get_middle_from} -j #{action}")
+              end
+
+              if to_from.input_only?
+                action = write_jump_destination("-s", to_list, to_from.get_end_to, to_from, rule)
+                to_from.create_row.row("#{to_from.input_ifname}#{to_from.get_begin_to} -d #{from_ip.to_string}#{to_from.get_middle_to} -j #{action}")
+              end
+            end
+            return
+          end
+
+          throw "UNKNOWN CASE"
         end
 
         def self.write_raw(fw, raw, ifname, iface, writer)
@@ -235,14 +306,14 @@ module Construqt
             if rule.prerouting?
               to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).assign_in_out(rule)
               #puts "PREROUTING #{to_from.inspect}"
-              fw.ipv4? && write_table("iptables", rule, to_from.factory(writer.ipv4.prerouting))
-              fw.ipv6? && write_table("ip6tables", rule, to_from.factory(writer.ipv6.prerouting))
+              write_table(ip_family_v4(fw), rule, to_from.factory(writer.ipv4.prerouting))
+              write_table(ip_family_v6(fw), rule, to_from.factory(writer.ipv6.prerouting))
             end
 
             if rule.output?
               to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).assign_in_out(rule)
-              fw.ipv4? && write_table("iptables", rule, to_from.factory(writer.ipv4.output))
-              fw.ipv6? && write_table("ip6tables", rule, to_from.factory(writer.ipv6.output))
+              write_table(ip_family_v4(fw), rule, to_from.factory(writer.ipv4.output))
+              write_table(ip_family_v6(fw), rule, to_from.factory(writer.ipv6.output))
             end
           end
         end
@@ -260,7 +331,7 @@ module Construqt
                 .ifname(ifname).factory(writer.ipv4.postrouting)
               protocol_loop(Construqt::Addresses::IPV4, rule).each do |protocol|
                 self.set_port_protocols(protocol, Construqt::Addresses::IPV4, rule, to_from)
-                write_table("iptables", rule, to_from)
+                write_table(Construqt::Addresses::IPV4, rule, to_from)
                 written = true
               end
             end
@@ -271,7 +342,7 @@ module Construqt
                 .ifname(ifname).factory(writer.ipv4.prerouting)
               protocol_loop(Construqt::Addresses::IPV4, rule).each do |protocol|
                 self.set_port_protocols(protocol, Construqt::Addresses::IPV4, rule, to_from)
-                write_table("iptables", rule, to_from)
+                write_table(Construqt::Addresses::IPV4, rule, to_from)
                 written = true
               end
             end
@@ -311,12 +382,12 @@ module Construqt
               to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).assign_in_out(rule)
                 .end_to("--nflog-prefix o:#{rule.get_log}:#{ifname}")
                 .end_from("--nflog-prefix i:#{rule.get_log}:#{ifname}")
-              fw.ipv4? && write_table("iptables", rule.clone.action("NFLOG"), to_from.factory(writer.ipv4.forward))
-              fw.ipv6? && write_table("ip6tables", rule.clone.action("NFLOG"), to_from.factory(writer.ipv6.forward))
+              write_table(ip_family_v4(fw), rule.clone.action("NFLOG"), to_from.factory(writer.ipv4.forward))
+              write_table(ip_family_v6(fw), rule.clone.action("NFLOG"), to_from.factory(writer.ipv6.forward))
             end
 
-            {Construqt::Addresses::IPV4 => { :enabled => fw.ipv4?, :table => "iptables", :writer => writer.ipv4.forward },
-             Construqt::Addresses::IPV6 => { :enabled => fw.ipv6?, :table => "ip6tables", :writer => writer.ipv6.forward }}.each do |family, cfg|
+            {Construqt::Addresses::IPV4 => { :enabled => fw.ipv4?, :writer => writer.ipv4.forward },
+             Construqt::Addresses::IPV6 => { :enabled => fw.ipv6?, :writer => writer.ipv6.forward }}.each do |family, cfg|
               next unless cfg[:enabled]
               to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).assign_in_out(rule)
 
@@ -332,7 +403,7 @@ module Construqt
                   to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
                 end
 
-                write_table(cfg[:table], rule, to_from.factory(cfg[:writer]))
+                write_table(family, rule, to_from.factory(cfg[:writer]))
               end
             end
           end
@@ -347,7 +418,7 @@ module Construqt
           i_to_from.push_begin_to("-p icmpv6")
           i_rule.to_net("#fe80::/64")
           i_rule.from_net("@ff02::/16@fe80::/64")
-          write_table("ip6tables", i_rule, i_to_from.factory(writer.ipv6.input))
+          write_table(ip_family_v6(fw), i_rule, i_to_from.factory(writer.ipv6.input))
 
           #i_to_from = ToFrom.new.bind_interface(ifname, iface, rule).input_only
           #i_rule = rule.clone.from_my_net.to_my_net
@@ -364,7 +435,7 @@ module Construqt
           o_rule.from_net("@fe80::/64")
           o_rule.to_net("@ff02::/16@fe80::/64")
           #o_to_from.push_middle_from("--icmpv6-type 135")
-          write_table("ip6tables", o_rule, o_to_from.factory(writer.ipv6.output))
+          write_table(ip_family_v6(fw), o_rule, o_to_from.factory(writer.ipv6.output))
 
           #binding.pry
           #o_to_from = ToFrom.new.bind_interface(ifname, iface, rule).output_only
@@ -392,16 +463,16 @@ module Construqt
         def self.write_host(fw, host, ifname, iface, writer)
           host.rules.each do |rule|
             if rule.get_log
-binding.pry if iface.host.name == "admin-gw" and ifname == "v997"
+              binding.pry if iface.host.name == "admin-gw" and ifname == "v997"
               nflog_rule = rule.clone.action("NFLOG")
               l_in_to_from = ToFrom.new.bind_interface(ifname, iface, nflog_rule).bind_section(writer).input_only
                 .end_from("--nflog-prefix o:#{rule.get_log}:#{ifname}")
               l_out_to_from = ToFrom.new.bind_interface(ifname, iface, nflog_rule).bind_section(writer).output_only
                 .end_to("--nflog-prefix i:#{rule.get_log}:#{ifname}")
-              fw.ipv4? && write_table("iptables", nflog_rule, l_in_to_from.factory(writer.ipv4.input))
-              fw.ipv4? && write_table("iptables", nflog_rule, l_out_to_from.factory(writer.ipv4.output))
-              fw.ipv6? && write_table("ip6tables", nflog_rule, l_in_to_from.factory(writer.ipv6.input))
-              fw.ipv6? && write_table("ip6tables", nflog_rule, l_out_to_from.factory(writer.ipv6.output))
+              write_table(ip_family_v4(fw), nflog_rule, l_in_to_from.factory(writer.ipv4.input))
+              write_table(ip_family_v4(fw), nflog_rule, l_out_to_from.factory(writer.ipv4.output))
+              write_table(ip_family_v6(fw), nflog_rule, l_in_to_from.factory(writer.ipv6.input))
+              write_table(ip_family_v6(fw), nflog_rule, l_out_to_from.factory(writer.ipv6.output))
             end
 
             next create_link_local(fw, ifname, iface, rule, writer) if rule.link_local?
@@ -418,8 +489,8 @@ binding.pry if iface.host.name == "admin-gw" and ifname == "v997"
               :writer6 => rule.from_is_inbound? ? writer.ipv6.input : writer.ipv6.output
             }].each do |to_from_writer|
               next unless to_from_writer[:doit]
-              {Construqt::Addresses::IPV4 => { :enabled => fw.ipv4?, :table => "iptables", :writer => to_from_writer[:writer4]},
-               Construqt::Addresses::IPV6 => { :enabled => fw.ipv6?, :table => "ip6tables", :writer => to_from_writer[:writer6] }}.each do |family, cfg|
+              {Construqt::Addresses::IPV4 => { :enabled => fw.ipv4?, :writer => to_from_writer[:writer4]},
+               Construqt::Addresses::IPV6 => { :enabled => fw.ipv6?, :writer => to_from_writer[:writer6] }}.each do |family, cfg|
                 to_from = to_from_writer[:from_to].call
                 next unless cfg[:enabled]
 
@@ -430,7 +501,7 @@ binding.pry if iface.host.name == "admin-gw" and ifname == "v997"
                     to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
                   end
 
-                  write_table(cfg[:table], rule, to_from.factory(cfg[:writer]))
+                  write_table(family, rule, to_from.factory(cfg[:writer]))
                 end
               end
             end
