@@ -58,6 +58,17 @@ class FirewallTest < Test::Unit::TestCase
     assert_equal expect, result.map{|i| i.to_string}
   end
 
+
+  def assert_array expect, result
+    if expect.size != result.size
+      assert_equal expect, result
+    else
+      expect.each_with_index do |e, idx|
+        assert_equal e, result[idx]
+      end
+    end
+  end
+
   def create_rule
     rule = Construqt::Firewalls::Firewall::Forward::ForwardEntry.new(nil).action("<action>")
     rule.attached_interface = TEST_IF
@@ -104,12 +115,12 @@ class FirewallTest < Test::Unit::TestCase
     Construqt::Flavour::Ubuntu::Firewall::ToFrom.new
                 .bind_section(TestSection.new)
                 .factory(TestToFromFactory.new)
-                .begin_to("<begin_to>")
-                .begin_from("<begin_from>")
-                .middle_to("<middle_to>")
-                .middle_from("<middle_from>")
-                .end_to("<end_to>")
-                .end_from("<end_from>")
+                .begin_left("<begin_left>")
+                .begin_right("<begin_right>")
+                .middle_left("")
+                .middle_right("")
+                .end_left("<end_left>")
+                .end_right("<end_right>")
                 .ifname("<ifname>")
                 .output_ifname_direction("<output_ifname_direction>")
                 .input_ifname_direction("<input_ifname_direction>")
@@ -545,236 +556,6 @@ class FirewallTest < Test::Unit::TestCase
                  "12.12.12.0/24"], rule.to_list(family)
   end
 
-  def test_from_is_outbound
-    rule = create_rule
-    to_from = create_to_from
-    rule.from_is_outbound
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
-
-    rule = rule.clone
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
-  end
-
-  def test_from_is_default
-    rule = create_rule
-    to_from = create_to_from
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
-
-    rule = rule.clone
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
-  end
-
-
-  def test_from_is_inbound
-    rule = create_rule
-    to_from = create_to_from
-    rule.from_is_inbound
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
-
-    rule = rule.clone
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
-  end
-
-
-  def test_write_table_from_list_empty_to_list_empty
-    rule = create_rule
-    to_from = create_to_from
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> <middle_to> -j <action> <end_to>",
-      "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.input_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> <middle_from> -j <action> <end_from>"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.output_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <output_ifname_direction> <ifname> <begin_from> <middle_to> -j <action> <end_to>"], to_from.get_factory.rows
-  end
-
-  def test_write_table_to_list_empty_from_list_length
-    rule = create_rule
-    to_from = create_to_from
-    rule.from_net("@8.8.8.8/24")
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 8.8.8.0/24 <middle_from> -j <action> <end_to>",
-      "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 8.8.8.0/24 <middle_to> -j <action> <end_from>"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.input_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 8.8.8.0/24 <middle_to> -j <action> <end_from>"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.output_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 8.8.8.0/24 <middle_from> -j <action> <end_to>"], to_from.get_factory.rows
-  end
-
-  def test_write_table_from_list_length_to_list_empty
-    rule = create_rule
-    to_from = create_to_from
-    rule.to_net("@8.8.8.8/24")
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 8.8.8.0/24 <middle_from> -j <action> <end_to>",
-      "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 8.8.8.0/24 <middle_to> -j <action> <end_from>"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.input_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 8.8.8.0/24 <middle_to> -j <action> <end_from>"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.output_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 8.8.8.0/24 <middle_from> -j <action> <end_to>"], to_from.get_factory.rows
-  end
-
-  def test_write_table_to_list_length_from_list_length_eq_1
-    rule = create_rule
-    to_from = create_to_from
-    rule.from_net("@4.4.4.4/24")
-    rule.to_net("@8.8.8.8/24")
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 4.4.4.0/24 -d 8.8.8.0/24 <middle_from> -j <action> <end_to>",
-      "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 4.4.4.0/24 -s 8.8.8.0/24 <middle_to> -j <action> <end_from>"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.input_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 4.4.4.0/24 -s 8.8.8.0/24 <middle_to> -j <action> <end_from>"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.output_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal ["{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 4.4.4.0/24 -d 8.8.8.0/24 <middle_from> -j <action> <end_to>"], to_from.get_factory.rows
-  end
-
-  def test_write_table_to_list_length_eq_from_list_length_gt_1
-    rule = create_rule
-    to_from = create_to_from
-    rule.to_net("@8.8.8.8/24@9.9.9.9/24")
-    rule.from_net("@4.4.4.4/24@5.5.5.5/24")
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-      "{RkebdEMYRffS9fWJ60Ktew} -d 8.8.8.0/24 -j <action> <end_from>",
-      "{RkebdEMYRffS9fWJ60Ktew} -d 9.9.9.0/24 -j <action> <end_from>",
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 4.4.4.0/24 <middle_from> -j RkebdEMYRffS9fWJ60Ktew",
-      "{fcQmxBIDNRkMepTDLq9w} -s 8.8.8.0/24 -j <action> <end_from>",
-      "{fcQmxBIDNRkMepTDLq9w} -s 9.9.9.0/24 -j <action> <end_from>",
-      "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 4.4.4.0/24 <middle_to> -j fcQmxBIDNRkMepTDLq9w",
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 5.5.5.0/24 <middle_from> -j RkebdEMYRffS9fWJ60Ktew",
-      "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 5.5.5.0/24 <middle_to> -j fcQmxBIDNRkMepTDLq9w"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.input_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-     "{fcQmxBIDNRkMepTDLq9w} -s 8.8.8.0/24 -j <action> <end_from>",
-     "{fcQmxBIDNRkMepTDLq9w} -s 9.9.9.0/24 -j <action> <end_from>",
-     "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 4.4.4.0/24 <middle_to> -j fcQmxBIDNRkMepTDLq9w",
-     "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 5.5.5.0/24 <middle_to> -j fcQmxBIDNRkMepTDLq9w"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.output_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-      "{RkebdEMYRffS9fWJ60Ktew} -d 8.8.8.0/24 -j <action> <end_from>",
-      "{RkebdEMYRffS9fWJ60Ktew} -d 9.9.9.0/24 -j <action> <end_from>",
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 4.4.4.0/24 <middle_from> -j RkebdEMYRffS9fWJ60Ktew",
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 5.5.5.0/24 <middle_from> -j RkebdEMYRffS9fWJ60Ktew"], to_from.get_factory.rows
-  end
-
-  def test_write_table_to_list_length_le_from_list_length
-    rule = create_rule
-    to_from = create_to_from
-    rule.to_net("@8.8.8.8/24@9.9.9.9/24")
-    rule.from_net("@4.4.4.4/24@5.5.5.5/24@6.6.6.6/24")
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-      "{nsQXzTLM2atSwLVi1drT5g} -s 4.4.4.0/24 -j <action> <end_to>",
-      "{nsQXzTLM2atSwLVi1drT5g} -s 5.5.5.0/24 -j <action> <end_to>",
-      "{nsQXzTLM2atSwLVi1drT5g} -s 6.6.6.0/24 -j <action> <end_to>",
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -d 8.8.8.0/24 <middle_from> -j nsQXzTLM2atSwLVi1drT5g",
-      "{lDzTbBTEo07ZTIcik7svJQ} -d 4.4.4.0/24 -j <action> <end_to>",
-      "{lDzTbBTEo07ZTIcik7svJQ} -d 5.5.5.0/24 -j <action> <end_to>",
-      "{lDzTbBTEo07ZTIcik7svJQ} -d 6.6.6.0/24 -j <action> <end_to>",
-      "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -s 8.8.8.0/24 <middle_to> -j lDzTbBTEo07ZTIcik7svJQ",
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -d 9.9.9.0/24 <middle_from> -j nsQXzTLM2atSwLVi1drT5g",
-      "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -s 9.9.9.0/24 <middle_to> -j lDzTbBTEo07ZTIcik7svJQ"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.input_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-      "{lDzTbBTEo07ZTIcik7svJQ} -d 4.4.4.0/24 -j <action> <end_to>",
-      "{lDzTbBTEo07ZTIcik7svJQ} -d 5.5.5.0/24 -j <action> <end_to>",
-      "{lDzTbBTEo07ZTIcik7svJQ} -d 6.6.6.0/24 -j <action> <end_to>",
-      "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -s 8.8.8.0/24 <middle_to> -j lDzTbBTEo07ZTIcik7svJQ",
-      "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -s 9.9.9.0/24 <middle_to> -j lDzTbBTEo07ZTIcik7svJQ"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.output_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-      "{nsQXzTLM2atSwLVi1drT5g} -s 4.4.4.0/24 -j <action> <end_to>",
-      "{nsQXzTLM2atSwLVi1drT5g} -s 5.5.5.0/24 -j <action> <end_to>",
-      "{nsQXzTLM2atSwLVi1drT5g} -s 6.6.6.0/24 -j <action> <end_to>",
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -d 8.8.8.0/24 <middle_from> -j nsQXzTLM2atSwLVi1drT5g",
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -d 9.9.9.0/24 <middle_from> -j nsQXzTLM2atSwLVi1drT5g"], to_from.get_factory.rows
-  end
-
-  def test_write_table_from_list_length_lt_to_list_length
-    rule = create_rule
-    to_from = create_to_from
-    rule.to_net("@8.8.8.8/24@9.9.9.9/24@10.10.10.10/24")
-    rule.from_net("@4.4.4.4/24@5.5.5.5/24")
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-      "{SkIy2M659Vjy0wXscuvsQ} -d 8.8.8.0/24 -j <action> <end_from>",
-      "{SkIy2M659Vjy0wXscuvsQ} -d 9.9.9.0/24 -j <action> <end_from>",
-      "{SkIy2M659Vjy0wXscuvsQ} -d 10.10.10.0/24 -j <action> <end_from>",
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 4.4.4.0/24 <middle_from> -j SkIy2M659Vjy0wXscuvsQ",
-      "{a3xcz7CtuYRKy5OPWof3OA} -s 8.8.8.0/24 -j <action> <end_from>",
-      "{a3xcz7CtuYRKy5OPWof3OA} -s 9.9.9.0/24 -j <action> <end_from>",
-      "{a3xcz7CtuYRKy5OPWof3OA} -s 10.10.10.0/24 -j <action> <end_from>",
-      "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 4.4.4.0/24 <middle_to> -j a3xcz7CtuYRKy5OPWof3OA",
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 5.5.5.0/24 <middle_from> -j SkIy2M659Vjy0wXscuvsQ",
-      "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 5.5.5.0/24 <middle_to> -j a3xcz7CtuYRKy5OPWof3OA"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.input_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-     "{a3xcz7CtuYRKy5OPWof3OA} -s 8.8.8.0/24 -j <action> <end_from>",
-     "{a3xcz7CtuYRKy5OPWof3OA} -s 9.9.9.0/24 -j <action> <end_from>",
-     "{a3xcz7CtuYRKy5OPWof3OA} -s 10.10.10.0/24 -j <action> <end_from>",
-     "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 4.4.4.0/24 <middle_to> -j a3xcz7CtuYRKy5OPWof3OA",
-     "{DEFAULT} <input_ifname_direction> <ifname> <begin_to> -d 5.5.5.0/24 <middle_to> -j a3xcz7CtuYRKy5OPWof3OA"], to_from.get_factory.rows
-
-    to_from = create_to_from
-    to_from.output_only
-    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
-    assert_equal [
-      "{SkIy2M659Vjy0wXscuvsQ} -d 8.8.8.0/24 -j <action> <end_from>",
-      "{SkIy2M659Vjy0wXscuvsQ} -d 9.9.9.0/24 -j <action> <end_from>",
-      "{SkIy2M659Vjy0wXscuvsQ} -d 10.10.10.0/24 -j <action> <end_from>",
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 4.4.4.0/24 <middle_from> -j SkIy2M659Vjy0wXscuvsQ",
-      "{DEFAULT} <output_ifname_direction> <ifname> <begin_from> -s 5.5.5.0/24 <middle_from> -j SkIy2M659Vjy0wXscuvsQ"], to_from.get_factory.rows
-  end
-
   def test_rule_to_list_from_tag
     rule = create_rule
     rule.to_host("TESTIPV4")
@@ -807,6 +588,192 @@ class FirewallTest < Test::Unit::TestCase
     assert_nets [], rule.from_list(Construqt::Addresses::IPV4)
     assert_nets ["8::8:8:8/128"], rule.to_list(Construqt::Addresses::IPV6)
     assert_nets ["8::8:8:8/128"], rule.from_list(Construqt::Addresses::IPV6)
+  end
+
+  def test_from_to_host_connection_port_22_from_is_outside_empty_empty
+    to_from = connection_from_outside([], [])
+    assert_array ["{DEFAULT} -o test <begin_left> -p test -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>",
+                  "{DEFAULT} -i test <begin_right> -p test -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>"], to_from.get_factory.rows
+
+  end
+
+  def test_from_to_host_connection_port_22_from_is_outside_empty_2
+    to_from = connection_from_outside([], ["@1.1.1.1@2.2.2.2"])
+    assert_array [
+      "{DEFAULT} -o test <begin_left> -p test -s 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>",
+      "{DEFAULT} -i test <begin_right> -p test -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>",
+      "{DEFAULT} -o test <begin_left> -p test -s 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>",
+      "{DEFAULT} -i test <begin_right> -p test -d 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>"
+    ], to_from.get_factory.rows
+  end
+
+  def test_from_to_host_connection_port_22_from_is_outside_2_empty
+    to_from = connection_from_outside(["@8.8.8.8@9.9.9.9"], [])
+    assert_array [
+      "{DEFAULT} -o test <begin_left> -p test -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>",
+      "{DEFAULT} -i test <begin_right> -p test -s 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>",
+      "{DEFAULT} -o test <begin_left> -p test -d 9.9.9.9/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>",
+      "{DEFAULT} -i test <begin_right> -p test -s 9.9.9.9/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>"
+     ], to_from.get_factory.rows
+  end
+
+  def test_from_to_host_connection_port_22_from_is_outside_2_3
+    to_from = connection_from_outside(["@8.8.8.8@9.9.9.9"], ["@1.1.1.1@2.2.2.2@3.3.3.3"])
+    assert_array [
+      "{ZU7qVeazKg78Af0qQ9H6fg} -d 1.1.1.1/32 -j ACCEPT <end_left>",
+      "{ZU7qVeazKg78Af0qQ9H6fg} -d 2.2.2.2/32 -j ACCEPT <end_left>",
+      "{ZU7qVeazKg78Af0qQ9H6fg} -d 3.3.3.3/32 -j ACCEPT <end_left>",
+      "{0wUwHMF9NxQGb4HwSxWYA} -s 1.1.1.1/32 -j ACCEPT <end_right>",
+      "{0wUwHMF9NxQGb4HwSxWYA} -s 2.2.2.2/32 -j ACCEPT <end_right>",
+      "{0wUwHMF9NxQGb4HwSxWYA} -s 3.3.3.3/32 -j ACCEPT <end_right>",
+      "{DEFAULT} -o test <begin_left> -p test -s 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ZU7qVeazKg78Af0qQ9H6fg",
+      "{DEFAULT} -i test <begin_right> -p test -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j 0wUwHMF9NxQGb4HwSxWYA",
+      "{DEFAULT} -o test <begin_left> -p test -s 9.9.9.9/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ZU7qVeazKg78Af0qQ9H6fg",
+      "{DEFAULT} -i test <begin_right> -p test -d 9.9.9.9/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j 0wUwHMF9NxQGb4HwSxWYA"
+    ], to_from.get_factory.rows
+  end
+
+  def test_from_to_host_connection_port_22_from_is_outside_3_2
+    to_from = connection_from_outside(["@7.7.7.7@8.8.8.8@9.9.9.9"], ["@1.1.1.1@2.2.2.2"])
+    assert_array [
+      "{p93OyF66gepckhPxZLPg} -s 7.7.7.7/32 -j ACCEPT <end_right>",
+      "{p93OyF66gepckhPxZLPg} -s 8.8.8.8/32 -j ACCEPT <end_right>",
+      "{p93OyF66gepckhPxZLPg} -s 9.9.9.9/32 -j ACCEPT <end_right>",
+      "{bThlmucneqeal9Ww6zmnfQ} -d 7.7.7.7/32 -j ACCEPT <end_left>",
+      "{bThlmucneqeal9Ww6zmnfQ} -d 8.8.8.8/32 -j ACCEPT <end_left>",
+      "{bThlmucneqeal9Ww6zmnfQ} -d 9.9.9.9/32 -j ACCEPT <end_left>",
+      "{DEFAULT} -o test <begin_left> -p test -s 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j bThlmucneqeal9Ww6zmnfQ",
+      "{DEFAULT} -i test <begin_right> -p test -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j p93OyF66gepckhPxZLPg",
+      "{DEFAULT} -o test <begin_left> -p test -s 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j bThlmucneqeal9Ww6zmnfQ",
+      "{DEFAULT} -i test <begin_right> -p test -d 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j p93OyF66gepckhPxZLPg"
+    ], to_from.get_factory.rows
+  end
+  ##########################################
+
+  def test_from_to_host_connection_port_22_from_is_inside_empty_empty
+    to_from = connection_from_inside([], [])
+    assert_array [
+      "{DEFAULT} -o test <begin_right> -p test -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>",
+      "{DEFAULT} -i test <begin_left> -p test -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>"
+    ], to_from.get_factory.rows
+  end
+
+  def test_from_to_host_connection_port_22_from_is_inside_empty_2
+    to_from = connection_from_inside([], ["@8.8.8.8@9.9.9.9"])
+    assert_array [
+      "{DEFAULT} -o test <begin_right> -p test -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>",
+      "{DEFAULT} -i test <begin_left> -p test -s 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>",
+      "{DEFAULT} -o test <begin_right> -p test -d 9.9.9.9/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>",
+      "{DEFAULT} -i test <begin_left> -p test -s 9.9.9.9/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>"
+    ], to_from.get_factory.rows
+  end
+
+  def test_from_to_host_connection_port_22_from_is_inside_2_empty
+    to_from = connection_from_inside(["@1.1.1.1@2.2.2.2"], [])
+    assert_array [
+      "{DEFAULT} -o test <begin_right> -p test -s 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>",
+      "{DEFAULT} -i test <begin_left> -p test -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>",
+      "{DEFAULT} -o test <begin_right> -p test -s 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>",
+      "{DEFAULT} -i test <begin_left> -p test -d 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>"
+     ], to_from.get_factory.rows
+  end
+
+  def test_from_to_host_connection_port_22_from_is_inside_2_3
+    to_from = connection_from_inside(["@1.1.1.1@2.2.2.2"], ["@7.7.7.7@8.8.8.8@9.9.9.9"])
+    assert_array [
+      "{bThlmucneqeal9Ww6zmnfQ} -d 7.7.7.7/32 -j ACCEPT <end_left>",
+      "{bThlmucneqeal9Ww6zmnfQ} -d 8.8.8.8/32 -j ACCEPT <end_left>",
+      "{bThlmucneqeal9Ww6zmnfQ} -d 9.9.9.9/32 -j ACCEPT <end_left>",
+      "{p93OyF66gepckhPxZLPg} -s 7.7.7.7/32 -j ACCEPT <end_right>",
+      "{p93OyF66gepckhPxZLPg} -s 8.8.8.8/32 -j ACCEPT <end_right>",
+      "{p93OyF66gepckhPxZLPg} -s 9.9.9.9/32 -j ACCEPT <end_right>",
+      "{DEFAULT} -o test <begin_right> -p test -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j p93OyF66gepckhPxZLPg",
+      "{DEFAULT} -i test <begin_left> -p test -s 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j bThlmucneqeal9Ww6zmnfQ",
+      "{DEFAULT} -o test <begin_right> -p test -d 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j p93OyF66gepckhPxZLPg",
+      "{DEFAULT} -i test <begin_left> -p test -s 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j bThlmucneqeal9Ww6zmnfQ"
+    ], to_from.get_factory.rows
+  end
+
+  def test_from_to_host_connection_port_22_from_is_inside_3_2
+    to_from = connection_from_inside(["@1.1.1.1@2.2.2.2@3.3.3.3"], ["@1.1.1.1@2.2.2.2"])
+    assert_array [
+      "{0wUwHMF9NxQGb4HwSxWYA} -s 1.1.1.1/32 -j ACCEPT <end_right>",
+      "{0wUwHMF9NxQGb4HwSxWYA} -s 2.2.2.2/32 -j ACCEPT <end_right>",
+      "{0wUwHMF9NxQGb4HwSxWYA} -s 3.3.3.3/32 -j ACCEPT <end_right>",
+      "{ZU7qVeazKg78Af0qQ9H6fg} -d 1.1.1.1/32 -j ACCEPT <end_left>",
+      "{ZU7qVeazKg78Af0qQ9H6fg} -d 2.2.2.2/32 -j ACCEPT <end_left>",
+      "{ZU7qVeazKg78Af0qQ9H6fg} -d 3.3.3.3/32 -j ACCEPT <end_left>",
+      "{DEFAULT} -o test <begin_right> -p test -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j 0wUwHMF9NxQGb4HwSxWYA",
+      "{DEFAULT} -i test <begin_left> -p test -s 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ZU7qVeazKg78Af0qQ9H6fg",
+      "{DEFAULT} -o test <begin_right> -p test -d 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j 0wUwHMF9NxQGb4HwSxWYA",
+      "{DEFAULT} -i test <begin_left> -p test -s 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ZU7qVeazKg78Af0qQ9H6fg"
+    ], to_from.get_factory.rows
+  end
+
+
+  ##########################################
+  def test_from_to_host_connection_port_22_from_is_outside_1_1_input
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_host("@8.8.8.8").to_host("@1.1.1.1").icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_outside
+    to_from = create_to_from.bind_interface("test", nil, rule).input_only
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal ["{DEFAULT} -i test <begin_right> -p test -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>"], to_from.get_factory.rows
+  end
+
+  def test_from_to_host_connection_port_22_from_is_outside_1_1_output
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_host("@8.8.8.8").to_host("@1.1.1.1").icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_outside
+    to_from = create_to_from.bind_interface("test", nil, rule).output_only
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal ["{DEFAULT} -o test <begin_left> -p test -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>"], to_from.get_factory.rows
+  end
+
+  def test_connection_from_me_to_8_8_8_8_port_22_inside_1_1_input
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_host("@1.1.1.1").to_host("@8.8.8.8").icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_inside
+    to_from = create_to_from.bind_interface("test", nil, rule).input_only
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal ["{DEFAULT} -i test <begin_left> -p test -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>"], to_from.get_factory.rows
+  end
+
+  def test_connection_from_me_to_8_8_8_8_port_22_inside_1_1_output
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_host("@1.1.1.1").to_host("@8.8.8.8").icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_inside
+    to_from = create_to_from.bind_interface("test", nil, rule).output_only
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal ["{DEFAULT} -o test <begin_right> -p test -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>"], to_from.get_factory.rows
+  end
+
+  def connection_from_outside(from_hosts, to_hosts)
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_outside
+    from_hosts.each { |host| rule.from_host(host) }
+    to_hosts.each { |host| rule.to_host(host) }
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    to_from
+  end
+
+  def test_from_to_host_connection_port_22_from_is_outside_1_1
+    to_from = connection_from_outside(["@8.8.8.8"], ["@1.1.1.1"])
+    assert_equal ["{DEFAULT} -o test <begin_left> -p test -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>",
+                  "{DEFAULT} -i test <begin_right> -p test -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>"], to_from.get_factory.rows
+  end
+
+  def connection_from_inside(from_hosts, to_hosts)
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_inside
+    from_hosts.each { |host| rule.from_host(host) }
+    to_hosts.each { |host| rule.to_host(host) }
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    to_from
+  end
+
+  def test_connection_from_me_to_8_8_8_8_port_22_inside_1_1
+    to_from = connection_from_inside(["@1.1.1.1"], ["@8.8.8.8"])
+    assert_equal ["{DEFAULT} -o test <begin_right> -p test -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>",
+                  "{DEFAULT} -i test <begin_left> -p test -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>"], to_from.get_factory.rows
   end
 
 
