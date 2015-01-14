@@ -6,14 +6,14 @@ module Construqt
         class ToFrom
           include Util::Chainable
           chainable_attr_value :begin, nil
-          chainable_attr_value :begin_to, nil
-          chainable_attr_value :begin_from, nil
+          chainable_attr_value :begin_right, nil
+          chainable_attr_value :begin_left, nil
           chainable_attr_value :middle, nil
-          chainable_attr_value :middle_to, nil
-          chainable_attr_value :middle_from, nil
+          chainable_attr_value :middle_right, nil
+          chainable_attr_value :middle_left, nil
           chainable_attr_value :end, nil
-          chainable_attr_value :end_to, nil
-          chainable_attr_value :end_from, nil
+          chainable_attr_value :end_right, nil
+          chainable_attr_value :end_left, nil
           chainable_attr_value :factory, nil
           chainable_attr_value :ifname, nil
           chainable_attr_value :interface, nil
@@ -47,57 +47,57 @@ module Construqt
             self
           end
 
-          def push_begin_to(str)
-            begin_to(get_begin_to + Construqt::Util.space_before(str))
+          def push_begin_right(str)
+            begin_right(get_begin_right + Construqt::Util.space_before(str))
           end
 
-          def push_begin_from(str)
-            begin_from(get_begin_from + Construqt::Util.space_before(str))
+          def push_begin_left(str)
+            begin_left(get_begin_left + Construqt::Util.space_before(str))
           end
 
-          def push_middle_to(str)
-            middle_to(get_middle_to + Construqt::Util.space_before(str))
+          def push_middle_right(str)
+            middle_right(get_middle_right + Construqt::Util.space_before(str))
           end
 
-          def push_middle_from(str)
-            middle_from(get_middle_from + Construqt::Util.space_before(str))
+          def push_middle_left(str)
+            middle_left(get_middle_left + Construqt::Util.space_before(str))
           end
 
-          def push_end_to(str)
-            end_to(get_end_to + Construqt::Util.space_before(str))
+          def push_end_right(str)
+            end_right(get_end_right + Construqt::Util.space_before(str))
           end
 
-          def push_end_from(str)
-            end_from(get_end_from + Construqt::Util.space_before(str))
+          def push_end_left(str)
+            end_left(get_end_left + Construqt::Util.space_before(str))
           end
 
-          def get_begin_to
-            return Construqt::Util.space_before(@begin_to) if @begin_to
+          def get_begin_right
+            return Construqt::Util.space_before(@begin_right) if @begin_right
             return Construqt::Util.space_before(@begin)
           end
 
-          def get_begin_from
-            return Construqt::Util.space_before(@begin_from) if @begin_from
+          def get_begin_left
+            return Construqt::Util.space_before(@begin_left) if @begin_left
             return Construqt::Util.space_before(@begin)
           end
 
-          def get_middle_to
-            return Construqt::Util.space_before(@middle_to) if @middle_to
+          def get_middle_right
+            return Construqt::Util.space_before(@middle_right) if @middle_right
             return Construqt::Util.space_before(@middle)
           end
 
-          def get_middle_from
-            return Construqt::Util.space_before(@middle_from) if @middle_from
+          def get_middle_left
+            return Construqt::Util.space_before(@middle_left) if @middle_left
             return Construqt::Util.space_before(@middle)
           end
 
-          def get_end_to
-            return Construqt::Util.space_before(@end_to) if @end_to
+          def get_end_right
+            return Construqt::Util.space_before(@end_right) if @end_right
             return Construqt::Util.space_before(@end)
           end
 
-          def get_end_from
-            return Construqt::Util.space_before(@end_from) if @end_from
+          def get_end_left
+            return Construqt::Util.space_before(@end_left) if @end_left
             return Construqt::Util.space_before(@end)
           end
 
@@ -113,12 +113,12 @@ module Construqt
           def bind_interface(ifname, iface, rule)
             self.interface(iface)
             self.ifname(ifname)
-            if rule.from_is_inbound?
-              output_ifname_direction("-o")
-              input_ifname_direction("-i")
-            else
+            if rule.from_is_outside?
               output_ifname_direction("-i")
               input_ifname_direction("-o")
+            else
+              output_ifname_direction("-o")
+              input_ifname_direction("-i")
             end
           end
 
@@ -132,12 +132,12 @@ module Construqt
             return ""
           end
 
-          def has_to?
-            @begin || @begin_to || @middle || @middle_to || @end || @end_to
+          def has_right?
+            @begin || @begin_right || @middle || @middle_right || @end || @end_right
           end
 
-          def has_from?
-            @begin || @begin_from || @middle || @middle_from || @end || @end_from
+          def has_left?
+            @begin || @begin_left || @middle || @middle_left || @end || @end_left
           end
 
           def create_row
@@ -178,16 +178,54 @@ module Construqt
           result.hmac
         end
 
-        def self.write_line(to_from, rule, output_only = "", input_only = "", action = nil)
+        def self.get_left(to_from, rule, action)
+          [(action.nil? ? "#{rule.get_action}#{to_from.get_end_left}" : action),
+           to_from.input_ifname,
+           to_from.get_begin_left,
+           to_from.get_middle_left]
+        end
+
+        def self.get_right(to_from, rule, action)
+          [(action.nil? ? "#{rule.get_action}#{to_from.get_end_right}" : action),
+           to_from.output_ifname,
+           to_from.get_begin_right,
+           to_from.get_middle_right]
+        end
+
+        def self.write_line(to_from, rule, output_only = "", input_only = "", action_left = nil, action_right = nil)
           if to_from.output_only?
-            action = "#{rule.get_action}#{to_from.get_end_to}" unless action
-            to_from.create_row.row("#{to_from.output_ifname}#{to_from.get_begin_to}#{Construqt::Util.space_before(output_only)}#{to_from.get_middle_to} -j #{action}")
+            if rule.from_is_outside?
+              _action,ifname,_begin,middle = get_left(to_from, rule, action_right)
+            else
+              _action,ifname,_begin,middle = get_right(to_from, rule, action_left)
+            end
+
+            to_from.create_row.row("#{ifname}#{_begin}#{Construqt::Util.space_before(output_only)}#{middle} -j #{_action}")
           end
 
           if to_from.input_only?
-            action = "#{rule.get_action}#{to_from.get_end_from}" unless action
-            to_from.create_row.row("#{to_from.input_ifname}#{to_from.get_begin_from}#{Construqt::Util.space_before(input_only)}#{to_from.get_middle_from} -j #{action}")
+            if rule.from_is_outside?
+              _action,ifname,_begin,middle = get_right(to_from, rule, action_left)
+            else
+              _action,ifname,_begin,middle = get_left(to_from, rule, action_right)
+            end
+
+            to_from.create_row.row("#{ifname}#{_begin}#{Construqt::Util.space_before(input_only)}#{middle} -j #{_action}")
           end
+        end
+
+        def self.build_src_dest(rule, ip_left, ip_right)
+          if rule.from_is_outside?
+            out = []
+            out << "-s #{ip_left.to_string}" if ip_left
+            out << "-d #{ip_right.to_string}" if ip_right
+          else
+            out = []
+            out << "-s #{ip_right.to_string}" if ip_right
+            out << "-d #{ip_left.to_string}" if ip_left
+          end
+
+          out.join(" ")
         end
 
         def self.write_table(family, rule, to_from)
@@ -212,8 +250,9 @@ module Construqt
           #
           if to_list.empty? && from_list.length > 0
             from_list.each do |ip|
-              write_line(to_from, rule, "-s #{ip.to_string}", "-d #{ip.to_string}")
+              write_line(to_from, rule, build_src_dest(rule, nil, ip), build_src_dest(rule, ip, nil))
             end
+
             return
           end
 
@@ -222,18 +261,19 @@ module Construqt
           #
           if to_list.length > 0 && from_list.empty?
             to_list.each do |ip|
-              write_line(to_from, rule, "-d #{ip.to_string}", "-s #{ip.to_string}")
+              write_line(to_from, rule, build_src_dest(rule, ip, nil), build_src_dest(rule, nil, ip))
             end
+
             return
           end
 
           #
           # to_list.size == 1 && to_list.size == from_list.size
           #
-          if to_list.size == 1 && to_list.size == from_list.size
+          if to_list.size == 1 && 1 == from_list.size
             from_list.each do |from_ip|
               to_list.each do |to_ip|
-                write_line(to_from, rule, "-s #{from_ip.to_string} -d #{to_ip.to_string}", "-d #{from_ip.to_string} -s #{to_ip.to_string}")
+                write_line(to_from, rule, build_src_dest(rule, to_ip, from_ip), build_src_dest(rule, from_ip, to_ip))
               end
             end
 
@@ -245,14 +285,9 @@ module Construqt
           #
           if to_list.size < from_list.size
             to_list.each do |to_ip|
-              if to_from.output_only?
-                action = write_jump_destination("-s", from_list, to_from.get_end_to, to_from, rule)
-              end
-
-              if to_from.input_only?
-                action = write_jump_destination("-d", from_list, to_from.get_end_to, to_from, rule)
-              end
-              write_line(to_from, rule, "-d #{to_ip.to_string}", "-s #{to_ip.to_string}", action)
+              action_left = write_jump_destination("-s", from_list, to_from.get_end_right, to_from, rule)
+              action_right = write_jump_destination("-d", from_list, to_from.get_end_left, to_from, rule)
+              write_line(to_from, rule, build_src_dest(rule, to_ip, nil), build_src_dest(rule, nil, to_ip), action_left, action_right)
             end
 
             return
@@ -263,13 +298,9 @@ module Construqt
           #
           if from_list.size <= to_list.size
             from_list.each do |from_ip|
-              if to_from.output_only?
-                action = write_jump_destination("-d", to_list, to_from.get_end_from, to_from, rule)
-              end
-              if to_from.input_only?
-                action = write_jump_destination("-s", to_list, to_from.get_end_from, to_from, rule)
-              end
-              write_line(to_from, rule, "-s #{from_ip.to_string}", "-d #{from_ip.to_string}", action)
+              action_left = write_jump_destination("-d", to_list, to_from.get_end_left, to_from, rule)
+              action_right = write_jump_destination("-s", to_list, to_from.get_end_right, to_from, rule)
+              write_line(to_from, rule, build_src_dest(rule, from_ip, nil), build_src_dest(rule, nil, from_ip), action_right, action_left)
             end
 
             return
@@ -306,7 +337,7 @@ module Construqt
             #throw "TO_SOURCE must set #{ifname}" unless rule.to_source?
             written = false
             rule.postrouting? && rule.get_to_source.each do |src|
-              to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).assign_in_out(rule).end_to("--to-source #{src}")
+              to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).assign_in_out(rule).end_right("--to-source #{src}")
                 .ifname(ifname).factory(writer.ipv4.postrouting)
               protocol_loop(Construqt::Addresses::IPV4, rule).each do |protocol|
                 self.set_port_protocols(protocol, Construqt::Addresses::IPV4, rule, to_from)
@@ -366,11 +397,6 @@ module Construqt
                 self.set_port_protocols(protocol, family, rule, to_from)
 
 
-                if rule.connection?
-                  to_from.push_middle_from("-m state --state NEW,ESTABLISHED")
-                  to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
-                end
-
                 write_table(family, rule, to_from.factory(cfg[:writer]))
               end
             end
@@ -397,53 +423,46 @@ module Construqt
         end
 
         def self.set_port_protocols(protocol, family, rule, to_from)
-          to_from.push_begin_to(protocol)
-          to_from.push_begin_from(protocol)
+          to_from.push_begin_left(protocol)
+          to_from.push_begin_right(protocol)
 
+          if rule.connection?
+            to_from.push_middle_left("-m state --state RELATED,ESTABLISHED")
+            to_from.push_middle_right("-m state --state NEW,ESTABLISHED")
+          end
 
           if (rule.get_dports && !rule.get_dports.empty?) ||
               (rule.get_sports && !rule.get_sports.empty?)
-            to_from.push_middle_from("-m multiport")
-            to_from.push_middle_to("-m multiport")
+            to_from.push_middle_left("-m multiport")
+            to_from.push_middle_right("-m multiport")
           end
 
-          ports = {
-            true => {
-              "dports" => { "from" => "--sports", "to" => "--dports" },
-              "sports" => { "from" => "--dports", "to" => "--sports" }
-            },
-            false => {
-              "dports" => { "from" => "--dports", "to" => "--sports" },
-              "sports" => { "from" => "--sports", "to" => "--dports" }
-            }
-          }[!!rule.from_is_inbound?]
-
           if rule.get_dports && !rule.get_dports.empty?
-            to_from.push_middle_from("#{ports['dports']['from']} #{rule.get_dports.join(",")}")
-            to_from.push_middle_to("#{ports['dports']['to']} #{rule.get_dports.join(",")}")
+            to_from.push_middle_left("--sports #{rule.get_dports.join(",")}")
+            to_from.push_middle_right("--dports #{rule.get_dports.join(",")}")
           end
 
           if rule.get_sports && !rule.get_sports.empty?
-            to_from.push_middle_from("#{ports['sports']['from']} #{rule.get_sports.join(",")}")
-            to_from.push_middle_to("#{ports['sports']['to']} #{rule.get_sports.join(",")}")
+            to_from.push_middle_left("--dports #{rule.get_sports.join(",")}")
+            to_from.push_middle_right("--sports #{rule.get_sports.join(",")}")
           end
 
           if rule.icmp? && rule.get_type
             state = {
               Construqt::Firewalls::ICMP::Ping => {
                 Construqt::Addresses::IPV4 => {
-                  true =>  { "from" => "-m icmp --icmp-type 0/0", "to" => "-m icmp --icmp-type 8/0" },
-                  false => { "from" => "-m icmp --icmp-type 8/0", "to" => "-m icmp --icmp-type 0/0" }
+                  "left" => "-m icmp --icmp-type 8/0",
+                  "right" => "-m icmp --icmp-type 0/0"
                 },
                 Construqt::Addresses::IPV6 => {
-                  true =>  { "from" => "--icmpv6-type 129", "to" => "--icmpv6-type 128" },
-                  false => { "from" => "--icmpv6-type 128", "to" => "--icmpv6-type 129" }
+                  "left" => "--icmpv6-type 128",
+                  "right" => "--icmpv6-type 129"
                 }
               }
-            }[rule.get_type][family][!!rule.from_is_inbound?]
-            throw "state for #{rule.get_type} #{family} #{!!rule.from_is_inbound?} not found" unless state
-            to_from.push_middle_from(state['from'])
-            to_from.push_middle_to(state['to'])
+            }[rule.get_type][family]
+            throw "state for #{rule.get_type} #{family}" unless state
+            to_from.push_middle_left(state['left'])
+            to_from.push_middle_right(state['right'])
           end
         end
 
