@@ -36,7 +36,7 @@ public class ApplyConfig {
 		Future<List<String>> result = sc.start();
 
 		try {
-			List<String> results = result.get(60, TimeUnit.SECONDS);
+			List<String> results = result.get(120, TimeUnit.SECONDS);
 			int errors = 0;
 			for (String line : results) {
 				String errorMessage = Util
