@@ -26,8 +26,7 @@ public class Hp2510gSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 		getOutputConsumer().addStep(new SwitchStep( //
 				new Case("Press any key to continue") {
 					public Step[] then() {
-						return new Step[] { new EnterInput(""), new Enable(),
-								new PasswordPrompt(), new EnterInput(password) };
+						return new Step[] { new EnterInput("") };
 					}
 				}, new Case("Username:") {
 					public Step[] then() {
