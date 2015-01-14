@@ -623,10 +623,10 @@ class FirewallTest < Test::Unit::TestCase
       "{ZU7qVeazKg78Af0qQ9H6fg} -d 1.1.1.1/32 -j ACCEPT <end_left>",
       "{ZU7qVeazKg78Af0qQ9H6fg} -d 2.2.2.2/32 -j ACCEPT <end_left>",
       "{ZU7qVeazKg78Af0qQ9H6fg} -d 3.3.3.3/32 -j ACCEPT <end_left>",
+      "{DEFAULT} -o test <begin_left> -p test -s 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ZU7qVeazKg78Af0qQ9H6fg",
       "{0wUwHMF9NxQGb4HwSxWYA} -s 1.1.1.1/32 -j ACCEPT <end_right>",
       "{0wUwHMF9NxQGb4HwSxWYA} -s 2.2.2.2/32 -j ACCEPT <end_right>",
       "{0wUwHMF9NxQGb4HwSxWYA} -s 3.3.3.3/32 -j ACCEPT <end_right>",
-      "{DEFAULT} -o test <begin_left> -p test -s 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ZU7qVeazKg78Af0qQ9H6fg",
       "{DEFAULT} -i test <begin_right> -p test -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j 0wUwHMF9NxQGb4HwSxWYA",
       "{DEFAULT} -o test <begin_left> -p test -s 9.9.9.9/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ZU7qVeazKg78Af0qQ9H6fg",
       "{DEFAULT} -i test <begin_right> -p test -d 9.9.9.9/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j 0wUwHMF9NxQGb4HwSxWYA"
@@ -636,13 +636,13 @@ class FirewallTest < Test::Unit::TestCase
   def test_from_to_host_connection_port_22_from_is_outside_3_2
     to_from = connection_from_outside(["@7.7.7.7@8.8.8.8@9.9.9.9"], ["@1.1.1.1@2.2.2.2"])
     assert_array [
-      "{p93OyF66gepckhPxZLPg} -s 7.7.7.7/32 -j ACCEPT <end_right>",
-      "{p93OyF66gepckhPxZLPg} -s 8.8.8.8/32 -j ACCEPT <end_right>",
-      "{p93OyF66gepckhPxZLPg} -s 9.9.9.9/32 -j ACCEPT <end_right>",
       "{bThlmucneqeal9Ww6zmnfQ} -d 7.7.7.7/32 -j ACCEPT <end_left>",
       "{bThlmucneqeal9Ww6zmnfQ} -d 8.8.8.8/32 -j ACCEPT <end_left>",
       "{bThlmucneqeal9Ww6zmnfQ} -d 9.9.9.9/32 -j ACCEPT <end_left>",
       "{DEFAULT} -o test <begin_left> -p test -s 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j bThlmucneqeal9Ww6zmnfQ",
+      "{p93OyF66gepckhPxZLPg} -s 7.7.7.7/32 -j ACCEPT <end_right>",
+      "{p93OyF66gepckhPxZLPg} -s 8.8.8.8/32 -j ACCEPT <end_right>",
+      "{p93OyF66gepckhPxZLPg} -s 9.9.9.9/32 -j ACCEPT <end_right>",
       "{DEFAULT} -i test <begin_right> -p test -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j p93OyF66gepckhPxZLPg",
       "{DEFAULT} -o test <begin_left> -p test -s 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j bThlmucneqeal9Ww6zmnfQ",
       "{DEFAULT} -i test <begin_right> -p test -d 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j p93OyF66gepckhPxZLPg"
@@ -681,13 +681,13 @@ class FirewallTest < Test::Unit::TestCase
   def test_from_to_host_connection_port_22_from_is_inside_2_3
     to_from = connection_from_inside(["@1.1.1.1@2.2.2.2"], ["@7.7.7.7@8.8.8.8@9.9.9.9"])
     assert_array [
-      "{bThlmucneqeal9Ww6zmnfQ} -d 7.7.7.7/32 -j ACCEPT <end_left>",
-      "{bThlmucneqeal9Ww6zmnfQ} -d 8.8.8.8/32 -j ACCEPT <end_left>",
-      "{bThlmucneqeal9Ww6zmnfQ} -d 9.9.9.9/32 -j ACCEPT <end_left>",
       "{p93OyF66gepckhPxZLPg} -s 7.7.7.7/32 -j ACCEPT <end_right>",
       "{p93OyF66gepckhPxZLPg} -s 8.8.8.8/32 -j ACCEPT <end_right>",
       "{p93OyF66gepckhPxZLPg} -s 9.9.9.9/32 -j ACCEPT <end_right>",
       "{DEFAULT} -o test <begin_right> -p test -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j p93OyF66gepckhPxZLPg",
+      "{bThlmucneqeal9Ww6zmnfQ} -d 7.7.7.7/32 -j ACCEPT <end_left>",
+      "{bThlmucneqeal9Ww6zmnfQ} -d 8.8.8.8/32 -j ACCEPT <end_left>",
+      "{bThlmucneqeal9Ww6zmnfQ} -d 9.9.9.9/32 -j ACCEPT <end_left>",
       "{DEFAULT} -i test <begin_left> -p test -s 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j bThlmucneqeal9Ww6zmnfQ",
       "{DEFAULT} -o test <begin_right> -p test -d 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j p93OyF66gepckhPxZLPg",
       "{DEFAULT} -i test <begin_left> -p test -s 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j bThlmucneqeal9Ww6zmnfQ"
@@ -700,10 +700,10 @@ class FirewallTest < Test::Unit::TestCase
       "{0wUwHMF9NxQGb4HwSxWYA} -s 1.1.1.1/32 -j ACCEPT <end_right>",
       "{0wUwHMF9NxQGb4HwSxWYA} -s 2.2.2.2/32 -j ACCEPT <end_right>",
       "{0wUwHMF9NxQGb4HwSxWYA} -s 3.3.3.3/32 -j ACCEPT <end_right>",
+      "{DEFAULT} -o test <begin_right> -p test -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j 0wUwHMF9NxQGb4HwSxWYA",
       "{ZU7qVeazKg78Af0qQ9H6fg} -d 1.1.1.1/32 -j ACCEPT <end_left>",
       "{ZU7qVeazKg78Af0qQ9H6fg} -d 2.2.2.2/32 -j ACCEPT <end_left>",
       "{ZU7qVeazKg78Af0qQ9H6fg} -d 3.3.3.3/32 -j ACCEPT <end_left>",
-      "{DEFAULT} -o test <begin_right> -p test -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j 0wUwHMF9NxQGb4HwSxWYA",
       "{DEFAULT} -i test <begin_left> -p test -s 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ZU7qVeazKg78Af0qQ9H6fg",
       "{DEFAULT} -o test <begin_right> -p test -d 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j 0wUwHMF9NxQGb4HwSxWYA",
       "{DEFAULT} -i test <begin_left> -p test -s 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ZU7qVeazKg78Af0qQ9H6fg"
@@ -714,7 +714,8 @@ class FirewallTest < Test::Unit::TestCase
   ##########################################
   def test_from_to_host_connection_port_22_from_is_outside_1_1_input
     rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_host("@8.8.8.8").to_host("@1.1.1.1").icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_outside
-    to_from = create_to_from.bind_interface("test", nil, rule).input_only
+    rule.input_only
+    to_from = create_to_from.bind_interface("test", nil, rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal ["{DEFAULT} -i test <begin_right> -p test -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>"], to_from.get_factory.rows
@@ -722,7 +723,8 @@ class FirewallTest < Test::Unit::TestCase
 
   def test_from_to_host_connection_port_22_from_is_outside_1_1_output
     rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_host("@8.8.8.8").to_host("@1.1.1.1").icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_outside
-    to_from = create_to_from.bind_interface("test", nil, rule).output_only
+    rule.output_only
+    to_from = create_to_from.bind_interface("test", nil, rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal ["{DEFAULT} -o test <begin_left> -p test -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>"], to_from.get_factory.rows
@@ -730,7 +732,8 @@ class FirewallTest < Test::Unit::TestCase
 
   def test_connection_from_me_to_8_8_8_8_port_22_inside_1_1_input
     rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_host("@1.1.1.1").to_host("@8.8.8.8").icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_inside
-    to_from = create_to_from.bind_interface("test", nil, rule).input_only
+    rule.input_only
+    to_from = create_to_from.bind_interface("test", nil, rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal ["{DEFAULT} -i test <begin_left> -p test -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>"], to_from.get_factory.rows
@@ -738,7 +741,8 @@ class FirewallTest < Test::Unit::TestCase
 
   def test_connection_from_me_to_8_8_8_8_port_22_inside_1_1_output
     rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_host("@1.1.1.1").to_host("@8.8.8.8").icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_inside
-    to_from = create_to_from.bind_interface("test", nil, rule).output_only
+    rule.output_only
+    to_from = create_to_from.bind_interface("test", nil, rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal ["{DEFAULT} -o test <begin_right> -p test -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>"], to_from.get_factory.rows
@@ -774,6 +778,190 @@ class FirewallTest < Test::Unit::TestCase
     to_from = connection_from_inside(["@1.1.1.1"], ["@8.8.8.8"])
     assert_equal ["{DEFAULT} -o test <begin_right> -p test -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>",
                   "{DEFAULT} -i test <begin_left> -p test -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>"], to_from.get_factory.rows
+  end
+
+  def test_log_output_only_from_is_inside
+    rule = create_rule.action(Construqt::Firewalls::Actions::DROP).log('TEST').from_is_inside
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    rule.output_only
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal [
+      "{DEFAULT} -o test <begin_right> -p test -j NFLOG --nflog-prefix o:TEST:test",
+      "{DEFAULT} -o test <begin_right> -p test -j DROP <end_right>"
+    ], to_from.get_factory.rows
+  end
+
+  def test_log_input_only_from_is_inside
+    rule = create_rule.action(Construqt::Firewalls::Actions::DROP).log('TEST').from_is_inside
+    rule.input_only
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal [
+      "{DEFAULT} -i test <begin_left> -p test -j NFLOG --nflog-prefix i:TEST:test",
+      "{DEFAULT} -i test <begin_left> -p test -j DROP <end_left>"
+    ], to_from.get_factory.rows
+  end
+
+  def test_log_output_only_from_is_outside
+    rule = create_rule.action(Construqt::Firewalls::Actions::DROP).log('TEST').from_is_outside
+    rule.output_only
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal [
+      "{DEFAULT} -o test <begin_left> -p test -j NFLOG --nflog-prefix o:TEST:test",
+      "{DEFAULT} -o test <begin_left> -p test -j DROP <end_left>"
+    ], to_from.get_factory.rows
+  end
+
+  def test_log_input_only_from_is_outside
+    rule = create_rule.action(Construqt::Firewalls::Actions::DROP).log('TEST').from_is_outside
+    rule.input_only
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal [
+      "{DEFAULT} -i test <begin_right> -p test -j NFLOG --nflog-prefix i:TEST:test",
+      "{DEFAULT} -i test <begin_right> -p test -j DROP <end_right>"
+    ], to_from.get_factory.rows
+  end
+
+  def test_log_from_is_inside
+    rule = create_rule.action(Construqt::Firewalls::Actions::DROP).log('TEST').from_is_inside
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal [
+    "{DEFAULT} -i test <begin_left> -p test -j NFLOG --nflog-prefix i:TEST:test",
+    "{DEFAULT} -o test <begin_right> -p test -j NFLOG --nflog-prefix o:TEST:test",
+    "{DEFAULT} -o test <begin_right> -p test -j DROP <end_right>",
+    "{DEFAULT} -i test <begin_left> -p test -j DROP <end_left>"
+    ], to_from.get_factory.rows
+  end
+
+  def test_log_from_is_outside
+    rule = create_rule.action(Construqt::Firewalls::Actions::DROP).log('TEST').from_is_outside
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
+    assert_equal [
+      "{DEFAULT} -i test <begin_right> -p test -j NFLOG --nflog-prefix i:TEST:test",
+      "{DEFAULT} -o test <begin_left> -p test -j NFLOG --nflog-prefix o:TEST:test",
+      "{DEFAULT} -o test <begin_left> -p test -j DROP <end_left>",
+      "{DEFAULT} -i test <begin_right> -p test -j DROP <end_right>"
+    ], to_from.get_factory.rows
+  end
+
+  def test_link_local_output_only_from_is_inside
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.output_only.from_is_inside
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV6, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV6, rule, to_from)
+    assert_equal [
+      "{PhImT0zEIgxrwIZBiwHdaA} -s 5::5:5:0/124 -j ACCEPT <end_right>",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s 5::5:6:0/124 -j ACCEPT <end_right>",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s fe80::/64 -j ACCEPT <end_right>",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s ff02::/16 -j ACCEPT <end_right>",
+      "{DEFAULT} -o test -p icmpv6 -d 5::5:5:0/124 -j PhImT0zEIgxrwIZBiwHdaA",
+      "{DEFAULT} -o test -p icmpv6 -d 5::5:6:0/124 -j PhImT0zEIgxrwIZBiwHdaA",
+      "{DEFAULT} -o test -p icmpv6 -d fe80::/64 -j PhImT0zEIgxrwIZBiwHdaA"
+    ], to_from.get_factory.rows
+  end
+
+  def test_link_local_input_only_from_is_inside
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.input_only.from_is_inside
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV6, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV6, rule, to_from)
+    assert_equal [
+      "{n3WFiqHlfCh9c7c4SVs1g} -d 5::5:5:0/124 -j ACCEPT <end_left>",
+      "{n3WFiqHlfCh9c7c4SVs1g} -d 5::5:6:0/124 -j ACCEPT <end_left>",
+      "{n3WFiqHlfCh9c7c4SVs1g} -d fe80::/64 -j ACCEPT <end_left>",
+      "{n3WFiqHlfCh9c7c4SVs1g} -d ff02::/16 -j ACCEPT <end_left>",
+      "{DEFAULT} -i test -p icmpv6 -s 5::5:5:0/124 -j n3WFiqHlfCh9c7c4SVs1g",
+      "{DEFAULT} -i test -p icmpv6 -s 5::5:6:0/124 -j n3WFiqHlfCh9c7c4SVs1g",
+      "{DEFAULT} -i test -p icmpv6 -s fe80::/64 -j n3WFiqHlfCh9c7c4SVs1g"
+    ], to_from.get_factory.rows
+  end
+
+  def test_link_local_output_only_from_is_outside
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.output_only.from_is_outside
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV6, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV6, rule, to_from)
+    assert_equal [
+      "{PhImT0zEIgxrwIZBiwHdaA} -s 5::5:5:0/124 -j ACCEPT <end_right>",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s 5::5:6:0/124 -j ACCEPT <end_right>",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s fe80::/64 -j ACCEPT <end_right>",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s ff02::/16 -j ACCEPT <end_right>",
+      "{DEFAULT} -i test -p icmpv6 -d 5::5:5:0/124 -j PhImT0zEIgxrwIZBiwHdaA",
+      "{DEFAULT} -i test -p icmpv6 -d 5::5:6:0/124 -j PhImT0zEIgxrwIZBiwHdaA",
+      "{DEFAULT} -i test -p icmpv6 -d fe80::/64 -j PhImT0zEIgxrwIZBiwHdaA"
+    ], to_from.get_factory.rows
+  end
+
+  def test_link_local_input_only_from_is_outside
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.input_only.from_is_outside
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV6, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV6, rule, to_from)
+    assert_equal [
+      "{n3WFiqHlfCh9c7c4SVs1g} -d 5::5:5:0/124 -j ACCEPT <end_left>",
+      "{n3WFiqHlfCh9c7c4SVs1g} -d 5::5:6:0/124 -j ACCEPT <end_left>",
+      "{n3WFiqHlfCh9c7c4SVs1g} -d fe80::/64 -j ACCEPT <end_left>",
+      "{n3WFiqHlfCh9c7c4SVs1g} -d ff02::/16 -j ACCEPT <end_left>",
+      "{DEFAULT} -o test -p icmpv6 -s 5::5:5:0/124 -j n3WFiqHlfCh9c7c4SVs1g",
+      "{DEFAULT} -o test -p icmpv6 -s 5::5:6:0/124 -j n3WFiqHlfCh9c7c4SVs1g",
+      "{DEFAULT} -o test -p icmpv6 -s fe80::/64 -j n3WFiqHlfCh9c7c4SVs1g"
+    ], to_from.get_factory.rows
+  end
+
+  def test_link_local_from_is_inside
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.from_is_inside
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV6, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV6, rule, to_from)
+    assert_equal [
+      "{n3WFiqHlfCh9c7c4SVs1g} -d 5::5:5:0/124 -j ACCEPT <end_left>",
+      "{n3WFiqHlfCh9c7c4SVs1g} -d 5::5:6:0/124 -j ACCEPT <end_left>",
+      "{n3WFiqHlfCh9c7c4SVs1g} -d fe80::/64 -j ACCEPT <end_left>",
+      "{n3WFiqHlfCh9c7c4SVs1g} -d ff02::/16 -j ACCEPT <end_left>",
+      "{DEFAULT} -i test -p icmpv6 -s 5::5:5:0/124 -j n3WFiqHlfCh9c7c4SVs1g",
+      "{DEFAULT} -i test -p icmpv6 -s 5::5:6:0/124 -j n3WFiqHlfCh9c7c4SVs1g",
+      "{DEFAULT} -i test -p icmpv6 -s fe80::/64 -j n3WFiqHlfCh9c7c4SVs1g",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s 5::5:5:0/124 -j ACCEPT <end_right>",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s 5::5:6:0/124 -j ACCEPT <end_right>",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s fe80::/64 -j ACCEPT <end_right>",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s ff02::/16 -j ACCEPT <end_right>",
+      "{DEFAULT} -o test -p icmpv6 -d 5::5:5:0/124 -j PhImT0zEIgxrwIZBiwHdaA",
+      "{DEFAULT} -o test -p icmpv6 -d 5::5:6:0/124 -j PhImT0zEIgxrwIZBiwHdaA",
+      "{DEFAULT} -o test -p icmpv6 -d fe80::/64 -j PhImT0zEIgxrwIZBiwHdaA"
+    ], to_from.get_factory.rows
+  end
+
+  def test_link_local_from_is_outside
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.from_is_outside
+    to_from = create_to_from.bind_interface("test", nil, rule)
+    Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV6, rule, to_from)
+    Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV6, rule, to_from)
+    assert_equal [
+      "{n3WFiqHlfCh9c7c4SVs1g} -d 5::5:5:0/124 -j ACCEPT <end_left>",
+      "{n3WFiqHlfCh9c7c4SVs1g} -d 5::5:6:0/124 -j ACCEPT <end_left>",
+      "{n3WFiqHlfCh9c7c4SVs1g} -d fe80::/64 -j ACCEPT <end_left>",
+      "{n3WFiqHlfCh9c7c4SVs1g} -d ff02::/16 -j ACCEPT <end_left>",
+      "{DEFAULT} -o test -p icmpv6 -s 5::5:5:0/124 -j n3WFiqHlfCh9c7c4SVs1g",
+      "{DEFAULT} -o test -p icmpv6 -s 5::5:6:0/124 -j n3WFiqHlfCh9c7c4SVs1g",
+      "{DEFAULT} -o test -p icmpv6 -s fe80::/64 -j n3WFiqHlfCh9c7c4SVs1g",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s 5::5:5:0/124 -j ACCEPT <end_right>",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s 5::5:6:0/124 -j ACCEPT <end_right>",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s fe80::/64 -j ACCEPT <end_right>",
+      "{PhImT0zEIgxrwIZBiwHdaA} -s ff02::/16 -j ACCEPT <end_right>",
+      "{DEFAULT} -i test -p icmpv6 -d 5::5:5:0/124 -j PhImT0zEIgxrwIZBiwHdaA",
+      "{DEFAULT} -i test -p icmpv6 -d 5::5:6:0/124 -j PhImT0zEIgxrwIZBiwHdaA",
+      "{DEFAULT} -i test -p icmpv6 -d fe80::/64 -j PhImT0zEIgxrwIZBiwHdaA"
+    ], to_from.get_factory.rows
   end
 
 
