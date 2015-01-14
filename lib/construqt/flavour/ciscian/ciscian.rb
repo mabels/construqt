@@ -92,7 +92,8 @@ module Construqt
           self.dialect.commit
           Util.write_str(self.serialize().join("\n"), File.join(@host.name, "#{@host.fname||self.dialect.class.name}.cfg"))
           external=@host.id.interfaces.first.address
-          external_ip=external.first_ipv4.nil? ? external.first_ipv6.to_s : external.first_ipv4.to_s
+          #external_ip=external.first_ipv4.nil? ? external.first_ipv6.to_s : external.first_ipv4.to_s
+          external_ip=@host.name
           DeployTemplate.write_template(@host, self.dialect.class.name, external_ip, "root", @host.password||@host.region.hosts.default_password)
         end
 
