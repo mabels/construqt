@@ -645,6 +645,14 @@ module Construqt
           chainable_attr :connection
           chainable_attr :link_local
 
+          def link_local(link_local = true)
+            @link_local = link_local
+            self
+          end
+          def link_local?
+            @link_local
+          end
+
           attr_reader :block
           def initialize(block)
             @block = block

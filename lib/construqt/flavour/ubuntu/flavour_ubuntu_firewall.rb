@@ -21,25 +21,25 @@ module Construqt
           chainable_attr_value :input_ifname_direction, nil
 
 
-          def output_only
-            @input_only = false
-            @output_only = true
-            self
-          end
-
-          def output_only?
-            defined?(@output_only) ? @output_only : true
-          end
-
-          def input_only
-            @input_only = true
-            @output_only = false
-            self
-          end
-
-          def input_only?
-            defined?(@input_only) ? @input_only : true
-          end
+#          def output_only
+#            @input_only = false
+#            @output_only = true
+#            self
+#          end
+#
+#          def output_only?
+#            defined?(@output_only) ? @output_only : true
+#          end
+#
+#          def input_only
+#            @input_only = true
+#            @output_only = false
+#            self
+#          end
+#
+#          def input_only?
+#            defined?(@input_only) ? @input_only : true
+#          end
 
           def assign_in_out(rule)
             @output_only = rule.output_only?
@@ -192,22 +192,22 @@ module Construqt
            to_from.get_middle_right]
         end
 
-        def self.write_line(to_from, rule, output_only = "", input_only = "", action_left = nil, action_right = nil)
-          if to_from.output_only?
+        def self.write_line(to_from, rule, output_only = "", input_only = "", action_left_proc = nil, action_right_proc = nil)
+          if rule.output_only?
             if rule.from_is_outside?
-              _action,ifname,_begin,middle = get_left(to_from, rule, action_right)
+              _action,ifname,_begin,middle = get_left(to_from, rule, action_right_proc.nil? ? nil : action_right_proc.call)
             else
-              _action,ifname,_begin,middle = get_right(to_from, rule, action_left)
+              _action,ifname,_begin,middle = get_right(to_from, rule, action_right_proc.nil? ? nil : action_left_proc.call)
             end
 
             to_from.create_row.row("#{ifname}#{_begin}#{Construqt::Util.space_before(output_only)}#{middle} -j #{_action}")
           end
 
-          if to_from.input_only?
+          if rule.input_only?
             if rule.from_is_outside?
-              _action,ifname,_begin,middle = get_right(to_from, rule, action_left)
+              _action,ifname,_begin,middle = get_right(to_from, rule, action_right_proc.nil? ? nil : action_left_proc.call)
             else
-              _action,ifname,_begin,middle = get_left(to_from, rule, action_right)
+              _action,ifname,_begin,middle = get_left(to_from, rule, action_right_proc.nil? ? nil : action_right_proc.call)
             end
 
             to_from.create_row.row("#{ifname}#{_begin}#{Construqt::Util.space_before(input_only)}#{middle} -j #{_action}")
@@ -228,9 +228,41 @@ module Construqt
           out.join(" ")
         end
 
+        def self.set_nflog_prefix(to_from, rule, log)
+          if rule.from_is_outside?
+            to_from.end_left("--nflog-prefix o:#{log}:#{to_from.get_ifname}")
+                  .end_right("--nflog-prefix i:#{log}:#{to_from.get_ifname}")
+          else
+            to_from.end_left("--nflog-prefix i:#{log}:#{to_from.get_ifname}")
+                  .end_right("--nflog-prefix o:#{log}:#{to_from.get_ifname}")
+          end
+          to_from
+        end
+
         def self.write_table(family, rule, to_from)
           return if family.nil?
           return unless (family == Construqt::Addresses::IPV4 && rule.ipv4?) || (family == Construqt::Addresses::IPV6 && rule.ipv6?)
+
+          if rule.get_log
+            nflog_rule = rule.clone.action("NFLOG")
+            nflog_rule.log(nil) #recursive!!!
+            if rule.input_only?
+              nflog_rule.input_only
+              l_in_to_from = set_nflog_prefix(to_from.clone, nflog_rule, rule.get_log)
+              write_table(family, nflog_rule, l_in_to_from)
+            end
+            if rule.output_only?
+              nflog_rule.output_only
+              l_out_to_from = set_nflog_prefix(to_from.clone, nflog_rule, rule.get_log)
+              write_table(family, nflog_rule, l_out_to_from)
+            end
+          end
+
+          if rule.link_local?
+            create_link_local(family, rule, to_from)
+            return
+          end
+
 
           from_list = rule.from_list(family)
           to_list = rule.to_list(family)
@@ -285,8 +317,8 @@ module Construqt
           #
           if to_list.size < from_list.size
             to_list.each do |to_ip|
-              action_left = write_jump_destination("-s", from_list, to_from.get_end_right, to_from, rule)
-              action_right = write_jump_destination("-d", from_list, to_from.get_end_left, to_from, rule)
+              action_left = lambda { write_jump_destination("-s", from_list, to_from.get_end_right, to_from, rule) }
+              action_right = lambda { write_jump_destination("-d", from_list, to_from.get_end_left, to_from, rule) }
               write_line(to_from, rule, build_src_dest(rule, to_ip, nil), build_src_dest(rule, nil, to_ip), action_left, action_right)
             end
 
@@ -298,8 +330,8 @@ module Construqt
           #
           if from_list.size <= to_list.size
             from_list.each do |from_ip|
-              action_left = write_jump_destination("-d", to_list, to_from.get_end_left, to_from, rule)
-              action_right = write_jump_destination("-s", to_list, to_from.get_end_right, to_from, rule)
+              action_left = lambda { write_jump_destination("-d", to_list, to_from.get_end_left, to_from, rule) }
+              action_right = lambda { write_jump_destination("-s", to_list, to_from.get_end_right, to_from, rule) }
               write_line(to_from, rule, build_src_dest(rule, from_ip, nil), build_src_dest(rule, nil, from_ip), action_right, action_left)
             end
 
@@ -379,15 +411,6 @@ module Construqt
           forward.rules.each do |rule|
             throw "ACTION must set #{ifname}" unless rule.get_action
             #puts "write_forward #{rule.inspect} #{rule.input_only?} #{rule.output_only?}"
-            if rule.get_log
-              nflog_rule = rule.clone.action("NFLOG")
-              to_from = ToFrom.new.bind_interface(ifname, iface, nflog_rule).bind_section(writer).assign_in_out(nflog_rule)
-                .end_to("--nflog-prefix o:#{nflog_rule.get_log}:#{ifname}")
-                .end_from("--nflog-prefix i:#{nflog_rule.get_log}:#{ifname}")
-              write_table(ip_family_v4(fw), nflog_rule, to_from.factory(writer.ipv4.forward))
-              write_table(ip_family_v6(fw), nflog_rule, to_from.factory(writer.ipv6.forward))
-            end
-
             {Construqt::Addresses::IPV4 => { :enabled => fw.ipv4?, :writer => writer.ipv4.forward },
              Construqt::Addresses::IPV6 => { :enabled => fw.ipv6?, :writer => writer.ipv6.forward }}.each do |family, cfg|
               next unless cfg[:enabled]
@@ -403,26 +426,36 @@ module Construqt
           end
         end
 
-        def self.create_link_local(fw, ifname, iface, rule, writer)
-          return unless fw.ipv6?
+        def self.create_link_local(family, rule, to_from)
+          return if family != Construqt::Addresses::IPV6
 
-          i_rule = rule.clone.from_my_net.to_my_net.from_is_inbound
+          if rule.input_only?
+            i_to_from = to_from.clone
+            i_to_from.begin_left("-p icmpv6")
+            i_to_from.begin_right("-p icmpv6")
 
-          i_to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).input_only
-          i_to_from.push_begin_to("-p icmpv6")
-          i_rule.to_net("@fe80::/64")
-          i_rule.from_net("@ff02::/16@fe80::/64")
-          write_table(ip_family_v6(fw), i_rule, i_to_from.factory(writer.ipv6.input))
+            i_rule = rule.clone.from_my_net.to_my_net.from_is_inside.input_only.link_local(false)
+            i_rule.to_net("@fe80::/64")
+            i_rule.from_net("@ff02::/16@fe80::/64")
+            write_table(family, i_rule, i_to_from)
+          end
 
-          o_to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).output_only
-          o_to_from.push_begin_from("-p icmpv6")
-          o_rule = rule.clone.from_my_net.to_my_net
-          o_rule.from_net("@fe80::/64")
-          o_rule.to_net("@ff02::/16@fe80::/64")
-          write_table(ip_family_v6(fw), o_rule, o_to_from.factory(writer.ipv6.output))
+
+          if rule.output_only?
+            o_to_from = to_from.clone
+            o_to_from.begin_left("-p icmpv6")
+            o_to_from.begin_right("-p icmpv6")
+
+            o_rule = rule.clone.from_my_net.to_my_net.from_is_inside.output_only.link_local(false)
+            o_rule.from_net("@fe80::/64")
+            o_rule.to_net("@ff02::/16@fe80::/64")
+            write_table(family, o_rule, o_to_from)
+          end
         end
 
         def self.set_port_protocols(protocol, family, rule, to_from)
+
+
           to_from.push_begin_left(protocol)
           to_from.push_begin_right(protocol)
 
@@ -468,21 +501,6 @@ module Construqt
 
         def self.write_host(fw, host, ifname, iface, writer)
           host.rules.each do |rule|
-            if rule.get_log
-              #binding.pry if iface.host.name == "r420-05"
-              nflog_rule = rule.clone.action("NFLOG")
-              l_in_to_from = ToFrom.new.bind_interface(ifname, iface, nflog_rule).bind_section(writer).input_only
-                .end_from("--nflog-prefix i:#{nflog_rule.get_log}:#{ifname}")
-              l_out_to_from = ToFrom.new.bind_interface(ifname, iface, nflog_rule).bind_section(writer).output_only
-                .end_to("--nflog-prefix o:#{nflog_rule.get_log}:#{ifname}")
-              write_table(ip_family_v4(fw), nflog_rule, l_in_to_from.factory(writer.ipv4.input))
-              write_table(ip_family_v4(fw), nflog_rule, l_out_to_from.factory(writer.ipv4.output))
-              write_table(ip_family_v6(fw), nflog_rule, l_in_to_from.factory(writer.ipv6.input))
-              write_table(ip_family_v6(fw), nflog_rule, l_out_to_from.factory(writer.ipv6.output))
-            end
-
-            next create_link_local(fw, ifname, iface, rule, writer) if rule.link_local?
-
             [{
               :doit    => rule.input_only?,
               :from_to => lambda { ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).input_only },
@@ -502,11 +520,6 @@ module Construqt
 
                 protocol_loop(family, rule).each do |protocol|
                   self.set_port_protocols(protocol, family, rule, to_from)
-                  if rule.connection?
-                    to_from.push_middle_from("-m state --state NEW,ESTABLISHED")
-                    to_from.push_middle_to("-m state --state RELATED,ESTABLISHED")
-                  end
-
                   write_table(family, rule, to_from.factory(cfg[:writer]))
                 end
               end
