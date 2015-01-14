@@ -3,7 +3,10 @@
 FLAVOUR=$1
 IP=$2
 USER=$3
-PASS=$4
+
+echo -n "Input passoword for $2: "
+read -s PASS
+
 NEW_CONFIG=$5
 
 CURRENT_DIR=$(dirname $0)
