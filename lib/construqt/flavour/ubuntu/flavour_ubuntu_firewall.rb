@@ -29,12 +29,50 @@ module Construqt
             RespondDirection.new(self, family)
           end
 
+          class BeginEndMiddle
+            attr_reader :begin, :middle, :end
+
+            def initialize
+              @begin = ""
+              @middle = ""
+              @end = ""
+            end
+
+            def push_begin(str)
+              @begin = @begin + Construqt::Util.space_before(str)
+              self
+            end
+
+            def push_middle(str)
+              @middle = @middle + Construqt::Util.space_before(str)
+              self
+            end
+
+            def push_end(str)
+              @end = @end + Construqt::Util.space_before(str)
+              self
+            end
+          end
+
           class Direction
-            attr_reader :to_from, :family, :to_from, :begin, :end, :middle
+            attr_reader :to_from, :family, :to_from, :protocol #, :begin, :end, :middle
             def initialize(to_from, family)
               @to_from = to_from
               @family = family
-              @begin = @end = @middle = ""
+              @begin_middle_end = BeginEndMiddle.new
+            end
+
+            def push_begin(str)
+              @begin_middle_end.push_begin(str)
+              self
+            end
+            def push_middle(str)
+              @begin_middle_end.push_middle(str)
+              self
+            end
+            def push_end(str)
+              @begin_middle_end.push_end(str)
+              self
             end
 
             def interface_direction(dir)
@@ -83,24 +121,10 @@ module Construqt
               (family == Construqt::Addresses::IPV4 && @to_from.rule.ipv4?) || (family == Construqt::Addresses::IPV6 && @to_from.rule.ipv6?)
             end
 
-            def push_begin(str)
-              @begin = @begin + Construqt::Util.space_before(str)
-              self
-            end
-
-            def push_middle(str)
-              @middle = @middle + Construqt::Util.space_before(str)
-              self
-            end
-
-            def push_end(str)
-              @end = @end + Construqt::Util.space_before(str)
-              self
-            end
-
-            def set_protocols(protocol)
-              @begin = @middle = @end = ""
-              push_begin(protocol)
+            def create_begin_middle_end(protocol)
+              @protocol = @begin_middle_end.clone
+              @protocol.push_begin(protocol)
+              @protocol
             end
           end
 
@@ -118,29 +142,29 @@ module Construqt
               to_from.rule.to_list(family)
             end
 
-            def set_protocols(protocol)
-              super(protocol)
+            def create_begin_middle_end(protocol)
+              begin_middle_end = super(protocol)
 
               if to_from.rule.get_log
-                push_end("--nflog-prefix :#{to_from.rule.get_log}#{self.ifname.gsub(/[^a-zA-Z0-9]/,":")}")
+                begin_middle_end.push_end("--nflog-prefix :#{to_from.rule.get_log}#{self.ifname.gsub(/[^a-zA-Z0-9]/,":")}")
               end
 
               if to_from.rule.respond_to?(:connection?) && to_from.rule.connection?
-                push_middle("-m state --state NEW,ESTABLISHED")
+                begin_middle_end.push_middle("-m state --state NEW,ESTABLISHED")
               end
 
               unless protocol.include?('icmp')
                 if (to_from.rule.get_dports && !to_from.rule.get_dports.empty?) ||
                     (to_from.rule.get_sports && !to_from.rule.get_sports.empty?)
-                  push_middle("-m multiport")
+                  begin_middle_end.push_middle("-m multiport")
                 end
 
                 if to_from.rule.get_dports && !to_from.rule.get_dports.empty?
-                  push_middle("--dports #{to_from.rule.get_dports.join(",")}")
+                  begin_middle_end.push_middle("--dports #{to_from.rule.get_dports.join(",")}")
                 end
 
                 if to_from.rule.get_sports && !to_from.rule.get_sports.empty?
-                  push_middle_right("--sports #{to_from.rule.get_sports.join(",")}")
+                  begin_middle_end.push_middle_right("--sports #{to_from.rule.get_sports.join(",")}")
                 end
               end
 
@@ -152,8 +176,9 @@ module Construqt
                   }
                 }[to_from.rule.get_type][family]
                 throw "state for #{to_from.rule.get_type} #{family}" unless state
-                push_middle(state)
+                begin_middle_end.push_middle(state)
               end
+              begin_middle_end
             end
           end
 
@@ -171,29 +196,29 @@ module Construqt
               to_from.rule.from_list(family)
             end
 
-            def set_protocols(protocol)
-              super(protocol)
+            def create_begin_middle_end(protocol)
+              begin_middle_end = super(protocol)
 
               if to_from.rule.get_log
-                push_end("--nflog-prefix #{to_from.rule.get_log}#{self.ifname.gsub(/[^a-zA-Z0-9]/,":")}")
+                begin_middle_end.push_end("--nflog-prefix #{to_from.rule.get_log}#{self.ifname.gsub(/[^a-zA-Z0-9]/,":")}")
               end
 
               if to_from.rule.respond_to?(:connection?) && to_from.rule.connection?
-                push_middle("-m state --state RELATED,ESTABLISHED")
+                begin_middle_end.push_middle("-m state --state RELATED,ESTABLISHED")
               end
 
               unless protocol.include?('icmp')
                 if (to_from.rule.get_dports && !to_from.rule.get_dports.empty?) ||
                     (to_from.rule.get_sports && !to_from.rule.get_sports.empty?)
-                  push_middle("-m multiport")
+                  begin_middle_end.push_middle("-m multiport")
                 end
 
                 if to_from.rule.get_dports && !to_from.rule.get_dports.empty?
-                  push_middle("--sports #{to_from.rule.get_dports.join(",")}")
+                  begin_middle_end.push_middle("--sports #{to_from.rule.get_dports.join(",")}")
                 end
 
                 if to_from.rule.get_sports && !to_from.rule.get_sports.empty?
-                  push_middle_right("--dports #{to_from.rule.get_sports.join(",")}")
+                  begin_middle_end.push_middle_right("--dports #{to_from.rule.get_sports.join(",")}")
                 end
               end
 
@@ -205,8 +230,9 @@ module Construqt
                   }
                 }[to_from.rule.get_type][family]
                 throw "state for #{to_from.rule.get_type} #{family}" unless state
-                push_middle(state)
+                begin_middle_end.push_middle(state)
               end
+              begin_middle_end
             end
           end
         end
@@ -234,23 +260,24 @@ module Construqt
           result.hmac
         end
 
-        def self.write_line(direction, src_ip = nil, dest_ip = nil, action_proc = nil)
+        def self.write_line(direction, begin_middle_end, src_ip = nil, dest_ip = nil, action_proc = nil)
           src_ip_str = src_ip ? "-s #{src_ip.to_string}" : ""
           dest_ip_str = dest_ip ? "-d #{dest_ip.to_string}" : ""
-          action = action_proc.nil? ? "#{direction.action}#{Construqt::Util.space_before(direction.end)}" : action_proc.call
-          direction.row("#{direction.ifname}#{Construqt::Util.space_before(direction.begin)}#{Construqt::Util.space_before(src_ip_str)}#{Construqt::Util.space_before(dest_ip_str)}#{Construqt::Util.space_before(direction.middle)} -j #{action}")
+          action = action_proc.nil? ? "#{direction.action}#{Construqt::Util.space_before(begin_middle_end.end)}" : action_proc.call
+          direction.row("#{direction.ifname}#{Construqt::Util.space_before(begin_middle_end.begin)}"+
+                        "#{Construqt::Util.space_before(src_ip_str)}#{Construqt::Util.space_before(dest_ip_str)}"+
+                        "#{Construqt::Util.space_before(begin_middle_end.middle)} -j #{action}")
         end
 
         def self.write_table(direction)
           return if direction.family.nil?
 
           direction.protocols.each do |protocol|
-            direction.set_protocols(protocol)
-            write_direction(direction)
+            write_direction(direction, direction.create_begin_middle_end(protocol))
           end
         end
 
-        def self.write_direction(direction)
+        def self.write_direction(direction, begin_middle_end)
           src_list = direction.src_ip_list
           dst_list = direction.dst_ip_list
           # cases
@@ -260,7 +287,7 @@ module Construqt
           #
           if src_list.empty? && dst_list.length > 0
             dst_list.each do |dest_ip|
-              write_line(direction, nil, dest_ip)
+              write_line(direction, begin_middle_end, nil, dest_ip)
             end
 
             return
@@ -271,7 +298,7 @@ module Construqt
           #
           if src_list.length > 0 && dst_list.empty?
             src_list.each do |src_ip|
-              write_line(direction, src_ip, nil)
+              write_line(direction, begin_middle_end, src_ip, nil)
             end
 
             return
@@ -281,7 +308,7 @@ module Construqt
           # to_list.size == 1 && to_list.size == from_list.size
           #
           if src_list.size <= 1 && dst_list.size <= 1
-            write_line(direction, src_list.first, dst_list.first)
+            write_line(direction, begin_middle_end, src_list.first, dst_list.first)
             return
           end
 
@@ -290,8 +317,8 @@ module Construqt
           #
           if src_list.size < dst_list.size
             src_list.each do |src_ip|
-              action = lambda { write_jump_destination(direction, "-d", dst_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(direction.end)}") }
-              write_line(direction, src_ip, nil, action)
+              action = lambda { write_jump_destination(direction, "-d", dst_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(begin_middle_end.end)}") }
+              write_line(direction, begin_middle_end, src_ip, nil, action)
             end
 
             return
@@ -302,8 +329,8 @@ module Construqt
           #
           if src_list.size >= dst_list.size
             dst_list.each do |dest_ip|
-              action = lambda { write_jump_destination(direction, "-s", src_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(direction.end)}") }
-              write_line(direction, nil, dest_ip, action)
+              action = lambda { write_jump_destination(direction, "-s", src_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(begin_middle_end.end)}") }
+              write_line(direction, begin_middle_end, nil, dest_ip, action)
             end
 
             return

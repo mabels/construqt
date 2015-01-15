@@ -112,15 +112,17 @@ class FirewallTest < Test::Unit::TestCase
   end
 
   class TestSection
-    attr_reader :input, :output, :forward
+    attr_reader :input, :output, :forward, :prerouting, :postrouting
     def initialize
       @input = TestToFromFactory.new("INPUT")
       @output = TestToFromFactory.new("OUTPUT")
       @forward = TestToFromFactory.new("FORWARD")
+      @prerouting = TestToFromFactory.new("PREROUTING")
+      @postrouting = TestToFromFactory.new("POSTROUTING")
     end
 
     def rows
-      @input.rows + @output.rows + @forward.rows
+      @input.rows + @output.rows + @forward.rows + @prerouting.rows + @postrouting.rows
     end
   end
 
@@ -915,5 +917,29 @@ class FirewallTest < Test::Unit::TestCase
       "{OUTPUT} -o testif -p icmpv6 -d fe80::/64 -j N7jb1NKOStBqD0UP7z6ig",
       "{OUTPUT} -o testif -p icmpv6 -d ff02::/16 -j N7jb1NKOStBqD0UP7z6ig"
     ], writer.ipv6.rows
+  end
+
+  def test_nat
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.nat do |nat|
+        nat.ipv4
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("@0.0.0.0/0").to_host("@1.1.1.1").tcp.dport(80).dport(443).to_dest("@8.8.8.8").from_is_outside
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("@0.0.0.0/0").to_host("@1.1.1.2").tcp.dport(80).dport(443).to_dest("@8.8.4.4").from_is_outside
+
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("@47.11.0.0/16").to_net("@0.0.0.0/0").to_source("@9.9.9.9").from_is_inside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("@0.0.0.0/0").to_host("@8.8.8.8").tcp.dport(80).dport(443).to_source("@2.2.2.1").from_is_inside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("@0.0.0.0/0").to_host("@8.8.4.4").tcp.dport(80).dport(443).to_source("@2.2.2.2").from_is_inside
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    assert_equal [
+      "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.1.1.1/32 -m multiport --dports 80,443 -j DNAT --to-dest 8.8.8.8",
+      "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.1.1.2/32 -m multiport --dports 80,443 -j DNAT --to-dest 8.8.4.4",
+      "{POSTROUTING} -o testif -s 47.11.0.0/16 -d 0.0.0.0/0 -j SNAT --to-source 9.9.9.9",
+      "{POSTROUTING} -o testif -p tcp -s 0.0.0.0/0 -d 8.8.8.8/32 -m multiport --dports 80,443 -j SNAT --to-source 2.2.2.1",
+      "{POSTROUTING} -o testif -p tcp -s 0.0.0.0/0 -d 8.8.4.4/32 -m multiport --dports 80,443 -j SNAT --to-source 2.2.2.2"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
   end
 end
