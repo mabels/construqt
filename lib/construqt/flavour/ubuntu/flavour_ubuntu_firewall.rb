@@ -1,288 +1,262 @@
 module Construqt
   module Flavour
     module Ubuntu
-
       module Firewall
         class ToFrom
-          include Util::Chainable
-          chainable_attr_value :begin, nil
-          chainable_attr_value :begin_right, nil
-          chainable_attr_value :begin_left, nil
-          chainable_attr_value :middle, nil
-          chainable_attr_value :middle_right, nil
-          chainable_attr_value :middle_left, nil
-          chainable_attr_value :end, nil
-          chainable_attr_value :end_right, nil
-          chainable_attr_value :end_left, nil
-          chainable_attr_value :factory, nil
-          chainable_attr_value :ifname, nil
-          chainable_attr_value :interface, nil
-          chainable_attr_value :output_ifname_direction, nil
-          chainable_attr_value :input_ifname_direction, nil
-
-
-#          def output_only
-#            @input_only = false
-#            @output_only = true
-#            self
-#          end
-#
-#          def output_only?
-#            defined?(@output_only) ? @output_only : true
-#          end
-#
-#          def input_only
-#            @input_only = true
-#            @output_only = false
-#            self
-#          end
-#
-#          def input_only?
-#            defined?(@input_only) ? @input_only : true
-#          end
-
-          def assign_in_out(rule)
-            @output_only = rule.output_only?
-            @input_only = rule.input_only?
-            self
-          end
-
-          def push_begin_right(str)
-            begin_right(get_begin_right + Construqt::Util.space_before(str))
-          end
-
-          def push_begin_left(str)
-            begin_left(get_begin_left + Construqt::Util.space_before(str))
-          end
-
-          def push_middle_right(str)
-            middle_right(get_middle_right + Construqt::Util.space_before(str))
-          end
-
-          def push_middle_left(str)
-            middle_left(get_middle_left + Construqt::Util.space_before(str))
-          end
-
-          def push_end_right(str)
-            end_right(get_end_right + Construqt::Util.space_before(str))
-          end
-
-          def push_end_left(str)
-            end_left(get_end_left + Construqt::Util.space_before(str))
-          end
-
-          def get_begin_right
-            return Construqt::Util.space_before(@begin_right) if @begin_right
-            return Construqt::Util.space_before(@begin)
-          end
-
-          def get_begin_left
-            return Construqt::Util.space_before(@begin_left) if @begin_left
-            return Construqt::Util.space_before(@begin)
-          end
-
-          def get_middle_right
-            return Construqt::Util.space_before(@middle_right) if @middle_right
-            return Construqt::Util.space_before(@middle)
-          end
-
-          def get_middle_left
-            return Construqt::Util.space_before(@middle_left) if @middle_left
-            return Construqt::Util.space_before(@middle)
-          end
-
-          def get_end_right
-            return Construqt::Util.space_before(@end_right) if @end_right
-            return Construqt::Util.space_before(@end)
-          end
-
-          def get_end_left
-            return Construqt::Util.space_before(@end_left) if @end_left
-            return Construqt::Util.space_before(@end)
-          end
-
-          def bind_section(section)
+          attr_reader :request_direction, :respond_direction, :rule, :ifname, :writer, :section
+          def initialize(ifname, rule, section, writer = nil)
+            @rule = rule
             @section = section
+            @ifname = ifname
+            @writer = writer
+          end
+
+          def set_writer(writer)
+            @writer = writer
             self
           end
 
-          def section
-            @section
+          def set_rule(rule)
+            @rule = rule
+            self
           end
 
-          def bind_interface(ifname, iface, rule)
-            self.interface(iface)
-            self.ifname(ifname)
-            if rule.from_is_outside?
-              output_ifname_direction("-i")
-              input_ifname_direction("-o")
-            else
-              output_ifname_direction("-o")
-              input_ifname_direction("-i")
+          def request_direction(family)
+            RequestDirection.new(self, family)
+          end
+
+          def respond_direction(family)
+            RespondDirection.new(self, family)
+          end
+
+          class Direction
+            attr_reader :to_from, :family, :to_from, :begin, :end, :middle
+            def initialize(to_from, family)
+              @to_from = to_from
+              @family = family
+              @begin = @end = @middle = ""
+            end
+
+            def interface_direction(dir)
+              @interface_direction = dir
+              self
+            end
+
+            def get_interface_direction
+              @interface_direction
+            end
+
+            def set_writer(writer)
+              @to_from.set_writer(writer)
+              self
+            end
+
+            def ifname
+              "#{@interface_direction} #{to_from.ifname}"
+            end
+
+            def action
+              to_from.rule.get_action
+            end
+
+            def row(line, table_name = nil)
+              factory = to_from.writer.create
+              factory.table(table_name) unless table_name.nil?
+              factory.row("#{line}")
+            end
+
+            def protocols
+              pl = []
+              @to_from.rule.get_protocols(@family).each do |proto|
+                pl << "-p #{proto}"
+              end
+
+              pl << '' if pl.empty?
+              pl
+            end
+
+            def link_local?
+              @to_from.rule.link_local?
+            end
+
+            def for_family?(family)
+              (family == Construqt::Addresses::IPV4 && @to_from.rule.ipv4?) || (family == Construqt::Addresses::IPV6 && @to_from.rule.ipv6?)
+            end
+
+            def push_begin(str)
+              @begin = @begin + Construqt::Util.space_before(str)
+              self
+            end
+
+            def push_middle(str)
+              @middle = @middle + Construqt::Util.space_before(str)
+              self
+            end
+
+            def push_end(str)
+              @end = @end + Construqt::Util.space_before(str)
+              self
+            end
+
+            def set_protocols(protocol)
+              push_begin(protocol)
+              if (to_from.rule.get_dports && !to_from.rule.get_dports.empty?) ||
+                  (to_from.rule.get_sports && !to_from.rule.get_sports.empty?)
+                push_middle("-m multiport")
+              end
             end
           end
 
-          def output_ifname
-            return Construqt::Util.space_before("#{@output_ifname_direction} #{@ifname}") if @ifname
-            return ""
+          class RequestDirection < Direction
+            def initialize(to_from, family)
+              super(to_from, family)
+              self.interface_direction("-o")
+            end
+
+            def src_ip_list
+              to_from.rule.from_list(family)
+            end
+
+            def dst_ip_list
+              to_from.rule.to_list(family)
+            end
+
+            def set_protocols(protocol)
+              super(protocol)
+
+              if to_from.rule.connection?
+                push_middle("-m state --state NEW,ESTABLISHED")
+              end
+
+              if to_from.rule.get_log
+                push_end("--nflog-prefix :#{to_from.rule.get_log}#{self.ifname.gsub(/[^a-zA-Z0-9]/,":")}")
+              end
+
+              if to_from.rule.get_dports && !to_from.rule.get_dports.empty?
+                push_middle("--dports #{to_from.rule.get_dports.join(",")}")
+              end
+
+              if to_from.rule.get_sports && !to_from.rule.get_sports.empty?
+                push_middle_right("--sports #{to_from.rule.get_sports.join(",")}")
+              end
+
+              if to_from.rule.icmp? && to_from.rule.get_type
+                state = {
+                  Construqt::Firewalls::ICMP::Ping => {
+                    Construqt::Addresses::IPV4 => "-m icmp --icmp-type 8/0",
+                    Construqt::Addresses::IPV6 => "--icmpv6-type 128",
+                  }
+                }[to_from.rule.get_type][family]
+                throw "state for #{to_from.rule.get_type} #{family}" unless state
+                push_middle(state)
+              end
+            end
           end
 
-          def input_ifname
-            return Construqt::Util.space_before("#{@input_ifname_direction} #{@ifname}") if @ifname
-            return ""
-          end
+          class RespondDirection < Direction
+            def initialze(to_from, family)
+              super(to_from, family)
+              self.interface_direction("-i")
+            end
 
-          def has_right?
-            @begin || @begin_right || @middle || @middle_right || @end || @end_right
-          end
+            def src_ip_list
+              to_from.rule.to_list(family)
+            end
 
-          def has_left?
-            @begin || @begin_left || @middle || @middle_left || @end || @end_left
-          end
+            def dst_ip_list
+              to_from.rule.from_list(family)
+            end
 
-          def create_row
-            get_factory.create
+            def set_protocols(protocol)
+              super(protocol)
+
+              if to_from.rule.connection?
+                push_middle("-m state --state RELATED,ESTABLISHED")
+              end
+
+              if to_from.rule.get_log
+                push_end("--nflog-prefix #{to_from.rule.get_log}#{self.ifname.gsub(/[^a-zA-Z0-9]/,":")}")
+              end
+
+              if to_from.rule.get_dports && !to_from.rule.get_dports.empty?
+                push_middle("--sports #{to_from.rule.get_dports.join(",")}")
+              end
+
+              if to_from.rule.get_sports && !to_from.rule.get_sports.empty?
+                push_middle_right("--dports #{to_from.rule.get_sports.join(",")}")
+              end
+
+              if to_from.rule.icmp? && to_from.rule.get_type
+                state = {
+                  Construqt::Firewalls::ICMP::Ping => {
+                    Construqt::Addresses::IPV4 => "-m icmp --icmp-type 0/0",
+                    Construqt::Addresses::IPV6 => "--icmpv6-type 129",
+                  }
+                }[to_from.rule.get_type][family]
+                throw "state for #{to_from.rule.get_type} #{family}" unless state
+                push_middle(state)
+              end
+            end
           end
         end
 
-        def self.ip_family_v4(fw)
-          return Construqt::Addresses::IPV4 if fw.ipv4?
-          nil
-        end
-
-        def self.ip_family_v6(fw)
-          return Construqt::Addresses::IPV6 if fw.ipv6?
-          nil
-        end
-
-        def self.calc_hash_value(_prefix, _list, _end, to_from, rule)
+        def self.calc_hash_value(direction, _prefix, _list, _end)
           out = []
           _list.each do |ip|
-            out << "#{_prefix} #{ip.to_string} -j #{rule.get_action}#{_end}"
+            out << "#{_prefix} #{ip.to_string} -j #{_end}"
           end
 
           OpenStruct.new(:rows => out, :hmac => Digest::MD5.base64digest(out.join("\n")).gsub(/[^a-zA-Z0-9]/,''))
         end
 
-        def self.write_jump_destination(_prefix, _list, _end, to_from, rule)
-          result = calc_hash_value(_prefix, _list, _end, to_from, rule)
+        def self.write_jump_destination(direction, prefix, list, suffix)
+          result = calc_hash_value(direction, prefix, list, suffix)
           # work on these do a better hashing
-          unless to_from.section.jump_destinations[result.hmac]
+          unless direction.to_from.section.jump_destinations[result.hmac]
             result.rows.each do |row|
-              to_from.create_row.table(result.hmac).row(row)
+              direction.row(row, result.hmac)
             end
 
-            to_from.section.jump_destinations[result.hmac] = true
+            direction.to_from.section.jump_destinations[result.hmac] = true
           end
 
           result.hmac
         end
 
-        def self.get_left(to_from, rule, action)
-          [(action.nil? ? "#{rule.get_action}#{to_from.get_end_left}" : action),
-           to_from.input_ifname,
-           to_from.get_begin_left,
-           to_from.get_middle_left]
+        def self.write_line(direction, src_ip = nil, dest_ip = nil, action_proc = nil)
+          src_ip_str = src_ip ? "-s #{src_ip.to_string}" : ""
+          dest_ip_str = dest_ip ? "-d #{dest_ip.to_string}" : ""
+          action = action_proc.nil? ? "#{direction.action}#{Construqt::Util.space_before(direction.end)}" : action_proc.call
+          direction.row("#{direction.ifname}#{Construqt::Util.space_before(direction.begin)}#{Construqt::Util.space_before(src_ip_str)}#{Construqt::Util.space_before(dest_ip_str)}#{Construqt::Util.space_before(direction.middle)} -j #{action}")
         end
 
-        def self.get_right(to_from, rule, action)
-          [(action.nil? ? "#{rule.get_action}#{to_from.get_end_right}" : action),
-           to_from.output_ifname,
-           to_from.get_begin_right,
-           to_from.get_middle_right]
-        end
+        def self.write_table(direction)
+          return if direction.family.nil?
 
-        def self.write_line(to_from, rule, output_only = "", input_only = "", action_left_proc = nil, action_right_proc = nil)
-          if rule.output_only?
-            if rule.from_is_outside?
-              _action,ifname,_begin,middle = get_left(to_from, rule, action_right_proc.nil? ? nil : action_right_proc.call)
-            else
-              _action,ifname,_begin,middle = get_right(to_from, rule, action_right_proc.nil? ? nil : action_left_proc.call)
-            end
-
-            to_from.create_row.row("#{ifname}#{_begin}#{Construqt::Util.space_before(output_only)}#{middle} -j #{_action}")
-          end
-
-          if rule.input_only?
-            if rule.from_is_outside?
-              _action,ifname,_begin,middle = get_right(to_from, rule, action_right_proc.nil? ? nil : action_left_proc.call)
-            else
-              _action,ifname,_begin,middle = get_left(to_from, rule, action_right_proc.nil? ? nil : action_right_proc.call)
-            end
-
-            to_from.create_row.row("#{ifname}#{_begin}#{Construqt::Util.space_before(input_only)}#{middle} -j #{_action}")
+          direction.protocols.each do |protocol|
+            direction.set_protocols(protocol)
+            write_direction(direction)
           end
         end
 
-        def self.build_src_dest(rule, ip_left, ip_right)
-          if rule.from_is_outside?
-            out = []
-            out << "-s #{ip_left.to_string}" if ip_left
-            out << "-d #{ip_right.to_string}" if ip_right
-          else
-            out = []
-            out << "-s #{ip_right.to_string}" if ip_right
-            out << "-d #{ip_left.to_string}" if ip_left
-          end
-
-          out.join(" ")
-        end
-
-        def self.set_nflog_prefix(to_from, rule, log)
-          if rule.from_is_outside?
-            to_from.end_left("--nflog-prefix o:#{log}:#{to_from.get_ifname}")
-                  .end_right("--nflog-prefix i:#{log}:#{to_from.get_ifname}")
-          else
-            to_from.end_left("--nflog-prefix i:#{log}:#{to_from.get_ifname}")
-                  .end_right("--nflog-prefix o:#{log}:#{to_from.get_ifname}")
-          end
-          to_from
-        end
-
-        def self.write_table(family, rule, to_from)
-          return if family.nil?
-          return unless (family == Construqt::Addresses::IPV4 && rule.ipv4?) || (family == Construqt::Addresses::IPV6 && rule.ipv6?)
-
-          if rule.get_log
-            nflog_rule = rule.clone.action("NFLOG")
-            nflog_rule.log(nil) #recursive!!!
-            if rule.input_only?
-              nflog_rule.input_only
-              l_in_to_from = set_nflog_prefix(to_from.clone, nflog_rule, rule.get_log)
-              write_table(family, nflog_rule, l_in_to_from)
-            end
-            if rule.output_only?
-              nflog_rule.output_only
-              l_out_to_from = set_nflog_prefix(to_from.clone, nflog_rule, rule.get_log)
-              write_table(family, nflog_rule, l_out_to_from)
-            end
-          end
-
-          if rule.link_local?
-            create_link_local(family, rule, to_from)
-            return
-          end
-
-
-          from_list = rule.from_list(family)
-          to_list = rule.to_list(family)
-          action_i = action_o = rule.get_action
-
+        def self.write_direction(direction)
+          src_list = direction.src_ip_list
+          dst_list = direction.dst_ip_list
           # cases
           #
           # to_list.empty? and from_list.empty?
           #
-          if to_list.empty? && from_list.empty?
-            write_line(to_from, rule)
+          if src_list.empty? && dst_list.empty?
+            write_line(direction, nil, nil)
             return
           end
 
           #
           # to_list.empty? and not from_list.empty?
           #
-          if to_list.empty? && from_list.length > 0
-            from_list.each do |ip|
-              write_line(to_from, rule, build_src_dest(rule, nil, ip), build_src_dest(rule, ip, nil))
+          if src_list.empty? && dst_list.length > 0
+            dst_list.each do |dest_ip|
+              write_line(direction, nil, dest_ip)
             end
 
             return
@@ -291,9 +265,9 @@ module Construqt
           #
           # not to_list.empty? and from_list.empty?
           #
-          if to_list.length > 0 && from_list.empty?
-            to_list.each do |ip|
-              write_line(to_from, rule, build_src_dest(rule, ip, nil), build_src_dest(rule, nil, ip))
+          if src_list.length > 0 && dst_list.empty?
+            src_list.each do |src_ip|
+              write_line(direction, src_ip, nil)
             end
 
             return
@@ -302,10 +276,10 @@ module Construqt
           #
           # to_list.size == 1 && to_list.size == from_list.size
           #
-          if to_list.size == 1 && 1 == from_list.size
-            from_list.each do |from_ip|
-              to_list.each do |to_ip|
-                write_line(to_from, rule, build_src_dest(rule, to_ip, from_ip), build_src_dest(rule, from_ip, to_ip))
+          if src_list.size == 1 && 1 == dst_list.size
+            src_list.each do |src_ip|
+              dst_list.each do |dest_ip|
+                write_line(direction, src_ip, dest_ip)
               end
             end
 
@@ -315,11 +289,10 @@ module Construqt
           #
           # to_list.size <= from_list.size
           #
-          if to_list.size < from_list.size
-            to_list.each do |to_ip|
-              action_left = lambda { write_jump_destination("-s", from_list, to_from.get_end_right, to_from, rule) }
-              action_right = lambda { write_jump_destination("-d", from_list, to_from.get_end_left, to_from, rule) }
-              write_line(to_from, rule, build_src_dest(rule, to_ip, nil), build_src_dest(rule, nil, to_ip), action_left, action_right)
+          if src_list.size < dst_list.size
+            src_list.each do |src_ip|
+              action = lambda { write_jump_destination(direction, "-d", dst_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(direction.end)}") }
+              write_line(direction, src_ip, nil, action)
             end
 
             return
@@ -328,11 +301,10 @@ module Construqt
           #
           # from_list.size <= to_list.size
           #
-          if from_list.size <= to_list.size
-            from_list.each do |from_ip|
-              action_left = lambda { write_jump_destination("-d", to_list, to_from.get_end_left, to_from, rule) }
-              action_right = lambda { write_jump_destination("-s", to_list, to_from.get_end_right, to_from, rule) }
-              write_line(to_from, rule, build_src_dest(rule, from_ip, nil), build_src_dest(rule, nil, from_ip), action_right, action_left)
+          if src_list.size >= dst_list.size
+            dst_list.each do |dest_ip|
+              action = lambda { write_jump_destination(direction, "-s", src_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(direction.end)}") }
+              write_line(direction, nil, dest_ip, action)
             end
 
             return
@@ -341,52 +313,73 @@ module Construqt
           throw "UNKNOWN CASE"
         end
 
-        def self.write_raw(fw, raw, ifname, iface, writer)
+        def self.get_rules(fw)
+          ret = []
+          fw.rules.each do |rule|
+            if rule.get_log
+              ret << fw.entry!.action("NFLOG").log(rule.get_log)
+              rule.log(nil)
+            end
+            if rule.link_local? && rule.ipv6?
+              ret << fw.entry!.action("ACCEPT").icmp.from_is_inside
+                .from_my_net.from_net("@ff02::/16@fe80::/64")
+                .to_my_net.to_net("@ff02::/16@fe80::/64")
+              next
+            end
+            ret << rule
+          end
+          ret
+        end
+
+        def self.write_raw(fw, raw, ifname, section)
           #        puts ">>>RAW #{iface.name} #{raw.firewall.name}"
-          raw.rules.each do |rule|
+          get_rules(raw).each do |rule|
             throw "ACTION must set #{ifname}" unless rule.get_action
             if rule.prerouting?
-              to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).assign_in_out(rule)
-              #puts "PREROUTING #{to_from.inspect}"
+              to_from = ToFrom.new.(ifname||iface.name, rule, section).request_direction
+              write_table(to_from.request_direction()) if rule.request_only?
               write_table(ip_family_v4(fw), rule, to_from.factory(writer.ipv4.prerouting))
               write_table(ip_family_v6(fw), rule, to_from.factory(writer.ipv6.prerouting))
             end
 
             if rule.output?
-              to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).assign_in_out(rule)
+              to_from = ToFrom.new.bind_interface(ifname||iface.name, rule, section)
               write_table(ip_family_v4(fw), rule, to_from.factory(writer.ipv4.output))
               write_table(ip_family_v6(fw), rule, to_from.factory(writer.ipv6.output))
             end
           end
         end
 
-        def self.write_nat(fw, nat, ifname, iface, writer)
+        def self.write_nat(fw, nat, ifname, section)
           # nat only for ipv4
           return unless fw.ipv4?
 
-          nat.rules.each do |rule|
+          get_rules(nat).each do |rule|
             throw "ACTION must set #{ifname}" unless rule.get_action
             #throw "TO_SOURCE must set #{ifname}" unless rule.to_source?
             written = false
             rule.postrouting? && rule.get_to_source.each do |src|
-              to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).assign_in_out(rule).end_right("--to-source #{src}")
-                .ifname(ifname).factory(writer.ipv4.postrouting)
-              protocol_loop(Construqt::Addresses::IPV4, rule).each do |protocol|
-                self.set_port_protocols(protocol, Construqt::Addresses::IPV4, rule, to_from)
-                write_table(Construqt::Addresses::IPV4, rule, to_from)
-                written = true
+              to_from = ToFrom.new(ifname||iface.name, rule, section, section.ipv4.postrouting)
+              if rule.from_is_inside?
+                direction = to_from.request_direction(Construqt::Addresses::IPV4).push_end("--to-source #{src}")
+              else
+                direction = to_from.respond_direction(Construqt::Addresses::IPV4).push_end("--to-source #{src}")
               end
+
+              write_table(direction.interface_direction("-o"))
+              written = true
             end
 
             rule.prerouting? && rule.get_to_dest.each do |dst|
-              #binding.pry
-              to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).assign_in_out(rule).end_from("--to-dest #{dst}")
-                .ifname(ifname).factory(writer.ipv4.prerouting)
-              protocol_loop(Construqt::Addresses::IPV4, rule).each do |protocol|
-                self.set_port_protocols(protocol, Construqt::Addresses::IPV4, rule, to_from)
-                write_table(Construqt::Addresses::IPV4, rule, to_from)
-                written = true
+              to_from = ToFrom.new(ifname||iface.name, rule, section, section.ipv4.prerouting)
+              if rule.from_is_inside?
+                direction = to_from.respond_direction(Construqt::Addresses::IPV4).push_end("--to-dest #{dst}")
+              else
+                direction = to_from.request_direction(Construqt::Addresses::IPV4).push_end("--to-dest #{dst}")
               end
+
+              write_table(direction.interface_direction("-i"))
+              written = true
             end
 
             unless written
@@ -397,142 +390,57 @@ module Construqt
           end
         end
 
-        def self.protocol_loop(family, rule)
-          pl = []
-          rule.get_protocols(family).each do |proto|
-            pl << "-p #{proto}"
+        def self.write_forward(fw, forward, ifname, section)
+          get_rules(forward).each do |rule|
+            to_from = ToFrom.new(ifname, rule, section)
+            write_rule(fw, rule, to_from, section.ipv4.forward, section.ipv6.forward, section.ipv4.forward, section.ipv6.forward)
           end
-
-          pl << '' if pl.empty?
-          pl
         end
 
-        def self.write_forward(fw, forward, ifname, iface, writer)
-          forward.rules.each do |rule|
-            throw "ACTION must set #{ifname}" unless rule.get_action
-            #puts "write_forward #{rule.inspect} #{rule.input_only?} #{rule.output_only?}"
-            {Construqt::Addresses::IPV4 => { :enabled => fw.ipv4?, :writer => writer.ipv4.forward },
-             Construqt::Addresses::IPV6 => { :enabled => fw.ipv6?, :writer => writer.ipv6.forward }}.each do |family, cfg|
-              next unless cfg[:enabled]
-              to_from = ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).assign_in_out(rule)
+        def self.write_rule(fw, rule, to_from, ipv4_input, ipv6_input, ipv4_output, ipv6_output)
+          #host.add.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_net("#NA-INTERNET").to_host("@1.1.1.1").tcp.dport(22).from_is_outside
+          #INPUT REQ -i -s 0.0.0.0 -d 1.1.1.1
+          #OUTPUT RES -o -d 0.0.0.0 -s 1.1.1.1
 
-              protocol_loop(family, rule).each do |protocol|
-                self.set_port_protocols(protocol, family, rule, to_from)
+          #host.add.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_net("#NA-INTERNET").to_host("@1.1.1.1").tcp.dport(22).from_is_inside
+          #
+          #OUTPUT REQ -o -s 0.0.0.0 -d 1.1.1.1
+          #INPUT  RES -i -d 0.0.0.0 -s 1.1.1.1
 
-
-                write_table(family, rule, to_from.factory(cfg[:writer]))
-              end
+          [{
+            :doit    => rule.request_only?,
+            :direction => lambda { |family|
+              (rule.from_is_outside? ? to_from.request_direction(family) : to_from.respond_direction(family))
+                .interface_direction("-i").set_writer(family == Construqt::Addresses::IPV4 ? ipv4_input : ipv6_input)
+            }
+          },{
+            :doit    => rule.respond_only?,
+            :direction => lambda { |family|
+              (rule.from_is_outside? ? to_from.respond_direction(family) : to_from.request_direction(family))
+                .interface_direction("-o").set_writer(family == Construqt::Addresses::IPV4 ? ipv4_output : ipv6_output)
+            }
+          }].select{|to_from_writer| to_from_writer[:doit] }.each do |to_from_writer|
+            {Construqt::Addresses::IPV4 => rule.ipv4?, Construqt::Addresses::IPV6 => rule.ipv6? }.each do |family, enabled|
+              next unless enabled
+              direction = to_from_writer[:direction].call(family)
+              write_table(direction)
             end
           end
         end
 
-        def self.create_link_local(family, rule, to_from)
-          return if family != Construqt::Addresses::IPV6
-
-          if rule.input_only?
-            i_to_from = to_from.clone
-            i_to_from.begin_left("-p icmpv6")
-            i_to_from.begin_right("-p icmpv6")
-
-            i_rule = rule.clone.from_my_net.to_my_net.from_is_inside.input_only.link_local(false)
-            i_rule.to_net("@fe80::/64")
-            i_rule.from_net("@ff02::/16@fe80::/64")
-            write_table(family, i_rule, i_to_from)
-          end
-
-
-          if rule.output_only?
-            o_to_from = to_from.clone
-            o_to_from.begin_left("-p icmpv6")
-            o_to_from.begin_right("-p icmpv6")
-
-            o_rule = rule.clone.from_my_net.to_my_net.from_is_inside.output_only.link_local(false)
-            o_rule.from_net("@fe80::/64")
-            o_rule.to_net("@ff02::/16@fe80::/64")
-            write_table(family, o_rule, o_to_from)
-          end
-        end
-
-        def self.set_port_protocols(protocol, family, rule, to_from)
-
-
-          to_from.push_begin_left(protocol)
-          to_from.push_begin_right(protocol)
-
-          if rule.connection?
-            to_from.push_middle_left("-m state --state RELATED,ESTABLISHED")
-            to_from.push_middle_right("-m state --state NEW,ESTABLISHED")
-          end
-
-          if (rule.get_dports && !rule.get_dports.empty?) ||
-              (rule.get_sports && !rule.get_sports.empty?)
-            to_from.push_middle_left("-m multiport")
-            to_from.push_middle_right("-m multiport")
-          end
-
-          if rule.get_dports && !rule.get_dports.empty?
-            to_from.push_middle_left("--sports #{rule.get_dports.join(",")}")
-            to_from.push_middle_right("--dports #{rule.get_dports.join(",")}")
-          end
-
-          if rule.get_sports && !rule.get_sports.empty?
-            to_from.push_middle_left("--dports #{rule.get_sports.join(",")}")
-            to_from.push_middle_right("--sports #{rule.get_sports.join(",")}")
-          end
-
-          if rule.icmp? && rule.get_type
-            state = {
-              Construqt::Firewalls::ICMP::Ping => {
-                Construqt::Addresses::IPV4 => {
-                  "left" => "-m icmp --icmp-type 8/0",
-                  "right" => "-m icmp --icmp-type 0/0"
-                },
-                Construqt::Addresses::IPV6 => {
-                  "left" => "--icmpv6-type 128",
-                  "right" => "--icmpv6-type 129"
-                }
-              }
-            }[rule.get_type][family]
-            throw "state for #{rule.get_type} #{family}" unless state
-            to_from.push_middle_left(state['left'])
-            to_from.push_middle_right(state['right'])
-          end
-        end
-
-        def self.write_host(fw, host, ifname, iface, writer)
-          host.rules.each do |rule|
-            [{
-              :doit    => rule.input_only?,
-              :from_to => lambda { ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).input_only },
-              :writer4 => !rule.from_is_inbound? ? writer.ipv4.input : writer.ipv4.output,
-              :writer6 => !rule.from_is_inbound? ? writer.ipv6.input : writer.ipv6.output
-            },{
-              :doit    => rule.output_only?,
-              :from_to => lambda { ToFrom.new.bind_interface(ifname, iface, rule).bind_section(writer).output_only },
-              :writer4 => rule.from_is_inbound? ? writer.ipv4.input : writer.ipv4.output,
-              :writer6 => rule.from_is_inbound? ? writer.ipv6.input : writer.ipv6.output
-            }].each do |to_from_writer|
-              next unless to_from_writer[:doit]
-              {Construqt::Addresses::IPV4 => { :enabled => fw.ipv4?, :writer => to_from_writer[:writer4]},
-               Construqt::Addresses::IPV6 => { :enabled => fw.ipv6?, :writer => to_from_writer[:writer6] }}.each do |family, cfg|
-                to_from = to_from_writer[:from_to].call
-                next unless cfg[:enabled]
-
-                protocol_loop(family, rule).each do |protocol|
-                  self.set_port_protocols(protocol, family, rule, to_from)
-                  write_table(family, rule, to_from.factory(cfg[:writer]))
-                end
-              end
-            end
+        def self.write_host(fw, host, ifname, section)
+          get_rules(host).each do |rule|
+            to_from = ToFrom.new(ifname, rule, section)
+            write_rule(fw, rule, to_from, section.ipv4.input, section.ipv6.input, section.ipv4.output, section.ipv6.output)
           end
         end
 
         def self.create_from_iface(ifname, iface, writer)
           iface.delegate.firewalls.each do |firewall|
-            firewall.get_raw && Firewall.write_raw(firewall, firewall.get_raw, ifname, iface, writer.raw)
-            firewall.get_nat && Firewall.write_nat(firewall, firewall.get_nat, ifname, iface, writer.nat)
-            firewall.get_forward && Firewall.write_forward(firewall, firewall.get_forward, ifname, iface, writer.filter)
-            firewall.get_host && Firewall.write_host(firewall, firewall.get_host, ifname, iface, writer.filter)
+            firewall.get_raw && Firewall.write_raw(firewall, firewall.get_raw, ifname||iface.name, writer.raw)
+            firewall.get_nat && Firewall.write_nat(firewall, firewall.get_nat, ifname||iface.name, writer.nat)
+            firewall.get_forward && Firewall.write_forward(firewall, firewall.get_forward, ifname||iface.name, writer.filter)
+            firewall.get_host && Firewall.write_host(firewall, firewall.get_host, ifname||iface.name, writer.filter)
           end
         end
 
@@ -540,7 +448,7 @@ module Construqt
           throw 'interface must set' unless ifname
           writer = iface.host.result.etc_network_iptables
           create_from_iface(ifname, iface, writer)
-          create_from_iface(ifname, iface.delegate.vrrp.delegate, writer) if iface.delegate.vrrp
+          create_from_iface(ifname, iface.delegate.vrrp.delegate.name, writer) if iface.delegate.vrrp
           writer_local = host.result.etc_network_interfaces.get(iface, ifname)
           writer_local.lines.up("iptables-restore < /etc/network/iptables.cfg") if !writer.empty_v4? && (family.nil? || family == Construqt::Addresses::IPV4)
           writer_local.lines.up("ip6tables-restore < /etc/network/ip6tables.cfg") if !writer.empty_v6? && (family.nil? || family == Construqt::Addresses::IPV6)

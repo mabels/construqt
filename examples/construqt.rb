@@ -27,8 +27,25 @@ KEY
 
 fw_outbound = Construqt::Firewalls.add("fw-outbound") do |fw|
   fw.forward do |forward|
-    forward.add.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_my_net.to_net("DEFAULT").from_is(:inbound)
+    forward.ipv6
+    forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("@2000::/0").to_host("@2001:6f8:900:82bf:192:168:176:1").tcp.dport(22)
+    forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("DEFAULT").from_is_outside
     forward.add.action(Construqt::Firewalls::Actions::DROP).log("FORWARD")
+  end
+  fw.host do |host|
+    host.ipv6
+    host.add.action(Construqt::Firewalls::Actions::ACCEPT).link_local
+    host.add.action(Construqt::Firewalls::Actions::DROP).log('HOST')
+  end
+end
+
+fw_sixxs = Construqt::Firewalls.add("fw-sixxs") do |fw|
+  fw.host do |host|
+    host.ipv6
+    host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("@2000::/0").to_me.tcp.dport(22).from_is_outside
+    host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("@2000::/0").to_me.icmp.type(Construqt::Firewalls::ICMP::Ping).from_is_outside
+    host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_me.to_net("@2000::/0")
+    host.add.action(Construqt::Firewalls::Actions::DROP).log('HOST')
   end
 end
 
@@ -39,13 +56,17 @@ region.hosts.add("aiccu", "flavour" => "ubuntu") do |aiccu|
                                :description=>"#{aiccu.name} lo",
                                "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
 
+  region.interfaces.add_device(aiccu, "sixxs", "mtu" => "1500",
+                               "dynamic" => true,
+                               "firewalls" => [ fw_sixxs ],
+                               "address" => region.network.addresses.add_ip("2001:6f8:900:2bf::2/64"))
 
   aiccu.configip = aiccu.id ||= Construqt::HostId.create do |my|
     my.interfaces << region.interfaces.add_device(aiccu, "eth0", "mtu" => 1500,
                                                   "firewalls" => [ fw_outbound ],
                                                   'address' => region.network.addresses
-                                                      .add_ip("192.168.176.9/24").add_route("0.0.0.0/0", "192.168.176.4")
-                                                      .add_ip("2001:6f8:900:82bf::9/64"))
+      .add_ip("192.168.176.9/24").add_route("0.0.0.0/0", "192.168.176.4")
+      .add_ip("2001:6f8:900:82bf::9/64"))
   end
 end
 

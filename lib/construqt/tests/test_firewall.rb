@@ -111,19 +111,8 @@ class FirewallTest < Test::Unit::TestCase
     end
   end
 
-  def create_to_from
-    Construqt::Flavour::Ubuntu::Firewall::ToFrom.new
-                .bind_section(TestSection.new)
-                .factory(TestToFromFactory.new)
-                .begin_left("<begin_left>")
-                .begin_right("<begin_right>")
-                .middle_left("")
-                .middle_right("")
-                .end_left("<end_left>")
-                .end_right("<end_right>")
-                .ifname("<ifname>")
-                .output_ifname_direction("<output_ifname_direction>")
-                .input_ifname_direction("<input_ifname_direction>")
+  def create_to_from(rule)
+    Construqt::Flavour::Ubuntu::Firewall::ToFrom.new("testifname", rule, TestSection.new, TestToFromFactory.new)
   end
 
   def test_from_list_v4_from_net_iface_network
@@ -714,8 +703,8 @@ class FirewallTest < Test::Unit::TestCase
   ##########################################
   def test_from_to_host_connection_port_22_from_is_outside_1_1_input
     rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_host("@8.8.8.8").to_host("@1.1.1.1").icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_outside
-    rule.input_only
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    rule.respond_only
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal ["{DEFAULT} -i test <begin_right> -p test -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>"], to_from.get_factory.rows
@@ -723,8 +712,8 @@ class FirewallTest < Test::Unit::TestCase
 
   def test_from_to_host_connection_port_22_from_is_outside_1_1_output
     rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_host("@8.8.8.8").to_host("@1.1.1.1").icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_outside
-    rule.output_only
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    rule.request_only
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal ["{DEFAULT} -o test <begin_left> -p test -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>"], to_from.get_factory.rows
@@ -732,8 +721,8 @@ class FirewallTest < Test::Unit::TestCase
 
   def test_connection_from_me_to_8_8_8_8_port_22_inside_1_1_input
     rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_host("@1.1.1.1").to_host("@8.8.8.8").icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_inside
-    rule.input_only
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    rule.respond_only
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal ["{DEFAULT} -i test <begin_left> -p test -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>"], to_from.get_factory.rows
@@ -741,8 +730,8 @@ class FirewallTest < Test::Unit::TestCase
 
   def test_connection_from_me_to_8_8_8_8_port_22_inside_1_1_output
     rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.from_host("@1.1.1.1").to_host("@8.8.8.8").icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_inside
-    rule.output_only
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    rule.request_only
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal ["{DEFAULT} -o test <begin_right> -p test -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -m icmp --icmp-type 0/0 -j ACCEPT <end_right>"], to_from.get_factory.rows
@@ -752,7 +741,7 @@ class FirewallTest < Test::Unit::TestCase
     rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_outside
     from_hosts.each { |host| rule.from_host(host) }
     to_hosts.each { |host| rule.to_host(host) }
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     to_from
@@ -768,7 +757,7 @@ class FirewallTest < Test::Unit::TestCase
     rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).interface.connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22).from_is_inside
     from_hosts.each { |host| rule.from_host(host) }
     to_hosts.each { |host| rule.to_host(host) }
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     to_from
@@ -780,10 +769,10 @@ class FirewallTest < Test::Unit::TestCase
                   "{DEFAULT} -i test <begin_left> -p test -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -m icmp --icmp-type 8/0 -j ACCEPT <end_left>"], to_from.get_factory.rows
   end
 
-  def test_log_output_only_from_is_inside
+  def test_log_request_only_from_is_inside
     rule = create_rule.action(Construqt::Firewalls::Actions::DROP).log('TEST').from_is_inside
-    to_from = create_to_from.bind_interface("test", nil, rule)
-    rule.output_only
+    to_from = create_to_from(rule)
+    rule.request_only
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal [
@@ -792,10 +781,10 @@ class FirewallTest < Test::Unit::TestCase
     ], to_from.get_factory.rows
   end
 
-  def test_log_input_only_from_is_inside
+  def test_log_respond_only_from_is_inside
     rule = create_rule.action(Construqt::Firewalls::Actions::DROP).log('TEST').from_is_inside
-    rule.input_only
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    rule.respond_only
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal [
@@ -804,10 +793,10 @@ class FirewallTest < Test::Unit::TestCase
     ], to_from.get_factory.rows
   end
 
-  def test_log_output_only_from_is_outside
+  def test_log_request_only_from_is_outside
     rule = create_rule.action(Construqt::Firewalls::Actions::DROP).log('TEST').from_is_outside
-    rule.output_only
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    rule.request_only
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal [
@@ -816,10 +805,10 @@ class FirewallTest < Test::Unit::TestCase
     ], to_from.get_factory.rows
   end
 
-  def test_log_input_only_from_is_outside
+  def test_log_respond_only_from_is_outside
     rule = create_rule.action(Construqt::Firewalls::Actions::DROP).log('TEST').from_is_outside
-    rule.input_only
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    rule.respond_only
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal [
@@ -830,7 +819,7 @@ class FirewallTest < Test::Unit::TestCase
 
   def test_log_from_is_inside
     rule = create_rule.action(Construqt::Firewalls::Actions::DROP).log('TEST').from_is_inside
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal [
@@ -843,7 +832,7 @@ class FirewallTest < Test::Unit::TestCase
 
   def test_log_from_is_outside
     rule = create_rule.action(Construqt::Firewalls::Actions::DROP).log('TEST').from_is_outside
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV4, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV4, rule, to_from)
     assert_equal [
@@ -854,9 +843,9 @@ class FirewallTest < Test::Unit::TestCase
     ], to_from.get_factory.rows
   end
 
-  def test_link_local_output_only_from_is_inside
-    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.output_only.from_is_inside
-    to_from = create_to_from.bind_interface("test", nil, rule)
+  def test_link_local_request_only_from_is_inside
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.request_only.from_is_inside
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV6, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV6, rule, to_from)
     assert_equal [
@@ -870,9 +859,9 @@ class FirewallTest < Test::Unit::TestCase
     ], to_from.get_factory.rows
   end
 
-  def test_link_local_input_only_from_is_inside
-    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.input_only.from_is_inside
-    to_from = create_to_from.bind_interface("test", nil, rule)
+  def test_link_local_respond_only_from_is_inside
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.respond_only.from_is_inside
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV6, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV6, rule, to_from)
     assert_equal [
@@ -886,9 +875,9 @@ class FirewallTest < Test::Unit::TestCase
     ], to_from.get_factory.rows
   end
 
-  def test_link_local_output_only_from_is_outside
-    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.output_only.from_is_outside
-    to_from = create_to_from.bind_interface("test", nil, rule)
+  def test_link_local_request_only_from_is_outside
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.request_only.from_is_outside
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV6, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV6, rule, to_from)
     assert_equal [
@@ -902,9 +891,9 @@ class FirewallTest < Test::Unit::TestCase
     ], to_from.get_factory.rows
   end
 
-  def test_link_local_input_only_from_is_outside
-    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.input_only.from_is_outside
-    to_from = create_to_from.bind_interface("test", nil, rule)
+  def test_link_local_respond_only_from_is_outside
+    rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.respond_only.from_is_outside
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV6, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV6, rule, to_from)
     assert_equal [
@@ -920,7 +909,7 @@ class FirewallTest < Test::Unit::TestCase
 
   def test_link_local_from_is_inside
     rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.from_is_inside
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV6, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV6, rule, to_from)
     assert_equal [
@@ -943,7 +932,7 @@ class FirewallTest < Test::Unit::TestCase
 
   def test_link_local_from_is_outside
     rule = create_rule.action(Construqt::Firewalls::Actions::ACCEPT).link_local.from_is_outside
-    to_from = create_to_from.bind_interface("test", nil, rule)
+    to_from = create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall.set_port_protocols("-p test", Construqt::Addresses::IPV6, rule, to_from)
     Construqt::Flavour::Ubuntu::Firewall.write_table(Construqt::Addresses::IPV6, rule, to_from)
     assert_equal [

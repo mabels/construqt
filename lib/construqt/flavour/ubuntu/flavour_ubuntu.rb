@@ -70,6 +70,10 @@ module Construqt
 
         def self.build_config(host, iface, ifname = nil, family = nil, mtu = nil)
           #      binding.pry
+#          if iface.dynamic
+#            Firewall.create(host, ifname||iface.name, iface, family)
+#            return
+#          end
           writer = host.result.etc_network_interfaces.get(iface, ifname)
           writer.header.protocol(EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
           writer.lines.add(iface.delegate.flavour) if iface.delegate.flavour
