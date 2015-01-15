@@ -562,7 +562,9 @@ module Construqt
           attr_accessor :attached_interface
           include Protocols
           include ActionAndInterface
+          include Ports
           include FromTo
+          include Log
           include InputOutputOnly
           include FromIsInOutBound
 
@@ -776,9 +778,13 @@ module Construqt
       #    end
     end
 
-    def self.add(name, &block)
-      throw "firewall with this name exists #{name}" if @firewalls[name]
-      fw = @firewalls[name] = Firewall.new(name)
+    def self.add(name = nil, &block)
+      if name == nil
+        fw = Firewall.new(name)
+      else
+        throw "firewall with this name exists #{name}" if @firewalls[name]
+        fw = @firewalls[name] = Firewall.new(name)
+      end
       block.call(fw)
       fw
     end
