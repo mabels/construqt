@@ -99,11 +99,8 @@ module Construqt
             end
 
             def set_protocols(protocol)
+              @begin = @middle = @end = ""
               push_begin(protocol)
-              if (to_from.rule.get_dports && !to_from.rule.get_dports.empty?) ||
-                  (to_from.rule.get_sports && !to_from.rule.get_sports.empty?)
-                push_middle("-m multiport")
-              end
             end
           end
 
@@ -124,23 +121,30 @@ module Construqt
             def set_protocols(protocol)
               super(protocol)
 
-              if to_from.rule.connection?
-                push_middle("-m state --state NEW,ESTABLISHED")
-              end
-
               if to_from.rule.get_log
                 push_end("--nflog-prefix :#{to_from.rule.get_log}#{self.ifname.gsub(/[^a-zA-Z0-9]/,":")}")
               end
 
-              if to_from.rule.get_dports && !to_from.rule.get_dports.empty?
-                push_middle("--dports #{to_from.rule.get_dports.join(",")}")
+              if to_from.rule.respond_to?(:connection?) && to_from.rule.connection?
+                push_middle("-m state --state NEW,ESTABLISHED")
               end
 
-              if to_from.rule.get_sports && !to_from.rule.get_sports.empty?
-                push_middle_right("--sports #{to_from.rule.get_sports.join(",")}")
+              unless protocol.include?('icmp')
+                if (to_from.rule.get_dports && !to_from.rule.get_dports.empty?) ||
+                    (to_from.rule.get_sports && !to_from.rule.get_sports.empty?)
+                  push_middle("-m multiport")
+                end
+
+                if to_from.rule.get_dports && !to_from.rule.get_dports.empty?
+                  push_middle("--dports #{to_from.rule.get_dports.join(",")}")
+                end
+
+                if to_from.rule.get_sports && !to_from.rule.get_sports.empty?
+                  push_middle_right("--sports #{to_from.rule.get_sports.join(",")}")
+                end
               end
 
-              if to_from.rule.icmp? && to_from.rule.get_type
+              if protocol.include?('icmp') && to_from.rule.icmp? && to_from.rule.get_type
                 state = {
                   Construqt::Firewalls::ICMP::Ping => {
                     Construqt::Addresses::IPV4 => "-m icmp --icmp-type 8/0",
@@ -170,23 +174,30 @@ module Construqt
             def set_protocols(protocol)
               super(protocol)
 
-              if to_from.rule.connection?
-                push_middle("-m state --state RELATED,ESTABLISHED")
-              end
-
               if to_from.rule.get_log
                 push_end("--nflog-prefix #{to_from.rule.get_log}#{self.ifname.gsub(/[^a-zA-Z0-9]/,":")}")
               end
 
-              if to_from.rule.get_dports && !to_from.rule.get_dports.empty?
-                push_middle("--sports #{to_from.rule.get_dports.join(",")}")
+              if to_from.rule.respond_to?(:connection?) && to_from.rule.connection?
+                push_middle("-m state --state RELATED,ESTABLISHED")
               end
 
-              if to_from.rule.get_sports && !to_from.rule.get_sports.empty?
-                push_middle_right("--dports #{to_from.rule.get_sports.join(",")}")
+              unless protocol.include?('icmp')
+                if (to_from.rule.get_dports && !to_from.rule.get_dports.empty?) ||
+                    (to_from.rule.get_sports && !to_from.rule.get_sports.empty?)
+                  push_middle("-m multiport")
+                end
+
+                if to_from.rule.get_dports && !to_from.rule.get_dports.empty?
+                  push_middle("--sports #{to_from.rule.get_dports.join(",")}")
+                end
+
+                if to_from.rule.get_sports && !to_from.rule.get_sports.empty?
+                  push_middle_right("--dports #{to_from.rule.get_sports.join(",")}")
+                end
               end
 
-              if to_from.rule.icmp? && to_from.rule.get_type
+              if protocol.include?('icmp') && to_from.rule.icmp? && to_from.rule.get_type
                 state = {
                   Construqt::Firewalls::ICMP::Ping => {
                     Construqt::Addresses::IPV4 => "-m icmp --icmp-type 0/0",
@@ -244,13 +255,6 @@ module Construqt
           dst_list = direction.dst_ip_list
           # cases
           #
-          # to_list.empty? and from_list.empty?
-          #
-          if src_list.empty? && dst_list.empty?
-            write_line(direction, nil, nil)
-            return
-          end
-
           #
           # to_list.empty? and not from_list.empty?
           #
@@ -276,13 +280,8 @@ module Construqt
           #
           # to_list.size == 1 && to_list.size == from_list.size
           #
-          if src_list.size == 1 && 1 == dst_list.size
-            src_list.each do |src_ip|
-              dst_list.each do |dest_ip|
-                write_line(direction, src_ip, dest_ip)
-              end
-            end
-
+          if src_list.size <= 1 && dst_list.size <= 1
+            write_line(direction, src_list.first, dst_list.first)
             return
           end
 
@@ -320,32 +319,44 @@ module Construqt
               ret << fw.entry!.action("NFLOG").log(rule.get_log)
               rule.log(nil)
             end
-            if rule.link_local? && rule.ipv6?
-              ret << fw.entry!.action("ACCEPT").icmp.from_is_inside
+
+            if rule.respond_to?(:link_local?) && rule.link_local? && rule.ipv6?
+              ret << fw.entry!.action("ACCEPT").ipv6.icmp.from_is_inside
                 .from_my_net.from_net("@ff02::/16@fe80::/64")
                 .to_my_net.to_net("@ff02::/16@fe80::/64")
               next
             end
+
             ret << rule
           end
+
           ret
         end
 
         def self.write_raw(fw, raw, ifname, section)
           #        puts ">>>RAW #{iface.name} #{raw.firewall.name}"
           get_rules(raw).each do |rule|
-            throw "ACTION must set #{ifname}" unless rule.get_action
-            if rule.prerouting?
-              to_from = ToFrom.new.(ifname||iface.name, rule, section).request_direction
-              write_table(to_from.request_direction()) if rule.request_only?
-              write_table(ip_family_v4(fw), rule, to_from.factory(writer.ipv4.prerouting))
-              write_table(ip_family_v6(fw), rule, to_from.factory(writer.ipv6.prerouting))
-            end
+            {
+              Construqt::Addresses::IPV4 => {
+                :enabled => rule.ipv4?,
+                :prerouting => section.ipv4.prerouting,
+                :output => section.ipv4.output
+              },
+              Construqt::Addresses::IPV6 => {
+                :enabled => rule.ipv6?,
+                :prerouting => section.ipv6.prerouting,
+                :output => section.ipv6.output
+              }
+            }.each do |family, cfg|
+              next unless cfg[:enabled]
+              to_from = ToFrom.new(ifname, rule, section)
+              if rule.prerouting?
+                write_table(to_from.request_direction(family).set_writer(cfg[:prerouting]).interface_direction("-i"))
+              end
 
-            if rule.output?
-              to_from = ToFrom.new.bind_interface(ifname||iface.name, rule, section)
-              write_table(ip_family_v4(fw), rule, to_from.factory(writer.ipv4.output))
-              write_table(ip_family_v6(fw), rule, to_from.factory(writer.ipv6.output))
+              if rule.output?
+                write_table(to_from.respond_direction(family).set_writer(cfg[:output]).interface_direction("-o"))
+              end
             end
           end
         end
@@ -448,7 +459,7 @@ module Construqt
           throw 'interface must set' unless ifname
           writer = iface.host.result.etc_network_iptables
           create_from_iface(ifname, iface, writer)
-          create_from_iface(ifname, iface.delegate.vrrp.delegate.name, writer) if iface.delegate.vrrp
+          create_from_iface(ifname, iface.delegate.vrrp.delegate, writer) if iface.delegate.vrrp
           writer_local = host.result.etc_network_interfaces.get(iface, ifname)
           writer_local.lines.up("iptables-restore < /etc/network/iptables.cfg") if !writer.empty_v4? && (family.nil? || family == Construqt::Addresses::IPV4)
           writer_local.lines.up("ip6tables-restore < /etc/network/ip6tables.cfg") if !writer.empty_v6? && (family.nil? || family == Construqt::Addresses::IPV6)
