@@ -15,8 +15,35 @@ module Construqt
       Ping = :ping
     end
 
+    module Ipv4Ipv6
+      def ipv6
+        @family = Construqt::Addresses::IPV6
+        self
+      end
+      def ipv6?
+        if !defined?(@family)
+          true
+        else
+          @family == Construqt::Addresses::IPV6
+        end
+      end
+      def ipv4
+        @family = Construqt::Addresses::IPV4
+        self
+      end
+      def ipv4?
+        if !defined?(@family)
+          true
+        else
+          @family == Construqt::Addresses::IPV4
+        end
+      end
+    end
+
     module AttachInterface
-      def rules_attach_iface(iface)
+      attr_reader :attached_interface
+      def _rules_attach_iface(iface)
+        @attached_interface = iface
         @rules = @rules.map do |entry|
           ret = entry.clone
           ret.attached_interface = iface
@@ -25,10 +52,9 @@ module Construqt
 
         self
       end
-
       def attach_iface(iface)
         ret = self.clone
-        ret.rules_attach_iface(iface)
+        ret._rules_attach_iface(iface)
       end
     end
 
@@ -41,30 +67,26 @@ module Construqt
       chainable_attr :icmp
       chainable_attr :type, nil
 
-      def ipv4
-        @ipv4=true
-        @ipv6=false
-        self
-      end
       def ipv6
-        @ipv6=true
-        @ipv4=false
+        @family = Construqt::Addresses::IPV6
         self
       end
-
-      def ipv4?
-        if defined?(@ipv4)
-          @ipv4
+      def ipv6?
+        if !defined?(@family)
+          block.ipv6?
         else
-          true
+          @family == Construqt::Addresses::IPV6
         end
       end
-
-      def ipv6?
-        if defined?(@ipv6)
-          @ipv6
+      def ipv4
+        @family = Construqt::Addresses::IPV4
+        self
+      end
+      def ipv4?
+        if !defined?(@family)
+          block.ipv4?
         else
-          true
+          @family == Construqt::Addresses::IPV4
         end
       end
 
@@ -92,14 +114,14 @@ module Construqt
         @action
       end
 
-      def interface
-        @interface = true
-        self
-      end
-
-      def get_interface
-        @interface
-      end
+#      def interface
+#        @interface = true
+#        self
+#      end
+#
+#      def get_interface
+#        @interface
+#      end
     end
 
     module Log
@@ -400,32 +422,32 @@ module Construqt
     module InputOutputOnly
       # the big side effect
 
-      def input_only?
-        (!@set && true) || @input_only
+      def request_only?
+        (!@set && true) || @request_only
       end
 
-      def output_only?
-        (!@set && true) || @output_only
+      def respond_only?
+        (!@set && true) || @respond_only
       end
 
-      def input_only
+      def request_only
         @set = true
-        @input_only = true
-        @output_only = false
+        @request_only = true
+        @respond_only = false
         self
       end
 
-      def output_only
+      def respond_only
         @set = true
-        @input_only = false
-        @output_only = true
+        @request_only = false
+        @respond_only = true
         self
       end
 
       def prerouting
         @output = false
         @prerouting = true
-        input_only
+        request_only
         self
       end
 
@@ -436,7 +458,7 @@ module Construqt
       def output
         @output = true
         @prerouting = false
-        output_only
+        respond_only
         self
       end
 
@@ -447,7 +469,7 @@ module Construqt
       def postrouting
         @input = false
         @postrouting = true
-        output_only
+        request_only
         self
       end
 
@@ -527,6 +549,7 @@ module Construqt
       end
 
       class Raw
+        include Ipv4Ipv6
         include AttachInterface
         attr_reader :firewall
         attr_accessor :interface
@@ -549,8 +572,13 @@ module Construqt
           end
         end
 
+        def entry!
+          ret = RawEntry.new(self)
+          ret.attached_interface = self.attached_interface
+          ret
+        end
         def add
-          entry = RawEntry.new(self)
+          entry = self.entry!
           @rules << entry
           entry
         end
@@ -569,6 +597,7 @@ module Construqt
       end
 
       class Nat
+        include Ipv4Ipv6
         include AttachInterface
         attr_reader :firewall, :rules
         attr_accessor :interface
@@ -587,14 +616,31 @@ module Construqt
           include ActionAndInterface
           include FromIsInOutBound
 
+          def connection?
+            false
+          end
+
+          def get_log
+            nil
+          end
+
+          def link_local?
+            false
+          end
+
           attr_reader :block
           def initialize(block)
             @block = block
           end
         end
 
+        def entry!
+          ret = NatEntry.new(self)
+          ret.attached_interface = self.attached_interface
+          ret
+        end
         def add
-          entry = NatEntry.new(self)
+          entry = self.entry!
           @rules << entry
           entry
         end
@@ -624,6 +670,7 @@ module Construqt
 
       class Forward
         include AttachInterface
+        include Ipv4Ipv6
         attr_reader :firewall, :rules
         attr_accessor :interface
         def initialize(firewall)
@@ -659,9 +706,14 @@ module Construqt
           end
         end
 
+        def entry!
+          ret = ForwardEntry.new(self)
+          ret.attached_interface = self.attached_interface
+          ret
+        end
         def add
-          entry = ForwardEntry.new(self)
-          #puts "ForwardEntry: #{@firewall.name} #{entry.input_only?} #{entry.output_only?}"
+          entry = self.entry!
+          #puts "ForwardEntry: #{@firewall.name} #{entry.request_only?} #{entry.output_only?}"
           @rules << entry
           entry
         end
@@ -676,6 +728,7 @@ module Construqt
       end
 
       class Host
+        include Ipv4Ipv6
         include AttachInterface
         attr_reader :firewall, :rules
         attr_accessor :interface
@@ -690,9 +743,14 @@ module Construqt
           #alias_method :to_me, :to_my_net
         end
 
+        def entry!
+          ret = HostEntry.new(self)
+          ret.attached_interface = self.attached_interface
+          ret
+        end
         def add
-          entry = HostEntry.new(self)
-          #puts "ForwardEntry: #{@firewall.name} #{entry.input_only?} #{entry.output_only?}"
+          entry = self.entry!
+          #puts "ForwardEntry: #{@firewall.name} #{entry.request_only?} #{entry.respond_only?}"
           @rules << entry
           entry
         end

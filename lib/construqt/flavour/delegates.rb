@@ -29,6 +29,10 @@ module Construqt
         @vrrp
       end
 
+      def dynamic
+        self.delegate.dynamic
+      end
+
       def services
         self.delegate.services
       end
