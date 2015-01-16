@@ -20,5 +20,9 @@ else
   fi
   SC_JAR=$RELEASE_PATH
 fi
+if [ -f /usr/bin/cygpath.exe ] 
+  then 
+  $SC_JAR="`/usr/bin/cygpath.exe -w $SC_JAR`"
+fi
 
 java -Djava.net.preferIPv4Stack=false -jar $SC_JAR $1 $2 $3 $4 $5 $6 $7 $8
