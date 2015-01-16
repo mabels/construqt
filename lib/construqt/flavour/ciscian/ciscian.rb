@@ -92,7 +92,8 @@ module Construqt
           self.dialect.commit
           Util.write_str(self.serialize().join("\n"), File.join(@host.name, "#{@host.fname||self.dialect.class.name}.cfg"))
           external=@host.id.interfaces.first.address
-          external_ip=external.first_ipv4.nil? ? external.first_ipv6.to_s : external.first_ipv4.to_s
+          #external_ip=external.first_ipv4.nil? ? external.first_ipv6.to_s : external.first_ipv4.to_s
+          external_ip=@host.name
           DeployTemplate.write_template(@host, self.dialect.class.name, external_ip, "root", @host.password||@host.region.hosts.default_password)
         end
 
@@ -568,6 +569,19 @@ module Construqt
           true
         end
 
+        def prefer_no_verbs?
+          false
+        end
+
+        def prefer_no_verbs_sort(buffer)
+          return buffer.sort do |a,b|
+            ret=0
+            ret = Construqt::Util.rate_higher("no ",a, b) if ret==0
+            ret = a<=>b if ret==0
+            ret
+          end
+        end
+
         def serialize
           buffer = []
           sets = integrate
@@ -600,6 +614,8 @@ module Construqt
               end while substitution
             end
           end
+
+          buffer = prefer_no_verbs_sort(buffer) if prefer_no_verbs?
 
           return buffer
         end

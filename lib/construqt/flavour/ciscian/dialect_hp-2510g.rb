@@ -21,20 +21,16 @@ module Construqt
             match_b=/^(.*[^\d])(\d+)$/.match(b)||[nil,b,1]
             #puts match_a, match_b, a, b
             ret=0
-            ret = rate_higher("hostname", match_a[1], match_b[1]) if ret==0
-            ret = rate_higher("snmp", match_a[1], match_b[1]) if ret==0
-            ret = rate_higher("trunk", match_a[1], match_b[1]) if ret==0
-            ret = rate_higher("max-vlans", match_a[1], match_b[1]) if ret==0
-            ret = rate_higher("vlan", match_a[1], match_b[1]) if ret==0
-            ret = rate_higher("vlan", match_a[1], match_b[1]) if ret==0
+            ret = Construqt::Util.rate_higher("hostname", match_a[1], match_b[1]) if ret==0
+            ret = Construqt::Util.rate_higher("snmp", match_a[1], match_b[1]) if ret==0
+            ret = Construqt::Util.rate_higher("trunk", match_a[1], match_b[1]) if ret==0
+            ret = Construqt::Util.rate_higher("max-vlans", match_a[1], match_b[1]) if ret==0
+            ret = Construqt::Util.rate_higher("vlan", match_a[1], match_b[1]) if ret==0
+            ret = Construqt::Util.rate_higher("vlan", match_a[1], match_b[1]) if ret==0
             ret = match_a[1]<=>match_b[1] if ret==0
             ret = match_a[2].to_i<=>match_b[2].to_i if ret==0
             ret
           end
-        end
-
-        def rate_higher(prefix, a, b)
-          return a.start_with?(prefix) ^ b.start_with?(prefix) ? (a.start_with?(prefix) ? -1 : 1) : 0
         end
 
         def expand_vlan_device_name(device)
@@ -53,8 +49,26 @@ module Construqt
           @result.add("max-vlans").add(64)
           @result.add("snmp-server community \"public\"")
 
+          if host.delegate.contact
+            @result.add("snmp-server contact").add(host.delegate.contact).quotes
+          end
+
+          if host.delegate.location
+            @result.add("snmp-server location").add(host.delegate.location).quotes
+          end
+
           #enable ssh per default
           @result.add("ip ssh")
+          @result.add("ip ssh filetransfer")
+
+          #disable tftp per default
+          @result.add("no tftp client")
+          @result.add("no tftp server")
+
+          #timezone defaults
+          @result.add("time timezone").add(60)
+          @result.add("time daylight-time-rule").add("Western-Europe")
+          @result.add("console inactivity-timer").add(10)
 
           @result.host.interfaces.values.each do |iface|
             next unless iface.delegate.address
@@ -68,6 +82,7 @@ module Construqt
             @result.add("timesync sntp")
             @result.add("sntp unicast")
           end
+
 
           if host.delegate.logging
             @result.add("logging").add(host.delegate.logging)
@@ -159,6 +174,10 @@ module Construqt
             {
               "mode" => "(Trunk|LACP)"
             }[variable]
+          end
+
+          def prefer_no_verbs?
+            true
           end
 
           def self.patterns

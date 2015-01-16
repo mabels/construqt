@@ -157,6 +157,10 @@ module Construqt
       ports.flatten
     end
 
+    def self.rate_higher(prefix, a, b)
+      return a.start_with?(prefix) ^ b.start_with?(prefix) ? (a.start_with?(prefix) ? -1 : 1) : 0
+    end
+
     def self.generate_mac_address_from_name(name)
       # http://www.iana.org/assignments/ethernet-numbers/ethernet-numbers.xhtml
       '8f:'+Digest::SHA256.hexdigest("#{name}").scan(/../)[0,5].join(':')
