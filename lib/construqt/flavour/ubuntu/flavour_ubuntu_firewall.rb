@@ -164,7 +164,7 @@ module Construqt
                 end
 
                 if to_from.rule.get_sports && !to_from.rule.get_sports.empty?
-                  begin_middle_end.push_middle_right("--sports #{to_from.rule.get_sports.join(",")}")
+                  begin_middle_end.push_middle("--sports #{to_from.rule.get_sports.join(",")}")
                 end
               end
 
@@ -218,7 +218,7 @@ module Construqt
                 end
 
                 if to_from.rule.get_sports && !to_from.rule.get_sports.empty?
-                  begin_middle_end.push_middle_right("--dports #{to_from.rule.get_sports.join(",")}")
+                  begin_middle_end.push_middle("--dports #{to_from.rule.get_sports.join(",")}")
                 end
               end
 

@@ -42,6 +42,10 @@ module Construqt
       end
     end
 
+    def vlan_ids
+      @vlans_id.keys
+    end
+
     def add(vlan, cfg)
       throw "vlan has to be a fixnum #{vlan}" unless vlan.kind_of?(Fixnum)
       throw "vlan need #{vlan} description" unless cfg['description']

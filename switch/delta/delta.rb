@@ -1,5 +1,5 @@
 CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'.'
-["#{CONSTRUQT_PATH}/construqt/lib"].each{|path| $LOAD_PATH.unshift(path) }
+["#{CONSTRUQT_PATH}/ipaddress/lib","#{CONSTRUQT_PATH}/construqt/lib"].each{|path| $LOAD_PATH.unshift(path) }
 
 module Construqt
   @LOGLEVEL=3 #ERROR

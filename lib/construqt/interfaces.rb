@@ -119,8 +119,10 @@ module Construqt
       nets = {}
       cfg['address'].ips.each do |adr|
         if adr.ipv4? && adr.prefix != 32
-          unless cfg['address'].routes.find{ |rt| adr.include?(rt.via) }
-            throw "only host ip's are allowed #{adr.to_s} with prefix != 32 or route"
+          cfg['address'].routes.each do |rt|
+            unless adr.include?(rt.via)
+              throw "only host ip's are allowed #{adr.to_s} with prefix != 32 or route"
+            end
           end
         end
         throw "only host ip's are allowed #{adr.to_s}" if adr.ipv6? && adr.prefix != 128

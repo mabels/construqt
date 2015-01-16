@@ -4,7 +4,7 @@
 	<groupId>me.construqt.ciscian</groupId>
 	<artifactId>chatter</artifactId>
 	<name>Ciscian Chatter</name>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.0.2</version>
     <url>https://github.com/mabels/construqt</url>
 	<packaging>jar</packaging>
 	<properties>
@@ -19,7 +19,8 @@
       <connection>scm:git:git@github.com:pepe79/construqt.git</connection>
       <url>scm:git:git@github.com:pepe79/construqt.git</url>
       <developerConnection>scm:git:git@github.com:pepe79/construqt.git</developerConnection>
-    </scm>
+      <tag>HEAD</tag>
+  </scm>
 
     <distributionManagement>
         <repository>
