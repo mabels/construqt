@@ -20,6 +20,7 @@ module Construqt
         @family = Construqt::Addresses::IPV6
         self
       end
+
       def ipv6?
         if !defined?(@family)
           true
@@ -27,10 +28,12 @@ module Construqt
           @family == Construqt::Addresses::IPV6
         end
       end
+
       def ipv4
         @family = Construqt::Addresses::IPV4
         self
       end
+
       def ipv4?
         if !defined?(@family)
           true
@@ -52,6 +55,7 @@ module Construqt
 
         self
       end
+
       def attach_iface(iface)
         ret = self.clone
         ret._rules_attach_iface(iface)
@@ -71,6 +75,7 @@ module Construqt
         @family = Construqt::Addresses::IPV6
         self
       end
+
       def ipv6?
         if !defined?(@family)
           block.ipv6?
@@ -78,10 +83,12 @@ module Construqt
           @family == Construqt::Addresses::IPV6
         end
       end
+
       def ipv4
         @family = Construqt::Addresses::IPV4
         self
       end
+
       def ipv4?
         if !defined?(@family)
           block.ipv4?
@@ -113,15 +120,6 @@ module Construqt
       def get_action
         @action
       end
-
-#      def interface
-#        @interface = true
-#        self
-#      end
-#
-#      def get_interface
-#        @interface
-#      end
     end
 
     module Log
@@ -149,6 +147,7 @@ module Construqt
         elsif defined?(val)
           addr = FromTo.resolver(val, Construqt::Addresses::IPV4).first
         end
+
         addr ?  [addr] : []
       end
 
@@ -170,6 +169,7 @@ module Construqt
       def from_is_outside?
         @from_is == :outside
       end
+
       def from_is_inside?
         @from_is == :inside
       end
@@ -307,8 +307,8 @@ module Construqt
       def self.to_host_addrs(addrs)
         addrs.map do |i|
           if i.to_i == 0 ||
-             (i.ipv4? && i.prefix != 32 && i.network == i) ||
-             (i.ipv6? && i.prefix != 128 && i.network == i)
+              (i.ipv4? && i.prefix != 32 && i.network == i) ||
+              (i.ipv6? && i.prefix != 128 && i.network == i)
             # default or i is a network
             nil
           else
@@ -351,6 +351,7 @@ module Construqt
                   if (tmp.ipv4? && family == Construqt::Addresses::IPV4) || (tmp.ipv6? && family == Construqt::Addresses::IPV6)
                     ret += [tmp]
                   end
+
                 rescue Exception => e
                   ress = dns.getresources name, family == Construqt::Addresses::IPV6 ? Resolv::DNS::Resource::IN::AAAA : Resolv::DNS::Resource::IN::A
                   throw "can not resolv #{name}" if ress.empty?
@@ -360,9 +361,9 @@ module Construqt
             end
           end
         end
+
         ret
       end
-
 
       def from_list(family)
         FromTo._list(family, self.attached_interface, self.get_from_host, self.get_from_net, self.from_me?, self.include_routes?, self.from_my_net?)
@@ -379,17 +380,38 @@ module Construqt
       def self._list(family, iface, _host, _net, _me, _route, _my_net)
         family_list_method = family==Construqt::Addresses::IPV6 ? :v6s : :v4s
         _list = []
+        iface_address_nil = false
         if _me # if my interface
-          _list << to_host_addrs(to_ipaddrs(iface.address.send(family_list_method)))
-          if _route
-            _list << iface.address.routes.dst_networks.send(family_list_method)
+          if iface.address.nil?
+            iface_address_nil = true
+          else
+            tmp = to_host_addrs(to_ipaddrs(iface.address.send(family_list_method)))
+            if _route
+              tmp << iface.address.routes.dst_networks.send(family_list_method)
+            end
+            tmp = tmp.flatten.compact
+            if tmp.empty?
+              iface_address_nil = true
+            else
+              _list += tmp
+            end
           end
         end
 
         if _my_net #if my interface net
-          _list << to_ipaddrs(iface.address.send(family_list_method))
-          if _route
-            _list << iface.address.routes.dst_networks.send(family_list_method)
+          if iface.address.nil?
+            iface_address_nil = true
+          else
+            tmp = to_ipaddrs(iface.address.send(family_list_method))
+            if _route
+              tmp << iface.address.routes.dst_networks.send(family_list_method)
+            end
+            tmp = tmp.flatten.compact
+            if tmp.empty?
+              iface_address_nil = true
+            else
+              _list += tmp
+            end
           end
         end
 
@@ -414,8 +436,12 @@ module Construqt
             _list << resolver(_net, family)
           end
         end
-
-        IPAddress.summarize(_list.flatten.compact)
+        ret = _list.flatten.compact
+        if iface_address_nil && ret.empty?
+          nil
+        else
+          IPAddress.summarize(ret)
+        end
       end
     end
 
@@ -579,6 +605,7 @@ module Construqt
           ret.attached_interface = self.attached_interface
           ret
         end
+
         def add
           entry = self.entry!
           @rules << entry
@@ -641,6 +668,7 @@ module Construqt
           ret.attached_interface = self.attached_interface
           ret
         end
+
         def add
           entry = self.entry!
           @rules << entry
@@ -698,6 +726,7 @@ module Construqt
             @link_local = link_local
             self
           end
+
           def link_local?
             @link_local
           end
@@ -713,6 +742,7 @@ module Construqt
           ret.attached_interface = self.attached_interface
           ret
         end
+
         def add
           entry = self.entry!
           #puts "ForwardEntry: #{@firewall.name} #{entry.request_only?} #{entry.output_only?}"
@@ -750,6 +780,7 @@ module Construqt
           ret.attached_interface = self.attached_interface
           ret
         end
+
         def add
           entry = self.entry!
           #puts "ForwardEntry: #{@firewall.name} #{entry.request_only?} #{entry.respond_only?}"
@@ -785,6 +816,7 @@ module Construqt
         throw "firewall with this name exists #{name}" if @firewalls[name]
         fw = @firewalls[name] = Firewall.new(name)
       end
+
       block.call(fw)
       fw
     end

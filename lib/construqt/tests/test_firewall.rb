@@ -24,8 +24,16 @@ REGION.network.addresses.tag("TEST")
   .add_ip("2::2:2:3/124#SECOND_NET_2_TAG")
 
 
+REGION.hosts.add("Construqt-Host-ipv4", "flavour" => "ubuntu") do |cq|
+  cq.configip = cq.id ||= Construqt::HostId.create do |my|
+    my.interfaces << TEST_IF_IPV4 = REGION.interfaces.add_device(cq, "v998", "mtu" => 1500, 'address' => REGION.network.addresses.add_ip("1.2.2.3"))
+  end
+end
+
 REGION.hosts.add("Construqt-Host", "flavour" => "ubuntu") do |cq|
   cq.configip = cq.id ||= Construqt::HostId.create do |my|
+    TEST_IF_NOADDR = REGION.interfaces.add_device(cq, "v997", "mtu" => 1500)
+
     my.interfaces << TEST_IF = REGION.interfaces.add_device(cq, "v995", "mtu" => 1500,
                                                             'address' => REGION.network.addresses
       .add_ip("5.5.5.5/24")
@@ -68,9 +76,9 @@ class FirewallTest < Test::Unit::TestCase
     end
   end
 
-  def create_rule
+  def create_rule(iface = TEST_IF)
     rule = Construqt::Firewalls::Firewall::Forward::ForwardEntry.new(nil).action("<action>")
-    rule.attached_interface = TEST_IF
+    rule.attached_interface = iface
     rule
   end
 
@@ -143,6 +151,55 @@ class FirewallTest < Test::Unit::TestCase
 
   def create_to_from(rule)
     Construqt::Flavour::Ubuntu::Firewall::ToFrom.new("testifname", rule, TestSection.new, TestToFromFactory.new)
+  end
+
+  def test_from_list_nil
+    rule = create_rule(TEST_IF_NOADDR)
+    rule.from_me
+    assert_equal nil, rule.from_list(Construqt::Addresses::IPV4)
+    assert_equal nil, rule.from_list(Construqt::Addresses::IPV6)
+  end
+
+  def test_from_list_from_not_empty_nil
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.forward do |forward|
+        forward.add.action(Construqt::Firewalls::Actions::DNAT).from_net("@0.0.0.0/0").to_me.tcp.dport(80).dport(443).from_is_outside
+      end
+    end.attach_iface(TEST_IF_NOADDR)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [
+      "{FORWARD} -i testif -p tcp -s 0.0.0.0/0 -m multiport --dports 80,443 -j DNAT",
+      "{FORWARD} -o testif -p tcp -d 0.0.0.0/0 -m multiport --sports 80,443 -j DNAT"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
+  end
+
+  def test_from_list_from_empty_nil
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.forward do |forward|
+        forward.add.action(Construqt::Firewalls::Actions::DNAT).to_me.tcp.dport(80).dport(443).from_is_outside
+      end
+    end.attach_iface(TEST_IF_NOADDR)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
+  end
+
+  def test_from_list_to_me_only_ipv4
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.forward do |forward|
+        forward.add.action(Construqt::Firewalls::Actions::DNAT).to_me.tcp.dport(80).dport(443).from_is_outside
+      end
+    end.attach_iface(TEST_IF_IPV4)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [
+      "{FORWARD} -i testif -p tcp -d 1.2.2.3/32 -m multiport --dports 80,443 -j DNAT",
+      "{FORWARD} -o testif -p tcp -s 1.2.2.3/32 -m multiport --sports 80,443 -j DNAT"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
   end
 
   def test_from_list_v4_from_net_iface_network
