@@ -280,6 +280,15 @@ module Construqt
         def self.write_direction(direction, begin_middle_end)
           src_list = direction.src_ip_list
           dst_list = direction.dst_ip_list
+
+          if (src_list.nil? && dst_list.nil?) ||
+             (src_list.nil? && dst_list.empty?) ||
+             (dst_list.nil? && src_list.empty?)
+            return
+          end
+          src_list ||= []
+          dst_list ||= []
+
           # cases
           #
           #
@@ -421,9 +430,9 @@ module Construqt
             end
 
             unless written
-              throw "rule doesn't wrote any thing #{rule.block.firewall.name} "+
-                "#{iface.name} #{rule.postrouting?} #{rule.get_to_source} "+
-                "#{iface.name} #{rule.prerouting?} #{rule.get_to_dest} "
+              Construqt.logger.warn "rule doesn't wrote any thing #{rule.block.firewall.name} "+
+                "#{ifname} #{rule.postrouting?} #{rule.get_to_source} "+
+                "#{ifname} #{rule.prerouting?} #{rule.get_to_dest} "
             end
           end
         end
