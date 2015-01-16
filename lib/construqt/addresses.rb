@@ -373,7 +373,7 @@ module Construqt
           type = nil
         end
 
-        Route.new(dst, via, type, metric, option["routing-table"])
+        Route.new(dst, via, type, metric, options["routing-table"])
       end
 
       def add_route(dst, via, option = {})
