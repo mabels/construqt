@@ -372,7 +372,6 @@ module Construqt
 
           type = nil
         end
-
         Route.new(dst, via, type, metric, options["routing-table"])
       end
 
