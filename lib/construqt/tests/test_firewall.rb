@@ -63,7 +63,7 @@ class FirewallTest < Test::Unit::TestCase
   #  end
 
   def assert_nets expect, result
-    assert_equal expect, result.list.map{|i| i.to_string}
+    assert_equal expect, result.map{|i| i.to_string}
   end
 
   def assert_array expect, result
@@ -156,8 +156,8 @@ class FirewallTest < Test::Unit::TestCase
   def test_from_list_nil
     rule = create_rule(TEST_IF_NOADDR)
     rule.from_me
-    assert_equal nil, rule.from_list(Construqt::Addresses::IPV4)
-    assert_equal nil, rule.from_list(Construqt::Addresses::IPV6)
+    assert_nets ["[MISSING:ipv4]"], rule.from_list(Construqt::Addresses::IPV4)
+    assert_nets ["[MISSING:ipv6]"], rule.from_list(Construqt::Addresses::IPV6)
   end
 
   def test_from_list_from_not_empty_nil
@@ -168,10 +168,7 @@ class FirewallTest < Test::Unit::TestCase
     end.attach_iface(TEST_IF_NOADDR)
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
-    assert_equal [
-      "{FORWARD} -i testif -p tcp -s 0.0.0.0/0 -m multiport --dports 80,443 -j DNAT",
-      "{FORWARD} -o testif -p tcp -d 0.0.0.0/0 -m multiport --sports 80,443 -j DNAT"
-    ], writer.ipv4.rows
+    assert_equal [], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
 
@@ -217,7 +214,7 @@ class FirewallTest < Test::Unit::TestCase
     family = Construqt::Addresses::IPV4
     assert_nets [], rule.from_list(family)
     rule.from_net("UNKNOWN_TAG")
-    assert_nets [], rule.from_list(family)
+    assert_nets ["[MISSING:ipv4]"], rule.from_list(family)
     rule.from_net("FIRST_NET_1_TAG#FIRST_NET_2_TAG")
     assert_nets ["1.1.1.0/24"], rule.from_list(family)
     rule.from_net("FIRST_NET_1_TAG#FIRST_NET_2_TAG#SECOND_NET_1_TAG#SECOND_NET_2_TAG")
@@ -256,7 +253,7 @@ class FirewallTest < Test::Unit::TestCase
     family = Construqt::Addresses::IPV4
     assert_nets [], rule.from_list(family)
     rule.from_host("UNKNOWN_TAG")
-    assert_nets [], rule.from_list(family)
+    assert_nets ["[MISSING:ipv4]"], rule.from_list(family)
     rule.from_host("FIRST_NET_1_TAG#FIRST_NET_2_TAG")
     assert_nets ["1.1.1.1/32", "1.1.1.2/32"], rule.from_list(family)
     rule.from_host("FIRST_NET_1_TAG#FIRST_NET_2_TAG#SECOND_NET_1_TAG#SECOND_NET_2_TAG")
@@ -292,7 +289,7 @@ class FirewallTest < Test::Unit::TestCase
     family = Construqt::Addresses::IPV6
     assert_nets [], rule.from_list(family)
     rule.from_net("UNKNOWN_TAG")
-    assert_nets [], rule.from_list(family)
+    assert_nets ["[MISSING:ipv6]"], rule.from_list(family)
     rule.from_net("FIRST_NET_1_TAG#FIRST_NET_2_TAG")
     assert_nets ["1::1:1:0/124"], rule.from_list(family)
     rule.from_net("FIRST_NET_1_TAG#FIRST_NET_2_TAG#SECOND_NET_1_TAG#SECOND_NET_2_TAG")
@@ -331,7 +328,7 @@ class FirewallTest < Test::Unit::TestCase
     family = Construqt::Addresses::IPV6
     assert_nets [], rule.from_list(family)
     rule.from_host("UNKNOWN_TAG")
-    assert_nets [], rule.from_list(family)
+    assert_nets ["[MISSING:ipv6]"], rule.from_list(family)
     rule.from_host("FIRST_NET_1_TAG#FIRST_NET_2_TAG")
     assert_nets ["1::1:1:1/128", "1::1:1:2/128"], rule.from_list(family)
     rule.from_host("FIRST_NET_1_TAG#FIRST_NET_2_TAG#SECOND_NET_1_TAG#SECOND_NET_2_TAG")
@@ -344,8 +341,8 @@ class FirewallTest < Test::Unit::TestCase
     assert_nets ["2001:4860:4860::8888/128"], rule.from_list(family)
     rule.from_host("@google-public-dns-a.google.com@google-public-dns-b.google.com")
     assert_nets ["2001:4860:4860::8844/128", "2001:4860:4860::8888/128"], rule.from_list(family)
-    rule.from_host("FIRST_NET_1_TAG#FIRST_NET_2_TAG#SECOND_NET_1_TAG#SECOND_NET_2_TAGgoogle-public-dns-a.google.com@google-public-dns-a.google.com@8::8:8:8/124@8::8:4:4/124")
-    assert_nets ["1::1:1:1/128", "1::1:1:2/128", "2::2:2:2/128", "8::8:4:4/128", "8::8:8:8/128", "2001:4860:4860::8888/128"], rule.from_list(family)
+    rule.from_host("FIRST_NET_1_TAG#FIRST_NET_2_TAG#SECOND_NET_1_TAG#SECOND_NET_2_TAG@google-public-dns-a.google.com@google-public-dns-a.google.com@8::8:8:8/124@8::8:4:4/124")
+    assert_nets ["1::1:1:1/128", "1::1:1:2/128", "2::2:2:2/127", "8::8:4:4/128", "8::8:8:8/128", "2001:4860:4860::8888/128"], rule.from_list(family)
     rule.from_host("TEST")
     assert_nets ["1::1:1:1/128", "1::1:1:2/128", "2::2:2:2/127"], rule.from_list(family)
   end
@@ -432,7 +429,7 @@ class FirewallTest < Test::Unit::TestCase
     family = Construqt::Addresses::IPV4
     assert_nets [], rule.to_list(family)
     rule.to_net("UNKNOWN_TAG")
-    assert_nets [], rule.to_list(family)
+    assert_nets ["[MISSING:ipv4]"], rule.to_list(family)
     rule.to_net("FIRST_NET_1_TAG#FIRST_NET_2_TAG")
     assert_nets ["1.1.1.0/24"], rule.to_list(family)
     rule.to_net("FIRST_NET_1_TAG#FIRST_NET_2_TAG#SECOND_NET_1_TAG#SECOND_NET_2_TAG")
@@ -471,7 +468,7 @@ class FirewallTest < Test::Unit::TestCase
     family = Construqt::Addresses::IPV4
     assert_nets [], rule.to_list(family)
     rule.to_host("UNKNOWN_TAG")
-    assert_nets [], rule.to_list(family)
+    assert_nets ["[MISSING:ipv4]"], rule.to_list(family)
     rule.to_host("FIRST_NET_1_TAG#FIRST_NET_2_TAG")
     assert_nets ["1.1.1.1/32", "1.1.1.2/32"], rule.to_list(family)
     rule.to_host("FIRST_NET_1_TAG#FIRST_NET_2_TAG#SECOND_NET_1_TAG#SECOND_NET_2_TAG")
@@ -507,7 +504,7 @@ class FirewallTest < Test::Unit::TestCase
     family = Construqt::Addresses::IPV6
     assert_nets [], rule.to_list(family)
     rule.to_net("UNKNOWN_TAG")
-    assert_nets [], rule.to_list(family)
+    assert_nets ["[MISSING:ipv6]"], rule.to_list(family)
     rule.to_net("FIRST_NET_1_TAG#FIRST_NET_2_TAG")
     assert_nets ["1::1:1:0/124"], rule.to_list(family)
     rule.to_net("FIRST_NET_1_TAG#FIRST_NET_2_TAG#SECOND_NET_1_TAG#SECOND_NET_2_TAG")
@@ -546,7 +543,7 @@ class FirewallTest < Test::Unit::TestCase
     family = Construqt::Addresses::IPV6
     assert_nets [], rule.to_list(family)
     rule.to_host("UNKNOWN_TAG")
-    assert_nets [], rule.to_list(family)
+    assert_nets ["[MISSING:ipv6]"], rule.to_list(family)
     rule.to_host("FIRST_NET_1_TAG#FIRST_NET_2_TAG")
     assert_nets ["1::1:1:1/128", "1::1:1:2/128"], rule.to_list(family)
     rule.to_host("FIRST_NET_1_TAG#FIRST_NET_2_TAG#SECOND_NET_1_TAG#SECOND_NET_2_TAG")
@@ -559,8 +556,8 @@ class FirewallTest < Test::Unit::TestCase
     assert_nets ["2001:4860:4860::8888/128"], rule.to_list(family)
     rule.to_host("@google-public-dns-a.google.com@google-public-dns-b.google.com")
     assert_nets ["2001:4860:4860::8844/128", "2001:4860:4860::8888/128"], rule.to_list(family)
-    rule.to_host("FIRST_NET_1_TAG#FIRST_NET_2_TAG#SECOND_NET_1_TAG#SECOND_NET_2_TAGgoogle-public-dns-a.google.com@google-public-dns-a.google.com@8::8:8:8/124@8::8:4:4/124")
-    assert_nets ["1::1:1:1/128", "1::1:1:2/128", "2::2:2:2/128", "8::8:4:4/128", "8::8:8:8/128", "2001:4860:4860::8888/128"], rule.to_list(family)
+    rule.to_host("FIRST_NET_1_TAG#FIRST_NET_2_TAG#SECOND_NET_1_TAG#SECOND_NET_2_TAG@google-public-dns-a.google.com@google-public-dns-a.google.com@8::8:8:8/124@8::8:4:4/124")
+    assert_nets ["1::1:1:1/128", "1::1:1:2/128", "2::2:2:2/127", "8::8:4:4/128", "8::8:8:8/128", "2001:4860:4860::8888/128"], rule.to_list(family)
     rule.to_host("TEST")
     assert_nets ["1::1:1:1/128", "1::1:1:2/128", "2::2:2:2/127"], rule.to_list(family)
   end
@@ -638,15 +635,15 @@ class FirewallTest < Test::Unit::TestCase
     rule.from_host("TESTIPV4")
     assert_nets ["1.1.1.1/32", "1.1.1.2/32"], rule.to_list(Construqt::Addresses::IPV4)
     assert_nets ["1.1.1.1/32", "1.1.1.2/32"], rule.from_list(Construqt::Addresses::IPV4)
-    assert_nets [], rule.to_list(Construqt::Addresses::IPV6)
-    assert_nets [], rule.from_list(Construqt::Addresses::IPV6)
+    assert_nets ["[MISSING:ipv6]"], rule.to_list(Construqt::Addresses::IPV6)
+    assert_nets ["[MISSING:ipv6]"], rule.from_list(Construqt::Addresses::IPV6)
 
     rule.to_host("TESTIPV6")
     rule.from_host("TESTIPV6")
     assert_nets ["1::1:1:1/128", "1::1:1:2/128"], rule.to_list(Construqt::Addresses::IPV6)
     assert_nets ["1::1:1:1/128", "1::1:1:2/128"], rule.from_list(Construqt::Addresses::IPV6)
-    assert_nets [], rule.to_list(Construqt::Addresses::IPV4)
-    assert_nets [], rule.from_list(Construqt::Addresses::IPV4)
+    assert_nets ["[MISSING:ipv4]"], rule.to_list(Construqt::Addresses::IPV4)
+    assert_nets ["[MISSING:ipv4]"], rule.from_list(Construqt::Addresses::IPV4)
   end
 
   def test_rule_to_list_from_at
@@ -655,13 +652,13 @@ class FirewallTest < Test::Unit::TestCase
     rule.from_host("@8.8.8.8")
     assert_nets ["8.8.8.8/32"], rule.to_list(Construqt::Addresses::IPV4)
     assert_nets ["8.8.8.8/32"], rule.from_list(Construqt::Addresses::IPV4)
-    assert_nets [], rule.to_list(Construqt::Addresses::IPV6)
-    assert_nets [], rule.from_list(Construqt::Addresses::IPV6)
+    assert_nets ["[MISSING:ipv6]"], rule.to_list(Construqt::Addresses::IPV6)
+    assert_nets ["[MISSING:ipv6]"], rule.from_list(Construqt::Addresses::IPV6)
 
     rule.to_host("@8::8:8:8")
     rule.from_host("@8::8:8:8")
-    assert_nets [], rule.to_list(Construqt::Addresses::IPV4)
-    assert_nets [], rule.from_list(Construqt::Addresses::IPV4)
+    assert_nets ["[MISSING:ipv4]"], rule.to_list(Construqt::Addresses::IPV4)
+    assert_nets ["[MISSING:ipv4]"], rule.from_list(Construqt::Addresses::IPV4)
     assert_nets ["8::8:8:8/128"], rule.to_list(Construqt::Addresses::IPV6)
     assert_nets ["8::8:8:8/128"], rule.from_list(Construqt::Addresses::IPV6)
   end
@@ -743,20 +740,24 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
-      "{nL5OYBa2b2TwKcuJ2GrMQ} -s 1.1.1.1/32 -j ACCEPT",
-      "{nL5OYBa2b2TwKcuJ2GrMQ} -s 2.2.2.2/32 -j ACCEPT",
-      "{nL5OYBa2b2TwKcuJ2GrMQ} -s 3.3.3.3/32 -j ACCEPT",
-      "{FORWARD} -i testif -p tcp -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j nL5OYBa2b2TwKcuJ2GrMQ",
-      "{FORWARD} -i testif -p tcp -d 9.9.9.9/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j nL5OYBa2b2TwKcuJ2GrMQ",
-      "{FORWARD} -i testif -p icmp -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j nL5OYBa2b2TwKcuJ2GrMQ",
-      "{FORWARD} -i testif -p icmp -d 9.9.9.9/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j nL5OYBa2b2TwKcuJ2GrMQ",
-      "{0DdyfHGKehr9zJaOhAtKg} -d 1.1.1.1/32 -j ACCEPT",
-      "{0DdyfHGKehr9zJaOhAtKg} -d 2.2.2.2/32 -j ACCEPT",
-      "{0DdyfHGKehr9zJaOhAtKg} -d 3.3.3.3/32 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp -s 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j 0DdyfHGKehr9zJaOhAtKg",
-      "{FORWARD} -o testif -p tcp -s 9.9.9.9/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j 0DdyfHGKehr9zJaOhAtKg",
-      "{FORWARD} -o testif -p icmp -s 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j 0DdyfHGKehr9zJaOhAtKg",
-      "{FORWARD} -o testif -p icmp -s 9.9.9.9/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j 0DdyfHGKehr9zJaOhAtKg"
+      "{iPeobZ7IG2kKI0CfwQ} -s 1.1.1.1/32 -j ACCEPT",
+      "{iPeobZ7IG2kKI0CfwQ} -s 2.2.2.2/32 -j ACCEPT",
+      "{iPeobZ7IG2kKI0CfwQ} -s 3.3.3.3/32 -j ACCEPT",
+      "{iPeobZ7IG2kKI0CfwQ} -j RETURN",
+      "{Tr5ZdQoctH7dXWBwFzVVA} -d 8.8.8.8/32 -j iPeobZ7IG2kKI0CfwQ",
+      "{Tr5ZdQoctH7dXWBwFzVVA} -d 9.9.9.9/32 -j iPeobZ7IG2kKI0CfwQ",
+      "{Tr5ZdQoctH7dXWBwFzVVA} -j RETURN",
+      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j Tr5ZdQoctH7dXWBwFzVVA",
+      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j Tr5ZdQoctH7dXWBwFzVVA",
+      "{WasXXTbxPbzCnpD9JqgfIA} -d 1.1.1.1/32 -j ACCEPT",
+      "{WasXXTbxPbzCnpD9JqgfIA} -d 2.2.2.2/32 -j ACCEPT",
+      "{WasXXTbxPbzCnpD9JqgfIA} -d 3.3.3.3/32 -j ACCEPT",
+      "{WasXXTbxPbzCnpD9JqgfIA} -j RETURN",
+      "{ErkobMVYbQVNMcLiAA7A} -s 8.8.8.8/32 -j WasXXTbxPbzCnpD9JqgfIA",
+      "{ErkobMVYbQVNMcLiAA7A} -s 9.9.9.9/32 -j WasXXTbxPbzCnpD9JqgfIA",
+      "{ErkobMVYbQVNMcLiAA7A} -j RETURN",
+      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ErkobMVYbQVNMcLiAA7A",
+      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ErkobMVYbQVNMcLiAA7A"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -771,20 +772,24 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
-      "{bVQPtbyB3l6B555v3EmjdQ} -d 7.7.7.7/32 -j ACCEPT",
-      "{bVQPtbyB3l6B555v3EmjdQ} -d 8.8.8.8/32 -j ACCEPT",
-      "{bVQPtbyB3l6B555v3EmjdQ} -d 9.9.9.9/32 -j ACCEPT",
-      "{FORWARD} -i testif -p tcp -s 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j bVQPtbyB3l6B555v3EmjdQ",
-      "{FORWARD} -i testif -p tcp -s 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j bVQPtbyB3l6B555v3EmjdQ",
-      "{FORWARD} -i testif -p icmp -s 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j bVQPtbyB3l6B555v3EmjdQ",
-      "{FORWARD} -i testif -p icmp -s 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j bVQPtbyB3l6B555v3EmjdQ",
-      "{t4S1Uc5aX1Zf4gdZNBKczw} -s 7.7.7.7/32 -j ACCEPT",
-      "{t4S1Uc5aX1Zf4gdZNBKczw} -s 8.8.8.8/32 -j ACCEPT",
-      "{t4S1Uc5aX1Zf4gdZNBKczw} -s 9.9.9.9/32 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j t4S1Uc5aX1Zf4gdZNBKczw",
-      "{FORWARD} -o testif -p tcp -d 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j t4S1Uc5aX1Zf4gdZNBKczw",
-      "{FORWARD} -o testif -p icmp -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j t4S1Uc5aX1Zf4gdZNBKczw",
-      "{FORWARD} -o testif -p icmp -d 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j t4S1Uc5aX1Zf4gdZNBKczw"
+      "{gT2VAWpbC806nBxD1zTVg} -d 7.7.7.7/32 -j ACCEPT",
+      "{gT2VAWpbC806nBxD1zTVg} -d 8.8.8.8/32 -j ACCEPT",
+      "{gT2VAWpbC806nBxD1zTVg} -d 9.9.9.9/32 -j ACCEPT",
+      "{gT2VAWpbC806nBxD1zTVg} -j RETURN",
+      "{QRenRkNC8fslLevet8auog} -s 1.1.1.1/32 -j gT2VAWpbC806nBxD1zTVg",
+      "{QRenRkNC8fslLevet8auog} -s 2.2.2.2/32 -j gT2VAWpbC806nBxD1zTVg",
+      "{QRenRkNC8fslLevet8auog} -j RETURN",
+      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j QRenRkNC8fslLevet8auog",
+      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j QRenRkNC8fslLevet8auog",
+      "{sIwP8wZDziROx9HKelprw} -s 7.7.7.7/32 -j ACCEPT",
+      "{sIwP8wZDziROx9HKelprw} -s 8.8.8.8/32 -j ACCEPT",
+      "{sIwP8wZDziROx9HKelprw} -s 9.9.9.9/32 -j ACCEPT",
+      "{sIwP8wZDziROx9HKelprw} -j RETURN",
+      "{XukrDZP3wUMxYRArTUJn0w} -d 1.1.1.1/32 -j sIwP8wZDziROx9HKelprw",
+      "{XukrDZP3wUMxYRArTUJn0w} -d 2.2.2.2/32 -j sIwP8wZDziROx9HKelprw",
+      "{XukrDZP3wUMxYRArTUJn0w} -j RETURN",
+      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j XukrDZP3wUMxYRArTUJn0w",
+      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j XukrDZP3wUMxYRArTUJn0w"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -936,18 +941,18 @@ class FirewallTest < Test::Unit::TestCase
     Construqt::Flavour::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [], writer.ipv4.rows
     assert_equal [
-      "{N7jb1NKOStBqD0UP7z6ig} -s 5::5:5:0/124 -j ACCEPT",
-      "{N7jb1NKOStBqD0UP7z6ig} -s 5::5:6:0/124 -j ACCEPT",
-      "{N7jb1NKOStBqD0UP7z6ig} -s fe80::/64 -j ACCEPT",
-      "{N7jb1NKOStBqD0UP7z6ig} -s ff02::/16 -j ACCEPT",
-      "{INPUT} -i testif -p icmpv6 -d 5::5:5:0/124 -j N7jb1NKOStBqD0UP7z6ig",
-      "{INPUT} -i testif -p icmpv6 -d 5::5:6:0/124 -j N7jb1NKOStBqD0UP7z6ig",
-      "{INPUT} -i testif -p icmpv6 -d fe80::/64 -j N7jb1NKOStBqD0UP7z6ig",
-      "{INPUT} -i testif -p icmpv6 -d ff02::/16 -j N7jb1NKOStBqD0UP7z6ig",
-      "{OUTPUT} -o testif -p icmpv6 -d 5::5:5:0/124 -j N7jb1NKOStBqD0UP7z6ig",
-      "{OUTPUT} -o testif -p icmpv6 -d 5::5:6:0/124 -j N7jb1NKOStBqD0UP7z6ig",
-      "{OUTPUT} -o testif -p icmpv6 -d fe80::/64 -j N7jb1NKOStBqD0UP7z6ig",
-      "{OUTPUT} -o testif -p icmpv6 -d ff02::/16 -j N7jb1NKOStBqD0UP7z6ig"
+      "{uOrdBa2drtysoTwlgKnSwA} -s 5::5:5:0/124 -j ACCEPT",
+      "{uOrdBa2drtysoTwlgKnSwA} -s 5::5:6:0/124 -j ACCEPT",
+      "{uOrdBa2drtysoTwlgKnSwA} -s fe80::/64 -j ACCEPT",
+      "{uOrdBa2drtysoTwlgKnSwA} -s ff02::/16 -j ACCEPT",
+      "{uOrdBa2drtysoTwlgKnSwA} -j RETURN",
+      "{XnXpWV8ZsaorHpVEPYID0g} -d 5::5:5:0/124 -j uOrdBa2drtysoTwlgKnSwA",
+      "{XnXpWV8ZsaorHpVEPYID0g} -d 5::5:6:0/124 -j uOrdBa2drtysoTwlgKnSwA",
+      "{XnXpWV8ZsaorHpVEPYID0g} -d fe80::/64 -j uOrdBa2drtysoTwlgKnSwA",
+      "{XnXpWV8ZsaorHpVEPYID0g} -d ff02::/16 -j uOrdBa2drtysoTwlgKnSwA",
+      "{XnXpWV8ZsaorHpVEPYID0g} -j RETURN",
+      "{INPUT} -i testif -p icmpv6 -j XnXpWV8ZsaorHpVEPYID0g",
+      "{OUTPUT} -o testif -p icmpv6 -j XnXpWV8ZsaorHpVEPYID0g"
     ], writer.ipv6.rows
   end
 
@@ -961,18 +966,18 @@ class FirewallTest < Test::Unit::TestCase
     Construqt::Flavour::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [], writer.ipv4.rows
     assert_equal [
-      "{N7jb1NKOStBqD0UP7z6ig} -s 5::5:5:0/124 -j ACCEPT",
-      "{N7jb1NKOStBqD0UP7z6ig} -s 5::5:6:0/124 -j ACCEPT",
-      "{N7jb1NKOStBqD0UP7z6ig} -s fe80::/64 -j ACCEPT",
-      "{N7jb1NKOStBqD0UP7z6ig} -s ff02::/16 -j ACCEPT",
-      "{INPUT} -i testif -p icmpv6 -d 5::5:5:0/124 -j N7jb1NKOStBqD0UP7z6ig",
-      "{INPUT} -i testif -p icmpv6 -d 5::5:6:0/124 -j N7jb1NKOStBqD0UP7z6ig",
-      "{INPUT} -i testif -p icmpv6 -d fe80::/64 -j N7jb1NKOStBqD0UP7z6ig",
-      "{INPUT} -i testif -p icmpv6 -d ff02::/16 -j N7jb1NKOStBqD0UP7z6ig",
-      "{OUTPUT} -o testif -p icmpv6 -d 5::5:5:0/124 -j N7jb1NKOStBqD0UP7z6ig",
-      "{OUTPUT} -o testif -p icmpv6 -d 5::5:6:0/124 -j N7jb1NKOStBqD0UP7z6ig",
-      "{OUTPUT} -o testif -p icmpv6 -d fe80::/64 -j N7jb1NKOStBqD0UP7z6ig",
-      "{OUTPUT} -o testif -p icmpv6 -d ff02::/16 -j N7jb1NKOStBqD0UP7z6ig"
+      "{uOrdBa2drtysoTwlgKnSwA} -s 5::5:5:0/124 -j ACCEPT",
+      "{uOrdBa2drtysoTwlgKnSwA} -s 5::5:6:0/124 -j ACCEPT",
+      "{uOrdBa2drtysoTwlgKnSwA} -s fe80::/64 -j ACCEPT",
+      "{uOrdBa2drtysoTwlgKnSwA} -s ff02::/16 -j ACCEPT",
+      "{uOrdBa2drtysoTwlgKnSwA} -j RETURN",
+      "{XnXpWV8ZsaorHpVEPYID0g} -d 5::5:5:0/124 -j uOrdBa2drtysoTwlgKnSwA",
+      "{XnXpWV8ZsaorHpVEPYID0g} -d 5::5:6:0/124 -j uOrdBa2drtysoTwlgKnSwA",
+      "{XnXpWV8ZsaorHpVEPYID0g} -d fe80::/64 -j uOrdBa2drtysoTwlgKnSwA",
+      "{XnXpWV8ZsaorHpVEPYID0g} -d ff02::/16 -j uOrdBa2drtysoTwlgKnSwA",
+      "{XnXpWV8ZsaorHpVEPYID0g} -j RETURN",
+      "{INPUT} -i testif -p icmpv6 -j XnXpWV8ZsaorHpVEPYID0g",
+      "{OUTPUT} -o testif -p icmpv6 -j XnXpWV8ZsaorHpVEPYID0g"
     ], writer.ipv6.rows
   end
 
@@ -996,6 +1001,189 @@ class FirewallTest < Test::Unit::TestCase
       "{POSTROUTING} -o testif -s 47.11.0.0/16 -d 0.0.0.0/0 -j SNAT --to-source 9.9.9.9",
       "{POSTROUTING} -o testif -p tcp -s 0.0.0.0/0 -d 8.8.8.8/32 -m multiport --dports 80,443 -j SNAT --to-source 2.2.2.1",
       "{POSTROUTING} -o testif -p tcp -s 0.0.0.0/0 -d 8.8.4.4/32 -m multiport --dports 80,443 -j SNAT --to-source 2.2.2.2"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
+  end
+
+  def test_not_1_1
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.forward do |forward|
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.not_from.from_host("@1.1.1.1").to_host("@8.8.8.8").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.from_host("@1.1.1.1").not_to.to_host("@8.8.8.8").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.not_from.from_host("@1.1.1.1").not_to.to_host("@8.8.8.8").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [
+      "{FORWARD} -i testif -p tcp -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp ! -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -i testif -p tcp ! -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp ! -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp -s 1.1.1.1/32 ! -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp -s 1.1.1.1/32 ! -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -i testif -p tcp ! -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp ! -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -s 1.1.1.1/32 ! -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp ! -s 1.1.1.1/32 ! -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
+  end
+
+  def test_not_empty_2
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.forward do |forward|
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.not_from.from_host("@1.1.1.1@2.2.2.2").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.not_to.to_host("@8.8.8.8@7.7.7.7").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [
+      "{FORWARD} -i testif -p tcp ! -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p tcp ! -d 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp ! -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp ! -d 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -s 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -s 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp ! -s 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp ! -s 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -i testif -p tcp ! -s 7.7.7.7/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p tcp ! -s 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp ! -s 7.7.7.7/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp ! -s 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -d 7.7.7.7/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp ! -d 7.7.7.7/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp ! -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
+  end
+
+  def test_not_2_3
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.forward do |forward|
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.not_from.from_host("@1.1.1.1@2.2.2.2").to_host("@7.7.7.7@8.8.8.8@9.9.9.9").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.not_to.to_host("@8.8.8.8@7.7.7.7").from_host("@7.7.7.7@8.8.8.8@9.9.9.9").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [
+      "{sIwP8wZDziROx9HKelprw} -s 7.7.7.7/32 -j ACCEPT",
+      "{sIwP8wZDziROx9HKelprw} -s 8.8.8.8/32 -j ACCEPT",
+      "{sIwP8wZDziROx9HKelprw} -s 9.9.9.9/32 -j ACCEPT",
+      "{sIwP8wZDziROx9HKelprw} -j RETURN",
+      "{I3zewsVvinLWrKK7Wc4dA} -d 1.1.1.1/32 -j RETURN",
+      "{I3zewsVvinLWrKK7Wc4dA} -d 2.2.2.2/32 -j RETURN",
+      "{I3zewsVvinLWrKK7Wc4dA} -j sIwP8wZDziROx9HKelprw",
+      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j I3zewsVvinLWrKK7Wc4dA",
+      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j I3zewsVvinLWrKK7Wc4dA",
+      "{gT2VAWpbC806nBxD1zTVg} -d 7.7.7.7/32 -j ACCEPT",
+      "{gT2VAWpbC806nBxD1zTVg} -d 8.8.8.8/32 -j ACCEPT",
+      "{gT2VAWpbC806nBxD1zTVg} -d 9.9.9.9/32 -j ACCEPT",
+      "{gT2VAWpbC806nBxD1zTVg} -j RETURN",
+      "{FPMxJtY8JjfKWxMFP9OLDw} -s 1.1.1.1/32 -j RETURN",
+      "{FPMxJtY8JjfKWxMFP9OLDw} -s 2.2.2.2/32 -j RETURN",
+      "{FPMxJtY8JjfKWxMFP9OLDw} -j gT2VAWpbC806nBxD1zTVg",
+      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j FPMxJtY8JjfKWxMFP9OLDw",
+      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j FPMxJtY8JjfKWxMFP9OLDw",
+      "{3trynWY1zSiKamIM5V9hQ} -s 7.7.7.7/32 -j RETURN",
+      "{3trynWY1zSiKamIM5V9hQ} -s 8.8.8.8/32 -j RETURN",
+      "{3trynWY1zSiKamIM5V9hQ} -j gT2VAWpbC806nBxD1zTVg",
+      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j 3trynWY1zSiKamIM5V9hQ",
+      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j 3trynWY1zSiKamIM5V9hQ",
+      "{vNcQPp4uj7YABjmtz1dQ} -d 7.7.7.7/32 -j RETURN",
+      "{vNcQPp4uj7YABjmtz1dQ} -d 8.8.8.8/32 -j RETURN",
+      "{vNcQPp4uj7YABjmtz1dQ} -j sIwP8wZDziROx9HKelprw",
+      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j vNcQPp4uj7YABjmtz1dQ",
+      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j vNcQPp4uj7YABjmtz1dQ"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
+  end
+
+  def test_2_not_3
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.forward do |forward|
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.from_host("@1.1.1.1@2.2.2.2").not_to.to_host("@7.7.7.7@8.8.8.8@9.9.9.9").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.to_host("@8.8.8.8@7.7.7.7").not_from.from_host("@7.7.7.7@8.8.8.8@9.9.9.9").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [
+      "{JX0nORdnJqC8u2FGJriOsQ} -s 7.7.7.7/32 -j RETURN",
+      "{JX0nORdnJqC8u2FGJriOsQ} -s 8.8.8.8/32 -j RETURN",
+      "{JX0nORdnJqC8u2FGJriOsQ} -s 9.9.9.9/32 -j RETURN",
+      "{JX0nORdnJqC8u2FGJriOsQ} -j ACCEPT",
+      "{mq4jd1nRg75YJUTa83m0g} -d 1.1.1.1/32 -j JX0nORdnJqC8u2FGJriOsQ",
+      "{mq4jd1nRg75YJUTa83m0g} -d 2.2.2.2/32 -j JX0nORdnJqC8u2FGJriOsQ",
+      "{mq4jd1nRg75YJUTa83m0g} -j RETURN",
+      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j mq4jd1nRg75YJUTa83m0g",
+      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j mq4jd1nRg75YJUTa83m0g",
+      "{PHUYy7LaQoiHgKPa5p7q7A} -d 7.7.7.7/32 -j RETURN",
+      "{PHUYy7LaQoiHgKPa5p7q7A} -d 8.8.8.8/32 -j RETURN",
+      "{PHUYy7LaQoiHgKPa5p7q7A} -d 9.9.9.9/32 -j RETURN",
+      "{PHUYy7LaQoiHgKPa5p7q7A} -j ACCEPT",
+      "{U4DG3JULUtRzrLuUMyq6w} -s 1.1.1.1/32 -j PHUYy7LaQoiHgKPa5p7q7A",
+      "{U4DG3JULUtRzrLuUMyq6w} -s 2.2.2.2/32 -j PHUYy7LaQoiHgKPa5p7q7A",
+      "{U4DG3JULUtRzrLuUMyq6w} -j RETURN",
+      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j U4DG3JULUtRzrLuUMyq6w",
+      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j U4DG3JULUtRzrLuUMyq6w",
+      "{AIlaUU0pMDc1pXufWIXfgg} -s 7.7.7.7/32 -j PHUYy7LaQoiHgKPa5p7q7A",
+      "{AIlaUU0pMDc1pXufWIXfgg} -s 8.8.8.8/32 -j PHUYy7LaQoiHgKPa5p7q7A",
+      "{AIlaUU0pMDc1pXufWIXfgg} -j RETURN",
+      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j AIlaUU0pMDc1pXufWIXfgg",
+      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j AIlaUU0pMDc1pXufWIXfgg",
+      "{wSvSDuTkCBR4RRctnIpjg} -d 7.7.7.7/32 -j JX0nORdnJqC8u2FGJriOsQ",
+      "{wSvSDuTkCBR4RRctnIpjg} -d 8.8.8.8/32 -j JX0nORdnJqC8u2FGJriOsQ",
+      "{wSvSDuTkCBR4RRctnIpjg} -j RETURN",
+      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j wSvSDuTkCBR4RRctnIpjg",
+      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j wSvSDuTkCBR4RRctnIpjg"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
+  end
+
+  def test_not_2_not_3
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.forward do |forward|
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.not_from.from_host("@1.1.1.1@2.2.2.2").not_to.to_host("@7.7.7.7@8.8.8.8@9.9.9.9").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.not_to.to_host("@8.8.8.8@7.7.7.7").not_from.from_host("@7.7.7.7@8.8.8.8@9.9.9.9").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [
+      "{JX0nORdnJqC8u2FGJriOsQ} -s 7.7.7.7/32 -j RETURN",
+      "{JX0nORdnJqC8u2FGJriOsQ} -s 8.8.8.8/32 -j RETURN",
+      "{JX0nORdnJqC8u2FGJriOsQ} -s 9.9.9.9/32 -j RETURN",
+      "{JX0nORdnJqC8u2FGJriOsQ} -j ACCEPT",
+      "{IDoervDkCW1GiaqZeQnJA} -d 1.1.1.1/32 -j RETURN",
+      "{IDoervDkCW1GiaqZeQnJA} -d 2.2.2.2/32 -j RETURN",
+      "{IDoervDkCW1GiaqZeQnJA} -j JX0nORdnJqC8u2FGJriOsQ",
+      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j IDoervDkCW1GiaqZeQnJA",
+      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j IDoervDkCW1GiaqZeQnJA",
+      "{PHUYy7LaQoiHgKPa5p7q7A} -d 7.7.7.7/32 -j RETURN",
+      "{PHUYy7LaQoiHgKPa5p7q7A} -d 8.8.8.8/32 -j RETURN",
+      "{PHUYy7LaQoiHgKPa5p7q7A} -d 9.9.9.9/32 -j RETURN",
+      "{PHUYy7LaQoiHgKPa5p7q7A} -j ACCEPT",
+      "{OJ6ne4MtXMQehUOI7Ajmvw} -s 1.1.1.1/32 -j RETURN",
+      "{OJ6ne4MtXMQehUOI7Ajmvw} -s 2.2.2.2/32 -j RETURN",
+      "{OJ6ne4MtXMQehUOI7Ajmvw} -j PHUYy7LaQoiHgKPa5p7q7A",
+      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j OJ6ne4MtXMQehUOI7Ajmvw",
+      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j OJ6ne4MtXMQehUOI7Ajmvw",
+      "{PXkAftc146vAPJTc4QIr7Q} -s 7.7.7.7/32 -j RETURN",
+      "{PXkAftc146vAPJTc4QIr7Q} -s 8.8.8.8/32 -j RETURN",
+      "{PXkAftc146vAPJTc4QIr7Q} -j PHUYy7LaQoiHgKPa5p7q7A",
+      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j PXkAftc146vAPJTc4QIr7Q",
+      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j PXkAftc146vAPJTc4QIr7Q",
+      "{kBg9SS5Cgta74ABPRSTlbg} -d 7.7.7.7/32 -j RETURN",
+      "{kBg9SS5Cgta74ABPRSTlbg} -d 8.8.8.8/32 -j RETURN",
+      "{kBg9SS5Cgta74ABPRSTlbg} -j JX0nORdnJqC8u2FGJriOsQ",
+      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j kBg9SS5Cgta74ABPRSTlbg",
+      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j kBg9SS5Cgta74ABPRSTlbg"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end

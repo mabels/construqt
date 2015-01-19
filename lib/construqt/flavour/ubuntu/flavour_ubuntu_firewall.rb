@@ -134,8 +134,16 @@ module Construqt
               self.interface_direction("-o")
             end
 
+            def is_not_src_ip?
+              to_from.rule.not_from?
+            end
+
             def src_ip_list
               to_from.rule.from_list(family)
+            end
+
+            def is_not_dst_ip?
+              to_from.rule.not_to?
             end
 
             def dst_ip_list
@@ -188,8 +196,16 @@ module Construqt
               self.interface_direction("-i")
             end
 
+            def is_not_src_ip?
+              to_from.rule.not_to?
+            end
+
             def src_ip_list
               to_from.rule.to_list(family)
+            end
+
+            def is_not_dst_ip?
+              to_from.rule.not_from?
             end
 
             def dst_ip_list
@@ -237,17 +253,38 @@ module Construqt
           end
         end
 
-        def self.calc_hash_value(direction, _prefix, _list, _end)
-          out = []
-          _list.each do |ip|
-            out << "#{_prefix} #{ip.to_string} -j #{_end}"
+        def self.inverse_action(is_not, action)
+          unless is_not
+            action
+          else
+            ret = {
+              "ACCEPT" => "DROP",
+              "DROP" => "ACCEPT"
+            }[action]
+            throw "action unknown to inverse #{action}" unless ret
+            ret
           end
+        end
+        def self.return_action(is_not, action)
+          unless is_not
+            "RETURN"
+          else
+            action
+          end
+        end
+
+        def self.calc_hash_value(direction, _prefix, is_not, _list, _end)
+          out = []
+          _list.each_without_missing do |ip|
+            out << "#{_prefix} #{ip.to_string} -j #{return_action(!is_not, _end)}"
+          end
+          out << "-j #{return_action(is_not, _end)}"
 
           OpenStruct.new(:rows => out, :hmac => Digest::MD5.base64digest(out.join("\n")).gsub(/[^a-zA-Z0-9]/,''))
         end
 
-        def self.write_jump_destination(direction, prefix, list, suffix)
-          result = calc_hash_value(direction, prefix, list, suffix)
+        def self.write_jump_destination(direction, prefix, is_not, list, suffix)
+          result = calc_hash_value(direction, prefix, is_not, list, suffix)
           # work on these do a better hashing
           unless direction.to_from.section.jump_destinations[result.hmac]
             result.rows.each do |row|
@@ -261,9 +298,11 @@ module Construqt
         end
 
         def self.write_line(direction, begin_middle_end, src_ip = nil, dest_ip = nil, action_proc = nil)
-          src_ip_str = src_ip ? "-s #{src_ip.to_string}" : ""
-          dest_ip_str = dest_ip ? "-d #{dest_ip.to_string}" : ""
-          action = action_proc.nil? ? "#{direction.action}#{Construqt::Util.space_before(begin_middle_end.end)}" : action_proc.call
+          not_src_ip = direction.is_not_src_ip? ? '! ' : ''
+          src_ip_str = src_ip ? "#{not_src_ip}-s #{src_ip.to_string}" : ""
+          not_dst_ip = direction.is_not_dst_ip? ? '! ' : ''
+          dest_ip_str = dest_ip ? "#{not_dst_ip}-d #{dest_ip.to_string}" : ""
+          action = action_proc.nil? ? "#{direction.action}#{Construqt::Util.space_before(begin_middle_end.end)}" : action_proc
           direction.row("#{direction.ifname}#{Construqt::Util.space_before(begin_middle_end.begin)}"+
                         "#{Construqt::Util.space_before(src_ip_str)}#{Construqt::Util.space_before(dest_ip_str)}"+
                         "#{Construqt::Util.space_before(begin_middle_end.middle)} -j #{action}")
@@ -283,11 +322,23 @@ module Construqt
 
           # cases
           #
+          # to_list.empty? and from_list.empty?
+          #
+          #
+          # to_list.size == 1 && to_list.size == from_list.size
+          #
+          if (src_list.empty? && dst_list.empty?) or
+             (src_list.size_without_missing == 1 && dst_list.size_without_missing == 1)
+            write_line(direction, begin_middle_end, src_list.first, dst_list.first)
+            return
+          end
+
+          #
           #
           # to_list.empty? and not from_list.empty?
           #
-          if src_list.empty? && dst_list.length > 0
-            dst_list.each do |dest_ip|
+          if src_list.empty? && dst_list.size_without_missing > 0
+            dst_list.each_without_missing do |dest_ip|
               write_line(direction, begin_middle_end, nil, dest_ip)
             end
 
@@ -297,30 +348,60 @@ module Construqt
           #
           # not to_list.empty? and from_list.empty?
           #
-          if src_list.length > 0 && dst_list.empty?
-            src_list.each do |src_ip|
+          if src_list.size_without_missing > 0 && dst_list.empty?
+            src_list.each_without_missing do |src_ip|
               write_line(direction, begin_middle_end, src_ip, nil)
             end
 
             return
           end
 
-          #
-          # to_list.size == 1 && to_list.size == from_list.size
-          #
-          if src_list.size <= 1 && dst_list.size <= 1
-            write_line(direction, begin_middle_end, src_list.first, dst_list.first)
+          if src_list.size_without_missing < 1 || dst_list.size_without_missing < 1
+            # one side is atleased missing
             return
           end
+
 
           #
           # to_list.size <= from_list.size
           #
-          if src_list.size < dst_list.size
-            src_list.each do |src_ip|
-              action = lambda { write_jump_destination(direction, "-d", dst_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(begin_middle_end.end)}") }
-              write_line(direction, begin_middle_end, src_ip, nil, action)
-            end
+          # -j SRC-Target
+          # SRC-Target -s A -j DST-Target
+          # SRC-Target -s B -j DST-Target
+          # SRC-Target -s C -j DST-Target
+          # SRC-Target -j RETURN
+          # DST-Target -d D -j ACCEPT
+          # DST-Target -d E -j ACCEPT
+          # DST-Target -d F -j ACCEPT
+          # DST-Target -j RETURN
+          #
+          # -j SRC-Target
+          # !SRC-Target -s A -j RETURN
+          # !SRC-Target -s B -j RETURN
+          # !SRC-Target -s C -j RETURN
+          # !SRC-Target -j DST-Target
+          # DST-Target -d D -j ACCEPT
+          # DST-Target -d E -j ACCEPT
+          # DST-Target -d F -j ACCEPT
+          # DST-Target -j RETURN
+          #
+          # -j SRC-Target
+          # !SRC-Target -s A -j RETURN
+          # !SRC-Target -s B -j RETURN
+          # !SRC-Target -s C -j RETURN
+          # !SRC-Target -j !DST-Target
+          # !DST-Target -d D -j RETURN
+          # !DST-Target -d E -j RETURN
+          # !DST-Target -d F -j RETURN
+          # !DST-Target -j ACCEPT
+          #
+          #
+          if src_list.size_without_missing < dst_list.size_without_missing
+            #src_list.each_without_missing do |src_ip|
+            dst_action = write_jump_destination(direction, "-d", direction.is_not_dst_ip?, dst_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(begin_middle_end.end)}")
+            src_action = write_jump_destination(direction, "-s", direction.is_not_src_ip?, src_list, dst_action)
+            write_line(direction, begin_middle_end, nil, nil, src_action)
+            #end
 
             return
           end
@@ -328,11 +409,15 @@ module Construqt
           #
           # from_list.size <= to_list.size
           #
-          if src_list.size >= dst_list.size
-            dst_list.each do |dest_ip|
-              action = lambda { write_jump_destination(direction, "-s", src_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(begin_middle_end.end)}") }
-              write_line(direction, begin_middle_end, nil, dest_ip, action)
-            end
+          if src_list.size_without_missing >= dst_list.size_without_missing
+            dst_action = write_jump_destination(direction, "-s", direction.is_not_src_ip?, src_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(begin_middle_end.end)}")
+            src_action = write_jump_destination(direction, "-d", direction.is_not_dst_ip?, dst_list, dst_action)
+            write_line(direction, begin_middle_end, nil, nil, src_action)
+
+            #dst_list.each_without_missing do |dest_ip|
+            #  action = lambda { write_jump_destination(direction, "-s", direction.is_not_src_ip?, src_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(begin_middle_end.end)}") }
+            #  write_line(direction, begin_middle_end, nil, dest_ip, action)
+            #end
 
             return
           end
