@@ -63,7 +63,7 @@ class FirewallTest < Test::Unit::TestCase
   #  end
 
   def assert_nets expect, result
-    assert_equal expect, result.map{|i| i.to_string}
+    assert_equal expect, result.list.map{|i| i.to_string}
   end
 
   def assert_array expect, result

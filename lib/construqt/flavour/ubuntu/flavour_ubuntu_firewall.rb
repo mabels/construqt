@@ -281,14 +281,6 @@ module Construqt
           src_list = direction.src_ip_list
           dst_list = direction.dst_ip_list
 
-          if (src_list.nil? && dst_list.nil?) ||
-             (src_list.nil? && dst_list.empty?) ||
-             (dst_list.nil? && src_list.empty?)
-            return
-          end
-          src_list ||= []
-          dst_list ||= []
-
           # cases
           #
           #
