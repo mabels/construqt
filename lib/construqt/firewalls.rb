@@ -304,17 +304,86 @@ module Construqt
         IPAddress.summarize(list.map{|i| i.to_i == 0 ? nil : IPAddress.parse(i.to_string) }.compact)
       end
 
+      def self.to_host_addr(addr)
+        if addr.to_i == 0 ||
+            (addr.ipv4? && addr.prefix != 32 && addr.network == addr) ||
+            (addr.ipv6? && addr.prefix != 128 && addr.network == addr)
+          # default or i is a network
+          nil
+        else
+          IPAddress.parse(addr.to_s)
+        end
+      end
+
       def self.to_host_addrs(addrs)
-        addrs.map do |i|
-          if i.to_i == 0 ||
-              (i.ipv4? && i.prefix != 32 && i.network == i) ||
-              (i.ipv6? && i.prefix != 128 && i.network == i)
-            # default or i is a network
-            nil
-          else
-            IPAddress.parse(i.to_s)
+        addrs.map { |addr| to_host_addr(addr) }.compact
+      end
+
+      class FwToken
+        def initialize
+          @str_array = []
+        end
+        def is_tag?
+          @type == '#'
+        end
+        def is_literal?
+          @type == '@'
+        end
+        def type
+          @type
+        end
+        def set_type(type)
+          @type = type
+          self
+        end
+        def str
+          @str_array.join('').strip
+        end
+        def add_char(chr)
+          @str_array << chr
+        end
+      end
+
+      class FwIpAddress
+        def missing(fwtoken)
+          @fwtoken = fwtoken
+          @missing = true
+          self
+        end
+
+        def missing?
+          @missing
+        end
+
+        def self.missing(fwtoken)
+          FwIpAddress.new.missing(fwtoken)
+        end
+
+        def to_string
+          missing? ? "[MISSING]" : ip_addr.to_string
+        end
+
+        def ip_addr
+          @ip_addr
+        end
+        def set_ip_addr(ip)
+          @ip_addr = ip
+          self
+        end
+
+        def self.create(fwtoken, ips, ret)
+          ips.each do |ip|
+            if ip.kind_of?(FwIpAddress)
+              ret << ip
+            elsif ip.kind_of?(IPAddress) || ip.kind_of?(Addresses::CqIpAddress)
+              FwIpAddress.new.set_ip_addr(ip)
+            else
+              throw "unknown type #{ip.class.name}"
+            end
           end
-        end.compact
+
+          ret
+        end
       end
 
       def self.resolver(str, family)
@@ -325,40 +394,48 @@ module Construqt
           str_a.unshift('#')
         end
 
-        types = {}
+        fwtokens = []
         wait_hash_or_at = true
         fill = nil
         while (current = str_a.shift)
           if current == '#' or current == '@'
-            types[current] ||= []
-            fill = []
-            types[current] << fill
+            fill = FwToken.new.set_type(current)
+            fwtokens << fill
           else
-            fill << current
+            fill.add_char(current)
           end
         end
 
         ret = []
-        Resolv::DNS.open do |dns|
-          types.each do |type, types|
-            types = types.map{|i| i.join('') }.sort.uniq
-            if type == '#'
-              ret += Construqt::Tags.ips_adr(types.join('#'), family)
-            elsif type == '@'
-              types.each do |name|
-                begin
-                  tmp = IPAddress.parse(name)
-                  if (tmp.ipv4? && family == Construqt::Addresses::IPV4) || (tmp.ipv6? && family == Construqt::Addresses::IPV6)
-                    ret += [tmp]
-                  end
+        dns = Resolv::DNS.open
+        fwtokens.each do |fwtoken|
+          if fwtoken.is_tag?
+            ips = Construqt::Tags.ips_adr(fwtoken.str, family)
+            if ips.empty?
+              ret = FwIpAddress.create(fwtoken, [FwIpAddress.missing(fwtoken)], ret)
+            else
+              ret = FwIpAddress.create(fwtoken, ips, ret)
+            end
 
-                rescue Exception => e
-                  ress = dns.getresources name, family == Construqt::Addresses::IPV6 ? Resolv::DNS::Resource::IN::AAAA : Resolv::DNS::Resource::IN::A
-                  throw "can not resolv #{name}" if ress.empty?
-                  ret += ress.map{|i| IPAddress.parse(i.address.to_s) }
-                end
+          elsif fwtoken.is_literal?
+            begin
+              tmp = IPAddress.parse(fwtoken.str)
+              if (tmp.ipv4? && family == Construqt::Addresses::IPV4) || (tmp.ipv6? && family == Construqt::Addresses::IPV6)
+                ret = FwIpAddress.create(fwtoken, [FwIpAddress.new.set_ip_addr(tmp)], ret)
+              else
+                ret = FwIpAddress.create(fwtoken, [FwIpAddress.missing(fwtoken)], ret)
+              end
+
+            rescue Exception => e
+              ress = dns.getresources(fwtoken.str, family == Construqt::Addresses::IPV6 ? Resolv::DNS::Resource::IN::AAAA : Resolv::DNS::Resource::IN::A)
+              unless ress.empty?
+                ret = FwIpAddress.create([fwtoken], ress.map{|i| IPAddress.parse(i.address.to_s) }, ret)
+              else
+                ret = FwIpAddress.create([fwtoken], [FwIpAddress.missing(fwtoken)], ret)
               end
             end
+          else
+            throw "unknown type #{fwtoken.type}"
           end
         end
 
@@ -377,71 +454,110 @@ module Construqt
         addrs.map{|i| i.ipaddr}
       end
 
-      def self._list(family, iface, _host, _net, _me, _route, _my_net)
-        family_list_method = family==Construqt::Addresses::IPV6 ? :v6s : :v4s
-        _list = []
-        iface_address_nil = false
-        if _me # if my interface
-          if iface.address.nil?
-            iface_address_nil = true
-          else
-            tmp = to_host_addrs(to_ipaddrs(iface.address.send(family_list_method)))
-            if _route
-              tmp << iface.address.routes.dst_networks.send(family_list_method)
-            end
-            tmp = tmp.flatten.compact
-            if tmp.empty?
-              iface_address_nil = true
-            else
-              _list += tmp
-            end
+      class FwIpAddresses
+        def initialize
+          @list = []
+        end
+
+        def set_list(list)
+          @list = list
+          self
+        end
+
+        class FwIpAddressList
+          def initialize(list)
+            @list = list
+          end
+          def empty?
+            @list.empty?
+          end
+          def size
+            @list.size
+          end
+          def size_with_out_missing
+            @list.select{|fwaddr| !fwaddr.missing? }.size
+          end
+          def map(&block)
+            @list.map{|i| block.call(i) }
           end
         end
 
-        if _my_net #if my interface net
-          if iface.address.nil?
-            iface_address_nil = true
-          else
-            tmp = to_ipaddrs(iface.address.send(family_list_method))
-            if _route
-              tmp << iface.address.routes.dst_networks.send(family_list_method)
-            end
-            tmp = tmp.flatten.compact
-            if tmp.empty?
-              iface_address_nil = true
-            else
-              _list += tmp
-            end
+        def list
+          missing = @list.select{|fwaddr| fwaddr.missing? }[0..0]
+          list = @list.select{|fwaddr| !fwaddr.missing? }.map{|i| i.ip_addr}
+          FwIpAddressList.new(IPAddress.summarize(list).map{|i| FwIpAddress.new.set_ip_addr(i) }+missing)
+        end
+
+        def add_ip_addrs(ip_addrs)
+          ip_addrs.each do |ipaddr|
+            throw "ipaddr have to be ipaddress but is #{ipaddr.class.name}" unless ipaddr.kind_of?(IPAddress)
+            @list << FwIpAddress.new.set_ip_addr(ipaddr)
           end
+        end
+
+        def add_fwipaddresses(fw_addrs)
+          fw_addrs.each do |fwaddr|
+            throw "fwaddr have to be fwipaddress but is #{fwaddr.class.name}" unless fwaddr.kind_of?(FwIpAddress)
+            @list << fwaddr
+          end
+        end
+      end
+
+      def self._list(family, iface, _host, _net, _me, _route, _my_net)
+        family_list_method = family==Construqt::Addresses::IPV6 ? :v6s : :v4s
+        _list = FwIpAddresses.new
+        iface_address_nil = false
+        if _me # if my interface
+          tmp = to_host_addrs(to_ipaddrs(iface.address.send(family_list_method)))
+          if _route
+            tmp << iface.address.routes.dst_networks.send(family_list_method)
+          end
+
+          tmp.empty? ? _list.add_missing : _list.add_ip_addrs(tmp)
+        end
+
+        if _my_net #if my interface net
+          tmp = to_ipaddrs(iface.address.send(family_list_method))
+          if _route
+            tmp << iface.address.routes.dst_networks.send(family_list_method)
+          end
+
+          tmp.empty? ? _list.add_missing : _list.add_ip_addrs(tmp)
         end
 
         unless _host == :undefined #to this host
           if _host == :to_host
-            _list << to_host_addrs(to_ipaddrs(iface.host.address.send(family_list_method)))
+            tmp = to_host_addrs(to_ipaddrs(iface.host.address.send(family_list_method)))
             if _route
-              _list << iface.host.address.routes.dst_networks.send(family_list_method)
+              tmp += iface.host.address.routes.dst_networks.send(family_list_method)
             end
+
+            tmp.empty? ? _list.add_missing : _list.add_ip_addrs(tmp)
           else
-            _list << to_host_addrs(resolver(_host, family))
+            _list.add_fwipaddresses(resolver(_host, family).select do |fw|
+              if fw.ip_addr
+                (ret = to_host_addr(fw.ip_addr)) ?  fw.set_ip_addr(ret) : false
+              else
+                fw
+              end
+            end)
           end
         end
 
         unless _net == :undefined #to this host network
           if _net == :to_net
-            _list << to_ipaddrs(iface.host.address.send(family_list_method))
+            tmp = to_ipaddrs(iface.host.address.send(family_list_method))
             if _route
-              _list << iface.host.address.routes.dst_networks.send(family_list_method)
+              tmp += iface.host.address.routes.dst_networks.send(family_list_method)
             end
+
+            tmp.empty? ? _list.add_missing : _list.add_ip_addrs(tmp)
           else
-            _list << resolver(_net, family)
+            _list.add_fwipaddresses(resolver(_net, family))
           end
         end
-        ret = _list.flatten.compact
-        if iface_address_nil && ret.empty?
-          nil
-        else
-          IPAddress.summarize(ret)
-        end
+
+        _list
       end
     end
 
