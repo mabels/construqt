@@ -1187,4 +1187,38 @@ class FirewallTest < Test::Unit::TestCase
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
+
+  def test_1_lt_2
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.forward do |forward|
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.from_host("@1.1.1.1").to_host("@7.7.7.7@8.8.8.8").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+        forward.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_is_inside.not_to.to_host("@8.8.8.8@7.7.7.7").not_from.from_host("@9.9.9.9").connection.icmp.type(Construqt::Firewalls::ICMP::Ping).tcp.dport(22)
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [
+      "{q5qOileEfiWcsSA2VF1RqQ} -s 7.7.7.7/32 -j ACCEPT",
+      "{q5qOileEfiWcsSA2VF1RqQ} -s 8.8.8.8/32 -j ACCEPT",
+      "{q5qOileEfiWcsSA2VF1RqQ} -j RETURN",
+      "{FORWARD} -i testif -p tcp -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j q5qOileEfiWcsSA2VF1RqQ",
+      "{FORWARD} -i testif -p icmp -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j q5qOileEfiWcsSA2VF1RqQ",
+      "{GcN7oXzN0S6xWaQvWpJow} -d 7.7.7.7/32 -j ACCEPT",
+      "{GcN7oXzN0S6xWaQvWpJow} -d 8.8.8.8/32 -j ACCEPT",
+      "{GcN7oXzN0S6xWaQvWpJow} -j RETURN",
+      "{FORWARD} -o testif -p tcp -s 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j GcN7oXzN0S6xWaQvWpJow",
+      "{FORWARD} -o testif -p icmp -s 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j GcN7oXzN0S6xWaQvWpJow",
+      "{fRRuJfK6pBu0deeVX08Hyg} -s 7.7.7.7/32 -j RETURN",
+      "{fRRuJfK6pBu0deeVX08Hyg} -s 8.8.8.8/32 -j RETURN",
+      "{fRRuJfK6pBu0deeVX08Hyg} -j ACCEPT",
+      "{FORWARD} -i testif -p tcp ! -d 9.9.9.9/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j fRRuJfK6pBu0deeVX08Hyg",
+      "{FORWARD} -i testif -p icmp ! -d 9.9.9.9/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j fRRuJfK6pBu0deeVX08Hyg",
+      "{KCAXNiU0DNpRX0b4v7gg} -d 7.7.7.7/32 -j RETURN",
+      "{KCAXNiU0DNpRX0b4v7gg} -d 8.8.8.8/32 -j RETURN",
+      "{KCAXNiU0DNpRX0b4v7gg} -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -s 9.9.9.9/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j KCAXNiU0DNpRX0b4v7gg",
+      "{FORWARD} -o testif -p icmp ! -s 9.9.9.9/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j KCAXNiU0DNpRX0b4v7gg"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
+  end
 end

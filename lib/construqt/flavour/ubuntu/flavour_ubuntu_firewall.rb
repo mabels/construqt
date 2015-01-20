@@ -395,7 +395,17 @@ module Construqt
           # !DST-Target -d F -j RETURN
           # !DST-Target -j ACCEPT
           #
-          #
+          if src_list.size_without_missing == 1 && dst_list.size_without_missing > 1
+            dst_action = write_jump_destination(direction, "-d", direction.is_not_dst_ip?, dst_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(begin_middle_end.end)}")
+            write_line(direction, begin_middle_end, src_list.first, nil, dst_action)
+            return
+          end
+          if dst_list.size_without_missing == 1 && src_list.size_without_missing > 1
+            src_action = write_jump_destination(direction, "-s", direction.is_not_src_ip?, src_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(begin_middle_end.end)}")
+            write_line(direction, begin_middle_end, nil, dst_list.first, src_action)
+            return
+          end
+
           if src_list.size_without_missing < dst_list.size_without_missing
             #src_list.each_without_missing do |src_ip|
             dst_action = write_jump_destination(direction, "-d", direction.is_not_dst_ip?, dst_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(begin_middle_end.end)}")
