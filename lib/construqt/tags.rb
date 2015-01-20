@@ -44,15 +44,12 @@ module Construqt
           obj.ips
         elsif obj.kind_of?(Construqt::Flavour::HostDelegate)
           res = obj.interfaces.values.map do |i|
-            i.delegate.address.ips
-            #.map do |a|
-              #prefix = a.ipv4? ? 32 : 128
-              #ret = IPAddress.parse("#{a.to_s}/#{prefix}")
-              #ret
-            #  a
-            #end
-          end
-          #puts "HOST=>#{tag} #{res.map{|i| i.to_string }}"
+            if i.address
+              i.address.ips
+            else
+              nil
+            end
+          end.compact
           res
         else
           nil
