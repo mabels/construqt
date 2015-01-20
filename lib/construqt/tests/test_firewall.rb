@@ -1221,4 +1221,26 @@ class FirewallTest < Test::Unit::TestCase
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
+
+  def test_host_1_lt_2
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.host do |host|
+        host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_my_net.to_net("@224.0.0.18").request_only.from_is_inside
+        host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_my_net.to_net("@224.0.0.18").respond_only.from_is_inside
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
+    assert_equal [
+      "{XuMvsQ1X8uDScAdbGFTug} -d 5.5.5.0/24 -j ACCEPT",
+      "{XuMvsQ1X8uDScAdbGFTug} -d 5.5.6.0/24 -j ACCEPT",
+      "{XuMvsQ1X8uDScAdbGFTug} -j RETURN",
+      "{INPUT} -i testif -s 224.0.0.18/32 -j XuMvsQ1X8uDScAdbGFTug",
+      "{Fk3EKrBPaMT0svWooAAQ} -s 5.5.5.0/24 -j ACCEPT",
+      "{Fk3EKrBPaMT0svWooAAQ} -s 5.5.6.0/24 -j ACCEPT",
+      "{Fk3EKrBPaMT0svWooAAQ} -j RETURN",
+      "{OUTPUT} -o testif -d 224.0.0.18/32 -j Fk3EKrBPaMT0svWooAAQ"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
+  end
 end
