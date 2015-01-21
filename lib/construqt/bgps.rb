@@ -3,7 +3,8 @@ module Construqt
     class Bgp
       attr_accessor :lefts, :rights
       attr_reader :use_bfd, :password, :name, :description
-      attr_reader :address, :delegate, :tags
+      attr_reader :address, :delegate, :tags, :connect_retry
+      attr_reader :hold_time, :error_wait_time
       def initialize(cfg)
         @lefts = cfg['lefts']
         @rights = cfg['rights']

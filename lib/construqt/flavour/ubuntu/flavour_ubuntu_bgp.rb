@@ -89,7 +89,10 @@ protocol bgp #{cname} {
         description "#{self.my.host.name} <=> #{self.other.host.name}";
         direct;
         next hop self;
-            #{self.as == self.other.as ? '' : '#'}rr client;
+        connect retry time #{self.cfg.connect_retry||10};
+        hold time #{self.cfg.hold_time||10};
+        error wait time #{self.cfg.error_wait_time||"10,10"};
+        #{self.as == self.other.as ? '' : '#'}rr client;
         local #{self.my.address.first_ipv4} as #{self.as.num};
         neighbor #{self.other.my.address.first_ipv4}  as #{self.other.as.num};
         password "#{Util.password(self.cfg.password)}";
@@ -128,7 +131,10 @@ protocol bgp #{cname} {
         description "#{self.my.host.name} <=> #{self.other.host.name}";
         direct;
         next hop self;
-            #{self.as == self.other.as ? '' : '#'}rr client;
+        connect retry time #{self.cfg.connect_retry||10};
+        hold time #{self.cfg.hold_time||10};
+        error wait time #{self.cfg.error_wait_time||"10,10"};
+        #{self.as == self.other.as ? '' : '#'}rr client;
         local #{self.my.address.first_ipv6} as #{self.as.num};
         neighbor #{self.other.my.address.first_ipv6}  as #{self.other.as.num};
         password "#{Util.password(self.cfg.password)}";
