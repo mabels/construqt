@@ -201,8 +201,8 @@ HEADER
             end
             if local_if.clazz == "vrrp"
               writer = host.result.etc_network_vrrp(local_if.name)
-              writer.add_master("/usr/sbin/ipsec up #{self.host.name}-#{self.other.host.name}", 1000)
-              writer.add_backup("/usr/sbin/ipsec down #{self.host.name}-#{self.other.host.name}", -1000)
+              writer.add_master("/usr/sbin/ipsec up #{self.host.name}-#{self.other.host.name} &", 1000)
+              writer.add_backup("/usr/sbin/ipsec down #{self.host.name}-#{self.other.host.name} &", -1000)
               local_if.services << Construqt::Services::IpsecStartStop.new
             else
               iname = local_if.name
@@ -210,8 +210,8 @@ HEADER
                 iname = Util.clean_if(gt, iname)
               end
               writer = host.result.etc_network_interfaces.get(local_if, iname)
-              writer.lines.up("/usr/sbin/ipsec up #{self.host.name}-#{self.other.host.name}", 1000)
-              writer.lines.down("/usr/sbin/ipsec down #{self.host.name}-#{self.other.host.name}", -1000)
+              writer.lines.up("/usr/sbin/ipsec up #{self.host.name}-#{self.other.host.name} &", 1000)
+              writer.lines.down("/usr/sbin/ipsec down #{self.host.name}-#{self.other.host.name} &", -1000)
             end
 
             host.result.add(self, psk(transport_right, cfg),

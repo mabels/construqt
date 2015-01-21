@@ -447,7 +447,7 @@ BLOCK
           def render(lines, direction)
             lines.map do |line|
               [
-                "                  logger '#{direction}#{line}'",
+                "                  logger '#{direction}'",
                 "                  #{line}"
               ]
             end.join("\n")
