@@ -93,7 +93,7 @@ module Construqt
           def up(ifname)
             ret = "\n" + <<-OUT
             #https://github.com/reubenhwk/radvd/issues/33
-            /usr/sbin/sysctl -w net.ipv6.conf.#{ifname}.autoconf=0
+            /sbin/sysctl -w net.ipv6.conf.#{ifname}.autoconf=0
             /usr/sbin/radvd -C /etc/network/radvd.#{ifname}.conf -p /run/radvd.#{ifname}.pid
             OUT
           end
