@@ -532,10 +532,16 @@ module Construqt
 #        end
 
         def _list
+          # this is slow i cache now the result
+          if @cached_list && @cached_list.size == @list.size
+            return @cached_list.list
+          end
           missing = @list.select{|fwaddr| fwaddr.missing? }[0..0]
           list = @list.select{|fwaddr| !fwaddr.missing? }.map{|i| i.ip_addr}
           #puts ">>>#{missing} #{list}"
-          IPAddress.summarize(list).map{|i| FwIpAddress.new.set_ip_addr(i) }+missing
+          ret = IPAddress.summarize(list).map{|i| FwIpAddress.new.set_ip_addr(i) }+missing
+          @cached_list = OpenStruct.new(:list => ret, :size => @list.size)
+          ret
         end
 
         def add_missing(token, family)
