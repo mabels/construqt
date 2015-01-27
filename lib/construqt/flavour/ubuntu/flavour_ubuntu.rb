@@ -36,8 +36,21 @@ module Construqt
             if family.nil? ||
                (!family.nil? && family == Construqt::Addresses::IPV6 && ip.ipv6?) ||
                (!family.nil? && family == Construqt::Addresses::IPV4 && ip.ipv4?)
-              lines.up("ip addr add #{ip.to_string} dev #{ifname}")
-              lines.down("ip addr del #{ip.to_string} dev #{ifname}")
+              prefix = ip.ipv6? ? "-6 " : ""
+              lines.up("ip #{prefix}addr add #{ip.to_string} dev #{ifname}")
+              lines.down("ip #{prefix}addr del #{ip.to_string} dev #{ifname}")
+              if ip.options['routing-table']
+                if ip.ipv4?
+                  lines.up("ip #{prefix}route add #{ip.to_string} dev #{ifname} proto kernel  scope link  src #{ip.to_s} table #{ip.options['routing-table']}")
+                  lines.down("ip #{prefix}route del #{ip.to_string} dev #{ifname} proto kernel  scope link  src #{ip.to_s} table #{ip.options['routing-table']}")
+                end
+                if ip.ipv6?
+                  lines.up("ip #{prefix}route add #{ip.to_string} dev #{ifname} proto kernel table #{ip.options['routing-table']}")
+                  lines.down("ip #{prefix}route del #{ip.to_string} dev #{ifname} proto kernel table #{ip.options['routing-table']}")
+                end
+                lines.up("ip #{prefix}rule add from #{ip.to_s} table #{ip.options['routing-table']}")
+                lines.down("ip #{prefix}rule del from #{ip.to_s} table #{ip.options['routing-table']}")
+              end
             end
           end
 
@@ -45,13 +58,12 @@ module Construqt
             if family.nil? ||
                 (!family.nil? && family == Construqt::Addresses::IPV6 && route.via.ipv6?) ||
                 (!family.nil? && family == Construqt::Addresses::IPV4 && route.via.ipv4?)
-              if route.metric
-                metric = " metric #{route.metric}"
-              else
-                metric = ""
-              end
-              lines.up("ip route add #{route.dst.to_string} via #{route.via.to_s}#{metric}")
-              lines.down("ip route del #{route.dst.to_string} via #{route.via.to_s}#{metric}")
+              metric = ""
+              metric = " metric #{route.metric}" if route.metric
+              routing_table = ""
+              routing_table = " table #{route.routing_table}" if route.routing_table
+              lines.up("ip route add #{route.dst.to_string} via #{route.via.to_s}#{metric}#{routing_table}")
+              lines.down("ip route del #{route.dst.to_string} via #{route.via.to_s}#{metric}#{routing_table}")
             end
           end
 

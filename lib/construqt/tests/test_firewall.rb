@@ -2,6 +2,10 @@
 
 require 'test/unit'
 
+require 'ruby-prof'
+
+#RubyProf.start
+
 #$LOAD_PATH.unshift(File.dirname(__FILE__))
 #$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
@@ -1320,3 +1324,7 @@ class FirewallTest < Test::Unit::TestCase
     ], writer.ipv4.rows
   end
 end
+
+#result = RubyProf.stop
+#printer = RubyProf::FlatPrinter.new(result)
+#printer.print(STDOUT)
