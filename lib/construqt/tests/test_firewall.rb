@@ -30,10 +30,72 @@ REGION.hosts.add("Construqt-Host-ipv4", "flavour" => "ubuntu") do |cq|
   end
 end
 
-REGION.hosts.add("Construqt-Host", "flavour" => "ubuntu") do |cq|
-  cq.configip = cq.id ||= Construqt::HostId.create do |my|
-    TEST_IF_NOADDR = REGION.interfaces.add_device(cq, "v997", "mtu" => 1500)
+Construqt::Firewalls.add("l-outbound") do |fw|
+  fw.forward do |forward|
+    forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INDERNET").from_is_outside
+  end
+end
 
+Construqt::Firewalls.add("l-host-outbound") do |fw|
+  fw.host do |host|
+    host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_me.to_net("#NA-INTERNET").from_is_inside
+  end
+end
+
+Construqt::Firewalls.add("l-block") do |fw|
+  fw.host do |host|
+    host.add.action(Construqt::Firewalls::Actions::ACCEPT).link_local.from_is_outside
+    host.add.action(Construqt::Firewalls::Actions::DROP).log("HOST")
+  end
+
+  fw.forward do |forward|
+    forward.add.action(Construqt::Firewalls::Actions::DROP).log("FORWARD")
+  end
+end
+
+Construqt::Firewalls.add("l-nat") do |fw|
+  fw.nat do |nat|
+    nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("@47.47.47.47").to_source.from_is_inside
+  end
+end
+
+REGION.hosts.add("1-Construqt-Host-ipv4-ipv6", "flavour" => "ubuntu") do |cq|
+  cq.configip = cq.id ||= Construqt::HostId.create do |my|
+    my.interfaces << TEST_IF_ONE_IPV4_AND_IPV6_1 = REGION.interfaces.add_device(cq, "v998", "mtu" => 1500, 'priority' => 4,
+                                                                                "firewalls" => ["l-outbound", "l-host-outbound", "l-block"],
+                                                                                'address' => REGION.network.addresses
+                                                                                                .add_ip("29.29.29.2/24")
+                                                                                                .add_ip("29.29.29.47/24")
+                                                                                                .add_ip("29::29:29:2/64")
+                                                                                                .add_ip("29::29:29:47/64"))
+  end
+end
+
+REGION.hosts.add("2-Construqt-Host-ipv4-ipv6", "flavour" => "ubuntu") do |cq|
+  cq.configip = cq.id ||= Construqt::HostId.create do |my|
+    my.interfaces << TEST_IF_ONE_IPV4_AND_IPV6_2 = REGION.interfaces.add_device(cq, "v998", "mtu" => 1500, 'priority' => 5,
+                                                                                "firewalls" => ["l-outbound", "l-host-outbound", "l-block"],
+                                                                                'address' => REGION.network.addresses
+                                                                                                .add_ip("29.29.29.3/24")
+                                                                                                .add_ip("29.29.29.48/24")
+                                                                                                .add_ip("29::29:29:3/64")
+                                                                                                .add_ip("29::29:29:48/64"))
+  end
+end
+
+TEST_VRRP_IF = REGION.interfaces.add_vrrp("vrrp-test",
+                                          "vrid" => 19,
+                                          "address" => REGION.network.addresses.add_ip("29.29.29.1/32").add_ip("29::29:29:1/128")
+  .add_route("2.0.0.0/0#INDERNET", "29.29.29.29")
+  .add_route("2000::/3#INDERNET", "29::29:29:29"),
+"firewalls" => ["l-nat"],
+"interfaces" => [ TEST_IF_ONE_IPV4_AND_IPV6_1, TEST_IF_ONE_IPV4_AND_IPV6_2 ])
+
+
+REGION.hosts.add("Cinitruqt-Host", "flavour" => "ubuntu") do |cq|
+  TEST_IF_NOADDR = REGION.interfaces.add_device(cq, "v997", "mtu" => 1500)
+
+  cq.configip = cq.id ||= Construqt::HostId.create do |my|
     my.interfaces << TEST_IF = REGION.interfaces.add_device(cq, "v995", "mtu" => 1500,
                                                             'address' => REGION.network.addresses
       .add_ip("5.5.5.5/24")
@@ -1242,5 +1304,19 @@ class FirewallTest < Test::Unit::TestCase
       "{OUTPUT} -o testif -d 224.0.0.18/32 -j Fk3EKrBPaMT0svWooAAQ"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
+  end
+
+  def test_forward_1_1
+    fw = Construqt::Firewalls.find('l-outbound').attach_iface(TEST_VRRP_IF.first)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [
+      "{FORWARD} -i testif -s 29::29:29:1/128 -d 2000::/3 -m state --state NEW,ESTABLISHED -j ACCEPT",
+      "{FORWARD} -o testif -s 2000::/3 -d 29::29:29:1/128 -m state --state RELATED,ESTABLISHED -j ACCEPT"
+    ], writer.ipv6.rows
+    assert_equal [
+      "{FORWARD} -i testif -s 29.29.29.1/32 -d 0.0.0.0/0 -m state --state NEW,ESTABLISHED -j ACCEPT",
+      "{FORWARD} -o testif -s 0.0.0.0/0 -d 29.29.29.1/32 -m state --state RELATED,ESTABLISHED -j ACCEPT"
+    ], writer.ipv4.rows
   end
 end
