@@ -486,13 +486,6 @@ module Construqt
           !!@list.find{|i| i.missing?}
         end
 
-        def size_without_missing
-          @list.select{|i| !i.missing?}.size
-        end
-
-        def first
-          @list.find{|i| !i.missing?}
-        end
 
         def size
           @list.length
@@ -509,6 +502,14 @@ module Construqt
 
         def each_without_missing(&block)
           _list.each{|i| !i.missing? && block.call(i) }
+        end
+
+        def size_without_missing
+          _list.select{|i| !i.missing?}.size
+        end
+
+        def first
+          _list.find{|i| !i.missing?}
         end
 
 #        class FwIpAddressList

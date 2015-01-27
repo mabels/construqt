@@ -445,12 +445,7 @@ BLOCK
           end
 
           def render(lines, direction)
-            lines.map do |line|
-              [
-                "                  logger '#{direction}'",
-                "                  #{line}"
-              ]
-            end.join("\n")
+            (["logger '#{direction}'"]+lines).map { |line| "                  #{line}" }.join("\n")
           end
 
           def ordered_lines(lines)

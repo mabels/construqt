@@ -24,10 +24,10 @@ module Construqt
             filter.list.each do |rule|
               nets = rule['network']
               if nets.kind_of?(String)
-                #binding.pry
-                nets = Construqt::Tags.find(nets, Construqt::Addresses::IPV4) + Construqt::Tags.find(nets, Construqt::Addresses::IPV6)
-                #            puts ">>>>>>>>>> #{nets.map{|i| i.class.name}}"
-                nets = IPAddress::summarize(nets)
+#              binding.pry if nets == "OVERLAY-CT"
+              nets = Construqt::Tags.ips_net(nets, Construqt::Addresses::IPV4) + Construqt::Tags.ips_net(nets, Construqt::Addresses::IPV6)
+#            puts ">>>>>>>>>> #{nets.map{|i| i.class.name}}"
+#                nets = IPAddress::summarize(nets)
               else
                 nets = nets.ips
               end

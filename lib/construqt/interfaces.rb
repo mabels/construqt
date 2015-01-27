@@ -117,12 +117,13 @@ module Construqt
 
     def add_vrrp(name, cfg)
       nets = {}
+      ret = []
       cfg['address'].ips.each do |adr|
         if adr.ipv4? && adr.prefix != 32
           cfg['address'].routes.each do |rt|
-            unless adr.include?(rt.via)
-              throw "only host ip's are allowed #{adr.to_s} with prefix != 32 or route"
-            end
+#            unless adr.include?(rt.via)
+#              throw "only host ip's are allowed #{adr.to_s} with prefix != 32 or route"
+#            end
           end
         end
         throw "only host ip's are allowed #{adr.to_s}" if adr.ipv6? && adr.prefix != 128
@@ -136,12 +137,14 @@ module Construqt
         cfg['interface'] = interface
         throw "vrrp interface does not have within the same network" if nets.length == interface.address.ips.select { |adr| nets[adr.network.to_s] }.length
         dev = add_device(interface.host, name, cfg)
+        ret << dev
 #        interface.firewalls.push(*(dev.firewalls || []))
         interface.vrrp = dev
         dev.address.interface = nil
         dev.address.host = nil
         dev.address.name = name
       end
+      ret
     end
 
     def add_bridge(host, name, cfg)
