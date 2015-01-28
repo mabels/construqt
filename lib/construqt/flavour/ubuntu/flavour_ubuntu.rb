@@ -39,17 +39,18 @@ module Construqt
               prefix = ip.ipv6? ? "-6 " : ""
               lines.up("ip #{prefix}addr add #{ip.to_string} dev #{ifname}")
               lines.down("ip #{prefix}addr del #{ip.to_string} dev #{ifname}")
-              if ip.options['routing-table']
+              throw "routing-table api update" if ip.options['routing-table']
+              if ip.routing_table
                 if ip.ipv4?
-                  lines.up("ip #{prefix}route add #{ip.to_string} dev #{ifname} proto kernel  scope link  src #{ip.to_s} table #{ip.options['routing-table']}")
-                  lines.down("ip #{prefix}route del #{ip.to_string} dev #{ifname} proto kernel  scope link  src #{ip.to_s} table #{ip.options['routing-table']}")
+                  lines.up("ip #{prefix}route add #{ip.to_string} dev #{ifname} proto kernel  scope link  src #{ip.to_s} table #{ip.routing_table.name}")
+                  lines.down("ip #{prefix}route del #{ip.to_string} dev #{ifname} proto kernel  scope link  src #{ip.to_s} table #{ip.routing_table.name}")
                 end
                 if ip.ipv6?
-                  lines.up("ip #{prefix}route add #{ip.to_string} dev #{ifname} proto kernel table #{ip.options['routing-table']}")
-                  lines.down("ip #{prefix}route del #{ip.to_string} dev #{ifname} proto kernel table #{ip.options['routing-table']}")
+                  lines.up("ip #{prefix}route add #{ip.to_string} dev #{ifname} proto kernel table #{ip.routing_table.name}")
+                  lines.down("ip #{prefix}route del #{ip.to_string} dev #{ifname} proto kernel table #{ip.routing_table.name}")
                 end
-                lines.up("ip #{prefix}rule add from #{ip.to_s} table #{ip.options['routing-table']}")
-                lines.down("ip #{prefix}rule del from #{ip.to_s} table #{ip.options['routing-table']}")
+                lines.up("ip #{prefix}rule add from #{ip.to_s} table #{ip.routing_table.name}")
+                lines.down("ip #{prefix}rule del from #{ip.to_s} table #{ip.routing_table.name}")
               end
             end
           end

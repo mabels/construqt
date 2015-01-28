@@ -383,6 +383,10 @@ module Construqt
         self.delegate.as
       end
 
+      def routing_table
+        self.delegate.routing_table
+      end
+
       def my
         self.delegate.my
       end

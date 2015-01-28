@@ -4,13 +4,14 @@ module Construqt
 
       class Bgp
         attr_accessor :delegate, :other, :cfg, :route_reflect
-        attr_reader :host, :as, :default_originate, :filter, :my
+        attr_reader :host, :as, :default_originate, :filter, :my, :routing_table
         def initialize(cfg)
           @other = cfg['other']
           @my = cfg['my']
           @cfg = cfg['cfg']
           @host = cfg['host']
           @route_reflect = cfg['route_reflect']
+          @routing_table = cfg['routing_table']
           @as = cfg['as']
           @default_originate = cfg['default_originate']
           @filter = cfg['filter']
@@ -88,24 +89,33 @@ module Construqt
           as_s = {}
           Bgps.connections.each do |bgp|
             (bgp.rights+bgp.lefts).each do |my|
-              as_s[my.as] ||= OpenStruct.new(:host => host) if my.host == host
+              if my.host == host
+                as_s[my.as] ||= OpenStruct.new(:host => host, :routing_table => my.as.routing_table)
+puts "XXXXX #{my.as.routing_table.class.name}"
+                throw "routing_table not matching" if as_s[my.as].routing_table != my.as.routing_table
+              end
             end
           end
 
           as_s.each do |as, val|
             host = val.host
-            #puts "****** #{host.name}"
-            digest=Digest::SHA256.hexdigest("#{host.name} #{host.id.first_ipv4.first_ipv4.to_s} #{as}")
-            net = host.id.first_ipv4.first_ipv4.to_s.split('.')[0..1]
-            net.push(digest[0..1].to_i(16).to_s)
-            net.push(digest[-2..-1].to_i(16).to_s)
-            router_id = IPAddress.parse(net.join('.')) # hack ..... achtung
-            cfg = as.to_h.inject({}){|r,(k,v)| r[k.to_s]=v; r }.merge({
+            #puts "****** #{as.class.name}"
+            #digest=Digest::SHA256.hexdigest("#{host.name} #{host.id.first_ipv4.first_ipv4.to_s} #{as.to_s}")
+            #net = host.id.first_ipv4.first_ipv4.to_s.split('.')[0..1]
+            #net.push(digest[0..1].to_i(16).to_s)
+            #net.push(digest[-2..-1].to_i(16).to_s)
+            #  IPAddress.parse(net.join('.')) # hack ..... achtung
+            router_id = host.id.first_ipv4.first_ipv4
+            cfg = {
               "comment" => as.description,
-              "name"=>"#{as.name}",
+              "name" => as.name,
               "as" => as.num,
-              "router-id" => router_id}).inject({}) {|r,p| r[p.first.to_s] = p.last; r}
-            #puts ">>>#{cfg.inspect}"
+              "router-id" => router_id,
+              "redistribute-connected" => as.redistribute_connected,
+              "redistribute-static" => as.redistribute_static,
+              "redistribute-other-bgp" => as.redistribute_other_bgp,
+              "routing-table" => val.routing_table ? val.routing_table.name : nil
+            }
             set_routing_bgp_instance(host, cfg)
           end
 

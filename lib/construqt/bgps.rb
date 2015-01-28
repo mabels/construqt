@@ -162,9 +162,20 @@ module Construqt
       end
     end
 
-    class As < OpenStruct
+    class As
+      attr_reader :prefix, :as, :description, :routing_table
+      attr_reader :redistribute_connected, :redistribute_static, :redistribute_other_bgp
       def initialize(cfg)
-        super(cfg)
+        tmp = cfg.clone
+        @prefix = tmp.delete('prefix')
+        @as = tmp.delete('as')
+        @description = tmp.delete('description')
+        @redistribute_connected = tmp.delete('redistribute_connected')
+        @redistribute_static = tmp.delete('redistribute_static')
+        @redistribute_other_bgp = tmp.delete('redistribute_other_bgp')
+        @routing_table = tmp.delete('routing_table')
+        @description = tmp.delete('description')
+        throw "unknown As parameters #{tmp.keys}" unless tmp.empty?
       end
 
       def name
@@ -173,6 +184,9 @@ module Construqt
 
       def num
         self.as
+      end
+      def to_s
+        "<#{object_id} as=#{as}>"
       end
     end
 
