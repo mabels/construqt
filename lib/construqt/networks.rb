@@ -2,7 +2,7 @@ module Construqt
   module Networks
 
     class Network
-      attr_reader :address, :phone, :ntp_servers
+      attr_reader :address, :phone, :ntp_servers, :routing_tables
       def initialize(name)
         @name = name
         @networks = []
@@ -11,6 +11,7 @@ module Construqt
         @addresses = Construqt::Addresses.new(self)
         @dns_resolver = nil
         @ntp_servers = Construqt::Addresses::Address.new()
+        @routing_tables = Construqt::RoutingTables.new(self)
       end
 
       def add_ntp_server(address)

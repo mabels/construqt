@@ -45,6 +45,7 @@ module Construqt
   require_relative 'construqt/registries/ripe.rb'
   require_relative 'construqt/networks.rb'
   require_relative 'construqt/addresses.rb'
+  require_relative 'construqt/routing_table.rb'
   require_relative 'construqt/bgps.rb'
   require_relative 'construqt/users.rb'
   require_relative 'construqt/firewalls.rb'

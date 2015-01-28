@@ -20,11 +20,12 @@ module Construqt
 
     # hier frieht die hoelle zu!!!
     class CqIpAddress
-      attr_reader :ipaddr, :container, :options
-      def initialize(ipaddr, container, options)
+      attr_reader :ipaddr, :container, :options, :routing_table
+      def initialize(ipaddr, container, options, routing_table)
         @ipaddr = ipaddr
         @container = container
         @options = options
+        @routing_table = routing_table
       end
 
       def <=>(oth)
@@ -267,7 +268,7 @@ module Construqt
         nil
       end
 
-      def add_ip(ip, options = {})
+      def add_ip(ip, options = {}, routing_table = nil)
         throw "please give a ip #{ip}" if ip.nil?
         if ip
           #puts ">>>>> #{ip} #{ip.class.name}"
@@ -277,13 +278,15 @@ module Construqt
             @dhcpv6 = true
           elsif LOOOPBACK == ip
             @loopback = true
+          elsif ip.kind_of? Construqt::RoutingTables::RoutingTableAddIp
+            ip.attach_address = self
+            add_ip(ip.ip, ip.options, ip.routing_table)
           else
             throw "please give a ip #{ip} as string!" unless ip.kind_of?(String)
-            (unused, ip) = self.merge_tag(ip) { |ip| CqIpAddress.new(IPAddress.parse(ip), self, options) }
+            (unused, ip) = self.merge_tag(ip) { |ip| CqIpAddress.new(IPAddress.parse(ip), self, options, routing_table) }
             self.ips << ip
           end
         end
-
         self
       end
 
@@ -300,12 +303,13 @@ module Construqt
       #
       #
       class TagRoute
-        attr_reader :dst_tag, :via_tag, :options
-        def initialize(dst_tag, via_tag, options, address)
+        attr_reader :dst_tag, :via_tag, :options, :routing_table
+        def initialize(dst_tag, via_tag, options, address, routing_table)
           @dst_tag = dst_tag
           @via_tag = via_tag
           @options = options
           @address = address
+          @routing_table = routing_table
         end
 
         def resolv
@@ -327,8 +331,17 @@ module Construqt
         end
       end
 
-      def add_route_from_tags(dst_tags, src_tags, options = {})
-        @routes.add TagRoute.new(dst_tags, src_tags, options, self)
+      def add_route_from_tags(dst_tags, src_tags = nil, options = {}, routing_table = nil)
+        if dst_tags.kind_of?(Construqt::RoutingTables::RoutingTableAddRouteFromTags)
+          dst_tags.attach_address = self
+          options = dst_tags.options
+          src_tags = dst_tags.via
+          routing_table = dst_tags.routing_table
+          dst_tags = dst_tags.dest
+        elsif src_tags.nil?
+          throw "add_route_from_tags need a src_tags"
+        end
+        @routes.add TagRoute.new(dst_tags, src_tags, options, self, routing_table)
         self
       end
 
@@ -363,9 +376,9 @@ module Construqt
         end
       end
 
-      def build_route(dst, via, options = {})
+      def build_route(dst, via, routing_table, options = {})
         #puts "DST => "+dst.class.name+":"+dst.to_s
-        (unused, dst) = self.merge_tag(dst) { |dst| CqIpAddress.new(IPAddress.parse(dst), self, options) }
+        (unused, dst) = self.merge_tag(dst) { |dst| CqIpAddress.new(IPAddress.parse(dst), self, options, routing_table) }
         metric = options['metric']
         if via == UNREACHABLE
           via = nil
@@ -374,7 +387,7 @@ module Construqt
           if via.nil?
             via = nil
           else
-            (unused, via) = self.merge_tag(via) { |via| CqIpAddress.new(IPAddress.parse(via), self, options) }
+            (unused, via) = self.merge_tag(via) { |via| CqIpAddress.new(IPAddress.parse(via), self, options, routing_table) }
             throw "different type #{dst} #{via}" unless dst.ipv4? == via.ipv4? && dst.ipv6? == via.ipv6?
           end
 
