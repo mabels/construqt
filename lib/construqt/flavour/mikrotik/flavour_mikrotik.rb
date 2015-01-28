@@ -223,6 +223,16 @@ TESTNAME
           host.result.render_mikrotik_set_direct({ "time-zone-name"=> Schema.identifier.required.key },
                                                  { "time-zone-name" => host.time_zone||'MET' }, "system", "clock")
 
+          #/system ntp client> set secondary-ntp=2a04:2f80:2:1704::4711 primary-ntp=2a04:2f80:4:1706::4711
+          host.result.render_mikrotik_set_direct({
+                                                   "enabled" => Schema.boolean.default(true),
+                                                   "primary-ntp"=> Schema.address.required.key,
+                                                   "secondary-ntp"=> Schema.address.required.key
+                                                 }, {
+                                                   "primary-ntp" => host.region.network.ntp_servers.ips.first,
+                                                   "secondary-ntp" => host.region.network.ntp_servers.ips.last
+                                                 }, "system", "ntp", "client")
+
           dns = host.region.network.dns_resolver.nameservers.ips
           host.result.render_mikrotik_set_direct({"servers"=>Schema.addresses.required.key },
                                                  { "servers"=> dns }, "ip", "dns")

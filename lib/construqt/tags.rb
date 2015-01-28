@@ -36,6 +36,25 @@ module Construqt
       ret
     end
 
+    def self.ips_net_per_prefix(tag, family)
+      pre_prefix = {}
+      ips_adr(tag, family).each do |ip|
+        family = ip.ipv4? ? Construqt::Addresses::IPV4 : Construqt::Addresses::IPV6
+        pre_prefix[family] ||= {}
+        pre_prefix[family][ip.prefix] ||= []
+        pre_prefix[family][ip.prefix] << ip
+      end
+      result = {}
+      pre_prefix.each do |family, pre_family|
+        result[family] ||= {}
+        pre_family.each do |prefix, ip_list|
+          #puts ip_list.map{|i| i.class.name }.inspect
+          result[family][prefix] = IPAddress.summarize(ip_list)
+        end
+      end
+      result
+    end
+
     def self.ips_adr(tag, family)
       resolv(tag).map do |obj|
         if obj.kind_of?(IPAddress) || obj.kind_of?(Construqt::Addresses::CqIpAddress)

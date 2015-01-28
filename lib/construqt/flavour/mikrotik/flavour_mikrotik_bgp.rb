@@ -3,16 +3,31 @@ module Construqt
     module Mikrotik
 
       class Bgp
-        attr_accessor :delegate, :other, :cfg
+        attr_accessor :delegate, :other, :cfg, :route_reflect
         attr_reader :host, :as, :default_originate, :filter, :my
         def initialize(cfg)
           @other = cfg['other']
           @my = cfg['my']
           @cfg = cfg['cfg']
           @host = cfg['host']
+          @route_reflect = cfg['route_reflect']
           @as = cfg['as']
           @default_originate = cfg['default_originate']
           @filter = cfg['filter']
+        end
+
+        def self.write_filter_with_prefix(host, filter, rule, nets, in_prefix_len)
+          nets.each do |ip|
+            prefix_len = ""
+            unless in_prefix_len.nil?
+              if in_prefix_len.kind_of?(Array)
+                prefix_len = " prefix-length=#{in_prefix_len.first}-#{in_prefix_len.last}"
+              else
+                prefix_len = " prefix-length=#{in_prefix_len}"
+              end
+            end
+            host.result.add("add action=#{rule['rule']} chain=v#{ip.ipv4? ? '4':'6'}-#{filter.name} prefix=#{ip.to_string}#{prefix_len}", nil, "routing", "filter")
+          end
         end
 
         def self.write_filter(host)
@@ -24,20 +39,25 @@ module Construqt
             filter.list.each do |rule|
               nets = rule['network']
               if nets.kind_of?(String)
-#              binding.pry if nets == "OVERLAY-CT"
-              nets = Construqt::Tags.ips_net(nets, Construqt::Addresses::IPV4) + Construqt::Tags.ips_net(nets, Construqt::Addresses::IPV6)
-#            puts ">>>>>>>>>> #{nets.map{|i| i.class.name}}"
-#                nets = IPAddress::summarize(nets)
-              else
-                nets = nets.ips
-              end
-              nets.each do |ip|
-                prefix_len = ""
                 if rule['prefix_length']
-                  prefix_len = "prefix-length=#{rule['prefix_length'].first}-#{rule['prefix_length'].last}"
+                  write_filter_with_prefix(host, filter, rule, Construqt::Tags.ips_net(nets, Construqt::Addresses::IPV4) +
+                                                 Construqt::Tags.ips_net(nets, Construqt::Addresses::IPV6), rule['prefix_length'])
+                else
+                  [Construqt::Tags.ips_net_per_prefix(nets, Construqt::Addresses::IPV4),
+                   Construqt::Tags.ips_net_per_prefix(nets, Construqt::Addresses::IPV6)].each do |pre_family|
+                    pre_family.values.each do |pre_prefix|
+                      pre_prefix.each do |prefix, ip_list|
+                        write_filter_with_prefix(host, filter, rule, ip_list, prefix)
+                      end
+                    end
+                  end
                 end
 
-                host.result.add("add action=#{rule['rule']} chain=v#{ip.ipv4? ? '4':'6'}-#{filter.name} prefix=#{ip.to_string} #{prefix_len}", nil, "routing", "filter")
+                #              binding.pry if nets == "OVERLAY-CT"
+                #            puts ">>>>>>>>>> #{nets.map{|i| i.class.name}}"
+                #                nets = IPAddress::summarize(nets)
+              else
+                write_filter_with_prefix(host, filter, rule, nets.ips, rule['prefix_length'])
               end
             end
 
@@ -133,6 +153,7 @@ module Construqt
                                                                    "address-families" => "ip",
                                                                    "default-originate" => self.default_originate,
                                                                    "remote-address" => self.other.my.address.first_ipv4,
+                                                                   "route-reflect" => self.route_reflect,
                                                                    "use-bfd" => self.cfg.use_bfd.kind_of?(false.class) ? false : true,
                                                                    "tcp-md5-key" => self.cfg.password,
                                                                    "in-filter" => "v4-"+self.filter['in'].name,
@@ -142,6 +163,7 @@ module Construqt
                                                                    "instance" => "#{self.as.name}",
                                                                    "remote-as" => self.other.as.num,
                                                                    "address-families" => "ipv6",
+                                                                   "route-reflect" => self.route_reflect,
                                                                    "remote-address" => self.other.my.address.first_ipv6,
                                                                    "use-bfd" => self.cfg.use_bfd.kind_of?(false.class) ? false : true,
                                                                    "tcp-md5-key" => self.cfg.password,
