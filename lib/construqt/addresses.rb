@@ -228,6 +228,14 @@ module Construqt
         v6s.first
       end
 
+      def last_ipv4
+        v4s.last
+      end
+
+      def last_ipv6
+        v6s.last
+      end
+
       def merge_tag(name, &block)
         Construqt::Tags.add(([name]+self.tags).join("#")) { |name| block.call(name) }
       end

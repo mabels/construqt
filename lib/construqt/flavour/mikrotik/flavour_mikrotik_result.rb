@@ -159,6 +159,7 @@ module Construqt
           all=[
             "system identity",
             "system clock",
+            "system ntp client",
             "system script",
             "system scheduler",
             "user",
