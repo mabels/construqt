@@ -3,10 +3,7 @@ module Construqt
   module Tags
     @tags = {}
     @object_id_tags = {}
-    def self.add(tag_str, &block)
-      (name, *tags) = tag_str.split(/\s*#\s*/)
-      obj = block.call(name, tags)
-      #binding.pry
+    def self.join(tags, obj)
       tags && tags.uniq.each do |tag|
         @tags[tag] ||= []
         @tags[tag] << obj unless @tags[tag].include?(obj)
@@ -16,6 +13,14 @@ module Construqt
       end
       @object_id_tags[obj.object_id] ||= []
       @object_id_tags[obj.object_id] = (@object_id_tags[obj.object_id] + tags).uniq
+    end
+
+    def self.add(tag_str, &block)
+      parsed = self.parse(tag_str)
+      name = parsed[:first]
+      throw "there should be a name [#{tag_str}]" unless name
+      obj = block.call(name, parsed['#'])
+      self.join(parsed['#'], obj) if parsed['#']
       [name, obj]
     end
 
@@ -25,9 +30,12 @@ module Construqt
 
     def self.resolv(tag)
       return [] unless tag
-      ret = tag.split("#").map{|i| @tags[i.strip]}.compact.flatten
-      #binding.pry if tag == "ROOMS#V8-OFFICE"
-      ret
+      parsed = self.parse(tag)
+      tags = []
+      tags << parsed[:first] if parsed[:first]
+      tags = tags + parsed['#'] if parsed['#']
+#puts "TAG[#{tag}] + #{tags}"
+      tags.map{|i| @tags[i]}.compact.flatten
     end
 
     def self.find(tag, clazz = nil)
@@ -44,6 +52,7 @@ module Construqt
         pre_prefix[family][ip.prefix] ||= []
         pre_prefix[family][ip.prefix] << ip
       end
+
       result = {}
       pre_prefix.each do |family, pre_family|
         result[family] ||= {}
@@ -52,11 +61,14 @@ module Construqt
           result[family][prefix] = IPAddress.summarize(ip_list)
         end
       end
+
       result
     end
 
     def self.ips_adr(tag, family)
+#puts "ips_adr=>#{tag}"
       resolv(tag).map do |obj|
+#puts "resolv=>#{tag} #{obj.class.name}"
         if obj.kind_of?(IPAddress) || obj.kind_of?(Construqt::Addresses::CqIpAddress)
           obj
         elsif obj.respond_to? :ips
@@ -92,5 +104,45 @@ module Construqt
     def self.ips_net(tag, family)
       IPAddress.summarize(ips_adr(tag, family).map{|i| i.network })
     end
+
+
+
+    def self.parse(str, tags = ['#' ,'@' , '!'])
+      return {} if str.nil?
+      if str.kind_of?(Symbol)
+        throw "tags #{tags} are not allowed in symbols" if Regexp.new("[#{tags.join}]").match(str.to_s)
+        return { :first => str }
+      end
+      str_a = str.strip.gsub(/\s/, '').split('')
+      return {} if str.empty?
+      fill = []
+      fwtokens = {}
+      key = :first
+      found = false
+      while (current = str_a.shift)
+        if tags.include?(current)
+          found = true
+          fwtokens[key] ||= []
+          fwtokens[key] << fill
+          key = current
+          fwtokens[key] ||= []
+          fill = []
+          fwtokens[key] << fill
+        else
+          fill << current
+        end
+      end
+      fwtokens[key] = [fill] unless found
+      ret = {}
+      fwtokens.each do |k, v|
+        next if v.nil?
+        v = v.select{|i| !i.empty? }.map{|i| i.join('') }.sort.uniq
+        next if v.empty?
+        ret[k] = v
+      end
+      ret[:first] = ret[:first].first if ret[:first]
+      ret
+    end
+
   end
 end

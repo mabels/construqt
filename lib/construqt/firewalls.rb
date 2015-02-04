@@ -144,10 +144,9 @@ module Construqt
         addr = nil
         if val == :my_first
           addr = self.attached_interface.address.v4s.first
-        elsif defined?(val)
+        elsif defined?(val) && val && !val.strip.empty?
           addr = FromTo.resolver(val, Construqt::Addresses::IPV4).first.ip_addr
         end
-
         addr ?  [addr] : []
       end
 
@@ -338,27 +337,16 @@ module Construqt
       end
 
       class FwToken
-        def initialize
-          @str_array = []
+        attr_reader :type, :str
+        def initialize(type, str = "")
+          @type = type
+          @str = str
         end
         def is_tag?
           @type == '#'
         end
         def is_literal?
           @type == '@'
-        end
-        def type
-          @type
-        end
-        def set_type(type)
-          @type = type
-          self
-        end
-        def str
-          @str_array.join('').strip
-        end
-        def add_char(chr)
-          @str_array << chr
         end
       end
 
@@ -408,27 +396,18 @@ module Construqt
       def self.resolver(str, family)
         return [] if str.nil? || str.strip.empty?
         # first char is not a # or @ add first char #
-        str_a = str.strip.gsub(/\s/, '').split('')
-        if !(str_a[0] == "#" or str_a[0] == '@')
-          str_a.unshift('#')
-        end
-
+        parsed = Construqt::Tags::parse(str)
         fwtokens = []
-        wait_hash_or_at = true
-        fill = nil
-        while (current = str_a.shift)
-          if current == '#' or current == '@'
-            fill = FwToken.new.set_type(current)
-            fwtokens << fill
-          else
-            fill.add_char(current)
-          end
-        end
+        fwtokens = fwtokens + (parsed['@']||[]).map{|i| FwToken.new('@', i) }
+        fwtokens = fwtokens + (parsed['#']||[]).map{|i| FwToken.new('#', i) }
+        fwtokens << FwToken.new('#', parsed[:first]) if parsed[:first]
+        #puts "#{str} #{parsed.inspect} => #{fwtokens.inspect}"
         ret = []
         dns = Resolv::DNS.open
         fwtokens.each do |fwtoken|
           if fwtoken.is_tag?
             ips = Construqt::Tags.ips_adr(fwtoken.str, family)
+#puts ">>>>>#{fwtoken.inspect} #{ips}"
             if ips.empty?
               FwIpAddress.create(fwtoken, [FwIpAddress.missing(fwtoken, family)], ret)
             else
@@ -545,7 +524,7 @@ module Construqt
         end
 
         def add_missing(token, family)
-          @list << FwIpAddress.missing(FwToken.new.set_type(token), family)
+          @list << FwIpAddress.missing(FwToken.new(token), family)
         end
 
         def add_ip_addrs(ip_addrs)
