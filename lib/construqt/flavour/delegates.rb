@@ -163,7 +163,7 @@ module Construqt
       end
 
       def address
-        my = Construqt::Addresses::Address.new
+        my = Construqt::Addresses::Address.new(delegate.region.network)
         self.interfaces.values.each do |i|
           if i.address
             my.add_addr(i.address)
@@ -332,6 +332,10 @@ module Construqt
         self.delegate.host
       end
 
+      def firewalls
+        self.delegate.firewalls
+      end
+
       def my
         self.delegate.my
       end
@@ -354,6 +358,14 @@ module Construqt
 
       def cfg
         self.delegate.cfg
+      end
+
+      def any
+        self.delegate.any
+      end
+
+      def sourceip
+        self.delegate.sourceip
       end
 
       def interface=(a)

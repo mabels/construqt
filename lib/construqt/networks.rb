@@ -10,7 +10,7 @@ module Construqt
         @contact = "soa@construqt.org"
         @addresses = Construqt::Addresses.new(self)
         @dns_resolver = nil
-        @ntp_servers = Construqt::Addresses::Address.new()
+        @ntp_servers = Construqt::Addresses::Address.new(self)
         @routing_tables = Construqt::RoutingTables.new(self)
       end
 

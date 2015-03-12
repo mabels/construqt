@@ -106,7 +106,7 @@ module Construqt
             def protocols
               pl = []
               @to_from.rule.get_protocols(@family).each do |proto|
-                pl << "-p #{proto}"
+                pl << "-p #{proto}#{Util.space_before(@to_from.rule.get_proto_flags[proto])}"
               end
 
               pl << '' if pl.empty?
@@ -447,6 +447,11 @@ module Construqt
               ret << fw.entry!.action("ACCEPT").ipv6.icmp.from_is_inside
                 .from_my_net.from_net("@ff02::/16@fe80::/64")
                 .to_my_net.to_net("@ff02::/16@fe80::/64")
+              next
+            end
+
+            if rule.get_action == Construqt::Firewalls::Actions::TCPMSS
+              ret << fw.entry!.action("TCPMSS --clamp-mss-to-pmtu").tcp.proto_flags("tcp", "--tcp-flags SYN,RST SYN")
               next
             end
 

@@ -1,6 +1,29 @@
 
 module Construqt
   module Tags
+    class ResolverNet
+      attr_reader :tag
+      attr_reader :family
+      def initialize(tag, family)
+        @tag = tag
+        @family = family
+      end
+      def resolv()
+        Construqt::Tags.ips_net(tag, family)
+      end
+    end
+    class ResolverAdr
+      attr_reader :tag
+      attr_reader :family
+      def initialize(tag, family)
+        @tag = tag
+        @family = family
+      end
+      def resolv()
+        Construqt::Tags.ips_hosts(tag, family)
+      end
+    end
+
     @tags = {}
     @object_id_tags = {}
     def self.join(tags, obj)
@@ -22,6 +45,14 @@ module Construqt
       obj = block.call(name, parsed['#'])
       self.join(parsed['#'], obj) if parsed['#']
       [name, obj]
+    end
+
+    def self.resolver_adr(tag, family)
+      ResolverAdr.new(tag, family)
+    end
+
+    def self.resolver_net(tag, family)
+      ResolverNet.new(tag, family)
     end
 
     def self.from(obj)

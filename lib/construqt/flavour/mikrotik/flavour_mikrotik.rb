@@ -234,7 +234,7 @@ TESTNAME
                                                  }, "system", "ntp", "client")
 
           dns = host.region.network.dns_resolver.nameservers.ips
-          host.result.render_mikrotik_set_direct({"servers"=>Schema.addresses.required.key },
+          host.result.render_mikrotik_set_direct({ "servers"=> Schema.addresses.required.key },
                                                  { "servers"=> dns }, "ip", "dns")
 
           host.result.add("add", nil, "tool", "graphing", "interface")

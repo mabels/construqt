@@ -107,6 +107,11 @@ module Construqt
       def netmask
         @ipaddr.netmask
       end
+
+      def map(&block)
+        @ipaddr.map{|i| block.call(i) }
+      end
+
     end
 
     class Address
@@ -182,6 +187,7 @@ module Construqt
           ret = []
           @routes.each do |route|
             route.resolv.each do |rt|
+#puts ">>>>#{route} #{rt}"
               ret << block.call(rt)
             end
           end
@@ -190,7 +196,8 @@ module Construqt
         end
       end
 
-      def initialize()
+      def initialize(network)
+        @network = network
         self.ips = []
         self.host = nil
         self.interface = nil
@@ -294,7 +301,8 @@ module Construqt
         parsed = Construqt::Tags.parse(ip)
         throw "only one routing_table per ip allowed" if parsed['!'] and parsed['!'].length > 1
         routing_table = nil
-        routing_table = Construqt::RoutingTables.find(parsed['!'].first) if parsed['!']
+        puts "Routingtable:#{parsed['!']}" if parsed['!']
+        routing_table = @network.routing_tables.find(parsed['!'].first) if parsed['!']
         tags = self.tags
         tags << name! if name!
         tags = tags + parsed['#'] if parsed['#'] && !parsed['#'].empty?
@@ -341,12 +349,14 @@ module Construqt
           throw "routing tag not allowed in dst #{self.dst_tag}" if dst_parse['!']
           via_parse = Construqt::Tags.parse(self.via_tag)
           routing_table = ""
-          if via_parse['!'] && via_parse['!'].length > 1
-            throw "only one routing tag allowed #{self.via_tag}"
-          else
-            routing_table = '!'+via_parse['!'].first
+          if via_parse['!']
+            if  via_parse['!'].length == 1
+              routing_table = '!'+via_parse['!'].first
+            else
+              throw "only one routing tag allowed #{self.via_tag}"
+            end
           end
-
+          #puts ">>>>>>>>>#{self.dst_tag},#{self.via_tag}"
           [OpenStruct.new(:dsts => Construqt::Tags.ips_net(self.dst_tag, Construqt::Addresses::IPV6),
                           :vias => Construqt::Tags.ips_hosts(self.via_tag, Construqt::Addresses::IPV6)),
           OpenStruct.new(:dsts => Construqt::Tags.ips_net(self.dst_tag, Construqt::Addresses::IPV4),
@@ -354,9 +364,10 @@ module Construqt
             next unless blocks.vias
             next unless blocks.dsts
             next if blocks.dsts.empty?
+            puts ">>>>>>>>>#{self.dst_tag} #{blocks.dsts.map{|i| i.to_s}},#{self.via_tag} #{blocks.vias.map{|i| i.to_s}}"
             blocks.vias.each do |via|
               blocks.dsts.each do |dst|
-                ret << @address.build_route(dst.to_string, via.to_s+routing_table, options)
+                ret += @address.build_route(dst.to_string, via.to_s+routing_table, options).resolv
               end
             end
           end
@@ -366,16 +377,14 @@ module Construqt
       end
 
       def add_route_from_tags(dst_tags, src_tags = nil, options = {}, routing_table = nil)
-        if dst_tags.kind_of?(Construqt::RoutingTables::RoutingTableAddRouteFromTags)
-          dst_tags.attach_address = self
-          options = dst_tags.options
-          src_tags = dst_tags.via
-          routing_table = dst_tags.routing_table
-          dst_tags = dst_tags.dest
-        elsif src_tags.nil?
-          throw "add_route_from_tags need a src_tags"
-        end
-
+        #if dst_tags.kind_of?(Construqt::RoutingTables::RoutingTableAddRouteFromTags)
+        #  dst_tags.attach_address = self
+        #  options = dst_tags.options
+        #  src_tags = dst_tags.via
+        #  routing_table = dst_tags.routing_table
+        #  dst_tags = dst_tags.dest
+        throw "add_route_from_tags need a src_tags" if src_tags.nil?
+        throw "add_route_from_tags need a dst_tags" if dst_tags.nil?
         @routes.add TagRoute.new(dst_tags, src_tags, options, self, routing_table)
         self
       end
@@ -442,10 +451,14 @@ module Construqt
         via_s << via_parsed[:first] if via_parsed[:first]
         via_s << via_parsed['@'] if via_parsed['@']
         routing_table = nil
-        routing_table = Construqt::RoutingTables.find(tags['!'].first) if via_parsed['!']
+        routing_table = @network.routing_tables.find(via_parsed['!'].first) if via_parsed['!']
         via_ips = via_s.map do |ip|
           (unused, ret) = self.merge_tag(([ip]+(via_parsed['#']||[])).join('#')) do |ip|
-            CqIpAddress.new(IPAddress.parse(ip), self, options, routing_table)
+            if ip == UNREACHABLE
+              ip
+            else
+              CqIpAddress.new(IPAddress.parse(ip), self, options, routing_table)
+            end
           end
 
           ret
@@ -484,7 +497,7 @@ module Construqt
     end
 
     def create
-      ret = Address.new()
+      ret = Address.new(@network)
       @Addresses << ret
       ret
     end

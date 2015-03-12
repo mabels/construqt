@@ -44,7 +44,7 @@ module Construqt
 
           cfg['distance'] = rt.metric if rt.metric
 
-          cfg['routing-mark'] = rt.routing_table if rt.routing_table
+          cfg['routing-mark'] = rt.via.routing_table.name if rt.via.routing_table
 
           default = {
             "dst-address" => Schema.network.required.key(0),

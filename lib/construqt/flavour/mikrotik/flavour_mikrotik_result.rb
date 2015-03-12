@@ -35,7 +35,7 @@ module Construqt
             if val.kind_of?(Schema)
               val.field_name = key
               throw "type must set of #{key}" unless val.type?
-              throw "required key:#{key} not set" if val.required? and (result[key].nil? or result[key].to_s.empty?)
+              throw "required key:#{key.class.name} not set" if val.required? && !val.isSet?(result[key])
               result[key] = val.get_default if !val.get_default.nil? && result[key].nil?
               keys[key] = result[key] if val.key?
             else
@@ -51,9 +51,8 @@ module Construqt
               if default[k].kind_of?(Schema) && default[k].noset?
                 false
               else
-                !(v.to_s.empty?)
+                !v.nil?
               end
-
             }.map{|k,v| render_term(default, k, v) }.sort.join(" ")
           )
         end
