@@ -66,8 +66,36 @@ module Construqt
               lines.down("ip route del #{route.dst.to_string} via #{route.via.to_s}#{metric}#{routing_table}")
             end
           end
-
+          proxy_neigh(ifname, iface, lines)
           Firewall.create(host, ifname, iface, family)
+        end
+
+        def self.proxy_neigh2ips(neigh)
+          if neigh.nil?
+            return []
+          elsif neigh.kind_of?(Construqt::Tags::ResolverAdr) || neigh.kind_of?(Construqt::Tags::ResolverNet)
+            ret = neigh.resolv()
+            puts "self.proxy_neigh2ips>>>>>#{neigh} #{ret.map{|i| i.class.name}} "
+            return ret
+          end
+          return neigh.ips
+        end
+
+        def self.proxy_neigh(ifname, iface, lines)
+          proxy_neigh2ips(iface.proxy_neigh).each do |ip|
+            puts "**********#{ip.class.name}"
+              list = []
+              if ip.network.to_string == ip.to_string
+                list += ip.map{|i| i}
+              else
+                list << ip
+              end
+              list.each do |lip|
+                ipv = lip.ipv6? ? "-6 ": ""
+                lines.up("ip #{ipv}neigh add proxy #{lip.to_s} dev #{ifname}")
+                lines.down("ip #{ipv}neigh del proxy #{lip.to_s} dev #{ifname}")
+              end
+          end
         end
 
         def build_config(host, iface)
@@ -165,6 +193,8 @@ net.ipv4.vs.pmtu_disc=1
 net.ipv6.conf.all.autoconf=0
 net.ipv6.conf.all.accept_ra=0
 net.ipv6.conf.all.forwarding=1
+
+net.ipv6.conf.all.proxy_ndp=1
 SCTL
           host.result.add(self, <<HOSTS, Construqt::Resources::Rights.root_0644, "etc", "hosts")
 127.0.0.1       localhost
@@ -324,7 +354,7 @@ PAM
             remote = gre_delegate.remote.first_ipv4
             other = gre_delegate.other.interface.delegate.local.first_ipv4
             my = gre_delegate.local.first_ipv4
-            mode_v6 = "ip6ip"
+            mode_v6 = "sit"
             mode_v4 = "gre"
             prefix = 4
           end

@@ -11,16 +11,16 @@ module Construqt
       end
     end
 
-    class RoutingTableAddRouteFromTags
-      attr_reader :dest, :via, :options, :routing_table
-      attr_accessor :attach_address
-      def initialize(routing_table, dest, via, options)
-        @routing_table = routing_table
-        @dest = dest
-        @via = via
-        @options = options
-      end
-    end
+#    class RoutingTableAddRouteFromTags
+#      attr_reader :dest, :via, :options, :routing_table
+#      attr_accessor :attach_address
+#      def initialize(routing_table, dest, via, options)
+#        @routing_table = routing_table
+#        @dest = dest
+#        @via = via
+#        @options = options
+#      end
+#    end
 
     class RoutingTable
       attr_reader :name

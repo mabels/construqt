@@ -40,6 +40,7 @@ Construqt::Firewalls.add("l-outbound") do |fw|
   end
 end
 
+
 Construqt::Firewalls.add("l-host-outbound") do |fw|
   fw.host do |host|
     host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_me.to_net("#NA-INTERNET").from_is_inside
@@ -1321,6 +1322,24 @@ class FirewallTest < Test::Unit::TestCase
     assert_equal [
       "{FORWARD} -i testif -s 29.29.29.1/32 -d 0.0.0.0/0 -m state --state NEW,ESTABLISHED -j ACCEPT",
       "{FORWARD} -o testif -s 0.0.0.0/0 -d 29.29.29.1/32 -m state --state RELATED,ESTABLISHED -j ACCEPT"
+    ], writer.ipv4.rows
+  end
+
+  def test_forward_tcp_mss
+    fw = Construqt::Firewalls.add("l-tcp-mss") do |fw|
+      fw.forward do |forward|
+        forward.add.action(Construqt::Firewalls::Actions::TCPMSS)
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [
+     "{FORWARD} -i testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu",
+     "{FORWARD} -o testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu"
+    ], writer.ipv6.rows
+    assert_equal [
+     "{FORWARD} -i testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu",
+     "{FORWARD} -o testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu"
     ], writer.ipv4.rows
   end
 end

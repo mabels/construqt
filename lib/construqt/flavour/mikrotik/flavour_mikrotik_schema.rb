@@ -9,6 +9,12 @@ module Construqt
             self.serialize(schema, val)
           end
 
+          def self.isSet?(val)
+            return false if val.nil?
+            return false unless val.to_s.match(/^[0-9]+$/)
+            true
+          end
+
           def self.serialize(schema, val)
             return val if val.nil?
             throw "only 0-9 are allowed [#{val}]" unless val.to_s.match(/^[0-9]+$/)
@@ -31,6 +37,12 @@ module Construqt
         module String
           def self.serialize_compare(schema, val)
             self.serialize(schema, val)
+          end
+
+          def self.isSet?(val)
+            return false if val.nil?
+            return false if val.strip.empty?
+            true
           end
 
           def self.serialize(schema, val)
@@ -68,6 +80,12 @@ module Construqt
             self.serialize(schema, val).inspect
           end
 
+          def self.isSet?(val)
+            return false if val.nil?
+            return false unless val.match(/^[a-zA-Z0-9\-_]+$/)
+            true
+          end
+
           def self.serialize(schema, val)
             throw "only a-zA-Z0-9_- are allowed [#{val}]" unless val.match(/^[a-zA-Z0-9\-_]+$/)
             return val.to_s
@@ -91,6 +109,14 @@ module Construqt
             self.serialize(schema, val, ';')
           end
 
+          def self.isSet?(val)
+            return false if val.nil?
+            return false if val.empty?
+            return false if val.split(',').empty?
+            return false unless val.split(',').select{|i| !Identifier.isSet?(i) }.empty?
+            true
+          end
+
           def self.serialize(schema, val, joiner=',')
             '"'+val.split(',').map{|i| Identifier.serialize(schema, i) }.join(joiner).to_s+'"'
           end
@@ -99,6 +125,10 @@ module Construqt
         module Address
           def self.serialize_compare(schema, val)
             self.serialize(schema, val).inspect
+          end
+
+          def self.isSet?(val)
+            val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
           end
 
           def self.serialize(schema, val)
@@ -113,6 +143,10 @@ module Construqt
             self.serialize(schema, val).inspect
           end
 
+          def self.isSet?(val)
+            val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+          end
+
           def self.serialize(schema, val)
             throw "Address:val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
             #        throw "only 0-9:\.\/ are allowed #{val}" unless val.match(/^[a-fA-F0-9:\.\/]+$/)
@@ -125,6 +159,10 @@ module Construqt
             self.serialize(schema, val.network).inspect
           end
 
+          def self.isSet?(val)
+            val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+          end
+
           def self.serialize(schema, val)
             throw "Network::val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
             #throw "only 0-9:\.\/ are allowed #{val}" unless val.match(/^[a-fA-F0-9:\.\/]+$/)
@@ -135,6 +173,13 @@ module Construqt
         module Addresses
           def self.serialize_compare(schema, val)
             self.serialize(schema, val)
+          end
+
+          def self.isSet?(val)
+            return false if val.nil?
+            return false if val.empty?
+            return false unless val.select{|i| !Address.isSet?(i) }.empty?
+            true
           end
 
           def self.serialize(schema, val)
@@ -158,6 +203,10 @@ module Construqt
 
         def field_name
           @field_name
+        end
+
+        def isSet?(val)
+          @type.isSet?(val)
         end
 
         def serialize_compare(val)

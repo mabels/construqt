@@ -4,9 +4,10 @@ module Construqt
     class Ipsec
       attr_reader :rights, :lefts, :transport_family, :password
       attr_reader :name, :keyexchange, :description, :address
-      attr_reader :delegate, :tags, :mtu_v4, :mtu_v6
+      attr_reader :delegate, :tags, :mtu_v4, :mtu_v6, :cipher
       def initialize(cfg)
         @cfg = cfg
+        @cipher = @cfg['cipher']
         @rights = @cfg['rights']
         @lefts = @cfg['lefts']
         @transport_family = @cfg['transport_family']
@@ -81,6 +82,7 @@ module Construqt
         left.host.add_ipsec(cfg)
         left.interface = left.my.host.region.interfaces.add_gre(left.my.host, left.other.host.name,
                                                                 "address" => left.my,
+                                                                "firewalls" => left.firewalls,
                                                                 "local" => left.my,
                                                                 "other" => left.other,
                                                                 "remote" => left.remote,
@@ -94,6 +96,7 @@ module Construqt
         right.host.add_ipsec(cfg)
         right.interface = right.my.host.region.interfaces.add_gre(right.my.host, right.other.host.name,
                                                                   "address" => right.my,
+                                                                  "firewalls" => right.firewalls,
                                                                   "local" => right.my,
                                                                   "other" => right.other,
                                                                   "remote" => right.remote,

@@ -9,6 +9,7 @@ module Construqt
       DNAT = :DNAT
       ACCEPT = :ACCEPT
       DROP = :DROP
+      TCPMSS = :TCPMSS
     end
 
     module ICMP
@@ -70,6 +71,16 @@ module Construqt
       chainable_attr :ah
       chainable_attr :icmp
       chainable_attr :type, nil
+
+      def proto_flags(proto, flags)
+        @proto_flags ||= {}
+        @proto_flags[proto] = flags
+        self
+      end
+
+      def get_proto_flags
+        @proto_flags ||= {}
+      end
 
       def ipv6
         @family = Construqt::Addresses::IPV6
