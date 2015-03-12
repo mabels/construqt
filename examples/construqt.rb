@@ -42,6 +42,10 @@ fw_outbound = Construqt::Firewalls.add("fw-outbound") do |fw|
 end
 
 fw_sixxs = Construqt::Firewalls.add("fw-sixxs") do |fw|
+  fw.forward do |forward|
+    forward.ipv6
+    forward.add.action(Construqt::Firewalls::Actions::TCPMSS)
+  end
   fw.host do |host|
     host.ipv6
     host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("@2000::/3").to_me.tcp.dport(22).from_is_outside
@@ -58,7 +62,7 @@ region.hosts.add("aiccu", "flavour" => "ubuntu") do |aiccu|
                                :description=>"#{aiccu.name} lo",
                                "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
 
-  region.interfaces.add_device(aiccu, "sixxs", "mtu" => "1500",
+  region.interfaces.add_device(aiccu, "sixxs", "mtu" => "1280",
                                "dynamic" => true,
                                "firewalls" => [ fw_sixxs ],
                                "address" => region.network.addresses.add_ip("2001:6f8:900:2bf::2/64"))
