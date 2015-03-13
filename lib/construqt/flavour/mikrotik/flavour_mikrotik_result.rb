@@ -45,6 +45,7 @@ module Construqt
 
           OpenStruct.new(
             :key => keys.keys.sort{|a,b| default[a].key_order <=> default[b].key_order }
+                        .select{|k| keys[k] }
                         .map{|k| v=keys[k]; render_term(default, k, v) }.join(" && "),
             :result => result,
             :add_line => result.select{ |k,v|

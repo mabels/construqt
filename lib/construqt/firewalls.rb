@@ -404,6 +404,15 @@ module Construqt
         end
       end
 
+      DNS_CACHE={}
+      def self.cached_resolv(dns, name, family)
+        DNS_CACHE[family] ||={}
+        ret = DNS_CACHE[family][name]
+        return ret if ret
+        puts ">>resolv:extern:#{name}"
+        DNS_CACHE[family][name] = dns.getresources(name, family == Construqt::Addresses::IPV6 ? Resolv::DNS::Resource::IN::AAAA : Resolv::DNS::Resource::IN::A)
+      end
+
       def self.resolver(str, family)
         return [] if str.nil? || str.strip.empty?
         # first char is not a # or @ add first char #
@@ -435,7 +444,7 @@ module Construqt
               end
 
             rescue Exception => e
-              ress = dns.getresources(fwtoken.str, family == Construqt::Addresses::IPV6 ? Resolv::DNS::Resource::IN::AAAA : Resolv::DNS::Resource::IN::A)
+              ress =cached_resolv(dns, fwtoken.str, family == Construqt::Addresses::IPV6 ? Resolv::DNS::Resource::IN::AAAA : Resolv::DNS::Resource::IN::A)
               unless ress.empty?
                 FwIpAddress.create([fwtoken], ress.map{|i| IPAddress.parse(i.address.to_s) }, ret)
               else

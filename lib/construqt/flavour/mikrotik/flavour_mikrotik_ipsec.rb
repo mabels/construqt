@@ -4,7 +4,7 @@ module Construqt
     module Mikrotik
       class Ipsec
         attr_accessor :delegate, :other, :cfg, :interface
-        attr_reader :host, :remote, :my
+        attr_reader :host, :remote, :my, :firewalls, :any, :sourceip
         def initialize(cfg)
           @host = cfg['host']
           @remote = cfg['remote']
@@ -12,6 +12,9 @@ module Construqt
           @cfg = cfg['cfg']
           @my = cfg['my']
           @interface = cfg['interface']
+          @firewalls = cfg['firewalls']
+          @any = cfg['any']
+          @sourceip = cfg['sourceip']
         end
 
         def set_ip_ipsec_peer(cfg)
