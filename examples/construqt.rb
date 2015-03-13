@@ -7,6 +7,7 @@ require 'rubygems'
 require 'construqt'
 
 require_relative './firewall.rb'
+require_relative './password.rb'
 
 Construqt::Flavour::del_aspect("plantuml") unless ARGV.include?("plantuml")
 
@@ -116,7 +117,7 @@ end
 
 
 Construqt::Ipsecs.connection("#{fanout_de.name}<=>#{service_gw.name}",
-          "password" => "KvA@7K11L*xwIiWz%bh6yao4Wiku@DBdt3*%TM5k#Pqb9&@Aq",
+          "password" => IPSEC_PASSWORD,
           "transport_family" => Construqt::Addresses::IPV4,
           "mtu_v4" => 1360,
           "mtu_v6" => 1360,
@@ -161,6 +162,70 @@ Construqt::Ipsecs.connection("#{fanout_de.name}<=>#{service_gw.name}",
   end
 end
 
+fanout_us = region.hosts.add("fanout-us", "flavour" => "ubuntu") do |host|
+  region.interfaces.add_device(host, "lo", "mtu" => "9000",
+                               :description=>"#{host.name} lo",
+                               "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
+
+  host.configip = host.id ||= Construqt::HostId.create do |my|
+    my.interfaces << region.interfaces.add_device(host, "eth0",
+          "mtu" => 1500,
+          'address' => region.network.addresses.add_ip("162.218.210.74/24#FANOUT-US")
+                                            .add_route("0.0.0.0/0#INTERNET", "162.218.210.1")
+                                            .add_ip("2602:ffea:1:7dd::eb38/48")
+                                            .add_route("2000::/3#INTERNET", "2602:ffea:1::1"),
+          "firewalls" => ["host-us-outbound", "icmp-ping" , "ssh-srv", "ipsec-srv", "service-us-transit",
+                          "service-us-nat", "block"])
+  end
+end
+
+service_us = region.hosts.add("service-us", "flavour" => "ubuntu") do |host|
+  region.interfaces.add_device(host, "lo", "mtu" => "9000",
+                               :description=>"#{host.name} lo",
+                               "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
+  region.network.addresses.add_ip("192.168.0.1/24#KDE-GW");
+  host.configip = host.id ||= Construqt::HostId.create do |my|
+    my.interfaces << region.interfaces.add_device(host, "br24", "mtu" => 1500,
+          'firewalls' => ['host-us-outbound', 'icmp-ping', 'ssh-srv', 'service-us-transit', 'block'],
+          'address' => region.network.addresses.add_ip("192.168.0.68/24")
+                                            .add_route("192.168.0.0/16", "192.168.0.10")
+                                            .add_route_from_tags("#FANOUT-US", "#KDE-GW"))
+  end
+
+  region.interfaces.add_device(host, "br68", "mtu" => 1500,
+          'address' => region.network.addresses
+                  .add_ip("192.168.68.1/24#SERVICE-US-NET")
+                  .add_ip("2602:ffea:1:7dd:192:168:68:1/123#SERVICE-US-NET"))
+end
+
+Construqt::Ipsecs.connection("#{fanout_us.name}<=>#{service_us.name}",
+          "password" => IPSEC_PASSWORD,
+          "transport_family" => Construqt::Addresses::IPV4,
+          "mtu_v4" => 1360,
+          "mtu_v6" => 1360,
+          "keyexchange" => "ikev2",
+          "left" => {
+            "my" => region.network.addresses.add_ip("169.254.68.1/30#SERVICE-US-IPSEC")
+                      .add_ip("169.254.68.5/30#SERVICE-US-TRANSIT#FANOUT-US-GW")
+                      .add_ip("2602:ffea:1:7dd::5/126#SERVICE-US-TRANSIT#FANOUT-US")
+                      .add_route_from_tags("#SERVICE-US-NET", "#SERVICE-US-GW"),
+            "host" => fanout_us,
+            "remote" => region.interfaces.find(fanout_us, "eth0").address,
+            "auto" => "add",
+            "sourceip" => true
+          },
+          "right" => {
+            "my" => region.network.addresses.add_ip("169.254.68.2/30")
+                      .add_ip("169.254.68.6/30#SERVICE-US-GW")
+                      .add_ip("2602:ffea:1:7dd::6/126#SERVICE-US-TRANSIT#SERVICE-US-GW")
+                      .add_route_from_tags("#INTERNET", "#FANOUT-US-GW"),
+            'firewalls' => ["fix-mss", 'host-us-outbound', 'icmp-ping', 'ssh-srv', 'service-us-transit', 'block'],
+            "host" => service_us,
+            "remote" => region.interfaces.find(service_us, "br24").address,
+            "any" => true
+          }
+      )
+
 
 Construqt.produce(region)
 
@@ -168,7 +233,7 @@ Construqt.produce(region)
 if ARGV.include?("de")
   require 'net/ssh'
   require 'net/scp'
-  ["fanout-de", "service-gw"].each do |hname|
+  ["fanout-us", "service-us", "fanout-de", "service-gw"].each do |hname|
     host = region.hosts.find(hname)
     dest = host.id.first_ipv4.first_ipv4.to_s
     Construqt.logger.info "Copy deployer.sh to #{host.name}(#{dest})"

@@ -19,6 +19,12 @@ def firewall(region)
     end
   end
 
+  Construqt::Firewalls.add("service-us-nat") do |fw|
+    fw.nat do |nat|
+      nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("#SERVICE-US-NET#SERVICE-US-TRANSIT").to_source.from_is_inside
+    end
+  end
+
   Construqt::Firewalls.add("service-smtp") do |fw|
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-smtp-ng").tcp.dport(25).dport(587).dport(465).from_is_outside
@@ -64,6 +70,12 @@ def firewall(region)
     end
   end
 
+  Construqt::Firewalls.add("service-us-transit") do |fw|
+    fw.host do |host|
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#SERVICE-US-TRANSIT#SERVICE-US-IPSEC").to_net("#SERVICE-US-TRANSIT#SERVICE-US-IPSEC")
+    end
+  end
+
   Construqt::Firewalls.add("ipsec-srv") do |fw|
     fw.host do |host|
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_net("#INTERNET").to_my_net.udp.dport("isakmp")
@@ -78,6 +90,15 @@ def firewall(region)
     end
     fw.forward do |forward|
       forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#SERVICE-NET#SERVICE-TRANSIT").to_net("#INTERNET").from_is_inside
+    end
+  end
+
+  Construqt::Firewalls.add("host-us-outbound") do |fw|
+    fw.host do |host|
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INTERNET").from_is_inside
+    end
+    fw.forward do |forward|
+      forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#SERVICE-US-NET#SERVICE-US-TRANSIT").to_net("#INTERNET").from_is_inside
     end
   end
 
