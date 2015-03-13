@@ -52,7 +52,7 @@ module Construqt
             "type" => Schema.identifier,
             "distance" => Schema.int,
             "comment" => Schema.string.required.key(1),
-            "routing-mark" => Schema.identifier
+            "routing-mark" => Schema.identifier.key(2)
           }
           cfg['comment'] = "#{cfg['dst-address']} via #{cfg['gateway']} CONSTRUQT"
           if rt.dst.ipv6?
