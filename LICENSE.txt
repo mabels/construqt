@@ -187,9 +187,10 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright [2014] [Meno Abels]
-   Copyright [2014] [Marcel Richter]
+   Copyright [2014-2015] [Meno Abels]
+   Copyright [2014-2015] [Marcel Richter]
    Copyright [2014] [Rasmus Heimbaecher]
+   Copyright [2015] [Hauke Lampe]
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
