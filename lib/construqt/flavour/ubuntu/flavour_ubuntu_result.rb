@@ -596,7 +596,7 @@ VRRP
           add(EtcNetworkIptables, etc_network_iptables.commitv4, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4), "etc", "network", "iptables.cfg")
           add(EtcNetworkIptables, etc_network_iptables.commitv6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6), "etc", "network", "ip6tables.cfg")
           add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construqt::Resources::Rights.root_0644, "etc", "network", "interfaces")
-          add(EtcConntrackdConntrackd, etc_conntrackd_conntrackd.commit, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::CONNTRACKD), "etc", "conntrack", "conntrackd.conf")
+          add(EtcConntrackdConntrackd, etc_conntrackd_conntrackd.commit, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::CONNTRACKD), "etc", "conntrackd", "conntrackd.conf")
           @etc_network_vrrp.commit(self)
 
           components = @result.values.inject({
