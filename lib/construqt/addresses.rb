@@ -184,11 +184,15 @@ module Construqt
         end
 
         def each(&block)
+          each_with_index(&block)
+        end
+
+        def each_with_index(&block)
           ret = []
           @routes.each do |route|
             route.resolv.each do |rt|
 #puts ">>>>#{route} #{rt}"
-              ret << block.call(rt)
+              ret << block.call(rt, ret.length)
             end
           end
 
