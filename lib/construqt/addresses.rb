@@ -266,7 +266,7 @@ module Construqt
         end
 
         if ret['#']
-          tags << ret.delete('#')
+          tags += ret.delete('#')
         end
 
         throw "illegal tag for tag method #{tag}" unless ret.empty?
