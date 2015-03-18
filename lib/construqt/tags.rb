@@ -27,7 +27,7 @@ module Construqt
     @tags = {}
     @object_id_tags = {}
     def self.join(tags, obj)
-      tags && tags.uniq.each do |tag|
+      tags && tags.sort.uniq.each do |tag|
         @tags[tag] ||= []
         @tags[tag] << obj unless @tags[tag].include?(obj)
       end
