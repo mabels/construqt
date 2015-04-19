@@ -1,0 +1,36 @@
+:global "ifacePptpVpnUnlimited";
+
+:local interface pptp-vpn-unlimited;
+
+# set up the right initial state
+:if ($ifacePptpVpnUnlimited = nil) do={
+    /log warning "if_pptp_vpn_unlimited=nil"
+    /ip dhcp-client set [find] default-route-distance=100
+    /interface pptp-client disable [find name=$interface]
+    if ( [/ip firewall nat find out-interface=$interface] = "") do={
+      /ip firewall nat add action=masquerade chain=srcnat out-interface=$interface
+    }
+    :global "ifacePptpVpnUnlimited" down;
+}
+
+:local gotid [/interface pptp-client find name=$interface]
+:local got [/interface pptp-client get $gotid]
+if (($got->"running") = false) do={
+    :local connectTo [:resolv ($got->"comment")]
+    /log warning ("if_pptp_vpn_unlimited=retry-start:" . ($got->"comment") . ":" . $connectTo)
+    :global "ifacePptpVpnUnlimited" down
+    /ip route remove [/ip route find comment="$interface"]
+    /interface pptp-client set $gotid connect-to=$connectTo
+    /interface pptp-client enable $gotid
+}
+
+:local got [/interface pptp-client get $gotid]
+if ($ifacePptpVpnUnlimited = "down" and ($got->"running") = true) do={
+    /log warning "if_pptp_vpn_unlimited=toup"
+    :local "defaultGwIp" [/ip route get [/ip route find dst-address=0.0.0.0/0] gateway]
+    /ip route add dst-address=($got->"connect-to") gateway=$defaultGwIp comment=$interface
+    :local "gw" [/ip route get [/ip route find gateway=$interface] dst-address ]
+    :local "gw" [:pick $gw 0 [:find $gw "/"]]
+    /ip route add dst-address=0.0.0.0/0 gateway=$gw comment=$interface
+    /global "ifacePptpVpnUnlimited" up
+}
