@@ -2,8 +2,15 @@ package me.construqt.ciscian.chatter.connectors;
 
 public interface Connector {
 
-	ConnectResult connect() throws Exception;
+    public enum Type {
+        SSH, TCP
+    }
 
-	void disconnect() throws Exception;
-	
+
+    ConnectResult connect() throws Exception;
+
+    void disconnect() throws Exception;
+
+    Type getType();
+
 }
