@@ -26,7 +26,9 @@ public class ApplyConfig {
 				options.debug, false);
 
 		// setup steps
-		sc.enterManagementMode(options.user, options.password);
+		if (Connector.Type.TCP.equals(connector.getType())) {
+		    sc.enterManagementMode(options.user, options.password);
+		}
 		sc.disablePaging();
 		sc.applyConfig(sw.toString());
 		sc.saveRunningConfig();
