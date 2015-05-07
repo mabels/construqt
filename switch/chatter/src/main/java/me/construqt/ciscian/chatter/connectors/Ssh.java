@@ -12,92 +12,86 @@ import com.jcraft.jsch.UserInfo;
 
 public class Ssh implements Connector {
 
-    private Session session;
+	private Session session;
 
-    private Channel channel;
+	private Channel channel;
 
-    private String host;
+	private String host;
 
-    private int port;
+	private int port;
 
-    private String user;
+	private String user;
 
-    private String pass;
+	private String pass;
 
+	public Ssh(String connectString, String user, String pass) {
+		Pattern p = Pattern.compile("ssh://(.*):(\\d*)");
+		Matcher m = p.matcher(connectString);
+		if (m.matches()) {
+			this.host = m.group(1);
+			this.port = Integer.parseInt(m.group(2));
+			this.user = user;
+			this.pass = pass;
+		} else {
+			throw new RuntimeException("Invalid ssh connect string "
+					+ connectString);
+		}
+	}
 
-    public Ssh(final String connectString, final String user, final String pass) {
-        final Pattern p = Pattern.compile("ssh://(.*):(\\d*)");
-        final Matcher m = p.matcher(connectString);
-        if (m.matches()) {
-            this.host = m.group(1);
-            this.port = Integer.parseInt(m.group(2));
-            this.user = user;
-            this.pass = pass;
-        } else {
-            throw new RuntimeException("Invalid ssh connect string " + connectString);
-        }
-    }
+	public ConnectResult connect() throws Exception {
+		JSch jsch = new JSch();
+		this.session = jsch.getSession(user, host, port);
 
-    @Override
-    public ConnectResult connect() throws Exception {
-        final JSch jsch = new JSch();
-        this.session = jsch.getSession(this.user, this.host, this.port);
+		// username and password will be given via UserInfo interface.
+		UserInfo ui = new UserInfo() {
 
-        // username and password will be given via UserInfo interface.
-        final UserInfo ui = new UserInfo() {
+			@Override
+			public void showMessage(String message) {
+				// System.err.println(message);
+			}
 
-            @Override
-            public void showMessage(final String message) {
-                // System.err.println(message);
-            }
+			@Override
+			public boolean promptYesNo(String message) {
+				// System.err.println(message);
+				return true;
+			}
 
-            @Override
-            public boolean promptYesNo(final String message) {
-                // System.err.println(message);
-                return true;
-            }
+			@Override
+			public boolean promptPassword(String arg0) {
+				return true;
+			}
 
-            @Override
-            public boolean promptPassword(final String arg0) {
-                return true;
-            }
+			@Override
+			public boolean promptPassphrase(String message) {
+				// System.err.println(message);
+				return true;
+			}
 
-            @Override
-            public boolean promptPassphrase(final String message) {
-                // System.err.println(message);
-                return true;
-            }
+			@Override
+			public String getPassword() {
+				return pass;
+			}
 
-            @Override
-            public String getPassword() {
-                return Ssh.this.pass;
-            }
+			@Override
+			public String getPassphrase() {
+				throw new RuntimeException("Not implemented.");
+			}
+		};
 
-            @Override
-            public String getPassphrase() {
-                throw new RuntimeException("Not implemented.");
-            }
-        };
+		session.setUserInfo(ui);
+		session.connect();
 
-        this.session.setUserInfo(ui);
-        this.session.connect();
+		this.channel = session.openChannel("shell");
+		InputStream in = channel.getInputStream();
+		OutputStream os = channel.getOutputStream();
+		channel.connect();
 
-        this.channel = this.session.openChannel("shell");
-        final InputStream in = this.channel.getInputStream();
-        final OutputStream os = this.channel.getOutputStream();
-        this.channel.connect();
+		return new ConnectResult(in, os);
+	}
 
-        return new ConnectResult(in, os);
-    }
+	public void disconnect() {
+		channel.disconnect();
+		session.disconnect();
+	}
 
-    @Override
-    public void disconnect() {
-        this.channel.disconnect();
-        this.session.disconnect();
-    }
-
-    @Override
-    public Type getType() {
-        return Type.SSH;
-    }
 }
