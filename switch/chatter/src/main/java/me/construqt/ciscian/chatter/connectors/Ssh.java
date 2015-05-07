@@ -94,4 +94,8 @@ public class Ssh implements Connector {
 		session.disconnect();
 	}
 
+	@Override
+	public Type getType() {
+	    return Type.SSH;
+	}
 }

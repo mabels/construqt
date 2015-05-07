@@ -7,6 +7,7 @@ import me.construqt.ciscian.chatter.steps.flavoured.EnterInput;
 import me.construqt.ciscian.chatter.steps.flavoured.Exit;
 import me.construqt.ciscian.chatter.steps.flavoured.PasswordPrompt;
 import me.construqt.ciscian.chatter.steps.flavoured.ShowRunningConfig;
+import me.construqt.ciscian.chatter.steps.flavoured.WaitForPrompt;
 import me.construqt.ciscian.chatter.steps.generic.Case;
 import me.construqt.ciscian.chatter.steps.generic.CollectOutputStep;
 import me.construqt.ciscian.chatter.steps.generic.Step;
@@ -16,19 +17,31 @@ import me.construqt.ciscian.chatter.steps.generic.WaitForStep;
 public class DlinkDgs15xxSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 
 	@Override
-	protected void enterManagementMode(final String user,final  String password) {
-		getOutputConsumer().addStep(new SwitchStep( //
-				new Case(">") {
-					public Step[] then() {
-						return new Step[] {};
-					}
-				}, new Case("Password:") {
-					public Step[] then() {
-						return new Step[] { new EnterInput(password) };
-					}
-				}));
+    protected void enterManagementMode(final String username, final String password) {
+        getOutputConsumer().addStep(new SwitchStep( //
+                new Case(">") {
 
-		super.enterManagementMode(user, password);
+                    @Override
+                    public Step[] then() {
+                        return new Step[] {};
+                    }
+                }, new Case("Username:") {
+
+                    @Override
+                    public Step[] then() {
+                        return new Step[] { //
+                        new EnterInput(username), //
+                                new PasswordPrompt(), //
+                                new EnterInput(password) };
+                    }
+                }, new Case("Password:") {
+
+                    @Override
+                    public Step[] then() {
+                        return new Step[] { new EnterInput(password) };
+                    }
+                }));
+        getOutputConsumer().addStep(new WaitForPrompt());
 	}
 
 	public void retrieveConfig() {

@@ -14,4 +14,13 @@ public abstract class Case {
 		return buffer.indexOf(waitFor) >= 0;
 	}
 
+	/** {@inheritDoc} */
+	@Override
+	public String toString() {
+    	final StringBuilder builder = new StringBuilder();
+    	builder.append("Case [waitFor=");
+    	builder.append(this.waitFor);
+    	builder.append("]");
+    	return builder.toString();
+	}
 }

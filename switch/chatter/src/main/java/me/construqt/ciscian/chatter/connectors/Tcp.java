@@ -36,5 +36,8 @@ public class Tcp implements Connector {
 		socket.close();
 	}
 
-
+	@Override
+	public Type getType() {
+	    return Type.TCP;
+	}
 }
