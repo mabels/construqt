@@ -13,50 +13,50 @@ import me.construqt.ciscian.chatter.connectors.Connector;
 import me.construqt.ciscian.chatter.connectors.ConnectorFactory;
 
 public class ApplyConfig {
+	public static void apply(CLIOptions options) throws Exception {
+		Connector connector = ConnectorFactory.createConnector(options.connect,
+				options.user, options.password);
+		ConnectResult connect = connector.connect();
 
-    public static void apply(final CLIOptions options) throws Exception {
-        final Connector connector = ConnectorFactory.createConnector(options.connect, options.user, options.password);
-        final ConnectResult connect = connector.connect();
+		StringWriter sw = new StringWriter();
+		IOUtils.copy(System.in, sw);
 
-        final StringWriter sw = new StringWriter();
-        IOUtils.copy(System.in, sw);
+		final SwitchChatter sc = SwitchChatter.create(options.flavour,
+				connect.getInputStream(), connect.getOutputStream(),
+				options.debug, false);
 
-        final SwitchChatter sc = SwitchChatter.create(options.flavour, connect.getInputStream(), connect.getOutputStream(),
-                options.debug, false);
+		// setup steps
+		sc.enterManagementMode(options.user, options.password);
+		sc.disablePaging();
+		sc.applyConfig(sw.toString());
+		sc.saveRunningConfig();
+		sc.exit();
 
-        // setup steps
-        if (Connector.Type.TCP.equals(connector.getType())) {
-            sc.enterManagementMode(options.user, options.password);
-        }
-        sc.disablePaging();
-        sc.applyConfig(sw.toString());
-        sc.saveRunningConfig();
-        sc.exit();
+		// start procedure
+		Future<List<String>> result = sc.start();
 
-        // start procedure
-        final Future<List<String>> result = sc.start();
-
-        try {
-            final List<String> results = result.get(120, TimeUnit.SECONDS);
-            int errors = 0;
-            for (final String line : results) {
-                final String errorMessage = Util.replaceAllTerminalControlCharacters(line);
-                if (!errorMessage.isEmpty()) {
-                    System.err.println(errorMessage);
-                    errors++;
-                }
-            }
-            if (errors > 0) {
-                System.exit(1);
-            }
-        } catch (final Exception e) {
-            System.err.println("fatal error occured:");
-            e.printStackTrace(System.err);
-            System.exit(2);
-        } finally {
-            sc.close();
-            connector.disconnect();
-        }
-    }
+		try {
+			List<String> results = result.get(120, TimeUnit.SECONDS);
+			int errors = 0;
+			for (String line : results) {
+				String errorMessage = Util
+						.replaceAllTerminalControlCharacters(line);
+				if (!errorMessage.isEmpty()) {
+					System.err.println(errorMessage);
+					errors++;
+				}
+			}
+			if (errors > 0) {
+				System.exit(1);
+			}
+		} catch (Exception e) {
+			System.err.println("fatal error occured:");
+			e.printStackTrace(System.err);
+			System.exit(2);
+		} finally {
+			sc.close();
+			connector.disconnect();
+		}
+	}
 
 }
