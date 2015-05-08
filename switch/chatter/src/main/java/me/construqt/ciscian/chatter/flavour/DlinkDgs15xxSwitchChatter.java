@@ -17,31 +17,31 @@ import me.construqt.ciscian.chatter.steps.generic.WaitForStep;
 public class DlinkDgs15xxSwitchChatter extends GenericCiscoFlavourSwitchChatter {
 
 	@Override
-    protected void enterManagementMode(final String username, final String password) {
-        getOutputConsumer().addStep(new SwitchStep( //
-                new Case(">") {
+	protected void enterManagementMode(final String username, final String password) {
+	    getOutputConsumer().addStep(new SwitchStep(
+		    new Case(">") {
 
-                    @Override
-                    public Step[] then() {
-                        return new Step[] {};
-                    }
-                }, new Case("Username:") {
+			@Override
+			public Step[] then() {
+			    return new Step[] {};
+			}
+		    }, new Case("Username:") {
 
-                    @Override
-                    public Step[] then() {
-                        return new Step[] { //
-                        new EnterInput(username), //
-                                new PasswordPrompt(), //
-                                new EnterInput(password) };
-                    }
-                }, new Case("Password:") {
+			@Override
+			public Step[] then() {
+			    return new Step[] {
+				    new EnterInput(username),
+				    new PasswordPrompt(),
+				    new EnterInput(password) };
+			}
+		    }, new Case("Password:") {
 
-                    @Override
-                    public Step[] then() {
-                        return new Step[] { new EnterInput(password) };
-                    }
-                }));
-        getOutputConsumer().addStep(new WaitForPrompt());
+			@Override
+			public Step[] then() {
+			    return new Step[] { new EnterInput(password) };
+			}
+		    }));
+	    getOutputConsumer().addStep(new WaitForPrompt());
 	}
 
 	public void retrieveConfig() {
