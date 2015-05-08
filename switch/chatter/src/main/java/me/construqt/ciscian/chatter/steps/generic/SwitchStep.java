@@ -41,10 +41,10 @@ public class SwitchStep implements Step {
 	/** {@inheritDoc} */
 	@Override
 	public String toString() {
-    	final StringBuilder builder = new StringBuilder();
-    	builder.append("SwitchStep [cases=");
-    	builder.append(Arrays.toString(this.cases));
-    	builder.append("]");
-    	return builder.toString();
+		final StringBuilder builder = new StringBuilder();
+		builder.append("SwitchStep [cases=");
+		builder.append(Arrays.toString(this.cases));
+		builder.append("]");
+		return builder.toString();
 	}
 }

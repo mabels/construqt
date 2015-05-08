@@ -17,10 +17,10 @@ public abstract class Case {
 	/** {@inheritDoc} */
 	@Override
 	public String toString() {
-    	final StringBuilder builder = new StringBuilder();
-    	builder.append("Case [waitFor=");
-    	builder.append(this.waitFor);
-    	builder.append("]");
-    	return builder.toString();
+		final StringBuilder builder = new StringBuilder();
+		builder.append("Case [waitFor=");
+		builder.append(this.waitFor);
+		builder.append("]");
+		return builder.toString();
 	}
 }
