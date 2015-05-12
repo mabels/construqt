@@ -1,6 +1,7 @@
 package me.construqt.ciscian.chatter.steps.generic;
 
 import java.io.PrintWriter;
+import java.util.Arrays;
 
 public class SwitchStep implements Step {
 	private Case[] cases;
@@ -35,5 +36,15 @@ public class SwitchStep implements Step {
 	@Override
 	public String retrieveResult() {
 		return null;
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public String toString() {
+		final StringBuilder builder = new StringBuilder();
+		builder.append("SwitchStep [cases=");
+		builder.append(Arrays.toString(this.cases));
+		builder.append("]");
+		return builder.toString();
 	}
 }
