@@ -158,7 +158,7 @@ module Construqt
               end
 
               if to_from.rule.respond_to?(:connection?) && to_from.rule.connection?
-                begin_middle_end.push_middle("-m state --state NEW,ESTABLISHED")
+                begin_middle_end.push_middle("-m conntrack --ctstate NEW,ESTABLISHED")
               end
 
               unless protocol.include?('icmp')
@@ -220,7 +220,7 @@ module Construqt
               end
 
               if to_from.rule.respond_to?(:connection?) && to_from.rule.connection?
-                begin_middle_end.push_middle("-m state --state RELATED,ESTABLISHED")
+                begin_middle_end.push_middle("-m conntrack --ctstate RELATED,ESTABLISHED")
               end
 
               unless protocol.include?('icmp')

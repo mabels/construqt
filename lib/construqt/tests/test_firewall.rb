@@ -742,10 +742,10 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
-      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
+      "{FORWARD} -i testif -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -761,14 +761,14 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
-      "{FORWARD} -i testif -p tcp -s 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p tcp -s 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp -s 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp -s 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp -d 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp -d 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
+      "{FORWARD} -i testif -p tcp -s 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p tcp -s 2.2.2.2/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp -s 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp -s 2.2.2.2/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp -d 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp -d 2.2.2.2/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp -d 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp -d 2.2.2.2/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -784,14 +784,14 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
-      "{FORWARD} -i testif -p tcp -d 7.7.7.7/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p tcp -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp -d 7.7.7.7/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp -s 7.7.7.7/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp -s 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp -s 7.7.7.7/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp -s 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
+      "{FORWARD} -i testif -p tcp -d 7.7.7.7/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p tcp -d 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp -d 7.7.7.7/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp -d 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp -s 7.7.7.7/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp -s 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp -s 7.7.7.7/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp -s 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -814,8 +814,8 @@ class FirewallTest < Test::Unit::TestCase
       "{Tr5ZdQoctH7dXWBwFzVVA} -d 8.8.8.8/32 -j iPeobZ7IG2kKI0CfwQ",
       "{Tr5ZdQoctH7dXWBwFzVVA} -d 9.9.9.9/32 -j iPeobZ7IG2kKI0CfwQ",
       "{Tr5ZdQoctH7dXWBwFzVVA} -j RETURN",
-      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j Tr5ZdQoctH7dXWBwFzVVA",
-      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j Tr5ZdQoctH7dXWBwFzVVA",
+      "{FORWARD} -i testif -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j Tr5ZdQoctH7dXWBwFzVVA",
+      "{FORWARD} -i testif -p icmp -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j Tr5ZdQoctH7dXWBwFzVVA",
       "{WasXXTbxPbzCnpD9JqgfIA} -d 1.1.1.1/32 -j ACCEPT",
       "{WasXXTbxPbzCnpD9JqgfIA} -d 2.2.2.2/32 -j ACCEPT",
       "{WasXXTbxPbzCnpD9JqgfIA} -d 3.3.3.3/32 -j ACCEPT",
@@ -823,8 +823,8 @@ class FirewallTest < Test::Unit::TestCase
       "{ErkobMVYbQVNMcLiAA7A} -s 8.8.8.8/32 -j WasXXTbxPbzCnpD9JqgfIA",
       "{ErkobMVYbQVNMcLiAA7A} -s 9.9.9.9/32 -j WasXXTbxPbzCnpD9JqgfIA",
       "{ErkobMVYbQVNMcLiAA7A} -j RETURN",
-      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ErkobMVYbQVNMcLiAA7A",
-      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ErkobMVYbQVNMcLiAA7A"
+      "{FORWARD} -o testif -p tcp -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ErkobMVYbQVNMcLiAA7A",
+      "{FORWARD} -o testif -p icmp -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ErkobMVYbQVNMcLiAA7A"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -846,8 +846,8 @@ class FirewallTest < Test::Unit::TestCase
       "{QRenRkNC8fslLevet8auog} -s 1.1.1.1/32 -j gT2VAWpbC806nBxD1zTVg",
       "{QRenRkNC8fslLevet8auog} -s 2.2.2.2/32 -j gT2VAWpbC806nBxD1zTVg",
       "{QRenRkNC8fslLevet8auog} -j RETURN",
-      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j QRenRkNC8fslLevet8auog",
-      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j QRenRkNC8fslLevet8auog",
+      "{FORWARD} -i testif -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j QRenRkNC8fslLevet8auog",
+      "{FORWARD} -i testif -p icmp -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j QRenRkNC8fslLevet8auog",
       "{sIwP8wZDziROx9HKelprw} -s 7.7.7.7/32 -j ACCEPT",
       "{sIwP8wZDziROx9HKelprw} -s 8.8.8.8/32 -j ACCEPT",
       "{sIwP8wZDziROx9HKelprw} -s 9.9.9.9/32 -j ACCEPT",
@@ -855,8 +855,8 @@ class FirewallTest < Test::Unit::TestCase
       "{XukrDZP3wUMxYRArTUJn0w} -d 1.1.1.1/32 -j sIwP8wZDziROx9HKelprw",
       "{XukrDZP3wUMxYRArTUJn0w} -d 2.2.2.2/32 -j sIwP8wZDziROx9HKelprw",
       "{XukrDZP3wUMxYRArTUJn0w} -j RETURN",
-      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j XukrDZP3wUMxYRArTUJn0w",
-      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j XukrDZP3wUMxYRArTUJn0w"
+      "{FORWARD} -o testif -p tcp -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j XukrDZP3wUMxYRArTUJn0w",
+      "{FORWARD} -o testif -p icmp -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j XukrDZP3wUMxYRArTUJn0w"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -871,10 +871,10 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
-      "{FORWARD} -i testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT"
+      "{FORWARD} -i testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -890,10 +890,10 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
-      "{FORWARD} -i testif -p tcp -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
+      "{FORWARD} -i testif -p tcp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -908,10 +908,10 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [
-      "{INPUT} -i testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{INPUT} -i testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
-      "{OUTPUT} -o testif -p tcp -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{OUTPUT} -o testif -p icmp -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT"
+      "{INPUT} -i testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{INPUT} -i testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{OUTPUT} -o testif -p tcp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{OUTPUT} -o testif -p icmp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -925,10 +925,10 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
-      "{FORWARD} -i testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
+      "{FORWARD} -i testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -943,10 +943,10 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [
-      "{INPUT} -i testif -p tcp -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{INPUT} -i testif -p icmp -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
-      "{OUTPUT} -o testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{OUTPUT} -o testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT"
+      "{INPUT} -i testif -p tcp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{INPUT} -i testif -p icmp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{OUTPUT} -o testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{OUTPUT} -o testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -1083,18 +1083,18 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
-      "{FORWARD} -i testif -p tcp -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp ! -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp ! -s 1.1.1.1/32 -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
-      "{FORWARD} -i testif -p tcp ! -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp ! -s 8.8.8.8/32 -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp -s 1.1.1.1/32 ! -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp -s 1.1.1.1/32 ! -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
-      "{FORWARD} -i testif -p tcp ! -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp ! -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp ! -s 1.1.1.1/32 ! -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp ! -s 1.1.1.1/32 ! -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
+      "{FORWARD} -i testif -p tcp -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp ! -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -i testif -p tcp ! -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp ! -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp -s 1.1.1.1/32 ! -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp -s 1.1.1.1/32 ! -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -i testif -p tcp ! -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp ! -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -s 1.1.1.1/32 ! -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp ! -s 1.1.1.1/32 ! -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -1109,22 +1109,22 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
-      "{FORWARD} -i testif -p tcp ! -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p tcp ! -d 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp ! -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp ! -d 2.2.2.2/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp ! -s 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp ! -s 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp ! -s 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp ! -s 2.2.2.2/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
-      "{FORWARD} -i testif -p tcp ! -s 7.7.7.7/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p tcp ! -s 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp ! -s 7.7.7.7/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -i testif -p icmp ! -s 8.8.8.8/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp ! -d 7.7.7.7/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p tcp ! -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp ! -d 7.7.7.7/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
-      "{FORWARD} -o testif -p icmp ! -d 8.8.8.8/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
+      "{FORWARD} -i testif -p tcp ! -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p tcp ! -d 2.2.2.2/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp ! -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp ! -d 2.2.2.2/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -s 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -s 2.2.2.2/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp ! -s 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp ! -s 2.2.2.2/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -i testif -p tcp ! -s 7.7.7.7/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p tcp ! -s 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp ! -s 7.7.7.7/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -i testif -p icmp ! -s 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -d 7.7.7.7/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p tcp ! -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp ! -d 7.7.7.7/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
+      "{FORWARD} -o testif -p icmp ! -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -1146,8 +1146,8 @@ class FirewallTest < Test::Unit::TestCase
       "{I3zewsVvinLWrKK7Wc4dA} -d 1.1.1.1/32 -j RETURN",
       "{I3zewsVvinLWrKK7Wc4dA} -d 2.2.2.2/32 -j RETURN",
       "{I3zewsVvinLWrKK7Wc4dA} -j sIwP8wZDziROx9HKelprw",
-      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j I3zewsVvinLWrKK7Wc4dA",
-      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j I3zewsVvinLWrKK7Wc4dA",
+      "{FORWARD} -i testif -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j I3zewsVvinLWrKK7Wc4dA",
+      "{FORWARD} -i testif -p icmp -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j I3zewsVvinLWrKK7Wc4dA",
       "{gT2VAWpbC806nBxD1zTVg} -d 7.7.7.7/32 -j ACCEPT",
       "{gT2VAWpbC806nBxD1zTVg} -d 8.8.8.8/32 -j ACCEPT",
       "{gT2VAWpbC806nBxD1zTVg} -d 9.9.9.9/32 -j ACCEPT",
@@ -1155,18 +1155,18 @@ class FirewallTest < Test::Unit::TestCase
       "{FPMxJtY8JjfKWxMFP9OLDw} -s 1.1.1.1/32 -j RETURN",
       "{FPMxJtY8JjfKWxMFP9OLDw} -s 2.2.2.2/32 -j RETURN",
       "{FPMxJtY8JjfKWxMFP9OLDw} -j gT2VAWpbC806nBxD1zTVg",
-      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j FPMxJtY8JjfKWxMFP9OLDw",
-      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j FPMxJtY8JjfKWxMFP9OLDw",
+      "{FORWARD} -o testif -p tcp -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j FPMxJtY8JjfKWxMFP9OLDw",
+      "{FORWARD} -o testif -p icmp -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j FPMxJtY8JjfKWxMFP9OLDw",
       "{3trynWY1zSiKamIM5V9hQ} -s 7.7.7.7/32 -j RETURN",
       "{3trynWY1zSiKamIM5V9hQ} -s 8.8.8.8/32 -j RETURN",
       "{3trynWY1zSiKamIM5V9hQ} -j gT2VAWpbC806nBxD1zTVg",
-      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j 3trynWY1zSiKamIM5V9hQ",
-      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j 3trynWY1zSiKamIM5V9hQ",
+      "{FORWARD} -i testif -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j 3trynWY1zSiKamIM5V9hQ",
+      "{FORWARD} -i testif -p icmp -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j 3trynWY1zSiKamIM5V9hQ",
       "{vNcQPp4uj7YABjmtz1dQ} -d 7.7.7.7/32 -j RETURN",
       "{vNcQPp4uj7YABjmtz1dQ} -d 8.8.8.8/32 -j RETURN",
       "{vNcQPp4uj7YABjmtz1dQ} -j sIwP8wZDziROx9HKelprw",
-      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j vNcQPp4uj7YABjmtz1dQ",
-      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j vNcQPp4uj7YABjmtz1dQ"
+      "{FORWARD} -o testif -p tcp -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j vNcQPp4uj7YABjmtz1dQ",
+      "{FORWARD} -o testif -p icmp -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j vNcQPp4uj7YABjmtz1dQ"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -1188,8 +1188,8 @@ class FirewallTest < Test::Unit::TestCase
       "{mq4jd1nRg75YJUTa83m0g} -d 1.1.1.1/32 -j JX0nORdnJqC8u2FGJriOsQ",
       "{mq4jd1nRg75YJUTa83m0g} -d 2.2.2.2/32 -j JX0nORdnJqC8u2FGJriOsQ",
       "{mq4jd1nRg75YJUTa83m0g} -j RETURN",
-      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j mq4jd1nRg75YJUTa83m0g",
-      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j mq4jd1nRg75YJUTa83m0g",
+      "{FORWARD} -i testif -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j mq4jd1nRg75YJUTa83m0g",
+      "{FORWARD} -i testif -p icmp -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j mq4jd1nRg75YJUTa83m0g",
       "{PHUYy7LaQoiHgKPa5p7q7A} -d 7.7.7.7/32 -j RETURN",
       "{PHUYy7LaQoiHgKPa5p7q7A} -d 8.8.8.8/32 -j RETURN",
       "{PHUYy7LaQoiHgKPa5p7q7A} -d 9.9.9.9/32 -j RETURN",
@@ -1197,18 +1197,18 @@ class FirewallTest < Test::Unit::TestCase
       "{U4DG3JULUtRzrLuUMyq6w} -s 1.1.1.1/32 -j PHUYy7LaQoiHgKPa5p7q7A",
       "{U4DG3JULUtRzrLuUMyq6w} -s 2.2.2.2/32 -j PHUYy7LaQoiHgKPa5p7q7A",
       "{U4DG3JULUtRzrLuUMyq6w} -j RETURN",
-      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j U4DG3JULUtRzrLuUMyq6w",
-      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j U4DG3JULUtRzrLuUMyq6w",
+      "{FORWARD} -o testif -p tcp -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j U4DG3JULUtRzrLuUMyq6w",
+      "{FORWARD} -o testif -p icmp -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j U4DG3JULUtRzrLuUMyq6w",
       "{AIlaUU0pMDc1pXufWIXfgg} -s 7.7.7.7/32 -j PHUYy7LaQoiHgKPa5p7q7A",
       "{AIlaUU0pMDc1pXufWIXfgg} -s 8.8.8.8/32 -j PHUYy7LaQoiHgKPa5p7q7A",
       "{AIlaUU0pMDc1pXufWIXfgg} -j RETURN",
-      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j AIlaUU0pMDc1pXufWIXfgg",
-      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j AIlaUU0pMDc1pXufWIXfgg",
+      "{FORWARD} -i testif -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j AIlaUU0pMDc1pXufWIXfgg",
+      "{FORWARD} -i testif -p icmp -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j AIlaUU0pMDc1pXufWIXfgg",
       "{wSvSDuTkCBR4RRctnIpjg} -d 7.7.7.7/32 -j JX0nORdnJqC8u2FGJriOsQ",
       "{wSvSDuTkCBR4RRctnIpjg} -d 8.8.8.8/32 -j JX0nORdnJqC8u2FGJriOsQ",
       "{wSvSDuTkCBR4RRctnIpjg} -j RETURN",
-      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j wSvSDuTkCBR4RRctnIpjg",
-      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j wSvSDuTkCBR4RRctnIpjg"
+      "{FORWARD} -o testif -p tcp -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j wSvSDuTkCBR4RRctnIpjg",
+      "{FORWARD} -o testif -p icmp -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j wSvSDuTkCBR4RRctnIpjg"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -1230,8 +1230,8 @@ class FirewallTest < Test::Unit::TestCase
       "{IDoervDkCW1GiaqZeQnJA} -d 1.1.1.1/32 -j RETURN",
       "{IDoervDkCW1GiaqZeQnJA} -d 2.2.2.2/32 -j RETURN",
       "{IDoervDkCW1GiaqZeQnJA} -j JX0nORdnJqC8u2FGJriOsQ",
-      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j IDoervDkCW1GiaqZeQnJA",
-      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j IDoervDkCW1GiaqZeQnJA",
+      "{FORWARD} -i testif -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j IDoervDkCW1GiaqZeQnJA",
+      "{FORWARD} -i testif -p icmp -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j IDoervDkCW1GiaqZeQnJA",
       "{PHUYy7LaQoiHgKPa5p7q7A} -d 7.7.7.7/32 -j RETURN",
       "{PHUYy7LaQoiHgKPa5p7q7A} -d 8.8.8.8/32 -j RETURN",
       "{PHUYy7LaQoiHgKPa5p7q7A} -d 9.9.9.9/32 -j RETURN",
@@ -1239,18 +1239,18 @@ class FirewallTest < Test::Unit::TestCase
       "{OJ6ne4MtXMQehUOI7Ajmvw} -s 1.1.1.1/32 -j RETURN",
       "{OJ6ne4MtXMQehUOI7Ajmvw} -s 2.2.2.2/32 -j RETURN",
       "{OJ6ne4MtXMQehUOI7Ajmvw} -j PHUYy7LaQoiHgKPa5p7q7A",
-      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j OJ6ne4MtXMQehUOI7Ajmvw",
-      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j OJ6ne4MtXMQehUOI7Ajmvw",
+      "{FORWARD} -o testif -p tcp -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j OJ6ne4MtXMQehUOI7Ajmvw",
+      "{FORWARD} -o testif -p icmp -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j OJ6ne4MtXMQehUOI7Ajmvw",
       "{PXkAftc146vAPJTc4QIr7Q} -s 7.7.7.7/32 -j RETURN",
       "{PXkAftc146vAPJTc4QIr7Q} -s 8.8.8.8/32 -j RETURN",
       "{PXkAftc146vAPJTc4QIr7Q} -j PHUYy7LaQoiHgKPa5p7q7A",
-      "{FORWARD} -i testif -p tcp -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j PXkAftc146vAPJTc4QIr7Q",
-      "{FORWARD} -i testif -p icmp -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j PXkAftc146vAPJTc4QIr7Q",
+      "{FORWARD} -i testif -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j PXkAftc146vAPJTc4QIr7Q",
+      "{FORWARD} -i testif -p icmp -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j PXkAftc146vAPJTc4QIr7Q",
       "{kBg9SS5Cgta74ABPRSTlbg} -d 7.7.7.7/32 -j RETURN",
       "{kBg9SS5Cgta74ABPRSTlbg} -d 8.8.8.8/32 -j RETURN",
       "{kBg9SS5Cgta74ABPRSTlbg} -j JX0nORdnJqC8u2FGJriOsQ",
-      "{FORWARD} -o testif -p tcp -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j kBg9SS5Cgta74ABPRSTlbg",
-      "{FORWARD} -o testif -p icmp -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j kBg9SS5Cgta74ABPRSTlbg"
+      "{FORWARD} -o testif -p tcp -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j kBg9SS5Cgta74ABPRSTlbg",
+      "{FORWARD} -o testif -p icmp -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j kBg9SS5Cgta74ABPRSTlbg"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -1268,23 +1268,23 @@ class FirewallTest < Test::Unit::TestCase
       "{q5qOileEfiWcsSA2VF1RqQ} -s 7.7.7.7/32 -j ACCEPT",
       "{q5qOileEfiWcsSA2VF1RqQ} -s 8.8.8.8/32 -j ACCEPT",
       "{q5qOileEfiWcsSA2VF1RqQ} -j RETURN",
-      "{FORWARD} -i testif -p tcp -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j q5qOileEfiWcsSA2VF1RqQ",
-      "{FORWARD} -i testif -p icmp -d 1.1.1.1/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j q5qOileEfiWcsSA2VF1RqQ",
+      "{FORWARD} -i testif -p tcp -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j q5qOileEfiWcsSA2VF1RqQ",
+      "{FORWARD} -i testif -p icmp -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j q5qOileEfiWcsSA2VF1RqQ",
       "{GcN7oXzN0S6xWaQvWpJow} -d 7.7.7.7/32 -j ACCEPT",
       "{GcN7oXzN0S6xWaQvWpJow} -d 8.8.8.8/32 -j ACCEPT",
       "{GcN7oXzN0S6xWaQvWpJow} -j RETURN",
-      "{FORWARD} -o testif -p tcp -s 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j GcN7oXzN0S6xWaQvWpJow",
-      "{FORWARD} -o testif -p icmp -s 1.1.1.1/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j GcN7oXzN0S6xWaQvWpJow",
+      "{FORWARD} -o testif -p tcp -s 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j GcN7oXzN0S6xWaQvWpJow",
+      "{FORWARD} -o testif -p icmp -s 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j GcN7oXzN0S6xWaQvWpJow",
       "{fRRuJfK6pBu0deeVX08Hyg} -s 7.7.7.7/32 -j RETURN",
       "{fRRuJfK6pBu0deeVX08Hyg} -s 8.8.8.8/32 -j RETURN",
       "{fRRuJfK6pBu0deeVX08Hyg} -j ACCEPT",
-      "{FORWARD} -i testif -p tcp ! -d 9.9.9.9/32 -m state --state RELATED,ESTABLISHED -m multiport --sports 22 -j fRRuJfK6pBu0deeVX08Hyg",
-      "{FORWARD} -i testif -p icmp ! -d 9.9.9.9/32 -m state --state RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j fRRuJfK6pBu0deeVX08Hyg",
+      "{FORWARD} -i testif -p tcp ! -d 9.9.9.9/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j fRRuJfK6pBu0deeVX08Hyg",
+      "{FORWARD} -i testif -p icmp ! -d 9.9.9.9/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j fRRuJfK6pBu0deeVX08Hyg",
       "{KCAXNiU0DNpRX0b4v7gg} -d 7.7.7.7/32 -j RETURN",
       "{KCAXNiU0DNpRX0b4v7gg} -d 8.8.8.8/32 -j RETURN",
       "{KCAXNiU0DNpRX0b4v7gg} -j ACCEPT",
-      "{FORWARD} -o testif -p tcp ! -s 9.9.9.9/32 -m state --state NEW,ESTABLISHED -m multiport --dports 22 -j KCAXNiU0DNpRX0b4v7gg",
-      "{FORWARD} -o testif -p icmp ! -s 9.9.9.9/32 -m state --state NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j KCAXNiU0DNpRX0b4v7gg"
+      "{FORWARD} -o testif -p tcp ! -s 9.9.9.9/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j KCAXNiU0DNpRX0b4v7gg",
+      "{FORWARD} -o testif -p icmp ! -s 9.9.9.9/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j KCAXNiU0DNpRX0b4v7gg"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -1316,12 +1316,12 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
-      "{FORWARD} -i testif -s 29::29:29:1/128 -d 2000::/3 -m state --state NEW,ESTABLISHED -j ACCEPT",
-      "{FORWARD} -o testif -s 2000::/3 -d 29::29:29:1/128 -m state --state RELATED,ESTABLISHED -j ACCEPT"
+      "{FORWARD} -i testif -s 29::29:29:1/128 -d 2000::/3 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT",
+      "{FORWARD} -o testif -s 2000::/3 -d 29::29:29:1/128 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
     ], writer.ipv6.rows
     assert_equal [
-      "{FORWARD} -i testif -s 29.29.29.1/32 -d 0.0.0.0/0 -m state --state NEW,ESTABLISHED -j ACCEPT",
-      "{FORWARD} -o testif -s 0.0.0.0/0 -d 29.29.29.1/32 -m state --state RELATED,ESTABLISHED -j ACCEPT"
+      "{FORWARD} -i testif -s 29.29.29.1/32 -d 0.0.0.0/0 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT",
+      "{FORWARD} -o testif -s 0.0.0.0/0 -d 29.29.29.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
     ], writer.ipv4.rows
   end
 
