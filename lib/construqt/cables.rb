@@ -3,13 +3,10 @@ module Construqt
 
   class Cables
 
+    attr_reader :region, :cables
     def initialize(region)
       @region = region
       @cables = {}
-    end
-
-    def region
-      @region
     end
 
     class Cable

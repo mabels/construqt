@@ -32,6 +32,7 @@ module Construqt
           "bridge" => BridgeDelegate,
           "bond" => BondDelegate,
           "vlan" => VlanDelegate,
+          "ipsecvpn" => IpsecVpnDelegate,
           #"result" => ResultDelegate,
           "template" => TemplateDelegate
         }

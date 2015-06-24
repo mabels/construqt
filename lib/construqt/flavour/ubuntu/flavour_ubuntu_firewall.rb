@@ -451,7 +451,17 @@ module Construqt
             end
 
             if rule.get_action == Construqt::Firewalls::Actions::TCPMSS
-              ret << fw.entry!.action("TCPMSS --clamp-mss-to-pmtu").tcp.proto_flags("tcp", "--tcp-flags SYN,RST SYN")
+              if rule.get_ipv4_mss
+                ret << fw.entry!.action("TCPMSS --set-mss #{rule.get_ipv4_mss}")
+                    .copy_from_to(rule).ipv4.tcp.proto_flags("tcp", "--tcp-flags SYN,RST SYN")
+              else
+                ret << fw.entry!.action("TCPMSS --clamp-mss-to-pmtu").copy_from_to(rule).ipv4.tcp.proto_flags("tcp", "--tcp-flags SYN,RST SYN")
+              end
+              if rule.get_ipv6_mss
+                ret << fw.entry!.action("TCPMSS --set-mss #{rule.get_ipv6_mss}").copy_from_to(rule).ipv6.tcp.proto_flags("tcp", "--tcp-flags SYN,RST SYN")
+              else
+                ret << fw.entry!.action("TCPMSS --clamp-mss-to-pmtu").copy_from_to(rule).ipv6.tcp.proto_flags("tcp", "--tcp-flags SYN,RST SYN")
+              end
               next
             end
 

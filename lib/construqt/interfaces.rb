@@ -88,6 +88,16 @@ module Construqt
       dev
     end
 
+    def add_ipsecvpn(host, name, cfg)
+      throw "we need an left_interface on this cfg #{cfg.inspect}" unless cfg['left_interface']
+      throw "we need an ipv6_proxy on this cfg #{cfg.inspect}" unless cfg['ipv6_proxy']
+      throw "we need an right_address on this cfg #{cfg.inspect}" unless cfg['right_address']
+      cfg['clazz'] = "ipsecvpn"
+      dev = add_device(host, name, cfg)
+      dev.address.interface = host.interfaces[name] if dev.address
+      dev
+    end
+
     def add_vlan(host, name, cfg)
       unless cfg["vlan_id"].to_s.match(/^[0-9]+$/) && 1 <= cfg["vlan_id"].to_i && cfg["vlan_id"].to_i < 4096
         throw "vlan_id must be set on vlan with name #{name}"
@@ -203,7 +213,7 @@ module Construqt
         end
 
         #binding.pry
-        ["host", "device", "vlan", "bond", "bridge", "vrrp", "gre", "bgp", "opvn", "ipsec"].each do |key|
+        ["host", "device", "vlan", "bond", "bridge", "vrrp", "gre", "bgp", "opvn", "ipsec", "ipsecvpn"].each do |key|
           next unless by_clazz[key]
           by_clazz[key].each do |interface|
             #Construqt.logger.debug "Interface:build_config:#{interface.name}:#{interface.class.name}:#{interface.ident}"

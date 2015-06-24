@@ -17,6 +17,10 @@ module Construqt
         @services = Construqt::Services.new(self)
         @resources = Construqt::Resources.new(self)
       end
+
+      def get_default_group
+        "admin"
+      end
     end
 
     def self.add(name, network, registry = nil)

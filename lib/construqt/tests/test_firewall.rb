@@ -1342,6 +1342,23 @@ class FirewallTest < Test::Unit::TestCase
      "{FORWARD} -o testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu"
     ], writer.ipv4.rows
   end
+  def test_forward_tcp_mss_value
+    fw = Construqt::Firewalls.add("l-tcp-mss-value") do |fw|
+      fw.forward do |forward|
+        forward.add.action(Construqt::Firewalls::Actions::TCPMSS).mss(1220)
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [
+     "{FORWARD} -i testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1220",
+     "{FORWARD} -o testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1220"
+    ], writer.ipv4.rows
+    assert_equal [
+     "{FORWARD} -i testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1196",
+     "{FORWARD} -o testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1196"
+    ], writer.ipv6.rows
+  end
 end
 
 #result = RubyProf.stop

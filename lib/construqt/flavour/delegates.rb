@@ -162,6 +162,13 @@ module Construqt
         @users = host.users || host.region.users
       end
 
+      def get_groups
+        if self.delegate.add_groups.instance_of? String
+          self.delegate.add_groups = [ self.delegate.add_groups ]
+        end
+        self.delegate.add_groups || []
+      end
+
       def address
         my = Construqt::Addresses::Address.new(delegate.region.network)
         self.interfaces.values.each do |i|
@@ -319,6 +326,34 @@ module Construqt
       include Delegate
       def initialize(template)
         self.delegate = template
+      end
+    end
+
+    class IpsecVpnDelegate
+      include Delegate
+      def initialize(ipsecvpn)
+        self.delegate = ipsecvpn
+      end
+      def left_interface
+        self.delegate.left_interface
+      end
+      def ipv6_proxy
+        self.delegate.ipv6_proxy
+      end
+      def right_address
+        self.delegate.right_address
+      end
+      def auth_method
+        self.delegate.auth_method
+      end
+      def users
+        self.delegate.users
+      end
+      def leftcert
+        self.delegate.leftcert
+      end
+      def leftpsk
+        self.delegate.leftpsk
       end
     end
 

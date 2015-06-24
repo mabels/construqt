@@ -31,5 +31,14 @@ module Construqt
     def all
       @users.values
     end
+
+    def get_authorized_keys(host)
+      groups = [@region.get_default_group] + host.get_groups
+      puts "#{host.name} #{groups.inspect}"
+      all.select do |user|
+        user.public_key && groups.include?(user.group)
+      end.map { |user| user.public_key }
+    end
+
   end
 end

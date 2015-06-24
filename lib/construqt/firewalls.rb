@@ -44,6 +44,28 @@ module Construqt
       end
     end
 
+    module TcpMss
+      def mss(mss)
+        ipv4_mss(mss)
+        ipv6_mss(mss-((2*(128-32))/8))
+        self
+      end
+      def ipv6_mss(mss)
+        @ipv6_mss = mss
+        self
+      end
+      def get_ipv6_mss
+        @ipv6_mss
+      end
+      def ipv4_mss(mss)
+        @ipv4_mss = mss
+        self
+      end
+      def get_ipv4_mss
+        @ipv4_mss
+      end
+    end
+
     module AttachInterface
       attr_reader :attached_interface
       def _rules_attach_iface(iface)
@@ -218,6 +240,19 @@ module Construqt
     end
 
     module FromTo
+      def copy_from_to(rule)
+        from_net(rule.get_from_net)
+        from_host(rule.get_from_host)
+        not_from(rule.not_from?)
+        from_me(rule.from_me?)
+        from_my_net(rule.from_my_net?)
+        to_net(rule.get_to_net)
+        to_host(rule.get_to_host)
+        not_to(rule.not_to?)
+        to_me(rule.to_me?)
+        to_my_net(rule.to_my_net?)
+        include_routes(rule.include_routes?)
+      end
       def from_net(val = :to_net)
         @from_net = val
         self
@@ -237,8 +272,8 @@ module Construqt
         @to_net
       end
 
-      def not_from
-        @not_from=true
+      def not_from(val = true)
+        @not_from=val
         self
       end
 
@@ -246,8 +281,8 @@ module Construqt
         @not_from
       end
 
-      def not_to
-        @not_to=true
+      def not_to(val = true)
+        @not_to=val
         self
       end
 
@@ -273,8 +308,8 @@ module Construqt
         defined?(@to_host) ? @to_host : :undefined
       end
 
-      def include_routes
-        @include_routes = true
+      def include_routes(val = true)
+        @include_routes = val
         self
       end
 
@@ -282,8 +317,8 @@ module Construqt
         @include_routes
       end
 
-      def from_me
-        @from_me = true
+      def from_me(val = true)
+        @from_me = val
         self
       end
 
@@ -291,8 +326,8 @@ module Construqt
         @from_me
       end
 
-      def to_me
-        @to_me = true
+      def to_me(val = true)
+        @to_me = val
         self
       end
 
@@ -300,8 +335,8 @@ module Construqt
         @to_me
       end
 
-      def from_my_net
-        @from_my_net = true
+      def from_my_net(val = true)
+        @from_my_net = val
         self
       end
 
@@ -309,8 +344,8 @@ module Construqt
         @from_my_net
       end
 
-      def to_my_net
-        @to_my_net = true
+      def to_my_net(val = true)
+        @to_my_net = val
         self
       end
 
@@ -896,6 +931,7 @@ module Construqt
           include Util::Chainable
           include FromTo
           include InputOutputOnly
+          include TcpMss
           include Ports
           include ActionAndInterface
           include FromIsInOutBound

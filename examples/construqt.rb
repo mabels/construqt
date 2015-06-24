@@ -1,3 +1,4 @@
+require 'pry'
 require 'net/ssh'
 require 'net/scp'
 
@@ -12,11 +13,13 @@ require_relative './password.rb'
 Construqt::Flavour::del_aspect("plantuml") unless ARGV.include?("plantuml")
 
 network = Construqt::Networks.add('construqt')
-network.set_domain("construqt.net")
+network.set_domain("adviser.com")
 network.set_contact("meno.abels.construqt.net")
 network.set_dns_resolver(network.addresses.set_name("NAMESERVER").
                          add_ip("8.8.8.8").
                          add_ip("8.8.4.4"), [network.domain])
+ipsec_certificate(network)
+
 region = Construqt::Regions.add("winsen", network)
 
 region.services.add(Construqt::Services::Radvd.new("RADVD").adv_autonomous)
@@ -82,17 +85,33 @@ fanout_de = region.hosts.add("fanout-de", "flavour" => "ubuntu") do |host|
                                :description=>"#{host.name} lo",
                                "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
 
+  left_if = nil
   host.configip = host.id ||= Construqt::HostId.create do |my|
-    my.interfaces << region.interfaces.add_device(host, "eth0",
+    my.interfaces << left_if = region.interfaces.add_device(host, "eth0",
           "mtu" => 1500,
           'proxy_neigh' => Construqt::Tags.resolver_net("#SERVICE-TRANSIT#SERVICE-NET", Construqt::Addresses::IPV6),
           'address' => region.network.addresses.add_ip("78.47.4.51/29#FANOUT-DE")
                                             .add_route("0.0.0.0/0#INTERNET", "78.47.4.49")
                                             .add_ip("2a01:4f8:d15:1190:78:47:4:51/64")
                                             .add_route("2000::/3#INTERNET", "2a01:4f8:d15:1190::1"),
-          "firewalls" => ["host-outbound", "icmp-ping" , "ssh-srv", "ipsec-srv", "service-transit",
+          "firewalls" => ["fix-mss", "host-outbound", "icmp-ping" , "ssh-srv", "ipsec-srv", "service-transit",
                           "service-nat", "service-smtp", "service-dns", "service-imap", "block"])
   end
+  region.interfaces.add_ipsecvpn(host, "ipsec",
+                              "mtu" => 1380,
+                              "users" => ipsec_users,
+                              "auth_internal" => :internal,
+                              "left_interface" => left_if,
+                              "leftpsk" => IPSEC_LEFT_PSK,
+                              "leftcert" => region.network.cert_store.get_cert("fanout-de_adviser_com.crt"),
+                              "right_address" => region.network.addresses.add_ip("192.168.69.64/26#IPSECVPN")
+                                                                         .add_ip("2a01:4f8:d15:1190::cafe:0/112#IPSECVPN"),
+                              "ipv6_proxy" => true)
+  region.interfaces.add_bridge(host, "lxcbr",
+    "mtu" => 1500,
+    "interfaces" => [],
+    "address" => region.network.addresses.add_ip("169.254.12.1/24"))
+
 end
 
 
@@ -137,15 +156,15 @@ Construqt::Ipsecs.connection("#{fanout_de.name}<=>#{service_gw.name}",
                       .add_ip("169.254.66.6/30#SERVICE-GW")
                       .add_ip("2a01:4f8:d15:1190::6/126#SERVICE-TRANSIT#SERVICE-GW")
                       .add_route_from_tags("#INTERNET", "#FANOUT-DE-GW"),
-            'firewalls' => ["fix-mss", 'host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit',
-                            "service-smtp", "service-dns", "service-imap", 'block'],
+            'firewalls' => ['host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit',
+                            "service-smtp", "service-dns", "service-imap", "service-radius", 'block'],
             "host" => service_gw,
             "remote" => region.interfaces.find(service_gw, "br24").address,
             "any" => true
           }
       )
 
-['imap-ng', 'bind-ng', 'smtp-ng'].each_with_index do |name, idx|
+['imap-ng', 'bind-ng', 'smtp-ng', 'ad'].each_with_index do |name, idx|
   region.hosts.add(name, "flavour" => "ubuntu") do |host|
     region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                  :description=>"#{host.name} lo",
@@ -172,9 +191,9 @@ fanout_us = region.hosts.add("fanout-us", "flavour" => "ubuntu") do |host|
           "mtu" => 1500,
           'address' => region.network.addresses.add_ip("162.218.210.74/24#FANOUT-US")
                                             .add_route("0.0.0.0/0#INTERNET", "162.218.210.1")
-                                            .add_ip("2602:ffea:1:7dd::eb38/48")
+                                            .add_ip("2602:ffea:1:7dd::eb38/44")
                                             .add_route("2000::/3#INTERNET", "2602:ffea:1::1"),
-          "firewalls" => ["host-us-outbound", "icmp-ping" , "ssh-srv", "ipsec-srv", "service-us-transit",
+          "firewalls" => ["fix-mss", "host-us-outbound", "icmp-ping" , "ssh-srv", "ipsec-srv", "service-us-transit",
                           "service-us-nat", "block"])
   end
 end
@@ -219,7 +238,7 @@ Construqt::Ipsecs.connection("#{fanout_us.name}<=>#{service_us.name}",
                       .add_ip("169.254.68.6/30#SERVICE-US-GW")
                       .add_ip("2602:ffea:1:7dd::6/126#SERVICE-US-TRANSIT#SERVICE-US-GW")
                       .add_route_from_tags("#INTERNET", "#FANOUT-US-GW"),
-            'firewalls' => ["fix-mss", 'host-us-outbound', 'icmp-ping', 'ssh-srv', 'service-us-transit', 'block'],
+            'firewalls' => ['host-us-outbound', 'icmp-ping', 'ssh-srv', 'service-us-transit', 'block'],
             "host" => service_us,
             "remote" => region.interfaces.find(service_us, "br24").address,
             "any" => true

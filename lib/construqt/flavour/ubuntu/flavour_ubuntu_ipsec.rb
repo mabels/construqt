@@ -170,10 +170,47 @@ RACOON
           end
 
           def self.header(host)
+            render_certs(host)
+            render_private_keys(host)
+            render_users(host)
             host.result.add(self, <<HEADER, Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
 config setup
-        uniqueids=yes
+  uniqueids=yes
 HEADER
+          end
+
+          def self.render_users(host)
+            #binding.pry
+            out = {}
+            host.interfaces.values.each do |iface|
+              next unless iface.kind_of?(Construqt::Flavour::IpsecVpnDelegate)
+              next unless iface.users
+              iface.users.each do |user|
+                out[user.name] = user.psk
+              end
+            end
+            host.result.add(self, "# ipsec users", Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
+            out.each do |name, psk|
+              host.result.add(self, <<USER, Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
+#{name} : XAUTH \"#{Util.password(psk)}\"
+#{name} : EAP   \"#{Util.password(psk)}\"
+USER
+            end
+          end
+
+          def self.render_private_keys(host)
+            host.result.add(self, "# ipsec private keys", Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
+            host.region.network.cert_store.all_private.keys.each do |key|
+              host.result.add(self, ": RSA #{key}", Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
+            end
+          end
+
+          def self.render_certs(host)
+            host.region.network.cert_store.all.each do |key, datas|
+              datas.each do |name, data|
+                host.result.add(self, data, Construqt::Resources::Rights.root_0600, "etc", "ipsec.d", key, name)
+              end
+            end
           end
 
           def psk(ip, cfg)

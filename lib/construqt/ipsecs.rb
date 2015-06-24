@@ -1,6 +1,13 @@
 
 module Construqt
   module Ipsecs
+    class User
+      attr_reader :name, :psk
+      def initialize(name, psk)
+        @name = name
+        @psk = psk
+      end
+    end
     class Ipsec
       attr_reader :rights, :lefts, :transport_family, :password
       attr_reader :name, :keyexchange, :description, :address

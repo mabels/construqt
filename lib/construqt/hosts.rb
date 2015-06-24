@@ -2,15 +2,11 @@
 module Construqt
 
   class Hosts
-
+  	attr_reader :region
     def initialize(region)
       @region = region
       @hosts = {}
       @default_pwd = SecureRandom.urlsafe_base64(24)
-    end
-
-    def region
-      @region
     end
 
     def set_default_password(pwd)
