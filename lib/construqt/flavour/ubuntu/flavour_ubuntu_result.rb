@@ -680,10 +680,11 @@ else
 fi
 BASH
           end.flatten
+          require 'shellwords'
           out += [<<BASH]
 git --git-dir /root/construqt.git config user.name #{ENV['USER']}
 git --git-dir /root/construqt.git config user.email #{ENV['USER']}@construqt.net
-git --git-dir /root/construqt.git --work-tree=/ commit -q -m '#{ENV['USER']} #{`hostname`.strip} "#{`git log --pretty=format:"%h - %an, %ar : %s" -1`.strip.inspect}"' > /dev/null && echo COMMITED
+git --git-dir /root/construqt.git --work-tree=/ commit -q -m #{Shellwords.escape("#{ENV['USER']} #{`hostname`.strip} #{`git log --pretty=format:"%h - %an, %ar : %s" -1`.strip}")} > /dev/null && echo COMMITED
 BASH
           Util.write_str(out.join("\n"), @host.name, "deployer.sh")
         end

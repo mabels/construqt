@@ -154,6 +154,7 @@ BOND
         end
         def build_config(host, iface)
           #puts ">>>>>>>>>>>>>>>>>>>>>>#{host.name} #{iface.name}"
+          render_ipv6_proxy(iface)
           if iface.leftpsk
             self.host.result.add(self, render_psk(host, iface),
                                  Construqt::Resources::Rights::root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
@@ -161,6 +162,30 @@ BOND
 
           self.host.result.add(self, render_ikev1(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
           self.host.result.add(self, render_ikev2(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
+        end
+
+        def render_ipv6_proxy(iface)
+          return unless iface.ipv6_proxy
+          host.result.add(self, <<UPDOWN_SH, Construqt::Resources::Rights.root_0755, "etc", "ipsec.d", "#{iface.left_interface.name}-ipv6_proxy_updown.sh")
+#!/bin/bash
+if [ $PLUTO_VERB = "up-client-v6" ]
+then
+	ipaddr=$(echo $PLUTO_PEER_CLIENT | sed 's|/.*$||')
+  logger "proxy-up-client_ipv6=$ipaddr:#{iface.left_interface.name}"
+  ip -6 neigh add proxy $ipaddr dev #{iface.left_interface.name}
+	exit 0
+fi
+if [ $PLUTO_VERB = "down-client-v6" ]
+then
+	ipaddr=$(echo $PLUTO_PEER_CLIENT | sed 's|/.*$||')
+  logger "proxy-down-client_ipv6=$ipaddr:#{iface.left_interface.name}"
+  ip -6 neigh del proxy $ipaddr dev #{iface.left_interface.name}
+	exit 0
+fi
+
+#(date;echo $@;env) >> /tmp/ipsec.log
+exit 0
+UPDOWN_SH
         end
 
         def render_psk(host, iface)
@@ -180,8 +205,8 @@ BOND
           conn.leftid = host.region.network.fqdn(host.name)
           conn.leftsubnet = "0.0.0.0/0,2000::/3"
           if iface.ipv6_proxy
-            conn.leftupdown = "/etc/ipsec.d/ipv6_proxy_updown.sh"
-            conn.rightupdown = "/etc/ipsec.d/ipv6_proxy_updown.sh"
+            conn.leftupdown = "/etc/ipsec.d/#{iface.left_interface.name}-ipv6_proxy_updown.sh"
+            conn.rightupdown = "/etc/ipsec.d/#{iface.left_interface.name}-ipv6_proxy_updown.sh"
           end
           conn.right = "%any"
           conn.rightsourceip = iface.right_address.ips.map{|i| i.network.to_string}.join(",")
@@ -207,8 +232,8 @@ BOND
           conn.leftid = host.region.network.fqdn(host.name)
           conn.leftsubnet = "0.0.0.0/0,2000::/3"
           if iface.ipv6_proxy
-            conn.leftupdown = "/etc/ipsec.d/ipv6_proxy_updown.sh"
-            conn.rightupdown = "/etc/ipsec.d/ipv6_proxy_updown.sh"
+            conn.leftupdown = "/etc/ipsec.d/#{iface.left_interface.name}-ipv6_proxy_updown.sh"
+            conn.rightupdown = "/etc/ipsec.d/#{iface.left_interface.name}-ipv6_proxy_updown.sh"
           end
           conn.right = "%any"
           conn.rightsourceip = iface.right_address.ips.map{|i| i.network.to_string}.join(",")
@@ -294,26 +319,6 @@ HOSTS
                            ["search #{host.region.network.dns_resolver.search.join(' ')}"]).join("\n"),
                           Construqt::Resources::Rights.root_0644, "etc", "resolv.conf")
 
-          host.result.add(self, <<UPDOWN_SH, Construqt::Resources::Rights.root_0755, "etc", "ipsec.d", "ipv6_proxy_updown.sh")
-#!/bin/bash
-if [ $PLUTO_VERB = "up-client-v6" ]
-then
-	ipaddr=$(echo $PLUTO_PEER_CLIENT | sed 's|/.*$||')
-	logger "up-client_ipv6=$ipaddr"
-	ip -6 neigh add proxy $ipaddr dev eth0
-	exit 0
-fi
-if [ $PLUTO_VERB = "down-client-v6" ]
-then
-	ipaddr=$(echo $PLUTO_PEER_CLIENT | sed 's|/.*$||')
-	logger "down-client_ipv6=$ipaddr"
-	ip -6 neigh del proxy $ipaddr dev eth0
-	exit 0
-fi
-
-(date;echo $@;env) >> /tmp/ipsec.log
-exit 0
-UPDOWN_SH
 
           #binding.pry
           Dns.build_config(host) if host.delegate.dns_server
