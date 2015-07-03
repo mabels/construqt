@@ -1,25 +1,15 @@
 package me.construqt.ciscian.chatter;
 
-import expect4j.Closure;
 import expect4j.Expect4j;
-import expect4j.ExpectState;
-import expect4j.matches.Match;
-import expect4j.matches.RegExpMatch;
 import me.construqt.ciscian.chatter.statemachine.Action;
 import me.construqt.ciscian.chatter.statemachine.Send;
 import me.construqt.ciscian.chatter.statemachine.StateMachine;
 import me.construqt.ciscian.chatter.statemachine.StringOutput;
-import org.apache.oro.text.regex.MalformedPatternException;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +17,6 @@ import java.util.Map;
  * Created by menabe on 29.06.15.
  */
 public class NgDlink {
-
 
   private StateMachine sm = new StateMachine();
   private Action helloMessage = sm.send("Hello World\n\n");
@@ -42,18 +31,18 @@ public class NgDlink {
   @Test
   public void test_Shell() throws Exception {
     helloMessage.then(userName);
-    userName.expect("testUser"+Send.EOL, null, passWord);
-    passWord.expect("testPwd"+Send.EOL, null, userShell);
+    userName.expect("testUser" + Send.EOL, null, passWord);
+    passWord.expect("testPwd" + Send.EOL, null, userShell);
     ServerSocket s = new ServerSocket();
     s.bind(new InetSocketAddress(4711));
     Socket conn = s.accept();
     Map<String, List<String>> log = sm.run(new Expect4j(conn.getInputStream(), conn.getOutputStream()), helloMessage);
     conn.close();
 
-    for(Map.Entry<String, List<String>> clazz : log.entrySet()) {
-      System.out.println("["+clazz.getKey()+"]");
+    for (Map.Entry<String, List<String>> clazz : log.entrySet()) {
+      System.out.println("[" + clazz.getKey() + "]");
       for (String v : clazz.getValue()) {
-        System.out.println("\t"+v);
+        System.out.println("\t" + v);
       }
     }
   }
