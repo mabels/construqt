@@ -28,4 +28,5 @@ public class ConnectResult {
 	public void setOutputStream(OutputStream outputStream) {
 		this.outputStream = outputStream;
 	}
+
 }

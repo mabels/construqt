@@ -2,32 +2,30 @@ package me.construqt.ciscian.chatter.flavour;
 
 import org.apache.commons.lang.NotImplementedException;
 
-import me.construqt.ciscian.chatter.steps.flavoured.Exit;
-import me.construqt.ciscian.chatter.steps.flavoured.ShowRunningConfig;
-import me.construqt.ciscian.chatter.steps.generic.CollectOutputStep;
-import me.construqt.ciscian.chatter.steps.generic.WaitForStep;
+//import me.construqt.ciscian.chatter.steps.flavoured.Exit;
+//import me.construqt.ciscian.chatter.steps.generic.WaitForStep;
 
 public class DellN40xxSwitchChatter extends GenericCiscoFlavourSwitchChatter {
+
+
 	public void applyConfig(String config) {
 		throw new RuntimeException("Not implemented.");
 	}
 
-	public void retrieveConfig() {
-		getOutputConsumer().addStep(new ShowRunningConfig());
-		getOutputConsumer().addStep(new WaitForStep("!Current Configuration:"));
-		getOutputConsumer().addStep(new WaitForStep("\n"));
-		getOutputConsumer().addStep(new CollectOutputStep(false, "\n\r"));
-	}
+//	public void retrieveConfig() {
+//		getFromDeviceConsumer().addStep(new ShowRunningConfig());
+//		getFromDeviceConsumer().addStep(new WaitForStep("!Current Configuration:"));
+//		getFromDeviceConsumer().addStep(new WaitForStep("\n"));
+//		getFromDeviceConsumer().addStep(new CollectOutputStep(false, "\n\r"));
+//	}
 
 	public void exit() {
-		getOutputConsumer().addStep(new Exit());
-		getOutputConsumer().addStep(new Exit());
 	}
 
-	@Override
-	protected void saveRunningConfig() {
-		throw new NotImplementedException(
-				"Saving is not implemented in this flavour.");
-	}
+//	@Override
+//	protected void saveRunningConfig() {
+//		throw new NotImplementedException(
+//				"Saving is not implemented in this flavour.");
+//	}
 
 }

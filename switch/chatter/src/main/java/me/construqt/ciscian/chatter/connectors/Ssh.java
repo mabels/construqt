@@ -9,8 +9,12 @@ import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.UserInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Ssh implements Connector {
+
+	private static final Logger LOG = LoggerFactory.getLogger(Ssh.class);
 
 	private Session session;
 
@@ -32,6 +36,7 @@ public class Ssh implements Connector {
 			this.port = Integer.parseInt(m.group(2));
 			this.user = user;
 			this.pass = pass;
+			LOG.debug("ssh:["+this.host+"]["+this.port+"]["+user+"]["+pass+"]");
 		} else {
 			throw new RuntimeException("Invalid ssh connect string "
 					+ connectString);
@@ -94,8 +99,4 @@ public class Ssh implements Connector {
 		session.disconnect();
 	}
 
-	@Override
-	public Type getType() {
-	    return Type.SSH;
-	}
 }
