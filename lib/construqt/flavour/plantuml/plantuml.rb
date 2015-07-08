@@ -183,6 +183,9 @@ UML
           "IpsecDelegate.build_config" => lambda do |type, host, *args|
             args.first.cfg
           end,
+          "IpsecVpnDelegate.build_config" => lambda do |type, host, *args|
+            args.first
+          end,
           "VrrpDelegate.build_config" => lambda do |type, host, *args|
             args.first
           end,
@@ -212,7 +215,7 @@ UML
         #binding.pry
         @tree.each do |ident,node|
           #binding.pry
-          #      Construqt.logger.debug "Planuml:build_tree=#{node.reference.class.name}=#{simple(node.reference.class)}"
+          #Construqt.logger.debug "Planuml:build_tree=#{node.reference.class.name}=#{simple(node.reference.class)}"
           {
             "Vrrp" => lambda do |node|
               node.reference.delegate.interfaces.each do |i|
@@ -252,6 +255,8 @@ UML
               node.connect @tree[interface.ident]
             end,
             "Opvn" => lambda do |node|
+            end,
+            "IpsecVpn" => lambda do |node|
             end,
             "Ipsec" => lambda do |node|
               [node.reference.lefts.first, node.reference.rights.first].each do |iface|

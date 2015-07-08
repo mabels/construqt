@@ -275,8 +275,14 @@ UPDOWN_SH
         end
 
         def build_config(host, iface)
-          #port_list = iface.interfaces.map { |i| i.name }.join(",")
-          #host.result.etc_network_interfaces.get(iface).lines.add("bridge_ports #{port_list}")
+          unless iface.interfaces.empty?
+            port_list = iface.interfaces.map { |i| i.name }.join(",")
+            host.result.etc_network_interfaces.get(iface).lines.add("bridge_ports #{port_list}")
+          else
+            lines = host.result.etc_network_interfaces.get(iface).lines
+            lines.up("brctl addbr #{iface.name}")
+            lines.down("brctl delbr #{iface.name}")
+          end
           Device.build_config(host, iface)
         end
       end

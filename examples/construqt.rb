@@ -8,7 +8,11 @@ require 'rubygems'
 require 'construqt'
 
 require_relative './firewall.rb'
-require_relative './password.rb'
+begin
+  require_relative './password.rb'
+rescue LoadError
+  require_relative './crashtestdummy.rb'
+end
 
 Construqt::Flavour::del_aspect("plantuml") unless ARGV.include?("plantuml")
 
@@ -215,6 +219,27 @@ service_us = region.hosts.add("service-us", "flavour" => "ubuntu") do |host|
           'address' => region.network.addresses
                   .add_ip("192.168.68.1/24#SERVICE-US-NET")
                   .add_ip("2602:ffea:1:7dd:192:168:68:1/123#SERVICE-US-NET"))
+end
+
+scott = region.hosts.add("scott", "flavour" => "ubuntu") do |host|
+  region.interfaces.add_device(host, "lo", "mtu" => "9000",
+                               :description=>"#{host.name} lo",
+                               "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
+  eth0 = region.interfaces.add_device(host, "eth0", "mtu" => 1500)
+  host.configip = host.id ||= Construqt::HostId.create do |my|
+    my.interfaces << region.interfaces.add_bridge(host, "br0", "mtu" => 1500,
+                               "interfaces" => [eth0],
+                               "address" => region.network.addresses.add_ip("192.168.176.1/24")
+                                                                    .add_route("0.0.0.0/0", "192.168.176.4"))
+  end
+  [24,66,67,68].each do |vlan|
+    region.interfaces.add_bridge(host, "br#{vlan}", "mtu" => 1500,
+                                 "interfaces" => [
+                                  region.interfaces.add_vlan(host, "eth0.#{vlan}",
+                                                   "vlan_id" => vlan,
+                                                   "mtu" => 1500,
+                                                   "interface" => eth0)])
+  end
 end
 
 Construqt::Ipsecs.connection("#{fanout_us.name}<=>#{service_us.name}",

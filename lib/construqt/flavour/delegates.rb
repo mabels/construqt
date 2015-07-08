@@ -355,6 +355,9 @@ module Construqt
       def leftpsk
         self.delegate.leftpsk
       end
+      def _ident
+        "IpsecVpn_#{self.host.name}_#{self.name}"
+      end
     end
 
     class IpsecDelegate
