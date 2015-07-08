@@ -13,7 +13,8 @@ https://docs.google.com/drawings/d/16ipb13nHpIuQmVJlAk3TNada8zNe9v3V-Wmv9cLiyWA/
 
 This is the generated network plan
 
-![alt tag](https://raw.github.com/mabels/construqt/master/example-world.svg)
+![alt tag](https://raw.github.com/mabels/construqt/master/example-world.png)
+https://raw.github.com/mabels/construqt/master/example-world.svg
 
 
 We should be able to build these new kind of infrastructure.
