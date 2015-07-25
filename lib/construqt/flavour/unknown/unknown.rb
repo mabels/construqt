@@ -35,6 +35,15 @@ module Construqt
         end
       end
 
+      class Wlan < OpenStruct
+        def initialize(cfg)
+          super(cfg)
+        end
+
+        def build_config(host, iface)
+        end
+      end
+
       class Vlan < OpenStruct
         def initialize(cfg)
           super(cfg)

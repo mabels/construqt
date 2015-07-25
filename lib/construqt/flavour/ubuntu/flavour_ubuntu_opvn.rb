@@ -7,6 +7,18 @@ module Construqt
           super(cfg)
         end
 
+        def self.header(host)
+          return unless host.has_interface_with_component?(Construqt::Resources::Component::OPENVPN)
+          host.result.add(self, <<PAM , Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::OPENVPN), "etc", "pam.d", "openvpn")
+          #{host.delegate.yubikey ? '':'# '}auth required pam_yubico.so id=16 authfile=/etc/yubikey_mappings
+auth [success=1 default=ignore] pam_unix.so nullok_secure try_first_pass
+auth requisite pam_deny.so
+
+@include common-account
+@include common-session-noninteractive
+PAM
+        end
+
         def build_config(host, opvn)
           iface = opvn.delegate
           local = iface.ipv6 ? host.id.first_ipv6.first_ipv6 : host.id.first_ipv4.first_ipv4

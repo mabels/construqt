@@ -148,6 +148,29 @@ BOND
         end
       end
 
+      class Wlan < OpenStruct
+        def initialize(cfg)
+          super(cfg)
+        end
+
+        def build_config(host, wlan)
+          wlan_delegate = wlan.delegate
+
+          mac_address = wlan_delegate.mac_address || Construqt::Util.generate_mac_address_from_name("#{host.name} #{wlan_delegate.name}")
+          host.result.etc_network_interfaces.get(wlan_delegate).lines.add(<<BOND)
+wpa-driver wext
+wpa-ssid #{wlan_delegate.ssid}
+wpa-ap-scan 1
+wpa-proto RSN
+wpa-pairwise CCMP
+wpa-group CCMP
+wpa-key-mgmt WPA-PSK
+wpa-psk #{OpenSSL::PKCS5.pbkdf2_hmac_sha1(wlan_delegate.psk, wlan_delegate.ssid, 4096, 32).bytes.to_a.map{|i| "%0x"%i}.join("")}
+BOND
+          Device.build_config(host, wlan)
+        end
+      end
+
       class IpsecVpn < OpenStruct
         def initialize(cfg)
           super(cfg)
@@ -279,9 +302,7 @@ UPDOWN_SH
             port_list = iface.interfaces.map { |i| i.name }.join(",")
             host.result.etc_network_interfaces.get(iface).lines.add("bridge_ports #{port_list}")
           else
-            lines = host.result.etc_network_interfaces.get(iface).lines
-            lines.up("brctl addbr #{iface.name}")
-            lines.down("brctl delbr #{iface.name}")
+            host.result.etc_network_interfaces.get(iface).lines.add("bridge_ports none")
           end
           Device.build_config(host, iface)
         end
@@ -430,14 +451,6 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 # and ChallengeResponseAuthentication to 'no'.
 UsePAM yes
 SSH
-          host.result.add(self, <<PAM , Construqt::Resources::Rights::root_0644, "etc", "pam.d", "openvpn")
-          #{host.delegate.yubikey ? '':'# '}auth required pam_yubico.so id=16 authfile=/etc/yubikey_mappings
-auth [success=1 default=ignore] pam_unix.so nullok_secure try_first_pass
-auth requisite pam_deny.so
-
-@include common-account
-@include common-session-noninteractive
-PAM
           #binding.pry
           host.delegate.files && host.delegate.files.each do |file|
             next if file.kind_of?(Construqt::Resources::SkipFile)
@@ -554,6 +567,7 @@ PAM
           "vrrp" => Vrrp,
           "bridge" => Bridge,
           "bond" => Bond,
+          "wlan" => Wlan,
           "vlan" => Vlan,
           "ipsecvpn" => IpsecVpn,
           #"result" => Result,

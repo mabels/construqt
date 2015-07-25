@@ -125,6 +125,15 @@ module Construqt
       dev
     end
 
+    def add_wlan(host, name, cfg)
+      not cfg['ssid'] and throw "ssid not one found"
+
+      cfg['clazz'] = "wlan"
+      dev = add_device(host, name, cfg)
+      dev.address.interface = host.interfaces[name] if dev.address
+      dev
+    end
+
     def add_vrrp(name, cfg)
       nets = {}
       ret = []
@@ -203,6 +212,7 @@ module Construqt
     def build_config(hosts = nil)
       (hosts||Hosts.get_hosts).each do |host|
         by_clazz = {}
+        #binding.pry if host.name == "kuckpi"
         host.interfaces.values.each do |interface|
           #throw "class less interface #{interface.inspect}" unless interface.clazz
           #throw "no clazz defined in interface #{interface.clazz}" unless interface.clazz.name
@@ -213,7 +223,8 @@ module Construqt
         end
 
         #binding.pry
-        ["host", "device", "vlan", "bond", "bridge", "vrrp", "gre", "bgp", "opvn", "ipsec", "ipsecvpn"].each do |key|
+        ["host", "device", "wlan", "vlan", "bond", "bridge",
+         "vrrp", "gre", "bgp", "opvn", "ipsec", "ipsecvpn"].each do |key|
           next unless by_clazz[key]
           by_clazz[key].each do |interface|
             #Construqt.logger.debug "Interface:build_config:#{interface.name}:#{interface.class.name}:#{interface.ident}"

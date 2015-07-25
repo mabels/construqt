@@ -395,6 +395,7 @@ OUT
           "vrrp" => Vrrp,
           "bridge" => Bridge,
           "bond" => Bond,
+          "wlan" => Wlan,
           "vlan" => Vlan,
           #"result" => Result,
           "template" => Template,

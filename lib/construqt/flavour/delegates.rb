@@ -121,6 +121,7 @@ module Construqt
 
     class OpvnDelegate
       include Delegate
+      COMPONENT = Construqt::Resources::Component::OPENVPN
       def initialize(opvn)
         self.delegate = opvn
       end
@@ -136,6 +137,7 @@ module Construqt
 
     class GreDelegate
       include Delegate
+      COMPONENT = Construqt::Resources::Component::UNREF
       def initialize(gre)
         self.delegate = gre
       end
@@ -151,6 +153,7 @@ module Construqt
 
     class HostDelegate
       include Delegate
+      COMPONENT = Construqt::Resources::Component::UNREF
       attr_reader :users, :bgps, :ipsecs
       def initialize(host)
         #binding.pry
@@ -167,6 +170,10 @@ module Construqt
           self.delegate.add_groups = [ self.delegate.add_groups ]
         end
         self.delegate.add_groups || []
+      end
+
+      def has_interface_with_component?(cp)
+        self.interfaces.values.find { |i| i.class::COMPONENT == cp }
       end
 
       def address
@@ -250,6 +257,7 @@ module Construqt
 
     class DeviceDelegate
       include Delegate
+      COMPONENT = Construqt::Resources::Component::UNREF
       def initialize(device)
         self.delegate = device
       end
@@ -263,6 +271,7 @@ module Construqt
 
     class VrrpDelegate
       include Delegate
+      COMPONENT = Construqt::Resources::Component::VRRP
       def initialize(vrrp)
         #binding.pry
         self.delegate = vrrp
@@ -275,6 +284,7 @@ module Construqt
 
     class BridgeDelegate
       include Delegate
+      COMPONENT = Construqt::Resources::Component::UNREF
       def initialize(bridge)
         self.delegate = bridge
       end
@@ -290,6 +300,7 @@ module Construqt
 
     class BondDelegate
       include Delegate
+      COMPONENT = Construqt::Resources::Component::UNREF
       def initialize(bond)
         self.delegate = bond
       end
@@ -303,8 +314,25 @@ module Construqt
       end
     end
 
+    class WlanDelegate
+      include Delegate
+      COMPONENT = Construqt::Resources::Component::UNREF
+      def initialize(wlan)
+        self.delegate = wlan
+      end
+
+      def _ident
+        "Wlan_#{self.host.name}_#{self.name}"
+      end
+
+      def interfaces
+        self.delegate.interfaces
+      end
+    end
+
     class VlanDelegate
       include Delegate
+      COMPONENT = Construqt::Resources::Component::UNREF
       def initialize(vlan)
         self.delegate = vlan
       end
@@ -324,6 +352,7 @@ module Construqt
 
     class TemplateDelegate
       include Delegate
+      COMPONENT = Construqt::Resources::Component::UNREF
       def initialize(template)
         self.delegate = template
       end
@@ -331,6 +360,7 @@ module Construqt
 
     class IpsecVpnDelegate
       include Delegate
+      COMPONENT = Construqt::Resources::Component::IPSEC
       def initialize(ipsecvpn)
         self.delegate = ipsecvpn
       end
@@ -362,6 +392,7 @@ module Construqt
 
     class IpsecDelegate
       include Delegate
+      COMPONENT = Construqt::Resources::Component::IPSEC
       def initialize(ipsec)
         self.delegate = ipsec
       end
@@ -421,6 +452,7 @@ module Construqt
 
     class BgpDelegate
       include Delegate
+      COMPONENT = Construqt::Resources::Component::BGP
       def initialize(bgp)
         self.delegate = bgp
       end

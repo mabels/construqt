@@ -8,6 +8,7 @@ module Construqt
         end
 
         def self.header(host)
+          return unless host.has_interface_with_component?(Construqt::Resources::Component::VRRP)
           host.result.add(self, <<GLOBAL, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::VRRP), "etc", "keepalived", "keepalived.conf")
 global_defs {
   lvs_id #{host.name}

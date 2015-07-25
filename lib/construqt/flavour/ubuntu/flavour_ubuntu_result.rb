@@ -415,7 +415,7 @@ BLOCK
             clazzes[name] << entry
           end
 
-          ['device', 'bond', 'vlan', 'bridge', 'gre'].each do |type|
+          ['device', 'wlan', 'bond', 'vlan', 'bridge', 'gre'].each do |type|
             out += (clazzes[type]||[]).select{|i| !out.first || i.name != out.first.name }.sort{|a,b| a.name<=>b.name }
           end
 
@@ -467,6 +467,10 @@ BLOCK
         end
 
         def commit(result)
+          unless @interfaces.keys.empty?
+
+            result.add(EtcConntrackdConntrackd, etc_conntrackd_conntrackd.commit, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::CONNTRACKD), "etc", "conntrackd", "conntrackd.conf")
+          end
           @interfaces.keys.sort.each do |ifname|
             vrrp = @interfaces[ifname]
             result.add(self, <<VRRP, Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::VRRP), "etc", "network", "vrrp.#{ifname}.stop.sh")
@@ -569,6 +573,7 @@ VRRP
           ret = {
             cp::UNREF => {},
             "Construqt::Flavour::DeviceDelegate" => {},
+            "Construqt::Flavour::Ubuntu::Wlan" => { },
             "Construqt::Flavour::Ubuntu::Bond" => { "ifenslave" => true },
             "Construqt::Flavour::VlanDelegate" => { "vlan" => true },
             "Construqt::Flavour::Ubuntu::Gre" => { },
@@ -596,7 +601,6 @@ VRRP
           add(EtcNetworkIptables, etc_network_iptables.commitv4, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4), "etc", "network", "iptables.cfg")
           add(EtcNetworkIptables, etc_network_iptables.commitv6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6), "etc", "network", "ip6tables.cfg")
           add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construqt::Resources::Rights.root_0644, "etc", "network", "interfaces")
-          add(EtcConntrackdConntrackd, etc_conntrackd_conntrackd.commit, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::CONNTRACKD), "etc", "conntrackd", "conntrackd.conf")
           @etc_network_vrrp.commit(self)
 
           components = @result.values.inject({

@@ -31,6 +31,7 @@ module Construqt
           "vrrp" => VrrpDelegate,
           "bridge" => BridgeDelegate,
           "bond" => BondDelegate,
+          "wlan" => WlanDelegate,
           "vlan" => VlanDelegate,
           "ipsecvpn" => IpsecVpnDelegate,
           #"result" => ResultDelegate,
