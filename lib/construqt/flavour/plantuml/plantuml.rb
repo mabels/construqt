@@ -114,6 +114,13 @@ UML
         tags = []
         out = []
         out << "name = \"#{iface.name}\""
+        if iface.respond_to?(:mtu) && iface.mtu
+          out << "mtu = \"#{iface.mtu}\""
+        end
+        if iface.respond_to?(:ssid) && iface.ssid
+          out << "ssid = \"#{iface.ssid}\""
+          out << "psk = \"#{iface.psk}\""
+        end
         out << "desc = \"#{iface.description}\"" if iface.description
         if iface.address
           [iface.address.v4s, iface.address.v6s].each do |ips|
@@ -180,6 +187,9 @@ UML
           "VlanDelegate.build_config" => lambda do |type, host, *args|
             args.first
           end,
+          "WlanDelegate.build_config" => lambda do |type, host, *args|
+            args.first
+          end,
           "IpsecDelegate.build_config" => lambda do |type, host, *args|
             args.first.cfg
           end,
@@ -239,6 +249,8 @@ UML
                 node.connect @tree[i.ident]
               end
             end,
+            "Wlan" => lambda do |node|
+            end,
             "Device" => lambda do |node|
               if node.reference.cable
                 node.connect @tree[node.reference.cable.other.ident]
@@ -273,7 +285,7 @@ UML
             "Host" => lambda do |node|
               node.reference.interfaces.values.each do |iface|
                 next if simple(iface.class) == "Vrrp"
-                #Construqt.logger.debug "Planuml:Host:#{iface.name}:#{iface.ident}:#{simple(iface.class)}"
+                Construqt.logger.debug "Planuml:Host:#{iface.name}:#{iface.ident}:#{simple(iface.class)}"
                 node.connect @tree[iface.ident]
               end
             end
@@ -434,6 +446,8 @@ skinparam object {
   BackgroundColor<<Bond>> Orange
   ArrowColor<<Vlan>> Yellow
   BackgroundColor<<Vlan>> Yellow
+  ArrowColor<<Wlan>> Red
+  BackgroundColor<<Wlan>> Red
   ArrowColor<<Bridge>> Pink
   BackgroundColor<<Bridge>> Pink
 }
@@ -444,6 +458,7 @@ skinparam stereotypeBackgroundColor<<Vrrp>> OrangeRed
 skinparam stereotypeBackgroundColor<<Device>> YellowGreen
 skinparam stereotypeBackgroundColor<<Bond>> Orange
 skinparam stereotypeBackgroundColor<<Vlan>> Yellow
+skinparam stereotypeBackgroundColor<<Wlan>> Red
 skinparam stereotypeBackgroundColor<<Bridge>> Pink
 UML
               file.write(out.join("\n") + "\n")

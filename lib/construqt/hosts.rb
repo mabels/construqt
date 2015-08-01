@@ -46,7 +46,7 @@ module Construqt
       cfg['dns_server'] ||= false
       cfg['result'] = nil
       cfg['shadow'] ||= nil
-      cfg['flavour'] = Flavour.find(cfg['flavour'] || 'ubuntu')
+      cfg['flavour'] = Flavour.factory(cfg)
       #		cfg['clazz'] = cfg['flavour'].clazz("host")
       throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
       cfg['region'] = @region

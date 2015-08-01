@@ -69,6 +69,7 @@ module Construqt
     'construqt/flavour/ciscian/ciscian.rb',
     'construqt/flavour/plantuml/plantuml.rb',
     'construqt/flavour/mikrotik/flavour_mikrotik.rb',
+    'construqt/flavour/nixian/nixian.rb',
     'construqt/flavour/ubuntu/flavour_ubuntu.rb'].each do |fname|
       begin
         require_relative fname

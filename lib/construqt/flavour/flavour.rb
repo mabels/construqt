@@ -2,12 +2,20 @@
 module Construqt
   module Flavour
 
-    @flavours = {}
+    FLAVOUR_FACTORY = {}
 
     class FlavourDelegate
       attr_reader :flavour
       def initialize(flavour)
         @flavour = flavour
+      end
+
+      def factory(cfg)
+        if @flavour.respond_to? :factory
+          @flavour.factory(cfg)
+        else
+          @flavour
+        end
       end
 
       def name
@@ -74,11 +82,6 @@ module Construqt
       end
     end
 
-    def self.add(flavour)
-      Construqt.logger.info "setup flavour #{flavour.name}"
-      @flavours[flavour.name.downcase] = FlavourDelegate.new(flavour)
-    end
-
     @aspects = []
     def self.add_aspect(aspect)
       Construqt.logger.info "setup aspect #{aspect.name}"
@@ -93,14 +96,22 @@ module Construqt
       @aspects.each { |aspect| aspect.call(type, *args) }
     end
 
-    def self.find(name)
-      ret = @flavours[name.downcase]
-      throw "flavour #{name} not found" unless ret
-      ret
+    def self.add(flavour)
+      Construqt.logger.info "setup flavour by #{flavour.name}"
+      FLAVOUR_FACTORY[flavour.name.downcase] = FlavourDelegate.new(flavour)
+    end
+
+
+    def self.factory(cfg)
+      name = cfg['flavour'] || 'ubuntu'
+      ret = FLAVOUR_FACTORY[name.downcase]
+      throw "flavour not found #{name}" unless ret
+      ret.factory(cfg)
     end
 
     def self.parser(flavour, dialect, prefix = nil)
-      @flavours[flavour].flavour::Result.new(OpenStruct.new(:dialect => dialect, :fname => prefix, :interfaces => {}))
+      FLAVOUR_FACTORY[flavour].flavour::Result.new(
+        OpenStruct.new(:dialect => dialect, :fname => prefix, :interfaces => {}))
     end
 
   end

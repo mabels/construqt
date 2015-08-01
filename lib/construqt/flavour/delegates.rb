@@ -191,6 +191,10 @@ module Construqt
         "Host_#{self.name}"
       end
 
+      def factory
+        self.delegate.factory
+      end
+
       def region
         self.delegate.region
       end
@@ -325,8 +329,12 @@ module Construqt
         "Wlan_#{self.host.name}_#{self.name}"
       end
 
-      def interfaces
-        self.delegate.interfaces
+      def psk
+        self.delegate.psk
+      end
+
+      def ssid
+        self.delegate.ssid
       end
     end
 
