@@ -92,7 +92,7 @@ module Construqt
         return if node.drawed!
         n_kind = simple(node.reference.class)
         if n_kind == "Host"
-          out << ident(path, "package \"#{node.ident}\" <<Node>> #DDDDDD {")
+          out << ident(path, "package \"#{node.ident}(#{node.reference.flavour.name})\" <<Node>> #DDDDDD {")
         else
           out << ident(path, <<UML)
 object #{node.ident} <<#{n_kind}>> {
@@ -100,6 +100,7 @@ object #{node.ident} <<#{n_kind}>> {
 }
 UML
         end
+        #binding.pry if node.ident == 'Host_scott'
 
         !flat && n_kind != 'Device' && node.out_links.each do |n|
           draw(n, out, path + [n.reference.name], flat)
@@ -114,16 +115,40 @@ UML
         tags = []
         out = []
         out << "name = \"#{iface.name}\""
+
+
+
         if iface.respond_to?(:mtu) && iface.mtu
           out << "mtu = \"#{iface.mtu}\""
+        end
+        if iface.kind_of? Construqt::Ipsecs::Ipsec
+          out << "password = #{iface.password}"
+          out << "transport_family = #{iface.transport_family}"
+          out << "mtu_v4 = #{iface.mtu_v4}"
+          out << "mtu_v6 = #{iface.mtu_v6}"
+          out << "keyexchange = #{iface.keyexchange}"
+        end
+        binding.pry if name == 'ipsec'
+        address = iface.address
+        if iface.kind_of? Construqt::Flavour::IpsecVpnDelegate
+          out << "auth_method = #{iface.auth_method}"
+          out << "leftpsk = #{iface.leftpsk}"
+          if iface.leftcert
+            out << "leftcert = #{iface.leftcert.name}"
+          end
+          out << "ipv6_proxy = #{iface.ipv6_proxy}"
+          address = iface.right_address
+          ipsec_users.each do |user|
+            out << "#{user.name} = #{user.psk}"
+          end
         end
         if iface.respond_to?(:ssid) && iface.ssid
           out << "ssid = \"#{iface.ssid}\""
           out << "psk = \"#{iface.psk}\""
         end
         out << "desc = \"#{iface.description}\"" if iface.description
-        if iface.address
-          [iface.address.v4s, iface.address.v6s].each do |ips|
+        if address
+          [address.v4s, address.v6s].each do |ips|
             next unless ips.first
             prefix = ips.first.ipv4? ? "ipv4" : "ipv6"
             ips.each_with_index do |ip, idx|
@@ -132,15 +157,15 @@ UML
             end
           end
 
-          if iface.address.dhcpv4?
+          if address.dhcpv4?
             out << "dhcpv4 = client"
           end
 
-          if iface.address.dhcpv6?
+          if address.dhcpv6?
             out << "dhcpv6 = client"
           end
 
-          iface.address.routes.each_with_index do |route, idx|
+          address.routes.each_with_index do |route, idx|
             out << "route(#{idx}) = \"#{route.dst.to_string} via #{route.via.to_s}\""
           end
         end
@@ -263,12 +288,14 @@ UML
             end,
             "Gre" => lambda do |node|
               #          binding.pry
-              interface = node.reference.delegate.local.interface
+              interface = node.reference.delegate.remote.interface
               node.connect @tree[interface.ident]
             end,
             "Opvn" => lambda do |node|
             end,
             "IpsecVpn" => lambda do |node|
+              interface = node.reference.delegate.left_interface
+              node.connect @tree[interface.ident]
             end,
             "Ipsec" => lambda do |node|
               [node.reference.lefts.first, node.reference.rights.first].each do |iface|
@@ -283,6 +310,9 @@ UML
               end
             end,
             "Host" => lambda do |node|
+              if node.reference.mother
+                @tree[node.reference.mother.ident].connect node
+              end
               node.reference.interfaces.values.each do |iface|
                 next if simple(iface.class) == "Vrrp"
                 Construqt.logger.debug "Planuml:Host:#{iface.name}:#{iface.ident}:#{simple(iface.class)}"

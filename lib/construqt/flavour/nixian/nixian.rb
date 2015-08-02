@@ -10,6 +10,10 @@ module Construqt
           @dialect = dialect
         end
 
+        def name
+          @dialect.name
+        end
+
         def create_host(name, cfg)
           cfg['name'] = name
           cfg['result'] = nil

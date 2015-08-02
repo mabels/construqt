@@ -165,6 +165,14 @@ module Construqt
         @users = host.users || host.region.users
       end
 
+      def mother
+        if self.delegate.respond_to? :mother
+          self.delegate.mother
+        else
+          false
+        end
+      end
+
       def get_groups
         if self.delegate.add_groups.instance_of? String
           self.delegate.add_groups = [ self.delegate.add_groups ]
