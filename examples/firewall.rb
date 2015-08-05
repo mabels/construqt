@@ -4,7 +4,7 @@ def firewall(region)
 
   Construqt::Firewalls.add("fix-mss") do |fw|
     fw.forward do |fwd|
-      fwd.add.from_net("#SERVICE-NET#SERVICE-TRANSIT#IPSECVPN").mss(1380).action(Construqt::Firewalls::Actions::TCPMSS)
+      fwd.add.from_net("#SERVICE-NET-DE#SERVICE-TRANSIT-DE#IPSECVPN-DE#IPSECVPN-US").mss(1360).action(Construqt::Firewalls::Actions::TCPMSS)
 #      fwd.add.to_net("#SERVICE-NET#SERVICE-TRANSIT#IPSECVPN").mss(1380).action(Construqt::Firewalls::Actions::TCPMSS)
 #  iptables -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS  --clamp-mss-to-pmtu
     end
@@ -12,7 +12,7 @@ def firewall(region)
 
   Construqt::Firewalls.add("service-nat") do |fw|
     fw.nat do |nat|
-      nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("#SERVICE-NET#SERVICE-TRANSIT#IPSECVPN").to_source.from_is_inside
+      nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("#FANOUT-DE-BACKEND#SERVICE-NET-DE#SERVICE-TRANSIT-DE#IPSECVPN-DE").to_source.from_is_inside
       nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(25).dport(587).dport(465).to_dest("HOST-smtp-ng").from_is_outside
       nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(993).to_dest("HOST-imap-ng").from_is_outside
       nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.udp.dport(53).to_dest("HOST-bind-ng").from_is_outside
@@ -22,7 +22,11 @@ def firewall(region)
 
   Construqt::Firewalls.add("service-us-nat") do |fw|
     fw.nat do |nat|
-      nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("#SERVICE-US-NET#SERVICE-US-TRANSIT").to_source.from_is_inside
+      nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("#SERVICE-NET-US#SERVICE-TRANSIT-US#IPSECVPN-US").to_source.from_is_inside
+      nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(25).dport(587).dport(465).to_dest("HOST-smtp-us").from_is_outside
+      nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(993).to_dest("HOST-imap-us").from_is_outside
+      nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.udp.dport(53).to_dest("HOST-bind-us").from_is_outside
+      nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(53).to_dest("HOST-bind-us").from_is_outside
     end
   end
 
@@ -32,15 +36,23 @@ def firewall(region)
     end
   end
 
+  Construqt::Firewalls.add("service-ssh-hgw") do |fw|
+    fw.forward do |fwd|
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv6.connection.from_net("#INTERNET").to_net("SERVICE-NET-DE-HGW").tcp.dport(22).from_is_outside
+    end
+  end
+
   Construqt::Firewalls.add("service-imap") do |fw|
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-imap-ng").tcp.dport(993).from_is_outside
     end
   end
 
-  Construqt::Firewalls.add("service-radius") do |fw|
+  Construqt::Firewalls.add("service-ad") do |fw|
     fw.forward do |fwd|
-      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-ad").udp.dport(1812).dport(1813).from_is_outside
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).from_host("#HOST-ad-de").to_host("HOST-ad")
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).from_host("#HOST-ad-us").to_host("HOST-ad")
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).from_host("#HOST-ad-us").to_host("HOST-ad-de")
     end
   end
 
@@ -58,7 +70,7 @@ def firewall(region)
     end
     fw.forward do |forward|
       forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET")
-        .to_net("#SERVICE-NET#SERVICE-TRANSIT#IPSECVPN").icmp.type(Construqt::Firewalls::ICMP::Ping).from_is_outside
+        .to_net("#SERVICE-NET-DE#SERVICE-TRANSIT-DE#IPSECVPN-DE#IPSECVPN-US").icmp.type(Construqt::Firewalls::ICMP::Ping).from_is_outside
     end
   end
 
@@ -73,13 +85,13 @@ def firewall(region)
 
   Construqt::Firewalls.add("service-transit") do |fw|
     fw.host do |host|
-      host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#SERVICE-TRANSIT#SERVICE-IPSEC#IPSECVPN").to_net("#SERVICE-TRANSIT#SERVICE-IPSEC#IPSECVPN")
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#SERVICE-TRANSIT-DE#SERVICE-IPSEC#IPSECVPN-DE").to_net("#SERVICE-TRANSIT-DE#SERVICE-IPSEC#IPSECVPN-DE")
     end
   end
 
   Construqt::Firewalls.add("service-us-transit") do |fw|
     fw.host do |host|
-      host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#SERVICE-US-TRANSIT#SERVICE-US-IPSEC").to_net("#SERVICE-US-TRANSIT#SERVICE-US-IPSEC")
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#SERVICE-TRANSIT-US#SERVICE-IPSEC-US#IPSECVPN-US").to_net("#SERVICE-TRANSIT-US#SERVICE-IPSEC-US#IPSECVPN-US")
     end
   end
 
@@ -96,7 +108,7 @@ def firewall(region)
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INTERNET").from_is_inside
     end
     fw.forward do |forward|
-      forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#SERVICE-NET#SERVICE-TRANSIT#IPSECVPN").to_net("#INTERNET").from_is_inside
+      forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#FANOUT-DE-BACKEND#SERVICE-NET-DE#SERVICE-TRANSIT-DE#IPSECVPN-DE").to_net("#INTERNET").from_is_inside
     end
   end
 
@@ -105,7 +117,7 @@ def firewall(region)
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INTERNET").from_is_inside
     end
     fw.forward do |forward|
-      forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#SERVICE-US-NET#SERVICE-US-TRANSIT").to_net("#INTERNET").from_is_inside
+      forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#IPSECVPN-US#SERVICE-NET-US#SERVICE-TRANSIT-US").to_net("#INTERNET").from_is_inside
     end
   end
 
