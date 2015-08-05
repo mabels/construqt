@@ -2,6 +2,47 @@
 module Construqt
 
   class Cables
+    module Plugin
+      class SingleCable
+        def is_plugable?
+          not @cable
+        end
+        def plug(cable)
+          throw "a nil cable is not a cable" unless cable
+          @cable = cable
+        end
+        def connections
+          if @cable
+            [@cable]
+          else
+            []
+          end
+        end
+      end
+      module Single
+        def cable
+          @cable ||= SingleCable.new
+        end
+      end
+      class MultipleCable
+        def is_plugable?
+          true
+        end
+        def plug(cable)
+          throw "a nil cable is not a cable" unless cable
+          @cables ||= []
+          @cables << cable
+        end
+        def connections
+          @cables ||= []
+        end
+      end
+      module Multiple
+        def cable
+          @cable ||= MultipleCable.new
+        end
+      end
+    end
 
     attr_reader :region, :cables
     def initialize(region)
@@ -22,22 +63,25 @@ module Construqt
     end
 
     class DirectedCable
-      attr_accessor :cable, :other
-      def initialize(cable, other)
+      attr_accessor :cable, :iface
+      def initialize(cable, iface)
         self.cable = cable
-        self.other = other
+        self.iface = iface
+      end
+      def ident
+        self.cable.key
       end
     end
 
     def add(iface_left, iface_right)
       #    throw "left should be a iface #{iface_left.class.name}" unless iface_left.kind_of?(Construqt::Flavour::InterfaceDelegate)
       #    throw "right should be a iface #{iface_right.class.name}" unless iface_right.kind_of?(Construqt::Flavour::InterfaceDelegate)
-      throw "left has a cable #{iface_left.cable}" if iface_left.cable
-      throw "right has a cable #{iface_right.cable}" if iface_right.cable
+      throw "left has a cable #{iface_left.cable}" unless iface_left.cable.is_plugable?
+      throw "right has a cable #{iface_right.cable}" unless iface_right.cable.is_plugable?
       cable = Cable.new(iface_left, iface_right)
       throw "cable exists #{iface_left.cable}=#{iface_right.cable}" if @cables[cable.key]
-      iface_left.cable = DirectedCable.new(cable, iface_right)
-      iface_right.cable = DirectedCable.new(cable, iface_left)
+      iface_left.cable.plug(DirectedCable.new(cable, iface_right))
+      iface_right.cable.plug(DirectedCable.new(cable, iface_left))
       cable
     end
   end

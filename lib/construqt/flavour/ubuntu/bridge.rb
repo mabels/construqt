@@ -3,6 +3,7 @@ module Construqt
     module Ubuntu
 
       class Bridge < OpenStruct
+        include Construqt::Cables::Plugin::Multiple
         def initialize(cfg)
           super(cfg)
         end

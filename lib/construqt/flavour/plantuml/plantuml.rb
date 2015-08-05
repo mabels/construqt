@@ -22,6 +22,8 @@ module Construqt
           #      self.clazz = clazz
           @in_links = {}
           @out_links = {}
+          @wire_in_links = {}
+          @wire_out_links = {}
           @drawed = false
         end
 
@@ -31,6 +33,14 @@ module Construqt
 
         def out_links
           @out_links.values
+        end
+
+        def wire_in_links
+          @wire_in_links.values
+        end
+
+        def wire_out_links
+          @wire_out_links.values
         end
 
         def ident
@@ -55,7 +65,15 @@ module Construqt
           @in_links[node.object_id] = node
         end
 
+        def wire_in_links=(node)
+          @wire_in_links[node.object_id] = node
+        end
+
         def in_links?(node)
+          @in_links[node.object_id]
+        end
+
+        def wire_in_links?(node)
           @in_links[node.object_id]
         end
 
@@ -66,9 +84,18 @@ module Construqt
             node.in_links = self
           end
         end
+
+        def wire_connect(node)
+          throw "node not set" unless node
+          unless self.wire_in_links?(node)
+            @wire_out_links[node.object_id] = node
+            node.wire_in_links = self
+          end
+        end
       end
 
       @tree = {}
+      @single_wire = {}
 
       def self.connect(node, out, path)
         return if node.drawed!
@@ -80,6 +107,13 @@ module Construqt
           end
 
           connect(n, out, path + [n.reference.name])
+        end
+        node.wire_out_links.each do |n|
+          key = [node.ident,n.ident].sort.join('..')
+          unless @single_wire[key]
+            @single_wire[key] = true
+            out << "#{node.ident} .. #{n.ident}"
+          end
         end
       end
 
@@ -256,10 +290,16 @@ UML
               node.reference.delegate.interfaces.each do |i|
                 node.connect @tree[i.ident]
               end
+              node.reference.cable.connections.each do |c|
+                node.wire_connect @tree[c.iface.ident]
+              end
             end,
             "Vlan" => lambda do |node|
               node.reference.interfaces.each do |vlan_iface|
                 node.connect @tree[vlan_iface.ident]
+              end
+              node.reference.cable.connections.each do |c|
+                node.wire_connect @tree[c.iface.ident]
               end
             end,
             "Bond" => lambda do |node|
@@ -267,18 +307,29 @@ UML
                 #Construqt.logger.debug(">>>>>>>>>> BOND -> #{simple(i.clazz)} #{i.name}")
                 node.connect @tree[i.ident]
               end
+              node.reference.cable.connections.each do |c|
+                node.wire_connect @tree[c.iface.ident]
+              end
             end,
             "Bridge" => lambda do |node|
               node.reference.delegate.interfaces.each do |i|
                 #binding.pry
                 node.connect @tree[i.ident]
               end
+              node.reference.cable.connections.each do |c|
+                #binding.pry
+                node.wire_connect @tree[c.iface.ident]
+              end
             end,
             "Wlan" => lambda do |node|
+              node.reference.cable.connections.each do |c|
+                node.wire_connect @tree[c.iface.ident]
+              end
             end,
             "Device" => lambda do |node|
-              if node.reference.cable
-                node.connect @tree[node.reference.cable.other.ident]
+              node.reference.cable.connections.each do |c|
+                #binding.pry
+                node.wire_connect @tree[c.iface.ident]
               end
             end,
             "Template" => lambda do |node|

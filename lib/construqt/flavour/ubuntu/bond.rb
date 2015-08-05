@@ -2,6 +2,7 @@ module Construqt
   module Flavour
     module Ubuntu
       class Bond < OpenStruct
+        include Construqt::Cables::Plugin::Single
         def initialize(cfg)
           super(cfg)
         end
