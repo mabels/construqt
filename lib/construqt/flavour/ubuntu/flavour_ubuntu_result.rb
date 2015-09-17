@@ -535,6 +535,12 @@ VRRP
           def initialize(right)
             self.right = right
           end
+          def skip_git?
+            @skip_git
+          end
+          def skip_git
+            @skip_git = true
+          end
         end
 
         def add(clazz, block, right, *path)
@@ -546,6 +552,7 @@ VRRP
             #@result[path] << [clazz.xprefix(@host)].compact
           end
           @result[path] << block+"\n"
+          @result[path]
         end
 
         def replace(clazz, block, right, *path)
@@ -591,10 +598,35 @@ VRRP
             cp::DNS => { "bind9" => true },
             cp::RADVD => { "radvd" => true },
             cp::CONNTRACKD => { "conntrackd" => true, "conntrack" => true },
+            cp::LXC => { "lxc" => true },
             cp::DHCPRELAY => { "wide-dhcpv6-relay" => true, "dhcp-helper" => true }
           }[component]
           throw "Component with name not found #{component}" unless ret
           ret
+        end
+
+        def lxc_deploy(host)
+          out = []
+          host.region.hosts.get_hosts.select {|h| @host.delegate == h.mother }.each do |lxc|
+            next unless lxc.lxc_deploy
+            next if lxc.lxc_deploy.empty?
+            out << "# LXC Container #{lxc.name} [#{lxc.lxc_deploy}]\n"
+            lxc_rootfs = File.join("/var", "lib", "lxc", lxc.name, "rootfs")
+            if lxc.lxc_deploy.include? Construqt::Hosts::Lxc::RECREATE
+              out << "echo start LXC-RECREATE #{lxc.name}"
+              out << "lxc-ls --running | grep -q '#{lxc.name}' && lxc-stop -n '#{lxc.name}'"
+              out << "[ -d #{lxc_rootfs} ] && lxc-destroy -f -n '#{lxc.name}'"
+              out << "lxc-create -n '#{lxc.name}' -t #{lxc.flavour.name}"
+              out << "chroot #{lxc_rootfs} /bin/bash /root/deployer.sh"
+              out << "lxc-start -d -n '#{lxc.name}'"
+            elsif lxc.lxc_deploy.include? Construqt::Hosts::Lxc::RESTART
+              out << "echo start LXC-RESTART #{lxc.name}"
+              out << "lxc-ls --running | grep -q '#{lxc.name}' && lxc-stop -n '#{lxc.name}'"
+              out << "chroot #{lxc_rootfs} /bin/bash /root/deployer.sh"
+              out << "lxc-start -d -n '#{lxc.name}'"
+            end
+          end
+          out
         end
 
         def commit
@@ -602,6 +634,12 @@ VRRP
           add(EtcNetworkIptables, etc_network_iptables.commitv6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6), "etc", "network", "ip6tables.cfg")
           add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construqt::Resources::Rights.root_0644, "etc", "network", "interfaces")
           @etc_network_vrrp.commit(self)
+
+          host.region.hosts.get_hosts.select {|h| @host.delegate == h.mother }.each do |lxc|
+            add(lxc, Util.read_str(lxc.name, "deployer.sh"),
+                Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::LXC),
+                "/var", "lib", "lxc", lxc.name, "rootfs", "root", "deployer.sh").skip_git
+          end
 
           components = @result.values.inject({
             "language-pack-en" => true,
@@ -657,6 +695,7 @@ BASH
             Util.write_str(text, @host.name, fname)
             #          binding.pry
             #
+            git_add = block.skip_git? ? "" : "\n  git --git-dir /root/construqt.git --work-tree=/ add /#{fname}"
             [
               File.dirname("/#{fname}").split('/')[1..-1].inject(['']) do |res, part|
                 res << File.join(res.last, part); res
@@ -679,8 +718,7 @@ else
     echo updated /#{fname} to #{block.right.owner}:#{block.right.right}
   else
     rm #{import_fname(fname)}
-  fi
-  git --git-dir /root/construqt.git --work-tree=/ add /#{fname}
+  fi#{git_add}
 fi
 BASH
           end.flatten
@@ -690,6 +728,7 @@ git --git-dir /root/construqt.git config user.name #{ENV['USER']}
 git --git-dir /root/construqt.git config user.email #{ENV['USER']}@construqt.net
 git --git-dir /root/construqt.git --work-tree=/ commit -q -m #{Shellwords.escape("#{ENV['USER']} #{`hostname`.strip} #{`git log --pretty=format:"%h - %an, %ar : %s" -1`.strip}")} > /dev/null && echo COMMITED
 BASH
+          out += lxc_deploy(@host)
           Util.write_str(out.join("\n"), @host.name, "deployer.sh")
         end
       end

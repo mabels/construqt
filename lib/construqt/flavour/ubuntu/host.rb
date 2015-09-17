@@ -6,7 +6,75 @@ module Construqt
           super(cfg)
         end
 
+        class LxcNetwork
+          attr_reader :iface
+          def initialize(_iface)
+            @iface = _iface
+            @type = "veth"
+            @flags = "up"
+          end
+
+          def type(type)
+            @type = type
+            self
+          end
+
+          def flags(flags)
+            @flags = flags
+            self
+          end
+
+          def link(link)
+            @link = link
+            self
+          end
+
+          def name(name)
+            @name = name
+            self
+          end
+          def get_mac
+            (["00", "16"] + Digest::SHA1.hexdigest("#{@iface.host.name}:#{@iface.name}").scan(/../)[0,4]).join(":").downcase
+          end
+          def render
+            out = [
+              "# Network configuration [#{@name}||""]:[#{@link}]",
+              "lxc.network.type = #{@type}",
+              "lxc.network.flags = #{@flags}",
+              "lxc.network.link = #{@link}",
+              "lxc.network.hwaddr = #{get_mac}"
+            ]
+            out << "lxc.network.name = #{@name}" if @name
+            return out.join("\n")
+          end
+
+          def self.render(host, lxc, networks)
+            return if networks.empty?
+            host.result.add(lxc, networks.map{|n| n.render}.join("\n"),
+                                 Construqt::Resources::Rights.root_0644,
+                                 "var", "lib", "lxc", networks.first.iface.host.name, "network.config")
+          end
+        end
+
+        def create_lxc_containers(host)
+          host.region.hosts.get_hosts.select {|h| host == h.mother }.each do |lxc|
+            networks = lxc.interfaces.values.map do |iface|
+              if iface.cable and !iface.cable.connections.empty?
+                #binding.pry
+                throw "multiple connection cable are not allowed" if iface.cable.connections.length > 1
+                LxcNetwork.new(iface).link(iface.cable.connections.first.iface.name).name(iface.name)
+              else
+                nil
+              end
+            end.compact
+            #binding.pry if host.name == "mother"
+            LxcNetwork.render(host, lxc, networks)
+          end
+        end
+
         def build_config(host, unused)
+
+
           host.result.add(self, <<UDEV, Construqt::Resources::Rights.root_0644, "etc", "udev", "rules.d", "23-persistent-vnet.rules")
 # Construqt UDEV for container mtu
 SUBSYSTEM=="net", ACTION=="add", KERNEL=="vnet*", ATTR{mtu}="#{host.interfaces.values.map { |iface| iface.mtu.to_i || 1500 }.max}"
@@ -151,6 +219,8 @@ SSH
               Construqt.logger.warn("the file #{file.path} was overriden!")
             end
           end
+
+          create_lxc_containers(host)
         end
       end
     end

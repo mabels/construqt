@@ -102,6 +102,14 @@ module Construqt
         self.delegate.cable
       end
 
+      def plug_in=(a)
+        self.delegate.plug_in = a
+      end
+
+      def plug_in
+        self.delegate.plug_in
+      end
+
       def simple_name
         self.class.name[self.class.name.rindex(':')+1..-1]
       end
@@ -163,6 +171,10 @@ module Construqt
         @ipsecs = []
         @bgps = []
         @users = host.users || host.region.users
+      end
+
+      def lxc_deploy
+        self.delegate.lxc_deploy
       end
 
       def mother

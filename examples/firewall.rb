@@ -4,7 +4,7 @@ def firewall(region)
 
   Construqt::Firewalls.add("fix-mss") do |fw|
     fw.forward do |fwd|
-      fwd.add.from_net("#SERVICE-NET-DE#SERVICE-TRANSIT-DE#IPSECVPN-DE#IPSECVPN-US").mss(1360).action(Construqt::Firewalls::Actions::TCPMSS)
+      fwd.add.from_net("#SERVICE-NET-DE#SERVICE-NET-US#SERVICE-TRANSIT-DE#IPSECVPN-DE#IPSECVPN-US").mss(1338).action(Construqt::Firewalls::Actions::TCPMSS)
 #      fwd.add.to_net("#SERVICE-NET#SERVICE-TRANSIT#IPSECVPN").mss(1380).action(Construqt::Firewalls::Actions::TCPMSS)
 #  iptables -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS  --clamp-mss-to-pmtu
     end

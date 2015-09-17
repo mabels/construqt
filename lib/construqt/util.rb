@@ -61,6 +61,11 @@ module Construqt
       end
     end
 
+    def self.read_str(*path)
+      path = File.join("cfgs", *path)
+      IO.read(path)
+    end
+
     def self.write_str(str, *path)
       path = File.join("cfgs", *path)
       FileUtils.mkdir_p(File.dirname(path))

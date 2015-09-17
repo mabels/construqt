@@ -4,5 +4,6 @@
 **/target/*
 **/cfgs/*
 *.orig
+examples/password.rb
 /switch/delta/simple-dlink
 /switch/delta/simple-dlink2

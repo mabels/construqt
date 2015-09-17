@@ -8,9 +8,9 @@ require 'rubygems'
 require 'construqt'
 
 require_relative './firewall.rb'
-begin
+if ARGV.include?("secure")
   require_relative './password.rb'
-rescue LoadError
+else
   require_relative './crashtestdummy.rb'
 end
 
@@ -92,7 +92,7 @@ fanout_de = region.hosts.add("fanout-de", "flavour" => "ubuntu") do |host|
                               "left_interface" => left_if,
                               "leftpsk" => IPSEC_LEFT_PSK,
                               "leftcert" => region.network.cert_store.get_cert("fanout-de_adviser_com.crt"),
-                              "right_address" => region.network.addresses.add_ip("192.168.69.64/26#IPSECVPN-DE")
+                              "right_address" => region.network.addresses.add_ip("192.168.72.64/26#IPSECVPN-DE")
                                                                          .add_ip("2a01:4f8:d15:1190::cafe:0/112#IPSECVPN-DE"),
                               "ipv6_proxy" => true)
   region.interfaces.add_bridge(host, "br12",
@@ -305,16 +305,18 @@ service_de_hgw = region.hosts.add("service-de-hgw", "flavour" => "ubuntu", "moth
                                "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
   region.network.addresses.add_ip("192.168.178.1/24#KDE-HGW");
   host.configip = host.id ||= Construqt::HostId.create do |my|
-    my.interfaces << region.interfaces.add_device(host, "br0", "mtu" => 1500,
+    my.interfaces << iface = region.interfaces.add_device(host, "br0", "mtu" => 1500,
           'firewalls' => ['host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit', 'block'],
           'address' => region.network.addresses.add_ip("192.168.178.15/24")
                                             .add_route_from_tags("#FANOUT-DE", "#KDE-HGW"))
+      region.cables.add(iface, region.interfaces.find(kuckpi, 'br0'))
   end
 
-  region.interfaces.add_device(host, "br70", "mtu" => 1500,
+  region.cables.add(region.interfaces.add_device(host, "br70", "mtu" => 1500,
           'address' => region.network.addresses
                   .add_ip("192.168.70.1/24#SERVICE-NET-DE-HGW#SERVICE-NET-DE")
-                  .add_ip("2a01:4f8:d15:1190:192:168:70:1/123#SERVICE-NET-DE-HGW#SERVICE-NET-DE"))
+                  .add_ip("2a01:4f8:d15:1190:192:168:70:1/123#SERVICE-NET-DE-HGW#SERVICE-NET-DE")),
+          region.interfaces.find(kuckpi, 'br70'))
 end
 
 
@@ -387,8 +389,8 @@ Construqt::Ipsecs.connection("#{fanout_us.name}<=>#{service_us.name}",
 
 
 [
-  {:name => 'ad-de', :address => "169.254.12.10/24", :gw => "#FANOUT-DE-BR12", "mother" => fanout_de },
-  {:name => 'ad-us', :address => "169.254.13.10/24", :gw => "#FANOUT-US-BR13", "mother" => fanout_us }
+  {:name => 'ad-de', :address => "169.254.12.10/24", :gw => "#FANOUT-DE-BR12", "mother" => fanout_de, "plug" => "br12" },
+  {:name => 'ad-us', :address => "169.254.13.10/24", :gw => "#FANOUT-US-BR13", "mother" => fanout_us, "plug" => "br13" }
 ].map{|i| OpenStruct.new(i) }.each do |cfg|
   region.hosts.add(cfg.name, "flavour" => "ubuntu", "mother" => cfg['mother']) do |host|
     region.interfaces.add_device(host, "lo", "mtu" => "1500",
@@ -396,9 +398,10 @@ Construqt::Ipsecs.connection("#{fanout_us.name}<=>#{service_us.name}",
                                  "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
 
     host.configip = host.id ||= Construqt::HostId.create do |my|
-      my.interfaces << region.interfaces.add_device(host, "eth0", "mtu" => 1500,
+      my.interfaces << iface = region.interfaces.add_device(host, "eth0", "mtu" => 1500,
                  'address' => region.network.addresses.add_ip("#{cfg.address}#HOST-#{cfg.name}")
                                                        .add_route_from_tags("#INTERNET", cfg.gw))
+      region.cables.add(iface, region.interfaces.find(cfg['mother'], cfg['plug']))
     end
   end
 end
@@ -415,6 +418,18 @@ dvb_link = region.hosts.add("dvb-link", "flavour" => "ubuntu", "mother" => kuckp
   end
 end
 
+armhf = region.hosts.add("armhf", "flavour" => "ubuntu", "mother" => fanout_de) do |host|
+  region.interfaces.add_device(host, "lo", "mtu" => "9000",
+                               :description=>"#{host.name} lo",
+                               "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
+  host.configip = host.id ||= Construqt::HostId.create do |my|
+    my.interfaces << iface = region.interfaces.add_device(host, "eth0", "mtu" => 1500,
+                   'address' => region.network.addresses.add_ip("169.254.12.17/24")
+                                .add_route("0.0.0.0/0", "169.254.12.1"))
+    region.cables.add(iface, region.interfaces.find("fanout-de", "br12"))
+  end
+end
+
 fbsd = region.hosts.add("fbsd", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => scott) do |host|
   region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                :description=>"#{host.name} lo",
@@ -426,6 +441,29 @@ fbsd = region.hosts.add("fbsd", "flavour" => "nixian", "dialect" => "ubuntu", "m
     region.cables.add(my, region.interfaces.find("scott", "br0"))
   end
 end
+
+
+require_relative "./always-connected.rb"
+
+mother = AlwaysConnected.mother(region)
+AlwaysConnected.border_access(mother, "eth0",
+                              region.network.addresses.add_ip("169.254.69.33/24")
+                                                      .add_ip("fd:a9fe:49::33/64"))
+
+AlwaysConnected.router(mother)
+AlwaysConnected.access_controller(mother)
+
+AlwaysConnected.encrypter_region(mother, "de", region.network.addresses.add_ip("169.254.69.97/24")
+                                                               .add_ip("fd:a9fe:49::97/64"))
+
+AlwaysConnected.access_pointer(mother, "de", "wlan1", "MAM-AL-DE",
+                               region.network.addresses.add_ip("169.254.69.65/24")
+                                                       .add_ip("fd:a9fe:49::65/64"))
+
+#AlwaysConnected.access_pointer(mother, "de", "wlan2", "MAM-AL-US",
+#                               region.network.addresses.add_ip("169.254.69.66/24")
+#                                                       .add_ip("fd:a9fe:49::66/64"))
+
 
 
 Construqt.produce(region)

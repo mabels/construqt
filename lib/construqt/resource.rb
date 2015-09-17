@@ -14,6 +14,7 @@ module Construqt
       DNS = :dns
       RADVD = :radvd
       CONNTRACKD = :conntrackd
+      LXC = :lxc
       DHCPRELAY = :dhcprelay
     end
     module Rights

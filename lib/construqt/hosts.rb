@@ -2,6 +2,11 @@
 module Construqt
 
   class Hosts
+    module Lxc
+      RECREATE = "recreate"
+      RESTART = "restart"
+    end
+
   	attr_reader :region
     def initialize(region)
       @region = region
@@ -33,12 +38,21 @@ module Construqt
       host
     end
 
+    class HostInterfaces < Hash
+      def bind_host(host)
+        @host = host
+      end
+      def find_by_name(name)
+        self[name] || throw("Interface with name [#{name}] not found on host [#{@host.name}]")
+      end
+    end
+
     def add_internal(name, cfg, &block)
       #binding.pry
       throw "id is not allowed" if cfg['id']
       throw "configip is not allowed" if cfg['configip']
       throw "Host with the name #{name} exisits" if @hosts[name]
-      cfg['interfaces'] = {}
+      cfg['interfaces'] = HostInterfaces.new
       cfg['id'] ||=nil
       cfg['configip'] ||=nil
 
@@ -52,6 +66,7 @@ module Construqt
       cfg['region'] = @region
       host = cfg['flavour'].create_host(name, cfg)
       block.call(host)
+      host.interfaces.bind_host(host)
       throw "host attribute id is required" unless host.id.kind_of? HostId
       throw "host attribute configip is required" unless host.configip.kind_of? HostId
 

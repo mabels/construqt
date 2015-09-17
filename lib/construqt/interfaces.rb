@@ -48,6 +48,7 @@ module Construqt
       #    binding.pry
       cfg['clazz'] ||= "device"
       cfg['address'] ||= nil
+      cfg['plug_in'] ||= nil
       cfg['services'] ||= []
       delegates['firewalls'] = cfg.delete('firewalls')||[]
       (dev_name, iface) = Construqt::Tags.add(dev_name) { |name| host.flavour.create_interface(name, cfg) }
@@ -58,6 +59,11 @@ module Construqt
       setup_template(iface) if iface.template
       @interfaces[dev_name] ||= []
       @interfaces[dev_name] << iface
+
+      if iface.plug_in
+        #binding.pry
+        host.region.cables.add(iface.plug_in, iface)
+      end
       host.interfaces[dev_name]
     end
 
