@@ -22,10 +22,13 @@ public class NgDlink {
   private Action helloMessage = sm.send("Hello World\n\n");
   private Action userName = sm.send("Username:").unknownCmd("unknown username");
   private Action passWord = sm.send("Password:").unknownCmd("illegal password", userName);
-  private Action enableShell = sm.send("d-link#").expect("exit" + Send.EOL, null, sm.EXIT).unknownCmd("enable unknown command");
+  private Action enableShell = sm.send("d-link#")
+      .expect("exit" + Send.EOL, null, sm.EXIT)
+      .unknownCmd("enable unknown command");
   private Action userShell = sm.send("d-link$")
       .expect("exit" + Send.EOL, new StringOutput("exit user level"), sm.EXIT)
-      .expect("enable" + Send.EOL, null, enableShell.level()).unknownCmd("user unknown command");
+      .expect("enable" + Send.EOL, null, enableShell.level())
+      .unknownCmd("user unknown command");
 
 
   @Test

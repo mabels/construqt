@@ -3,7 +3,13 @@ require 'net/ssh'
 require 'net/scp'
 
 CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../../'
-["#{CONSTRUQT_PATH}/ipaddress/lib","#{CONSTRUQT_PATH}/construqt/lib"].each{|path| $LOAD_PATH.unshift(path) }
+[
+  "#{CONSTRUQT_PATH}/ipaddress/lib",
+  "#{CONSTRUQT_PATH}/construqt/core/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/plantuml/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/ubuntu/lib"
+].each{|path| $LOAD_PATH.unshift(path) }
 require 'rubygems'
 require 'construqt'
 
@@ -14,7 +20,9 @@ else
   require_relative './crashtestdummy.rb'
 end
 
-Construqt::Flavour::del_aspect("plantuml") unless ARGV.include?("plantuml")
+if ARGV.include?("plantuml")
+  require 'construqt/flavour/plantuml.rb'
+end
 
 network = Construqt::Networks.add('construqt')
 network.set_domain("adviser.com")
@@ -82,8 +90,9 @@ fanout_de = region.hosts.add("fanout-de", "flavour" => "ubuntu") do |host|
                                             .add_route("0.0.0.0/0#INTERNET", "78.47.4.49")
                                             .add_ip("2a01:4f8:d15:1190:78:47:4:51/64")
                                             .add_route("2000::/3#INTERNET", "2a01:4f8:d15:1190::1"),
-          "firewalls" => ["fix-mss", "host-outbound", "icmp-ping" , "ssh-srv", "ipsec-srv", "service-ssh-hgw", "service-transit",
-                          "service-nat", "service-smtp", "service-dns", "service-imap", "block"])
+          "firewalls" => ["fix-mss", "host-outbound", "icmp-ping" , "ssh-srv", "ipsec-srv", "service-ssh-hgw",
+                          "service-transit",
+                          "service-nat", "service-smtp", "service-dns", "service-imap", "vpn-server-net", "block"])
   end
   region.interfaces.add_ipsecvpn(host, "roadrunner",
                               "mtu" => 1380,
@@ -98,7 +107,8 @@ fanout_de = region.hosts.add("fanout-de", "flavour" => "ubuntu") do |host|
   region.interfaces.add_bridge(host, "br12",
     "mtu" => 1500,
     "interfaces" => [],
-    "address" => region.network.addresses.add_ip("169.254.12.1/24#FANOUT-DE-BACKEND#FANOUT-DE-BR12"))
+    "address" => region.network.addresses.add_ip("169.254.12.1/24#FANOUT-DE-BACKEND#FANOUT-DE-BR12")
+                                         .add_ip("2a01:4f8:d15:1190:169:254:12:1/123#FANOUT-DE-BACKEND"))
 
 end
 
@@ -226,7 +236,7 @@ Construqt::Ipsecs.connection("#{fanout_de.name}<=>#{service_de_wl.name}",
                       .add_ip("2a01:4f8:d15:1190::6/126#SERVICE-TRANSIT-DE#SERVICE-DE-WL#SERVICE-NET-DE")
                       .add_route_from_tags("#INTERNET", "#FANOUT-DE-WL-GW"),
             'firewalls' => ['host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit',
-                            "service-smtp", "service-dns", "service-imap", "service-ad", 'block'],
+                            "service-smtp", "service-dns", "service-imap", "service-ad", "vpn-server-net", 'block'],
             "host" => service_de_wl,
             "remote" => region.interfaces.find(service_de_wl, "br24").address,
             "any" => true
@@ -251,6 +261,44 @@ Construqt::Ipsecs.connection("#{fanout_de.name}<=>#{service_de_wl.name}",
                 .add_ip("2602:ffea:1:7dd:192:168:66:#{10+idx}/123")
                 .add_route("2000::/3", "2a01:4f8:d15:1190:192:168:66:1"))
       region.cables.add(iface, region.interfaces.find("scott", "br66"))
+    end
+  end
+end
+
+['smtp-de', 'bind-de'].each_with_index do |name, idx|
+  region.hosts.add(name, "flavour" => "ubuntu", "mother" => fanout_de) do |host|
+    region.interfaces.add_device(host, "lo", "mtu" => "9000",
+                                 :description=>"#{host.name} lo",
+                                 "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
+
+    host.configip = host.id ||= Construqt::HostId.create do |my|
+      my.interfaces << iface = region.interfaces.add_device(host, "eth0",
+            "mtu" => 1500,
+            'address' => region.network.addresses
+                .add_ip("169.254.12.#{10+idx}/24#HOST-#{name}#SERVICE-NET-DE")
+                .add_route("0.0.0.0/0", "169.254.12.1")
+                .add_ip("2a01:4f8:d15:1190:169:254:12:#{10+idx}/123#HOST-#{name}#SERVICE-NET-DE")
+                .add_route("2000::/3", "2a01:4f8:d15:1190:169:254:12:1"))
+      region.cables.add(iface, region.interfaces.find("fanout-de", "br12"))
+    end
+  end
+end
+
+['smtp-us', 'bind-us'].each_with_index do |name, idx|
+  region.hosts.add(name, "flavour" => "ubuntu", "mother" => fanout_us) do |host|
+    region.interfaces.add_device(host, "lo", "mtu" => "9000",
+                                 :description=>"#{host.name} lo",
+                                 "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
+
+    host.configip = host.id ||= Construqt::HostId.create do |my|
+      my.interfaces << iface = region.interfaces.add_device(host, "eth0",
+            "mtu" => 1500,
+            'address' => region.network.addresses
+                .add_ip("169.254.13.#{10+idx}/24#HOST-#{name}")
+                .add_route("0.0.0.0/0", "169.254.13.1")
+                .add_ip("2a01:4f8:d15:1190:169:254:13:#{10+idx}/123#HOST-#{name}")
+                .add_route("2000::/3", "2a01:4f8:d15:1190:169:254:13:1"))
+      region.cables.add(iface, region.interfaces.find("fanout-us", "br13"))
     end
   end
 end
@@ -306,7 +354,7 @@ service_de_hgw = region.hosts.add("service-de-hgw", "flavour" => "ubuntu", "moth
   region.network.addresses.add_ip("192.168.178.1/24#KDE-HGW");
   host.configip = host.id ||= Construqt::HostId.create do |my|
     my.interfaces << iface = region.interfaces.add_device(host, "br0", "mtu" => 1500,
-          'firewalls' => ['host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit', 'block'],
+          'firewalls' => ['host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit', "vpn-server-net", 'block'],
           'address' => region.network.addresses.add_ip("192.168.178.15/24")
                                             .add_route_from_tags("#FANOUT-DE", "#KDE-HGW"))
       region.cables.add(iface, region.interfaces.find(kuckpi, 'br0'))
@@ -443,27 +491,65 @@ fbsd = region.hosts.add("fbsd", "flavour" => "nixian", "dialect" => "ubuntu", "m
 end
 
 
-require_relative "./always-connected.rb"
+#mam_5ghz = region.hosts.add("mam-5ghz", "flavour" => "mikrotik") do |host|
+#  ether1_local = region.interfaces.add_device(host, "ether1_local", "mtu" => "1500")
+#  wlan1_gateway = region.interfaces.add_device(host, "wlan1-gateway", "mtu" => "1500")
+#  [
+#    {:vlan=>24, :name => "uplink", :address => region.network.addresses.add_ip("192.168.0.5/24").add_route("0.0.0.0/0", "192.168.0.1")},
+#    {:vlan=>66, :name => "hetzner", :ssid => "MAM-50-HET" },
+#    {:vlan=>67, :name => "homede-ipv6", :ssid => "MAM-50-DEIPV"},
+#    {:vlan=>68, :name => "homeus", :ssid => "MAM-50-US"},
+#    {:vlan=>73, :name => "abus", :ssid => "AB-50-US"},
+#    {:vlan=>74, :home => "abde", :ssid => "AB-50-DE"},
+#    {:vlan=>176, :home => "homede", :ssid => "MAM-50-DE"},
+#  ].each do |vlan|
+#    region.interfaces.add_bridge(host, "br-#{vlan[:vlan]}-#{vlan[:name]}",
+#                                       "mtu" => 1500,
+#                                       "address" => vlan[:address]
+#                                       "interfaces" => [
+#       region.interfaces.add_vlan("ve-#{vlan[:vlan]}-#{vlan[:name]}", "vlan_id" => vlan[:vlan], "mtu" => 1500, "interface" => ether1_local)
+#       region.interfaces.add_wlan("wl-#{vlan[:vlan]}-#{vlan[:name]}", "mode" => "ap", "ssid" => vlan[:ssid], "psk" => MAM_PSK,
+#                                  "mtu" => 1500, "interface" => wlan1-gateway)
+#    ],
+#  end
+#    region.interfaces.add_device(host, "lo", "mtu" => "9000",
+#                                                                :description=>"#{host.name} lo",
+#                                                                                               "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
+#      host.configip = host.id ||= Construqt::HostId.create do |my|
+#            my.interfaces << my = region.interfaces.add_device(host, "vtnet0", "mtu" => 1500,
+#                                                                         'address' => region.network.addresses.add_ip("192.168.176.19/24")
+#                  .add_route_from_tags("#INTERNET", "192.168.176.4"))
+#                region.cables.add(my, region.interfaces.find("scott", "br0"))
+#                  end
+#end
+
+
+require_relative "./always-online.rb"
 
 mother = AlwaysConnected.mother(region)
-AlwaysConnected.border_access(mother, "eth0",
-                              region.network.addresses.add_ip("169.254.69.33/24")
-                                                      .add_ip("fd:a9fe:49::33/64"))
+
+AlwaysConnected.border_access(mother, "eth0")
+AlwaysConnected.border_access(mother, "wlan0")
+AlwaysConnected.border_access(mother, "usb0")
+AlwaysConnected.border_access(mother, "usbnet0")
 
 AlwaysConnected.router(mother)
 AlwaysConnected.access_controller(mother)
-
-AlwaysConnected.encrypter_region(mother, "de", region.network.addresses.add_ip("169.254.69.97/24")
-                                                               .add_ip("fd:a9fe:49::97/64"))
 
 AlwaysConnected.access_pointer(mother, "de", "wlan1", "MAM-AL-DE",
                                region.network.addresses.add_ip("169.254.69.65/24")
                                                        .add_ip("fd:a9fe:49::65/64"))
 
+AlwaysConnected.encrypter_region(mother, "de", region.network.addresses.add_ip("169.254.69.97/24")
+                                                               .add_ip("fd:a9fe:49::97/64"))
+
+
 #AlwaysConnected.access_pointer(mother, "de", "wlan2", "MAM-AL-US",
 #                               region.network.addresses.add_ip("169.254.69.66/24")
 #                                                       .add_ip("fd:a9fe:49::66/64"))
+require_relative "./mam-wl-rt.rb"
 
+mam_wl_rt(region)
 
 
 Construqt.produce(region)

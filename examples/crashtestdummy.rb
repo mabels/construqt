@@ -1,6 +1,8 @@
 IPSEC_PASSWORD="weg"
 IPSEC_LEFT_PSK="weg"
 
+MAM_PSK="wlan for free"
+
 VALADON_PSK = "wlan for free"
 
 def ipsec_users()

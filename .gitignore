@@ -4,6 +4,8 @@
 **/target/*
 **/cfgs/*
 *.orig
+*.gem
+.*.swp
 examples/password.rb
 /switch/delta/simple-dlink
 /switch/delta/simple-dlink2

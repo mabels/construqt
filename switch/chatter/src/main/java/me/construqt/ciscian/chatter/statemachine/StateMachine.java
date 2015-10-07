@@ -87,7 +87,6 @@ public class StateMachine {
 
   };
 
-
   private static void addLog(Map<String, List<String>> log, String prompt, String s) {
     List<String> o = log.get(prompt);
     if (o == null) {
@@ -102,10 +101,6 @@ public class StateMachine {
     this.expect = expect;
     expect.setDefaultTimeout(24 * 60 * 60 * 1000);
     Action current = rootAction;
-    //Deque<Action> stack = new LinkedList<>();
-//      if (current.isLevel()) {
-//        stack.push(current);
-//      }
     while (current != null) {
       if (current.text() != null) {
         addLog(log, current.text(), ">" + current.text());
@@ -142,12 +137,10 @@ public class StateMachine {
     return log;
   }
 
-  //    public Expect4j getExpect4j() {
-//       return expect;
-//    }
   public Action send(String str) {
     return new Send(this, str);
   }
+
   public Expect4j getExpect() {
     return expect;
   }
