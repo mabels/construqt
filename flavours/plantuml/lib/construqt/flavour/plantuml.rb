@@ -122,12 +122,18 @@ module Construqt
         content.lines.map{|i| ident+i }.join('')
       end
 
-      def self.draw(node, out, path, flat)
-        return if node.drawed!
+      def self.draw(node, out, path, flat, parent = nil)
         n_kind = simple(node.reference.class)
         if n_kind == "Host"
+          # root calls but we have in_links so this is part of a
+          # mother child connection
+          return false if parent.nil? and !node.in_links.empty?
+          # if my in_links contains my mother i'm ready to paint
+          return false if !node.in_links.empty? and !node.in_links.include?(parent)
+          return false if node.drawed! #ugly
           out << ident(path, "package \"#{node.ident}(#{node.reference.flavour.name})\" <<Node>> #DDDDDD {")
         else
+          return false if node.drawed! #ugly
           out << ident(path, <<UML)
 object #{node.ident} <<#{n_kind}>> {
           #{render_object_address(node.reference)}
@@ -136,21 +142,24 @@ UML
         end
         #binding.pry if node.ident == 'Host_scott'
 
+        last = nil
         !flat && n_kind != 'Device' && node.out_links.each do |n|
-          draw(n, out, path + [n.reference.name], flat)
+          #binding.pry if n.reference.name == "ad-de"
+          last = layout_helper(out, last, node,
+                   draw(n, out, path + [n.reference.name], flat, node)
+                 )
         end
 
         if n_kind == "Host"
           out << ident(path, "}")
         end
+        true
       end
 
       def self.render_object_address(iface)
         tags = []
         out = []
         out << "name = \"#{iface.name}\""
-
-
 
         if iface.respond_to?(:mtu) && iface.mtu
           out << "mtu = \"#{iface.mtu}\""
@@ -282,7 +291,7 @@ UML
 
       def self.build_tree
         #binding.pry
-        @tree.each do |ident,node|
+        @tree.each do |ident, node|
           #binding.pry
           #Construqt.logger.debug "Planuml:build_tree=#{node.reference.class.name}=#{simple(node.reference.class)}"
           {
@@ -375,132 +384,24 @@ UML
         end
       end
 
-      #X         #render_matrixs = []
-      #X         #[i"Vrrp","Vlan", "Bridge", "Bond", "Device"].each do |clazz|
-      #X         tree.keys.each do |clazz|
-      #X            (tree[clazz]||{}).values.each do |node|
-      #X              next unless node.in_links.empty?
-      #X              next if node.drawed?
-      #X              draw(node, out, [node.reference.name])
-      #X            end
+      def self.layout_helper(out, last, node, drawed)
+        return unless drawed
+#        out << "#{last.ident} -down-> #{node.ident}" if last
+        node
+      end
 
-      #X         end
-
-      #X         out << <<UML
-      #X }
-      #X  end
-
-      #
       def self.call(type, *args)
         add_node_factory(type, *args)
         factory = {
-          #X       "host.commit" => lambda do |type, host, *args|
-          #X         #binding.pry
-          #X         # vrrp -> bridge -> vlan -> bond -> device
-          #X         # vrrp1
-          #X         # vlan1 vlan2
-          #X         #      bond
-          #X         # device0 device1
-          #X         #
-          #X         out = []
-          #X
-          #X         out << <<UML
-          #X package "#{host.name}" {
-          #X UML
-          #X         tree = {}
-          #X         host.interfaces.each do |k,v|
-          #X           key = simple(v.clazz)
-          #X           tree[key] ||= {}
-          #X           ident = "#{clean_name(host.name)}_#{key}_#{clean_name(v.name)}"
-          #X           tree[key][v.name] = Node.new(key, ident, v)
-          #X           out << <<UML
-          #X object #{ident} {
-          #X #{render_object_address(v)}
-          #X }
-          #X UML
-          #X         end
-
-          #X
-          #X         tree.each do |k,ifaces|
-          #X #          puts "K=>#{k}"
-          #X           ifaces.each do |name, iface|
-          #X #            binding.pry if k == 'Bond'
-          #X             {
-          #X               "Vrrp" => lambda do |iface|
-          #X                 interface = iface.interface.delegate.interface
-          #X                 iface.connect tree[simple(interface.clazz)][interface.name]
-          #X               end,
-          #X               "Vlan" => lambda do |iface|
-          #X                 iface.interface.interfaces.each do |vlan_iface|
-          #X                   iface.connect tree[simple(vlan_iface.clazz)][vlan_iface.name]
-          #X                 end
-
-          #X               end,
-          #X               "Bond" => lambda do |iface|
-          #X                 iface.interface.delegate.interfaces.each do |i|
-          #X                   #Construqt.logger.debug(">>>>>>>>>> BOND -> #{simple(i.clazz)} #{i.name}")
-          #X                   iface.connect tree[simple(i.clazz)][i.name]
-          #X                 end
-
-          #X               end,
-          #X               "Bridge" => lambda do |iface|
-          #X                 iface.interface.delegate.interfaces.each do |i|
-          #X                   #binding.pry
-          #X                   iface.connect tree[simple(i.clazz)][i.name]
-          #X                 end
-
-          #X               end,
-          #X               "Device" => lambda do |iface|
-          #X               end,
-          #X               "Template" => lambda do |iface|
-          #X #                iface.interface.delegate.vlans.each do |i|
-          #X #                  iface.connect tree[simple(i.clazz)][i.name]
-          #X #                end
-
-          #X               end,
-          #X               "Gre" => lambda do |iface|
-          #X                 interface = iface.interface.delegate.local.interface
-          #X            #     puts ">>>>>>GRE #{interface.host.name} #{interface.name}"
-          #X                 iface.connect tree[simple(interface.clazz)][interface.name]
-          #X               end,
-          #X               "Opvn" => lambda do |iface|
-          #X               end
-
-          #X             }[k].call(iface)
-          #X           end
-
-          #X         end
-
-          #X
-          #X         #render_matrixs = []
-          #X         #[i"Vrrp","Vlan", "Bridge", "Bond", "Device"].each do |clazz|
-          #X         tree.keys.each do |clazz|
-          #X            (tree[clazz]||{}).values.each do |node|
-          #X              next unless node.in_links.empty?
-          #X              next if node.drawed?
-          #X              draw(node, out, [node.reference.name])
-          #X            end
-
-          #X         end
-
-          #X         out << <<UML
-          #X }
-          #X UML
           "completed" => lambda do |type, *args|
             build_tree
             out = []
-            #        @tree.values.each do |node|
-            #binding.pry if node.reference.name == "s2b-l3-m2"
-            #           out << <<UML
-            #object #{node.ident} {
-            #           #{render_object_address(node.reference)}
-            #}
-            #UML
-            #        end
-
+            last = nil
             @tree.values.each do |node|
               #           next unless node.in_links.empty?
-              draw(node, out, [node.reference.name], ['Vrrp', 'Ipsec', 'Bgp'].include?(simple(node.reference.class)))
+              last = layout_helper(out, last, node,
+                                   draw(node, out, [node.reference.name],
+                                        ['Vrrp', 'Ipsec', 'Bgp'].include?(simple(node.reference.class))))
             end
 
             @tree.values.each { |n| n.drawed = false }
