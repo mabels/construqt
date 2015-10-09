@@ -52,7 +52,7 @@ module Construqt
         content.lines.map{|i| ident+i }.join('')
       end
 
-      def self.draw(node, out, path, flat, parent = nil)
+      def self.draw(node, out, path, flat, level = 0, parent = nil)
         n_kind = simple(node.reference.class)
         if n_kind == "Host"
           # root calls but we have in_links so this is part of a
@@ -61,7 +61,9 @@ module Construqt
           # if my in_links contains my mother i'm ready to paint
           return false if !node.in_links.empty? and !node.in_links.include?(parent)
           return false if node.drawed! #ugly
-          out << ident(path, "package \"#{node.ident}(#{node.reference.flavour.name})\" <<Node>> #DDDDDD {")
+          color = 192 + (level * 32)
+          color = "#{"%02x"%color}#{"%02x"%color}#{"%02x"%color}"
+          out << ident(path, "package \"#{node.ident}(#{node.reference.flavour.name})\" <<Node>> ##{color} {")
         else
           return false if node.drawed! #ugly
           out << ident(path, <<UML)
@@ -76,7 +78,7 @@ UML
         !flat && n_kind != 'Device' && node.out_links.each do |n|
           #binding.pry if n.reference.name == "ad-de"
           last = layout_helper(out, last, node,
-                   draw(n, out, path + [n.reference.name], flat, node)
+                   draw(n, out, path + [n.reference.name], flat, level+1, node)
                  )
         end
 
