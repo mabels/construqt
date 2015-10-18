@@ -1,9 +1,0 @@
-#!/bin/sh
-mkdir -p target
-[ ! -d target/reveal.js ] && (cd target && git clone https://github.com/hakimel/reveal.js)
-[ -d target/reveal.js ] && (cd target/reveal.js && git reset --hard && git pull)
-
-rm -f target/reveal.js/index.html
-(cd target/reveal.js && ln -s ../../index.html index.html && npm install && grunt watch)
-
-

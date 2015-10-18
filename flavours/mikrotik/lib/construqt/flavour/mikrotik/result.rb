@@ -35,7 +35,7 @@ module Construqt
             if val.kind_of?(Schema)
               val.field_name = key
               throw "type must set of #{key}" unless val.type?
-              throw "required key:#{key.class.name} not set" if val.required? && !val.isSet?(result[key])
+              throw "required key:#{key.class.name} not set #{@host.name}:#{key}" if val.required? && !val.isSet?(result[key])
               result[key] = val.get_default if !val.get_default.nil? && result[key].nil?
               keys[key] = result[key] if val.key?
             else
@@ -165,6 +165,8 @@ module Construqt
             "user",
             "interface",
             "interface bonding",
+            "interface wireless security-profiles",
+            "interface wireless",
             "interface bridge",
             "interface bridge port",
             "interface vlan",

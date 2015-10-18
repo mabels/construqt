@@ -96,6 +96,7 @@ module Construqt
 
         def self.add_dhcp_server(host, ifname, iface, writer, family)
           return unless iface.dhcp_range
+          host.result.add_component(Construqt::Resources::Component::DNSMASQ)
           writer.lines.up("dnsmasq -u dnsmasq --strict-order --pid-file=/run/#{ifname}-dnsmasq.pid "+
                           "--conf-file= --listen-address #{iface.address.first_ipv4} "+
                           "--dhcp-range #{iface.dhcp_range.first},#{iface.dhcp_range.last} "+

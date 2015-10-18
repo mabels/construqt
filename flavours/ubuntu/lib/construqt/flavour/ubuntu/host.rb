@@ -44,28 +44,8 @@ module Construqt
           end
 
           def self.create_lxc_network_patcher(host, lxc)
-            host.result.add(lxc, <<PATCHER, Construqt::Resources::Rights.root_0755, "etc", "lxc", "update_network_in_config")
-#!/usr/bin/env ruby
-#
-require 'rubygems'
-
-require 'linux/lxc'
-
-config_fname = ARGV.first
-network_config_fname = ARGV[1]
-updated_list = ARGV[2]
-
-lxc = Linux::Lxc.parse(config_fname)
-lxc.files.each { |file| file.real_fname = File.join('/',File.dirname(file.file),".\#{File.basename(file.file)}.import") }
-lxc.get("lxc.network").comment!
-found = lxc.get("lxc.include").find{|lxc_incl| lxc_incl.file == network_config_fname }
-unless found
-  network_config = Linux::Lxc.parse(network_config_fname)
-  lxc.add("lxc.include", network_config)
-end
-lxc.write
-IO.write(updated_list, lxc.files.select{|i| i != network_config_fname }.map{|i| i.file }.join("\\n"))
-PATCHER
+            host.result.add(lxc, IO.read(File.join(File.dirname(__FILE__), "resources", "update_network_in_config.rb")),
+              Construqt::Resources::Rights.root_0755, "etc", "lxc", "update_network_in_config")
             true
           end
 

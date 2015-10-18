@@ -595,8 +595,9 @@ VRRP
             cp::OPENVPN => { "openvpn" => true },
             cp::DNS => { "bind9" => true },
             cp::RADVD => { "radvd" => true },
+            cp::DNSMASQ => { "dnsmasq" => true },
             cp::CONNTRACKD => { "conntrackd" => true, "conntrack" => true },
-            cp::LXC => { "lxc" => true, "ruby" => ['gem install linux-lxc'] },
+            cp::LXC => { "lxc" => true, "ruby" => ['gem install linux-lxc --no-ri --no-rdoc'] },
             cp::DHCPRELAY => { "wide-dhcpv6-relay" => true, "dhcp-helper" => true }
           }[component]
           throw "Component with name not found #{component}" unless ret
@@ -678,6 +679,7 @@ VRRP
             next unless lxc.lxc_deploy
             next if lxc.lxc_deploy.empty?
             out << "# LXC Container #{lxc.name} [#{lxc.lxc_deploy}]\n"
+            out << '[ "true" = "$(. /etc/default/lxc-net && echo $USE_LXC_BRIDGE)" ] && echo USE_LXC_BRIDGE="false" >> /etc/default/lxc-net'
             base_dir = File.join("/var", "lib", "lxc", lxc.name)
             lxc_rootfs = File.join(base_dir, "rootfs")
             sh_lxc_name =  Shellwords.escape(lxc.name)

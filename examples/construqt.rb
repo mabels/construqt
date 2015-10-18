@@ -8,7 +8,8 @@ CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../../'
   "#{CONSTRUQT_PATH}/construqt/core/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/plantuml/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/lib",
-  "#{CONSTRUQT_PATH}/construqt/flavours/ubuntu/lib"
+  "#{CONSTRUQT_PATH}/construqt/flavours/ubuntu/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/mikrotik/lib"
 ].each{|path| $LOAD_PATH.unshift(path) }
 require 'rubygems'
 require 'construqt'
@@ -33,6 +34,8 @@ network.set_dns_resolver(network.addresses.set_name("NAMESERVER").
 ipsec_certificate(network)
 
 region = Construqt::Regions.add("winsen", network)
+
+region.network.add_ntp_server(region.network.addresses.add_ip("5.9.110.236").add_ip("178.23.124.2"))
 
 region.services.add(Construqt::Services::Radvd.new("RADVD").adv_autonomous)
 

@@ -5,6 +5,16 @@ MAM_PSK="wlan for free"
 
 VALADON_PSK = "wlan for free"
 
+
+WIFI_PSKS = {
+      "rt-mam-wl-de"    => "wifi for free",
+      "rt-mam-wl-de-6"  => "wifi for free",
+      "rt-ab-us"   => "wifi for free",
+      "rt-ab-de"   => "wifi for free"
+}
+
+INTERNAL_PSK = "wifi for free"
+
 def ipsec_users()
   [
     Construqt::Ipsecs::User.new("abels", "weg"),
