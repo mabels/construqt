@@ -52,6 +52,14 @@ module Construqt
         content.lines.map{|i| ident+i }.join('')
       end
 
+      def self.get_stereo_type(node, name)
+        if node.reference.respond_to?(:stereo_type)
+          node.reference.stereo_type || name
+        else
+          name
+        end
+      end
+
       def self.draw(node, out, path, flat, level = 0, parent = nil)
         n_kind = simple(node.reference.class)
         if n_kind == "Host"
@@ -67,7 +75,7 @@ module Construqt
         else
           return false if node.drawed! #ugly
           out << ident(path, <<UML)
-object #{node.ident} <<#{n_kind}>> {
+object #{node.ident} <<#{get_stereo_type(node, n_kind)}>> {
           #{render_object_address(node.reference)}
 }
 UML
@@ -120,6 +128,9 @@ UML
         if iface.respond_to?(:ssid) && iface.ssid
           out << "ssid = \"#{iface.ssid}\""
           out << "psk = \"#{iface.psk}\""
+        end
+        if iface.respond_to?(:vlan_id) && iface.vlan_id
+          out << "vlan_id = \"#{iface.vlan_id}\""
         end
         out << "desc = \"#{iface.description}\"" if iface.description
         if address
@@ -263,6 +274,9 @@ UML
               end
             end,
             "Wlan" => lambda do |node|
+              if node.reference.master_if
+                node.connect TREE[node.reference.master_if.ident]
+              end
               node.reference.cable.connections.each do |c|
                 node.wire_connect TREE[c.iface.ident]
               end
@@ -391,6 +405,8 @@ skinparam object {
   BackgroundColor<<Vlan>> Yellow
   ArrowColor<<Wlan>> Red
   BackgroundColor<<Wlan>> Red
+  ArrowColor<<WlanSlave>> OliveDrab
+  BackgroundColor<<WlanSlave>> OliveDrab
   ArrowColor<<Bridge>> Pink
   BackgroundColor<<Bridge>> Pink
 }
@@ -402,6 +418,7 @@ skinparam stereotypeBackgroundColor<<Device>> YellowGreen
 skinparam stereotypeBackgroundColor<<Bond>> Orange
 skinparam stereotypeBackgroundColor<<Vlan>> Yellow
 skinparam stereotypeBackgroundColor<<Wlan>> Red
+skinparam stereotypeBackgroundColor<<WlanSlave>> OliveDrab
 skinparam stereotypeBackgroundColor<<Bridge>> Pink
 UML
               file.write(out.join("\n") + "\n")

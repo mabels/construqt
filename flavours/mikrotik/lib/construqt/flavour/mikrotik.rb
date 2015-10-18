@@ -9,6 +9,9 @@ require_relative 'mikrotik/interface.rb'
 module Construqt
   module Flavour
     class Mikrotik
+      def name
+        "mikrotik"
+      end
 
       class Factory
         def name
@@ -50,6 +53,9 @@ module Construqt
         include Construqt::Cables::Plugin::Single
         def initialize(cfg)
           super(cfg)
+        end
+        def stereo_type
+          self.master_if ? "WlanSlave" : "Wlan"
         end
         def wireless_security_profile(host, iface)
           default = {

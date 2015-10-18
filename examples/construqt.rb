@@ -552,7 +552,7 @@ AlwaysConnected.encrypter_region(mother, "de", region.network.addresses.add_ip("
 #                                                       .add_ip("fd:a9fe:49::66/64"))
 require_relative "./mam-wl-rt.rb"
 
-mam_wl_rt(region)
+mam_wl_rt(region, {:de => fanout_de, :us => fanout_us})
 
 
 Construqt.produce(region)
