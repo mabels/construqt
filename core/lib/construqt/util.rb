@@ -172,6 +172,17 @@ module Construqt
       ports.flatten
     end
 
+    def self.build_network_address_lookup_table(ips)
+      result = {}
+      ips.each do |ip|
+        (ip.prefix.to_i..(ip.ipv4? ? 32 : 128)).each do |i|
+          net = IPAddress.parse("#{ip.to_s}/#{i}").network
+          result[net.to_string] = net
+        end
+      end
+      result
+    end
+
     def self.rate_higher(prefix, a, b)
       return a.start_with?(prefix) ^ b.start_with?(prefix) ? (a.start_with?(prefix) ? -1 : 1) : 0
     end
