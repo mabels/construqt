@@ -129,9 +129,12 @@ UML
           out << "ssid = \"#{iface.ssid}\""
           out << "psk = \"#{iface.psk}\""
         end
-        if iface.respond_to?(:vlan_id) && iface.vlan_id
-          out << "vlan_id = \"#{iface.vlan_id}\""
+        [:vlan_id,:band,:channel_width,:country,:mode,:rx_chain,:tx_chain,:hide_ssid].each do |name|
+          if iface.respond_to?(name) && iface.send(name)
+            out << "#{name} = \"#{iface.send(name)}\""
+          end
         end
+
         out << "desc = \"#{iface.description}\"" if iface.description
         if address
           [address.v4s, address.v6s].each do |ips|

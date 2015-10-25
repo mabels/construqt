@@ -58,6 +58,7 @@ module Construqt
           self.master_if ? "WlanSlave" : "Wlan"
         end
         def wireless_security_profile(host, iface)
+          #!((name=sec-wlan1)
           default = {
             "authentication-types" => Schema.string.default("wpa-psk,wpa2-psk"),
             "management-protection" => Schema.identifier.default("allowed"),
@@ -68,9 +69,9 @@ module Construqt
             "wpa2-pre-shared-key" => Schema.string.required
           }
           host.result.render_mikrotik(default, {
+            "no_auto_disable" => true,
             "authentication-types" => iface.authentication_types,
             "management-protection" => iface.management_protection,
-            "mode" => iface.mode,
             "supplicant-identity" => iface.supplicant_identity,
             "name" => "sec-#{iface.name}",
             "wpa-pre-shared-key" => iface.psk,
@@ -80,7 +81,7 @@ module Construqt
         def wireless_vap(host, iface)
           return unless iface.master_if
           default = {
-            "mac-address" => Schema.string.required.key,
+            "mac-address" => Schema.string,
             "master-interface" => Schema.identifier.required,
             "name" => Schema.identifier.required.key,
             "security-profile" => Schema.identifier.required,
@@ -89,7 +90,7 @@ module Construqt
             "vlan-mode" => Schema.identifier.default("use-tag")
           }
           host.result.render_mikrotik(default, {
-            "mac-address" => iface.mac_address || Construqt::Util.generate_mac_address_from_name(iface.ssid),
+            "mac-address" => iface.mac_address,
             "master-interface" => iface.master_if.name,
             "name" => iface.name,
             "security-profile" => "sec-#{iface.name}",
@@ -101,7 +102,7 @@ module Construqt
         def wireless_if(host, iface)
           return if iface.master_if
           default = {
-            "default-name" => Schema.identifier.required.key,
+            "default-name" => Schema.identifier.required.key.noset,
             "band" => Schema.string.default("2ghz-B/G/N"),
             "channel-width" => Schema.string.default("20mhz"),
             "country" => Schema.string.default("germany"),
@@ -111,7 +112,7 @@ module Construqt
             "rx-chain" => Schema.string.default("0"),
             "tx-chain" => Schema.string.default("0"),
             "ssid" => Schema.string.required,
-            "psk" => Schema.string.required,
+            "security-profile" => Schema.string.required,
             "hide-ssid" => Schema.boolean.default(false)
           }
           host.result.render_mikrotik_set_by_key(default, {
@@ -125,7 +126,7 @@ module Construqt
             "rx-chain" => iface.rx_chain,
             "tx-chain" => iface.tx_chain,
             "ssid" => iface.ssid,
-            "psk" => iface.psk,
+            "security-profile" => "sec-#{iface.name}",
             "hide-ssid" => iface.hide_ssid
           }, "interface", "wireless")
         end
@@ -357,6 +358,8 @@ TESTNAME
           host.result.add("", "default=yes", "ip", "ipsec", "proposal")
           host.result.add("", "template=yes", "ip", "ipsec", "policy")
           host.result.add("", "name=default", "routing", "bgp", "instance")
+          host.result.add_remove_pre_condition('name!=default', "interface", "wireless", "security-profiles")
+          host.result.add_remove_pre_condition('interface-type=virtual-AP', "interface", "wireless")
           host.result.add_remove_pre_condition('comment~"CONSTRUQT\$"', "ip", "address")
           host.result.add_remove_pre_condition('comment~"CONSTRUQT\$"', "ip", "route")
           host.result.add_remove_pre_condition('comment~"CONSTRUQT\$"', "ipv6", "address")

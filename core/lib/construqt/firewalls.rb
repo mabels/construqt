@@ -241,11 +241,13 @@ module Construqt
 
     module FromTo
       def copy_from_to(rule)
+        from_filter_local(rule.from_filter_local?)
         from_net(rule.get_from_net)
         from_host(rule.get_from_host)
         not_from(rule.not_from?)
         from_me(rule.from_me?)
         from_my_net(rule.from_my_net?)
+        to_filter_local(rule.to_filter_local?)
         to_net(rule.get_to_net)
         to_host(rule.get_to_host)
         not_to(rule.not_to?)
@@ -253,6 +255,23 @@ module Construqt
         to_my_net(rule.to_my_net?)
         include_routes(rule.include_routes?)
       end
+
+      def from_filter_local(val = true)
+        @from_filter_local = val
+        self
+      end
+      def from_filter_local?
+        defined?(@from_filter_local) ? @from_filter_local : false
+      end
+
+      def to_filter_local(val = true)
+        @to_filter_local = val
+        self
+      end
+      def to_filter_local?
+        defined?(@to_filter_local) ? @to_filter_local : false
+      end
+
       def from_net(val = :to_net)
         @from_net = val
         self
@@ -397,10 +416,16 @@ module Construqt
       end
 
       class FwIpAddress
-        def missing(fwtoken, family)
+        def merge(ip)
+          FwIpAddress.new
+            .set_ip_addr(ip_addr)
+            .missing(@fwtoken, @family, @missing)
+        end
+
+        def missing(fwtoken, family, missing = true)
           @fwtoken = fwtoken
           @family = family
-          @missing = true
+          @missing = missing
           self
         end
 
@@ -414,6 +439,10 @@ module Construqt
 
         def to_string
           missing? ? "[MISSING:#{@family}]" : ip_addr.to_string
+        end
+
+        def to_s
+          "#<#{self.class.name}:#{self.object_id}:#{ip_addr.to_string}>"
         end
 
         def ip_addr
@@ -496,11 +525,15 @@ module Construqt
       end
 
       def from_list(family)
-        FromTo._list(family, self.attached_interface, self.get_from_host, self.get_from_net, self.from_me?, self.include_routes?, self.from_my_net?)
+        FromTo._list(family, self.attached_interface, self.get_from_host, self.get_from_net,
+                             self.from_me?, self.include_routes?, self.from_my_net?,
+                             self.from_filter_local?)
       end
 
       def to_list(family)
-        FromTo._list(family, self.attached_interface, self.get_to_host, self.get_to_net, self.to_me?, self.include_routes?, self.to_my_net?)
+        FromTo._list(family, self.attached_interface, self.get_to_host, self.get_to_net,
+                             self.to_me?, self.include_routes?, self.to_my_net?,
+                             self.to_filter_local?)
       end
 
       def self.to_ipaddrs(addrs)
@@ -528,6 +561,13 @@ module Construqt
         def set_list(list)
           @list = list
           self
+        end
+
+        def merge!(&block)
+          @list = @list.map do |ip|
+            block.call(ip).map { |i| ip.merge(i) }
+          end.flatten
+          @cached_list = false
         end
 
         def map(&block)
@@ -597,7 +637,7 @@ module Construqt
         end
       end
 
-      def self._list(family, iface, _host, _net, _me, _route, _my_net)
+      def self._list(family, iface, _host, _net, _me, _route, _my_net, _filter_local)
         family_list_method = family==Construqt::Addresses::IPV6 ? :v6s : :v4s
         _list = FwIpAddresses.new
         iface_address_nil = false
@@ -658,7 +698,18 @@ module Construqt
             _list.add_fwipaddresses(resolver(_net, family))
           end
         end
-
+        if _filter_local
+          binding.pry if iface.host.name == "rt-mam-wl-de"
+          _list.merge! do |fwip|
+            found = []
+            iface.host.address.ips.each do |ifip|
+              next unless ifip.ipv4? == fwip.ip_addr.ipv4?
+              fwip.ip_addr.include?(ifip) and
+                (found << (ifip.prefix.to_i < fwip.ip_addr.prefix.to_i ? ifip : fwip.ip_addr))
+            end
+            found
+          end
+        end
         _list
       end
     end

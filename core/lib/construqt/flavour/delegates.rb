@@ -376,6 +376,35 @@ puts "host => #{host && host.name} #{self.delegate.class.name}"
       def ssid
         self.delegate.ssid
       end
+
+      def band
+        self.delegate.band
+      end
+
+      def channel_width
+        self.delegate.channel_width
+      end
+
+      def country
+        self.delegate.country
+      end
+
+      def mode
+        self.delegate.mode
+      end
+
+      def rx_chain
+        self.delegate.rx_chain
+      end
+
+      def tx_chain
+        self.delegate.tx_chain
+      end
+
+      def hide_ssid
+        self.delegate.hide_ssid
+      end
+
     end
 
     class VlanDelegate

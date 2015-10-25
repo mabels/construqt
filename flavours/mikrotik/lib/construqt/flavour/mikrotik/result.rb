@@ -127,6 +127,7 @@ module Construqt
         end
 
         def remove_condition(digests, key)
+          #binding.pry if key == "interface wireless security-profiles"
           condition = @remove_pre_condition[key]
           if condition
             condition = "(#{condition})"
@@ -167,9 +168,9 @@ module Construqt
             "interface bonding",
             "interface wireless security-profiles",
             "interface wireless",
+            "interface vlan",
             "interface bridge",
             "interface bridge port",
-            "interface vlan",
             "interface vrrp",
             "interface gre6",
             "ipv6 address",

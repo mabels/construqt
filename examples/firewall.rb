@@ -15,6 +15,11 @@ def firewall(region)
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#FANOUT-DE-BACKEND#IPSECVPN-DE#IPSECVPN-US").to_net("#SERVICE-NET-DE#SERVICE-NET-US#SERVICE-TRANSIT-DE").from_is_outside
     end
   end
+  Construqt::Firewalls.add("net-nat") do |fw|
+    fw.nat do |nat|
+      nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("#INTERNAL-NET").from_filter_local.to_source.from_is_inside
+    end
+  end
 
   Construqt::Firewalls.add("service-nat") do |fw|
     fw.nat do |nat|

@@ -1,4 +1,7 @@
-require 'pry'
+begin
+  require 'pry'
+rescue LoadError
+end
 require 'net/ssh'
 require 'net/scp'
 

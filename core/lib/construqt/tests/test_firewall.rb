@@ -1,4 +1,5 @@
 
+require 'pry'
 
 require 'test/unit'
 
@@ -9,24 +10,32 @@ require 'ruby-prof'
 #$LOAD_PATH.unshift(File.dirname(__FILE__))
 #$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
-CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'.'
-["#{CONSTRUQT_PATH}/construqt/lib","#{CONSTRUQT_PATH}/ipaddress/lib"].each{|path| $LOAD_PATH.unshift(path) }
+CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'./'
+[
+  "#{CONSTRUQT_PATH}/construqt/core/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/ubuntu/lib",
+  "#{CONSTRUQT_PATH}/ipaddress/lib"
+].each {|path| $LOAD_PATH.unshift(path) }
 require 'construqt'
 
 network = Construqt::Networks.add('Construqt-Test-Network')
 REGION = Construqt::Regions.add("Construqt-Test-Region", network)
 
 REGION.network.addresses.tag("TEST")
-  .add_ip("1.1.1.1/24#FIRST_NET_1_TAG#TESTIPV4")
-  .add_ip("1.1.1.2/24#FIRST_NET_2_TAG#TESTIPV4")
-  .add_ip("1::1:1:1/124#FIRST_NET_1_TAG#TESTIPV6")
-  .add_ip("1::1:1:2/124#FIRST_NET_2_TAG#TESTIPV6")
+  .add_ip("1.1.1.1/24#FIRST_NET_1_TAG#TESTIPV4#TEST_FROM_FILTER")
+  .add_ip("1.1.1.2/24#FIRST_NET_2_TAG#TESTIPV4#TEST_FROM_FILTER")
+  .add_ip("1::1:1:1/124#FIRST_NET_1_TAG#TESTIPV6#TEST_FROM_FILTER")
+  .add_ip("1::1:1:2/124#FIRST_NET_2_TAG#TESTIPV6#TEST_FROM_FILTER")
 REGION.network.addresses.tag("TEST")
-  .add_ip("2.2.2.2/24#SECOND_NET_1_TAG")
-  .add_ip("2.2.2.3/24#SECOND_NET_2_TAG")
-  .add_ip("2::2:2:2/124#SECOND_NET_1_TAG")
-  .add_ip("2::2:2:3/124#SECOND_NET_2_TAG")
+  .add_ip("2.2.2.2/24#SECOND_NET_1_TAG#TEST_TO_FILTER")
+  .add_ip("2.2.2.3/24#SECOND_NET_2_TAG#TEST_TO_FILTER")
+  .add_ip("2::2:2:2/124#SECOND_NET_1_TAG#TEST_TO_FILTER")
+  .add_ip("2::2:2:3/124#SECOND_NET_2_TAG#TEST_TO_FILTER")
 
+REGION.network.addresses
+  .add_ip("4.4.4.1/24#TEST_TO_FILTER")
+  .add_ip("5.5.5.1/24#TEST_FROM_FILTER")
 
 REGION.hosts.add("Construqt-Host-ipv4", "flavour" => "ubuntu") do |cq|
   cq.configip = cq.id ||= Construqt::HostId.create do |my|
@@ -1342,6 +1351,7 @@ class FirewallTest < Test::Unit::TestCase
      "{FORWARD} -o testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu"
     ], writer.ipv4.rows
   end
+
   def test_forward_tcp_mss_value
     fw = Construqt::Firewalls.add("l-tcp-mss-value") do |fw|
       fw.forward do |forward|
@@ -1357,6 +1367,46 @@ class FirewallTest < Test::Unit::TestCase
     assert_equal [
      "{FORWARD} -i testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1196",
      "{FORWARD} -o testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1196"
+    ], writer.ipv6.rows
+  end
+
+  def test_filter_nets
+    fw = Construqt::Firewalls.add("net-nat-filter") do |fw|
+      fw.nat do |nat|
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT)
+          .from_net("#TEST_FROM_FILTER").from_filter_local.to_source
+          .to_net("#TEST_TO_FILTER").to_filter_local.to_source
+          .from_is_inside
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    assert_equal [
+      "{POSTROUTING} -o testif -s 5.5.5.0/24 -j SNAT --to-source 5.5.5.5"
+    ], writer.ipv4.rows
+    assert_equal [
+    ], writer.ipv6.rows
+
+    fw = Construqt::Firewalls.add("net-nat") do |fw|
+      fw.nat do |nat|
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT)
+          .from_net("#TEST_FROM_FILTER").to_source
+          .to_net("#TEST_TO_FILTER").to_source
+          .from_is_inside
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    assert_equal [
+      "{DVzkPxLgpwnzc369xausJQ} -s 1.1.1.0/24 -j SNAT --to-source 5.5.5.5",
+      "{DVzkPxLgpwnzc369xausJQ} -s 5.5.5.0/24 -j SNAT --to-source 5.5.5.5",
+      "{DVzkPxLgpwnzc369xausJQ} -j RETURN",
+      "{TNcOyV76ZrilSl1qw6l4A} -d 2.2.2.0/24 -j DVzkPxLgpwnzc369xausJQ",
+      "{TNcOyV76ZrilSl1qw6l4A} -d 4.4.4.0/24 -j DVzkPxLgpwnzc369xausJQ",
+      "{TNcOyV76ZrilSl1qw6l4A} -j RETURN",
+      "{POSTROUTING} -o testif -j TNcOyV76ZrilSl1qw6l4A"
+    ], writer.ipv4.rows
+    assert_equal [
     ], writer.ipv6.rows
   end
 end
