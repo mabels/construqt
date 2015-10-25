@@ -699,7 +699,6 @@ module Construqt
           end
         end
         if _filter_local
-          binding.pry if iface.host.name == "rt-mam-wl-de"
           _list.merge! do |fwip|
             found = []
             iface.host.address.ips.each do |ifip|
