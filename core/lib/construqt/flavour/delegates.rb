@@ -44,6 +44,10 @@ module Construqt
         nil
       end
 
+      def vagrant
+        self.delegate.vagrant
+      end
+
       def ipsec
         self.delegate.ipsec
       end
@@ -184,6 +188,7 @@ puts "host => #{host && host.name} #{self.delegate.class.name}"
       def lxc_deploy
         self.delegate.lxc_deploy
       end
+
 
       def mother
         if self.delegate.respond_to? :mother

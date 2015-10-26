@@ -95,8 +95,8 @@ module Construqt
     def add(iface_left, iface_right)
       #    throw "left should be a iface #{iface_left.class.name}" unless iface_left.kind_of?(Construqt::Flavour::InterfaceDelegate)
       #    throw "right should be a iface #{iface_right.class.name}" unless iface_right.kind_of?(Construqt::Flavour::InterfaceDelegate)
-      throw "left has a cable #{iface_left.cable}" unless iface_left.cable.is_plugable?
-      throw "right has a cable #{iface_right.cable}" unless iface_right.cable.is_plugable?
+      throw "left has a plugged in cable #{iface_left.cable}" unless iface_left.cable.is_plugable?
+      throw "right has a plugged in cable #{iface_right.cable}" unless iface_right.cable.is_plugable?
       cable = Cable.new(iface_left, iface_right)
       throw "cable exists #{iface_left.cable}=#{iface_right.cable}" if @cables[cable.key]
       iface_left.cable.plug(DirectedCable.new(cable, iface_right))

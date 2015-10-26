@@ -507,16 +507,24 @@ module Construqt
             throw "ACTION must set #{ifname}" unless rule.get_action
             #throw "TO_SOURCE must set #{ifname}" unless rule.to_source?
             written = false
-            rule.postrouting? && rule.get_to_source.each do |src|
-              to_from = ToFrom.new(ifname||iface.name, rule, section, section.ipv4.postrouting)
-              if rule.from_is_inside?
-                direction = to_from.request_direction(Construqt::Addresses::IPV4).push_end("--to-source #{src}")
-              else
-                direction = to_from.respond_direction(Construqt::Addresses::IPV4).push_end("--to-source #{src}")
-              end
+            if rule.postrouting?
+              rule.get_to_source.each do |src|
+                to_from = ToFrom.new(ifname||iface.name, rule, section, section.ipv4.postrouting)
+                if rule.from_is_inside?
+                  direction = to_from.request_direction(Construqt::Addresses::IPV4).push_end("--to-source #{src}")
+                else
+                  direction = to_from.respond_direction(Construqt::Addresses::IPV4).push_end("--to-source #{src}")
+                end
 
-              write_table(direction.interface_direction("-o"))
-              written = true
+                write_table(direction.interface_direction("-o"))
+                written = true
+              end
+              if rule.get_to_source.empty?
+                binding.pry
+                to_from = ToFrom.new(ifname||iface.name, rule, section, section.ipv4.postrouting)
+                direction = to_from.respond_direction(Construqt::Addresses::IPV4).push_end("-j MASQUERADE")
+                written = true
+              end
             end
 
             rule.prerouting? && rule.get_to_dest.each do |dst|

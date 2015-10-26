@@ -1409,6 +1409,35 @@ class FirewallTest < Test::Unit::TestCase
     assert_equal [
     ], writer.ipv6.rows
   end
+
+  def test_dynamic_ip_and_snat
+    dhcp_if = nil
+    REGION.hosts.add("Construqt-Host-Dhcp", "flavour" => "ubuntu") do |cq|
+      cq.configip = cq.id ||= Construqt::HostId.create do |my|
+        my.interfaces << dhcp_if = REGION.interfaces.add_device(cq, "v998", "mtu" => 1500,
+            'address' => REGION.network.addresses.add_ip(Construqt::Addresses::DHCPV4))
+      end
+    end
+    fw = Construqt::Firewalls.add("dhcp-net-nat") do |fw|
+      fw.nat do |nat|
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT)
+          .from_net("#TEST_FROM_FILTER").to_source.from_is_inside
+      end
+    end.attach_iface(dhcp_if)
+    writer = TestWriter.new
+    Construqt::Flavour::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "dhcpif", writer)
+    assert_equal [
+      "{DVzkPxLgpwnzc369xausJQ} -s 1.1.1.0/24 -j SNAT --to-source 5.5.5.5",
+      "{DVzkPxLgpwnzc369xausJQ} -s 5.5.5.0/24 -j SNAT --to-source 5.5.5.5",
+      "{DVzkPxLgpwnzc369xausJQ} -j RETURN",
+      "{TNcOyV76ZrilSl1qw6l4A} -d 2.2.2.0/24 -j DVzkPxLgpwnzc369xausJQ",
+      "{TNcOyV76ZrilSl1qw6l4A} -d 4.4.4.0/24 -j DVzkPxLgpwnzc369xausJQ",
+      "{TNcOyV76ZrilSl1qw6l4A} -j RETURN",
+      "{POSTROUTING} -o testif -j TNcOyV76ZrilSl1qw6l4A"
+    ], writer.ipv4.rows
+    assert_equal [
+    ], writer.ipv6.rows
+  end
 end
 
 #result = RubyProf.stop
