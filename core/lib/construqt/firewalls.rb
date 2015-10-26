@@ -2,7 +2,7 @@ require 'resolv'
 module Construqt
   module Firewalls
 
-    @firewalls = {}
+    FIREWALLS = {}
     module Actions
       NOTRACK = :NOTRACK
       SNAT = :SNAT
@@ -699,9 +699,11 @@ module Construqt
           end
         end
         if _filter_local
+          #binding.pry if iface.host.name == "rt-mam-wl-de"
           _list.merge! do |fwip|
             found = []
             iface.host.address.ips.each do |ifip|
+              #binding.pry if ifip.nil? or fwip.ip_addr.nil?
               next unless ifip.ipv4? == fwip.ip_addr.ipv4?
               fwip.ip_addr.include?(ifip) and
                 (found << (ifip.prefix.to_i < fwip.ip_addr.prefix.to_i ? ifip : fwip.ip_addr))
@@ -1082,17 +1084,21 @@ module Construqt
       if name == nil
         fw = Firewall.new(name)
       else
-        throw "firewall with this name exists #{name}" if @firewalls[name]
-        fw = @firewalls[name] = Firewall.new(name)
+        throw "firewall with this name exists #{name}" if FIREWALLS[name]
+        fw = FIREWALLS[name] = Firewall.new(name)
       end
 
       block.call(fw)
       fw
     end
 
+    def self.exists?(name)
+      FIREWALLS[name]
+    end
+
     def self.find(name)
-      ret = @firewalls[name]
-      throw "firewall with this name #{name} not found" unless @firewalls[name]
+      ret = FIREWALLS[name]
+      throw "firewall with this name #{name} not found" unless FIREWALLS[name]
       ret
     end
   end

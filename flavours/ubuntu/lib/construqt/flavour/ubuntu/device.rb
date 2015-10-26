@@ -93,6 +93,12 @@ module Construqt
           end
         end
 
+        def self.dhcp_nameserver_option(host)
+          return "" if host.region.network.dns_resolver.nameservers.ips.nil? or
+                       host.region.network.dns_resolver.nameservers.ips.empty?
+          nameservers=host.region.network.dns_resolver.nameservers.ips.map{|i| i.to_s}.join(",")
+          " --dhcp-option=6,#{nameservers}"
+        end
 
         def self.add_dhcp_server(host, ifname, iface, writer, family)
           return unless iface.dhcp_range
@@ -102,7 +108,7 @@ module Construqt
                           "--dhcp-range #{iface.dhcp_range.first},#{iface.dhcp_range.last} "+
                           "--dhcp-lease-max=253 --dhcp-no-override --except-interface=lo "+
                           "--interface=#{ifname} --dhcp-leasefile=/var/lib/misc/dnsmasq.#{ifname}.leases"+
-                          "--dhcp-authoritative")
+                          "--dhcp-authoritative#{dhcp_nameserver_option(host)}")
           writer.lines.down("kill `cat /run/#{ifname}-dnsmasq.pid`")
         end
 

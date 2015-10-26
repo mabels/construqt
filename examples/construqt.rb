@@ -65,17 +65,21 @@ fw_outbound = Construqt::Firewalls.add("fw-outbound") do |fw|
   end
 end
 
-fw_sixxs = Construqt::Firewalls.add("fw-sixxs") do |fw|
-  fw.forward do |forward|
-    forward.ipv6
-    forward.add.action(Construqt::Firewalls::Actions::TCPMSS)
-  end
-  fw.host do |host|
-    host.ipv6
-    host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("@2000::/3").to_me.tcp.dport(22).from_is_outside
-    host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("@2000::/3").to_me.icmp.type(Construqt::Firewalls::ICMP::Ping).from_is_outside
-    host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_me.to_net("@2000::/3")
-    host.add.action(Construqt::Firewalls::Actions::DROP).log('HOST')
+def fw_sixxs
+  ret = Construqt::Firewalls.exists?("fw-sixxs")
+  return ret if ret
+  Construqt::Firewalls.add("fw-sixxs") do |fw|
+    fw.forward do |forward|
+      forward.ipv6
+      forward.add.action(Construqt::Firewalls::Actions::TCPMSS)
+    end
+    fw.host do |host|
+      host.ipv6
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("@2000::/3").to_me.tcp.dport(22).from_is_outside
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("@2000::/3").to_me.icmp.type(Construqt::Firewalls::ICMP::Ping).from_is_outside
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_me.to_net("@2000::/3")
+      host.add.action(Construqt::Firewalls::Actions::DROP).log('HOST')
+    end
   end
 end
 

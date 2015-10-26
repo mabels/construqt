@@ -81,7 +81,7 @@ def firewall(region)
     end
     fw.forward do |forward|
       forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET")
-        .to_net("#SERVICE-NET-DE#SERVICE-TRANSIT-DE#IPSECVPN-DE#IPSECVPN-US").icmp.type(Construqt::Firewalls::ICMP::Ping).from_is_outside
+        .to_net("#SERVICE-NET-DE#SERVICE-TRANSIT-DE#IPSECVPN-DE#IPSECVPN-US#INTERNAL-NET").to_filter_local.icmp.type(Construqt::Firewalls::ICMP::Ping).from_is_outside
     end
   end
 
@@ -99,6 +99,7 @@ def firewall(region)
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#SERVICE-TRANSIT-DE#SERVICE-IPSEC#IPSECVPN-DE").to_net("#SERVICE-TRANSIT-DE#SERVICE-IPSEC#IPSECVPN-DE")
     end
   end
+
 
   Construqt::Firewalls.add("service-us-transit") do |fw|
     fw.host do |host|
@@ -119,7 +120,7 @@ def firewall(region)
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INTERNET").from_is_inside
     end
     fw.forward do |forward|
-      forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#FANOUT-DE-BACKEND#SERVICE-NET-DE#SERVICE-TRANSIT-DE#IPSECVPN-DE").to_net("#INTERNET").from_is_inside
+      forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#FANOUT-DE-BACKEND#SERVICE-NET-DE#SERVICE-TRANSIT-DE#IPSECVPN-DE#INTERNAL-NET").from_filter_local.to_net("#INTERNET").from_is_inside
     end
   end
 

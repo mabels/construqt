@@ -143,6 +143,9 @@ UML
             ips.each_with_index do |ip, idx|
               tags += Construqt::Tags.from(ip)||[]
               out << "#{prefix}(#{idx}) = #{ip.to_string}"
+              if ip.options["dhcp_range"]
+                out << "dhcp-range(#{idx}) = [#{ip.options["dhcp_range"].join(",")}]"
+              end
             end
           end
 

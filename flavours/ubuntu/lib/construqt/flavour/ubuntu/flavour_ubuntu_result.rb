@@ -683,9 +683,10 @@ VRRP
             base_dir = File.join("/var", "lib", "lxc", lxc.name)
             lxc_rootfs = File.join(base_dir, "rootfs")
             sh_lxc_name =  Shellwords.escape(lxc.name)
+            quick_stop = lxc.lxc_deploy.include?(Construqt::Hosts::Lxc::KILLSTOP) ? " -k" : ""
             if lxc.lxc_deploy.include? Construqt::Hosts::Lxc::RECREATE
               out << "echo start LXC-RECREATE #{sh_lxc_name}"
-              out << "lxc-ls --running | grep -q '#{sh_lxc_name}' && lxc-stop -n '#{sh_lxc_name}'"
+              out << "lxc-ls --running | grep -q '#{sh_lxc_name}' && lxc-stop -n '#{sh_lxc_name}'#{quick_stop}"
               out << "[ -d #{lxc_rootfs}/usr/share] && lxc-destroy -f -n '#{sh_lxc_name}'"
               out << "lxc-create -n '#{sh_lxc_name}' -t #{lxc.flavour.name}"
               out << "chroot #{lxc_rootfs} /bin/bash /root/deployer.sh"
@@ -694,7 +695,7 @@ VRRP
               out << "lxc-start -d -n '#{sh_lxc_name}'"
             elsif lxc.lxc_deploy.include? Construqt::Hosts::Lxc::RESTART
               out << "echo start LXC-RESTART #{sh_lxc_name}"
-              out << "lxc-ls --running | grep -q '#{sh_lxc_name}' && lxc-stop -n '#{sh_lxc_name}'"
+              out << "lxc-ls --running | grep -q '#{sh_lxc_name}' && lxc-stop -n '#{sh_lxc_name}'#{quick_stop}"
               out << "[ -d #{lxc_rootfs}/usr/share ] || lxc-create -n '#{sh_lxc_name}' -t #{lxc.flavour.name}"
               out << "chroot #{lxc_rootfs} /bin/bash /root/deployer.sh"
               out << "echo fix config of #{sh_lxc_name} in #{lxc_rootfs}"

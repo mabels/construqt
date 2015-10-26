@@ -104,8 +104,17 @@ def mam_wl_rt(region, peers)
 #                                  "hide_ssid" => true)
     [
       { :name => "rt-mam-wl-de",   :block => 202 }, # homenet
-      { :name => "rt-mam-wl-de-6", :block => 203 }, # aiccu
-      { :name => "rt-mam-us",      :block => 68  }, # service-us
+      { :name => "rt-mam-wl-de-6", :block => 203, :action => lambda do |aiccu, internal_if|
+          region.interfaces.add_device(aiccu, "sixxs", "mtu" => "1280",
+                                       "dynamic" => true,
+                                       "firewalls" => [ fw_sixxs ],
+                                       "address" => region.network.addresses.add_ip("2001:6f8:900:2bf::2/64"))
+          internal_if.services.push(region.services.find("RADVD"))
+          internal_if.address.ips = internal_if.address.ips.select{|i| i.ipv4? }
+          internal_if.address.add_ip("2001:6f8:900:82bf:#{internal_if.address.first_ipv4.to_s.split(".").join(":")}/64")
+        end
+      }, # aiccu
+#      { :name => "rt-mam-us",      :block => 68  }, # service-us
 #      { :name => "rt-mam-de",      :block => 66  }, # service-de
       { :name => "rt-ab-us",       :block => 206 }, # airbnb-us
       { :name => "rt-ab-de",       :block => 207 }  # airbnb-de
@@ -117,7 +126,6 @@ def mam_wl_rt(region, peers)
         ].map do |freq|
           ssid = "#{net[:name].sub(/^[a-zA-Z0-9]+-/,'')}-#{freq[:freq]}"
           simple_ssid = ssid.downcase.gsub(/[^0-9a-z]+/, '')
-puts "#{ssid} => #{simple_ssid}"
           region.interfaces.add_wlan(ap, "wl#{simple_ssid}",
                                   "mtu" => 1500,
                                   "vlan_id" => net[:block],
@@ -128,23 +136,24 @@ puts "#{ssid} => #{simple_ssid}"
       end
 
       rts[net[:name]] = region.hosts.add(net[:name], "flavour" => "ubuntu", "mother" => mam_wl_rt,
-                                         "lxc_deploy" => [Construqt::Hosts::Lxc::RESTART]) do |host|
+                                         "lxc_deploy" => [Construqt::Hosts::Lxc::RESTART,Construqt::Hosts::Lxc::KILLSTOP]) do |host|
         region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                      :description=>"#{host.name} lo",
                                      "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
         host.configip = host.id ||= Construqt::HostId.create do |my|
           my.interfaces << region.interfaces.add_device(host, "v24", "mtu" => 1500,
                 "plug_in" => Construqt::Cables::Plugin.new.iface(mam_wl_rt.interfaces.find_by_name("br24")),
-                'firewalls' => ['net-nat', 'host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit', 'block'],
+                'firewalls' => ['net-nat', 'host-outbound', 'icmp-ping', 'ssh-srv', 'block'],
                 'address' => region.network.addresses.add_ip("192.168.0.#{net[:block]}/24")
-                                                     .add_route("0.0.0.0/24", "192.168.0.1"))
+                                                     .add_route("0.0.0.0/0", "192.168.0.1"))
         end
-        region.interfaces.add_device(host, "v#{net[:block]}", "mtu" => 1500,
+        internal_if = region.interfaces.add_device(host, "v#{net[:block]}", "mtu" => 1500,
               "plug_in" => Construqt::Cables::Plugin.new.iface(mam_wl_rt.interfaces.find_by_name("br#{net[:block]}")),
               'address' => region.network.addresses
                       .add_ip("192.168.#{net[:block]}.1/24#INTERNAL-NET",
                               "dhcp_range" => ["192.168.#{net[:block]}.100", "192.168.#{net[:block]}.200"])
                       .add_ip("2a01:4f8:d15:1190:192:168:#{net[:block]}:1/123#INTERNAL-NET"))
+        net[:action] && net[:action].call(host, internal_if)
       end
       mam_actions(region)[net[:name]] && mam_actions(region)[net[:name]].call(rts[net[:name]], net, peers)
     end

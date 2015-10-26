@@ -5,6 +5,7 @@ module Construqt
     module Lxc
       RECREATE = "recreate"
       RESTART = "restart"
+      KILLSTOP = "killstop"
     end
 
   	attr_reader :region
