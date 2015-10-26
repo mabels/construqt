@@ -93,8 +93,13 @@ module Construqt
               "#{@interface_direction} #{to_from.ifname}"
             end
 
+            def set_action(action)
+              @action = action
+              self
+            end
+
             def action
-              to_from.rule.get_action
+              @action || to_from.rule.get_action
             end
 
             def row(line, table_name = nil)
@@ -520,9 +525,13 @@ module Construqt
                 written = true
               end
               if rule.get_to_source.empty?
-                binding.pry
                 to_from = ToFrom.new(ifname||iface.name, rule, section, section.ipv4.postrouting)
-                direction = to_from.respond_direction(Construqt::Addresses::IPV4).push_end("-j MASQUERADE")
+                if rule.from_is_inside?
+                  direction = to_from.request_direction(Construqt::Addresses::IPV4).set_action("MASQUERADE")
+                else
+                  direction = to_from.respond_direction(Construqt::Addresses::IPV4).set_action("MASQUERADE")
+                end
+                write_table(direction.interface_direction("-o"))
                 written = true
               end
             end

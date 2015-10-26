@@ -1427,13 +1427,8 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "dhcpif", writer)
     assert_equal [
-      "{DVzkPxLgpwnzc369xausJQ} -s 1.1.1.0/24 -j SNAT --to-source 5.5.5.5",
-      "{DVzkPxLgpwnzc369xausJQ} -s 5.5.5.0/24 -j SNAT --to-source 5.5.5.5",
-      "{DVzkPxLgpwnzc369xausJQ} -j RETURN",
-      "{TNcOyV76ZrilSl1qw6l4A} -d 2.2.2.0/24 -j DVzkPxLgpwnzc369xausJQ",
-      "{TNcOyV76ZrilSl1qw6l4A} -d 4.4.4.0/24 -j DVzkPxLgpwnzc369xausJQ",
-      "{TNcOyV76ZrilSl1qw6l4A} -j RETURN",
-      "{POSTROUTING} -o testif -j TNcOyV76ZrilSl1qw6l4A"
+      "{POSTROUTING} -o dhcpif -s 1.1.1.0/24 -j MASQUERADE",
+      "{POSTROUTING} -o dhcpif -s 5.5.5.0/24 -j MASQUERADE"
     ], writer.ipv4.rows
     assert_equal [
     ], writer.ipv6.rows
