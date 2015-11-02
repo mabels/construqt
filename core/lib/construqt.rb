@@ -63,6 +63,7 @@ module Construqt
   require_relative 'construqt/vlans.rb'
   require_relative 'construqt/tags.rb'
   require_relative 'construqt/flavour/flavour.rb'
+  require_relative 'construqt/flavour/node.rb'
 
 #  [ 'onstruqt/flavour/unknown/unknown.rb',
 #    'construqt/flavour/ciscian/ciscian.rb',

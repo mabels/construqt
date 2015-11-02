@@ -2,14 +2,13 @@ begin
   require 'pry'
 rescue LoadError
 end
-require 'net/ssh'
-require 'net/scp'
 
 CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../../'
 [
   "#{CONSTRUQT_PATH}/ipaddress/lib",
   "#{CONSTRUQT_PATH}/construqt/core/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/plantuml/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/gojs/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/ubuntu/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/mikrotik/lib"
@@ -26,6 +25,10 @@ end
 
 if ARGV.include?("plantuml")
   require 'construqt/flavour/plantuml.rb'
+end
+
+if ARGV.include?("gojs")
+  require 'construqt/flavour/gojs.rb'
 end
 
 network = Construqt::Networks.add('construqt')

@@ -1,13 +1,12 @@
-require 'rexml/document'
-require 'rexml/element'
-require 'rexml/cdata'
+require 'json'
+
 
 module Construqt
   module Flavour
-    module Plantuml
+    module GoJs
 
       def self.name
-        'plantuml'
+        'gojs'
       end
 
       Flavour.add_aspect(self)
@@ -19,17 +18,13 @@ module Construqt
 
       TREE = {}
       SINGLE_WIRE = {}
-      FORMATS = ['svg']
-
-      def self.add_format(format)
-        FORMATS << format
-      end
 
       def self.connect(node, out, path)
         return if node.drawed!
-        #    Construqt.logger.debug("planuml.draw:#{node.reference.name} #{node.ident} ")
+        return
+        #    Construqt.logger.debug("gojs.draw:#{node.reference.name} #{node.ident} ")
         node.out_links.each do |n|
-          #      Construqt.logger.debug("planuml.draw:Out:#{node.reference.name} #{node.ident}:#{n.ident}")
+          #      Construqt.logger.debug("gojs.draw:Out:#{node.reference.name} #{node.ident}:#{n.ident}")
           unless simple(node.reference.class) == "Host"
             out << "#{node.ident} .. #{n.ident}"
           end
@@ -61,22 +56,28 @@ module Construqt
       def self.draw(node, out, path, flat, level = 0, parent = nil)
         n_kind = simple(node.reference.class)
         if n_kind == "Host"
-          # root calls but we have in_links so this is part of a
-          # mother child connection
-          return false if parent.nil? and !node.in_links.empty?
-          # if my in_links contains my mother i'm ready to paint
-          return false if !node.in_links.empty? and !node.in_links.include?(parent)
-          return false if node.drawed! #ugly
-          color = 192 + (level * 32)
-          color = "#{"%02x"%color}#{"%02x"%color}#{"%02x"%color}"
-          out << ident(path, "package \"#{node.ident}(#{node.reference.flavour.name})\" <<Node>> ##{color} {")
-        else
-          return false if node.drawed! #ugly
-          out << ident(path, <<UML)
-object #{node.ident} <<#{get_stereo_type(node, n_kind)}>> {
-          #{render_object_address(node.reference)}
-}
-UML
+          out << {
+            "key" => node.ident,
+            "name" => node.reference.name,
+            "ins" => [],
+            "out" => [],
+          }
+#          # root calls but we have in_links so this is part of a
+#          # mother child connection
+#          return false if parent.nil? and !node.in_links.empty?
+#          # if my in_links contains my mother i'm ready to paint
+#          return false if !node.in_links.empty? and !node.in_links.include?(parent)
+#          return false if node.drawed! #ugly
+#          color = 192 + (level * 32)
+#          color = "#{"%02x"%color}#{"%02x"%color}#{"%02x"%color}"
+#          out << ident(path, "package \"#{node.ident}(#{node.reference.flavour.name})\" <<Node>> ##{color} {")
+#        else
+#          return false if node.drawed! #ugly
+#          out << ident(path, <<UML)
+#object #{node.ident} <<#{get_stereo_type(node, n_kind)}>> {
+#          #{render_object_address(node.reference)}
+#}
+#UML
         end
         #binding.pry if node.ident == 'Host_scott'
 
@@ -88,9 +89,9 @@ UML
                  )
         end
 
-        if n_kind == "Host"
-          out << ident(path, "}")
-        end
+#        if n_kind == "Host"
+#          out << ident(path, "}")
+#        end
         true
       end
 
@@ -189,7 +190,7 @@ UML
             args.first
           end,
           "HostDelegate.build_config" => lambda do |type, host, *args|
-            #Construqt.logger.debug("Planuml:HostDelegate.build_config:#{host.name}")
+            #Construqt.logger.debug("GoJs:HostDelegate.build_config:#{host.name}")
             #binding.pry
             args.first
           end,
@@ -232,7 +233,7 @@ UML
             TREE[ident] ||= Node.new(obj)
           end
         else
-          Construqt.logger.debug "Planuml:add_node_factory type not found #{type}"
+          Construqt.logger.debug "GoJs:add_node_factory type not found #{type}"
         end
       end
 
@@ -240,7 +241,7 @@ UML
         #binding.pry
         TREE.each do |ident, node|
           #binding.pry
-          #Construqt.logger.debug "Planuml:build_tree=#{node.reference.class.name}=#{simple(node.reference.class)}"
+          #Construqt.logger.debug "GoJs:build_tree=#{node.reference.class.name}=#{simple(node.reference.class)}"
           {
             "Vrrp" => lambda do |node|
               node.reference.delegate.interfaces.each do |i|
@@ -325,7 +326,7 @@ UML
               end
               node.reference.interfaces.values.each do |iface|
                 next if simple(iface.class) == "Vrrp"
-                Construqt.logger.debug "Planuml:Host:#{iface.name}:#{iface.ident}:#{simple(iface.class)}"
+                Construqt.logger.debug "GoJs:Host:#{iface.name}:#{iface.ident}:#{simple(iface.class)}"
                 node.connect TREE[iface.ident]
               end
             end
@@ -340,118 +341,37 @@ UML
         node
       end
 
-      def self.patch_connection_highlight(fname)
-        xml = REXML::Document.new(IO.read(fname))
-        js = REXML::Element.new "script"
-        js.text = REXML::CData.new(<<JS)
-var paths = document.getElementsByTagName("path");
-for (var i = 0; i < paths.length; ++i) {
-  paths[i].style["stroke-width"] = "4px";
-  paths[i].style["stroke-dasharray"] = "initial";
-}
-document.addEventListener("click", function(e) {
-  var target = e.target
-  console.log(target+":"+target.style["stroke-width"]);
-  if (target.tagName != "path") {
-    return;
-  }
-  if (parseInt(target.style["stroke-width"])==8) {
-    return;
-  }
-  var old_width = target.style["stroke-width"];
-  target.style["stroke-width"]="8px";
-  setTimeout(function() {
-    target.style["stroke-width"]=old_width;
-  }, 1000)
-});
-JS
-        xml.root.elements.add(js)
-        File.open(fname, 'w') { |o| xml.write( o ) }
-      end
-
       def self.call(type, *args)
         add_node_factory(type, *args)
         factory = {
           "completed" => lambda do |type, *args|
             build_tree
-            out = []
+            gojs = {
+              "class" => "go.GraphLinksModel",
+              "linkFromPortIdProperty" => "fromPort",
+              "linkToPortIdProperty" => "toPort",
+              "nodeDataArray" => [],
+              "linkDataArray" => []
+            }
             last = nil
             TREE.values.each do |node|
-              #           next unless node.in_links.empty?
-              last = layout_helper(out, last, node,
-                                   draw(node, out, [node.reference.name],
+              last = layout_helper(gojs["nodeDataArray"], last, node,
+                                   draw(node, gojs["nodeDataArray"], [node.reference.name],
                                         ['Vrrp', 'Ipsec', 'Bgp'].include?(simple(node.reference.class))))
             end
 
             TREE.values.each { |n| n.drawed = false }
             TREE.values.each do |node|
-              #           next unless node.in_links.empty?
-              connect(node, out, [node.reference.name])
+              connect(node, gojs["linkDataArray"], [node.reference.name])
             end
 
-            File.open("cfgs/world.puml", 'w') do |file|
-              file.puts(<<UML)
-@startuml
-skinparam object {
-  ArrowColor<<Gre>> MediumOrchid
-  BackgroundColor<<Gre>> MediumOrchid
-  ArrowColor<<Bgp>> MediumSeaGreen
-  BackgroundColor<<Bgp>> MediumSeaGreen
-  ArrowColor<<Ipsec>> LightSkyBlue
-  BackgroundColor<<Ipsec>> LightSkyBlue
-  ArrowColor<<Vrrp>> OrangeRed
-  BackgroundColor<<Vrrp>> OrangeRed
-  ArrowColor<<Device>> YellowGreen
-  BackgroundColor<<Device>> YellowGreen
-  ArrowColor<<Bond>> Orange
-  BackgroundColor<<Bond>> Orange
-  ArrowColor<<Vlan>> Yellow
-  BackgroundColor<<Vlan>> Yellow
-  ArrowColor<<Wlan>> Red
-  BackgroundColor<<Wlan>> Red
-  ArrowColor<<WlanSlave>> OliveDrab
-  BackgroundColor<<WlanSlave>> OliveDrab
-  ArrowColor<<Bridge>> Pink
-  BackgroundColor<<Bridge>> Pink
-}
-skinparam stereotypeBackgroundColor<<Gre>> MediumOrchid
-skinparam stereotypeBackgroundColor<<Bgp>> MediumSeaGreen
-skinparam stereotypeBackgroundColor<<Ipsec>> LightSkyBlue
-skinparam stereotypeBackgroundColor<<Vrrp>> OrangeRed
-skinparam stereotypeBackgroundColor<<Device>> YellowGreen
-skinparam stereotypeBackgroundColor<<Bond>> Orange
-skinparam stereotypeBackgroundColor<<Vlan>> Yellow
-skinparam stereotypeBackgroundColor<<Wlan>> Red
-skinparam stereotypeBackgroundColor<<WlanSlave>> OliveDrab
-skinparam stereotypeBackgroundColor<<Bridge>> Pink
-UML
-              file.write(out.join("\n") + "\n")
-              file.puts("@enduml")
+            File.open("cfgs/world.gojs", 'w') do |file|
+              file.write(JSON.pretty_generate(gojs))
             end
-
-            if File.exists?("/cygdrive/c/Program Files/cygwin/bin/dot.exe")
-              dot = "C:\\Program Files\\cygwin\\bin\\dot.exe"
-            elsif File.exists?("/usr/bin/dot")
-              dot = "/usr/bin/dot"
-            else
-              dot = "$(which dot)"
-            end
-
-            if  File.exists?("#{ENV['HOMEPATH']}/Downloads/plantuml.jar")
-              plantuml_jar = "#{ENV['HOMEPATH']}/Downloads/plantuml.jar"
-            else
-              plantuml_jar = "$HOME/Downloads/plantuml.jar"
-            end
-
-            FORMATS.each do |format|
-              Construqt.logger.debug "Planuml:Creating world of #{format}"
-              system("java -jar \"#{plantuml_jar}\" -Djava.awt.headless=true -graphvizdot \"#{dot}\" -t#{format} cfgs/world.puml")
-            end
-            patch_connection_highlight("cfgs/world.svg")
           end
 
         }
-        Construqt.logger.debug "Planuml:#{type}"
+        Construqt.logger.debug "GoJs:#{type}"
         action = factory[type]
         if action
           action.call(type, *args)
