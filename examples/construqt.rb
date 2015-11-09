@@ -134,13 +134,15 @@ fanout_us = region.hosts.add("fanout-us", "flavour" => "ubuntu") do |host|
   left_if = nil
   host.configip = host.id ||= Construqt::HostId.create do |my|
     my.interfaces << left_if = region.interfaces.add_device(host, "eth0",
+          'proxy_neigh' => Construqt::Tags.resolver_net("#FANOUT-US-BACKEND", Construqt::Addresses::IPV6),
           "mtu" => 1500,
           'address' => region.network.addresses.add_ip("162.218.210.74/24#FANOUT-US")
                                             .add_route("0.0.0.0/0#INTERNET", "162.218.210.1")
                                             .add_ip("2602:ffea:1:7dd::eb38/44")
                                             .add_route("2000::/3#INTERNET", "2602:ffea:1::1"),
           "firewalls" => ["fix-mss", "host-us-outbound", "icmp-ping" , "ssh-srv", "ipsec-srv", "service-us-transit",
-                          "service-us-nat", "block"])
+                          "vpn-server-net",
+                          "service-us-nat", "service-us-smtp", "service-us-dns", "block"])
   end
   region.interfaces.add_ipsecvpn(host, "roadrunner",
                               "mtu" => 1380,
@@ -156,7 +158,8 @@ fanout_us = region.hosts.add("fanout-us", "flavour" => "ubuntu") do |host|
   region.interfaces.add_bridge(host, "br13",
     "mtu" => 1500,
     "interfaces" => [],
-    "address" => region.network.addresses.add_ip("169.254.13.1/24#FANOUT-US-BACKEND#FANOUT-US-BR13"))
+    "address" => region.network.addresses.add_ip("169.254.13.1/24#FANOUT-US-BACKEND#FANOUT-US-BR13")
+                                         .add_ip("2602:ffea:1:7dd:169:254:13:1/123#FANOUT-US-BACKEND#FANOUT-US-BR13"))
 
 end
 
@@ -181,26 +184,26 @@ scott = region.hosts.add("scott", "flavour" => "ubuntu") do |host|
   end
 end
 
-service_us = region.hosts.add("service-us", "flavour" => "ubuntu", "mother" => scott) do |host|
-  region.interfaces.add_device(host, "lo", "mtu" => "9000",
-                               :description=>"#{host.name} lo",
-                               "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
-  host.configip = host.id ||= Construqt::HostId.create do |my|
-    my.interfaces << my = region.interfaces.add_device(host, "br24", "mtu" => 1500,
-          'firewalls' => ['host-us-outbound', 'icmp-ping', 'ssh-srv', 'service-us-transit', 'block'],
-          'address' => region.network.addresses.add_ip("192.168.0.68/24")
-                                            .add_route("192.168.0.0/16", "192.168.0.10")
-                                            .add_route_from_tags("#FANOUT-US", "#KDE-WL"))
-    region.cables.add(my, region.interfaces.find("scott", "br24"))
-  end
-
-  region.cables.add(
-    region.interfaces.add_device(host, "br68", "mtu" => 1500,
-          'address' => region.network.addresses
-                  .add_ip("192.168.68.1/24#SERVICE-NET-US")
-                  .add_ip("2602:ffea:1:7dd:192:168:68:1/123#SERVICE-NET-US")),
-   region.interfaces.find("scott", "br68"))
-end
+#service_us = region.hosts.add("service-us", "flavour" => "ubuntu", "mother" => scott) do |host|
+#  region.interfaces.add_device(host, "lo", "mtu" => "9000",
+#                               :description=>"#{host.name} lo",
+#                               "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
+#  host.configip = host.id ||= Construqt::HostId.create do |my|
+#    my.interfaces << my = region.interfaces.add_device(host, "br24", "mtu" => 1500,
+#          'firewalls' => ['host-us-outbound', 'icmp-ping', 'ssh-srv', 'service-us-transit', 'block'],
+#          'address' => region.network.addresses.add_ip("192.168.0.68/24")
+#                                            .add_route("192.168.0.0/16", "192.168.0.10")
+#                                            .add_route_from_tags("#FANOUT-US", "#KDE-WL"))
+#    region.cables.add(my, region.interfaces.find("scott", "br24"))
+#  end
+#
+#  region.cables.add(
+#    region.interfaces.add_device(host, "br68", "mtu" => 1500,
+#          'address' => region.network.addresses
+#                  .add_ip("192.168.68.1/24#SERVICE-NET-US")
+#                  .add_ip("2602:ffea:1:7dd:192:168:68:1/123#SERVICE-NET-US")),
+#   region.interfaces.find("scott", "br68"))
+#end
 
 
 service_de_wl = region.hosts.add("service-de-wl", "flavour" => "ubuntu", "mother" => scott) do |host|
@@ -257,61 +260,68 @@ Construqt::Ipsecs.connection("#{fanout_de.name}<=>#{service_de_wl.name}",
       )
 
 
-['imap-ng', 'bind-ng', 'smtp-ng', 'ad'].each_with_index do |name, idx|
-  region.hosts.add(name, "flavour" => "ubuntu", "mother" => scott) do |host|
+#['imap-ng', 'bind-ng', 'smtp-ng', 'ad'].each_with_index do |name, idx|
+#  region.hosts.add(name, "flavour" => "ubuntu", "mother" => scott) do |host|
+#    region.interfaces.add_device(host, "lo", "mtu" => "9000",
+#                                 :description=>"#{host.name} lo",
+#                                 "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
+#
+#    host.configip = host.id ||= Construqt::HostId.create do |my|
+#      my.interfaces << iface = region.interfaces.add_device(host, "eth0",
+#            "mtu" => 1500,
+#            'address' => region.network.addresses
+#                .add_ip("192.168.66.#{10+idx}/24#HOST-#{name}")
+#                .add_ip("192.168.69.#{10+idx}/24")
+#                .add_route("0.0.0.0/0", "192.168.66.1")
+#                .add_ip("2a01:4f8:d15:1190:192:168:66:#{10+idx}/123#HOST-#{name}")
+#                .add_ip("2602:ffea:1:7dd:192:168:66:#{10+idx}/123")
+#                .add_route("2000::/3", "2a01:4f8:d15:1190:192:168:66:1"))
+#      region.cables.add(iface, region.interfaces.find("scott", "br66"))
+#    end
+#  end
+#end
+
+
+['smtp-de', 'bind-de', 'imap-de'].each_with_index do |name, idx|
+  region.hosts.add(name, "flavour" => "ubuntu", "mother" => fanout_de,
+                   "lxc_deploy" => [Construqt::Hosts::Lxc::AA_PROFILE_UNCONFINED,
+                                    Construqt::Hosts::Lxc::RESTART,
+                                    Construqt::Hosts::Lxc::KILLSTOP]) do |host|
     region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                  :description=>"#{host.name} lo",
                                  "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
 
     host.configip = host.id ||= Construqt::HostId.create do |my|
       my.interfaces << iface = region.interfaces.add_device(host, "eth0",
-            "mtu" => 1500,
-            'address' => region.network.addresses
-                .add_ip("192.168.66.#{10+idx}/24#HOST-#{name}")
-                .add_ip("192.168.69.#{10+idx}/24")
-                .add_route("0.0.0.0/0", "192.168.66.1")
-                .add_ip("2a01:4f8:d15:1190:192:168:66:#{10+idx}/123#HOST-#{name}")
-                .add_ip("2602:ffea:1:7dd:192:168:66:#{10+idx}/123")
-                .add_route("2000::/3", "2a01:4f8:d15:1190:192:168:66:1"))
-      region.cables.add(iface, region.interfaces.find("scott", "br66"))
-    end
-  end
-end
-
-['smtp-de', 'bind-de'].each_with_index do |name, idx|
-  region.hosts.add(name, "flavour" => "ubuntu", "mother" => fanout_de) do |host|
-    region.interfaces.add_device(host, "lo", "mtu" => "9000",
-                                 :description=>"#{host.name} lo",
-                                 "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
-
-    host.configip = host.id ||= Construqt::HostId.create do |my|
-      my.interfaces << iface = region.interfaces.add_device(host, "eth0",
+            "plug_in" => Construqt::Cables::Plugin.new.iface(fanout_de.interfaces.find_by_name("br12")),
             "mtu" => 1500,
             'address' => region.network.addresses
                 .add_ip("169.254.12.#{10+idx}/24#HOST-#{name}#SERVICE-NET-DE")
                 .add_route("0.0.0.0/0", "169.254.12.1")
                 .add_ip("2a01:4f8:d15:1190:169:254:12:#{10+idx}/123#HOST-#{name}#SERVICE-NET-DE")
                 .add_route("2000::/3", "2a01:4f8:d15:1190:169:254:12:1"))
-      region.cables.add(iface, region.interfaces.find("fanout-de", "br12"))
     end
   end
 end
 
 ['smtp-us', 'bind-us'].each_with_index do |name, idx|
-  region.hosts.add(name, "flavour" => "ubuntu", "mother" => fanout_us) do |host|
+  region.hosts.add(name, "flavour" => "ubuntu", "mother" => fanout_us,
+                   "lxc_deploy" => [Construqt::Hosts::Lxc::AA_PROFILE_UNCONFINED,
+                                    Construqt::Hosts::Lxc::RESTART,
+                                    Construqt::Hosts::Lxc::KILLSTOP]) do |host|
     region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                  :description=>"#{host.name} lo",
                                  "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
 
     host.configip = host.id ||= Construqt::HostId.create do |my|
       my.interfaces << iface = region.interfaces.add_device(host, "eth0",
+            "plug_in" => Construqt::Cables::Plugin.new.iface(fanout_us.interfaces.find_by_name("br13")),
             "mtu" => 1500,
             'address' => region.network.addresses
                 .add_ip("169.254.13.#{10+idx}/24#HOST-#{name}")
                 .add_route("0.0.0.0/0", "169.254.13.1")
-                .add_ip("2a01:4f8:d15:1190:169:254:13:#{10+idx}/123#HOST-#{name}")
-                .add_route("2000::/3", "2a01:4f8:d15:1190:169:254:13:1"))
-      region.cables.add(iface, region.interfaces.find("fanout-us", "br13"))
+                .add_ip("2602:ffea:1:7dd:169:254:13:#{10+idx}/123#HOST-#{name}")
+                .add_route("2000::/3", "2602:ffea:1:7dd:169:254:13:1"))
     end
   end
 end
@@ -420,34 +430,34 @@ kucksdu = region.hosts.add("kucksdu", "flavour" => "ubuntu") do |host|
   end
 end
 
-Construqt::Ipsecs.connection("#{fanout_us.name}<=>#{service_us.name}",
-          "password" => IPSEC_PASSWORD,
-          "transport_family" => Construqt::Addresses::IPV4,
-          "mtu_v4" => 1360,
-          "mtu_v6" => 1360,
-          "keyexchange" => "ikev2",
-          "left" => {
-            "my" => region.network.addresses.add_ip("169.254.68.1/30#SERVICE-IPSEC-US")
-                      .add_ip("169.254.68.5/30#SERVICE-TRANSIT-US#FANOUT-US-GW")
-                      .add_ip("2602:ffea:1:7dd::5/126#SERVICE-TRANSIT-US#FANOUT-US")
-                      .add_route_from_tags("#SERVICE-NET-US", "#SERVICE-GW-US"),
-            "host" => fanout_us,
-            "remote" => region.interfaces.find(fanout_us, "eth0").address,
-            "auto" => "add",
-            "sourceip" => true
-          },
-          "right" => {
-            "my" => region.network.addresses.add_ip("169.254.68.2/30")
-                      .add_ip("169.254.68.6/30#SERVICE-GW-US")
-                      .add_ip("2602:ffea:1:7dd::6/126#SERVICE-TRANSIT-US#SERVICE-GW-US")
-                      .add_route_from_tags("#INTERNET", "#FANOUT-US-GW"),
-            'firewalls' => ['host-us-outbound', 'icmp-ping', 'ssh-srv', 'service-us-transit', 'block'],
-            "host" => service_us,
-            "remote" => region.interfaces.find(service_us, "br24").address,
-            "any" => true
-          }
-      )
-
+#Construqt::Ipsecs.connection("#{fanout_us.name}<=>#{service_us.name}",
+#          "password" => IPSEC_PASSWORD,
+#          "transport_family" => Construqt::Addresses::IPV4,
+#          "mtu_v4" => 1360,
+#          "mtu_v6" => 1360,
+#          "keyexchange" => "ikev2",
+#          "left" => {
+#            "my" => region.network.addresses.add_ip("169.254.68.1/30#SERVICE-IPSEC-US")
+#                      .add_ip("169.254.68.5/30#SERVICE-TRANSIT-US#FANOUT-US-GW")
+#                      .add_ip("2602:ffea:1:7dd::5/126#SERVICE-TRANSIT-US#FANOUT-US")
+#                      .add_route_from_tags("#SERVICE-NET-US", "#SERVICE-GW-US"),
+#            "host" => fanout_us,
+#            "remote" => region.interfaces.find(fanout_us, "eth0").address,
+#            "auto" => "add",
+#            "sourceip" => true
+#          },
+#          "right" => {
+#            "my" => region.network.addresses.add_ip("169.254.68.2/30")
+#                      .add_ip("169.254.68.6/30#SERVICE-GW-US")
+#                      .add_ip("2602:ffea:1:7dd::6/126#SERVICE-TRANSIT-US#SERVICE-GW-US")
+#                      .add_route_from_tags("#INTERNET", "#FANOUT-US-GW"),
+#            'firewalls' => ['host-us-outbound', 'icmp-ping', 'ssh-srv', 'service-us-transit', 'block'],
+#            "host" => service_us,
+#            "remote" => region.interfaces.find(service_us, "br24").address,
+#            "any" => true
+#          }
+#      )
+#
 
 [
   {:name => 'ad-de', :address => "169.254.12.10/24", :gw => "#FANOUT-DE-BR12", "mother" => fanout_de, "plug" => "br12" },

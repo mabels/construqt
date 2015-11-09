@@ -6,6 +6,7 @@ module Construqt
       RECREATE = "recreate"
       RESTART = "restart"
       KILLSTOP = "killstop"
+      AA_PROFILE_UNCONFINED = "aa_profile_unconfined"
     end
 
     class Vagrant

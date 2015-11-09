@@ -597,7 +597,7 @@ VRRP
             cp::RADVD => { "radvd" => true },
             cp::DNSMASQ => { "dnsmasq" => true },
             cp::CONNTRACKD => { "conntrackd" => true, "conntrack" => true },
-            cp::LXC => { "lxc" => true, "ruby" => ['gem install linux-lxc --no-ri --no-rdoc'] },
+            cp::LXC => { "lxc" => true, "ruby" => true, "rubygems-integration" => ['gem install linux-lxc --no-ri --no-rdoc'] },
             cp::DHCPRELAY => { "wide-dhcpv6-relay" => true, "dhcp-helper" => true }
           }[component]
           throw "Component with name not found #{component}" unless ret
@@ -621,6 +621,16 @@ VRRP
         end
 
 
+        def lxc_update_config(base_dir, key, value)
+          ruby = []
+          right = Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::LXC)
+          ruby << "/etc/lxc/update_config #{base_dir}/config #{base_dir}/update.config.list #{key} #{value}"
+          ruby << "for i in `cat #{base_dir}/update.config.list`"
+          ruby << "do"
+          ruby << "  git_add /$i #{right.owner} #{right.right} false"
+          ruby << "done"
+          ruby
+        end
 
         def lxc_reference_net_config(base_dir)
           ruby = []
@@ -684,6 +694,9 @@ VRRP
             lxc_rootfs = File.join(base_dir, "rootfs")
             sh_lxc_name =  Shellwords.escape(lxc.name)
             quick_stop = lxc.lxc_deploy.include?(Construqt::Hosts::Lxc::KILLSTOP) ? " -k" : ""
+            if lxc.lxc_deploy.include? Construqt::Hosts::Lxc::AA_PROFILE_UNCONFINED
+              out += lxc_update_config(base_dir, "lxc.aa_profile", "unconfined")
+            end
             if lxc.lxc_deploy.include? Construqt::Hosts::Lxc::RECREATE
               out << "echo start LXC-RECREATE #{sh_lxc_name}"
               out << "lxc-ls --running | grep -q '#{sh_lxc_name}' && lxc-stop -n '#{sh_lxc_name}'#{quick_stop}"

@@ -704,6 +704,7 @@ module Construqt
             found = []
             iface.host.address.ips.each do |ifip|
               #binding.pry if ifip.nil? or fwip.ip_addr.nil?
+              next if fwip.ip_addr.nil?
               next unless ifip.ipv4? == fwip.ip_addr.ipv4?
               fwip.ip_addr.include?(ifip) and
                 (found << (ifip.prefix.to_i < fwip.ip_addr.prefix.to_i ? ifip : fwip.ip_addr))

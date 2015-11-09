@@ -7,10 +7,16 @@ VALADON_PSK = "wlan for free"
 
 
 WIFI_PSKS = {
+      "rt-mam-wl-us"    => "wifi for free",
       "rt-mam-wl-de"    => "wifi for free",
       "rt-mam-wl-de-6"  => "wifi for free",
       "rt-ab-us"   => "wifi for free",
       "rt-ab-de"   => "wifi for free"
+}
+
+AICCU_DE = {
+  "username" => "murks",
+  "password" => "passwort"
 }
 
 INTERNAL_PSK = "wifi for free"

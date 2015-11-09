@@ -3,6 +3,7 @@ module Construqt
     module Ubuntu
 
       class Vrrp < OpenStruct
+        include Construqt::Cables::Plugin::Multiple
         def initialize(cfg)
           super(cfg)
         end

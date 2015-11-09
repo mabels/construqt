@@ -3,6 +3,9 @@ require_relative("ciscian/deploy_template")
 module Construqt
   module Flavour
     class Ciscian
+      def name
+        'ciscian'
+      end
 
       class Factory
         def name

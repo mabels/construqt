@@ -2,7 +2,7 @@ module Construqt
   module Flavour
     module Ubuntu
       class Vlan < OpenStruct
-        include Construqt::Cables::Plugin::Single
+        include Construqt::Cables::Plugin::Multiple
         def initialize(cfg)
           super(cfg)
         end

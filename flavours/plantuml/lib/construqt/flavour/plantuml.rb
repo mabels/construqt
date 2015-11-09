@@ -141,8 +141,9 @@ UML
             ips.each_with_index do |ip, idx|
               tags += Construqt::Tags.from(ip)||[]
               out << "#{prefix}(#{idx}) = #{ip.to_string}"
-              if ip.options["dhcp_range"]
-                out << "dhcp-range(#{idx}) = [#{ip.options["dhcp_range"].join(",")}]"
+              if ip.options["dhcp"]
+                out << "dhcp-range(#{idx}) = [#{ip.options["dhcp"].get_start},#{ip.options["dhcp"].get_end}]"
+                out << "dhcp-domain(#{idx}) = #{ip.options["dhcp"].get_domain}"
               end
             end
           end
@@ -246,6 +247,7 @@ UML
               node.reference.delegate.interfaces.each do |i|
                 node.connect TREE[i.ident]
               end
+              binding.pry if node.reference.cable.nil?
               node.reference.cable.connections.each do |c|
                 node.wire_connect TREE[c.iface.ident]
               end
@@ -290,6 +292,7 @@ UML
                 #binding.pry
                 node.wire_connect TREE[c.iface.ident]
               end
+              binding.pry if node.reference.cable.nil?
             end,
             "Template" => lambda do |node|
               #                iface.interface.delegate.vlans.each do |i|
@@ -297,7 +300,6 @@ UML
               #                end
             end,
             "Gre" => lambda do |node|
-              #          binding.pry
               interface = node.reference.delegate.remote.interface
               node.connect TREE[interface.ident]
             end,
@@ -445,7 +447,7 @@ UML
 
             FORMATS.each do |format|
               Construqt.logger.debug "Planuml:Creating world of #{format}"
-              system("java -jar \"#{plantuml_jar}\" -Djava.awt.headless=true -graphvizdot \"#{dot}\" -t#{format} cfgs/world.puml")
+              system("java -Xmx2048m -jar \"#{plantuml_jar}\" -Djava.awt.headless=true -graphvizdot \"#{dot}\" -t#{format} cfgs/world.puml")
             end
             patch_connection_highlight("cfgs/world.svg")
           end

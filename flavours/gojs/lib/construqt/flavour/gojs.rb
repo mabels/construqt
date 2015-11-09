@@ -1,6 +1,5 @@
 require 'json'
 
-
 module Construqt
   module Flavour
     module GoJs
@@ -142,8 +141,9 @@ module Construqt
             ips.each_with_index do |ip, idx|
               tags += Construqt::Tags.from(ip)||[]
               out << "#{prefix}(#{idx}) = #{ip.to_string}"
-              if ip.options["dhcp_range"]
-                out << "dhcp-range(#{idx}) = [#{ip.options["dhcp_range"].join(",")}]"
+              if ip.options["dhcp"]
+                out << "dhcp-range(#{idx}) = [#{ip.options["dhcp"].get_start},#{ip.options["dhcp"].get_end}]"
+                out << "dhcp-domain(#{idx}) = #{ip.options["dhcp"].get_domain}"
               end
             end
           end

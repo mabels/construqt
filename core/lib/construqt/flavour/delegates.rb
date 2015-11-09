@@ -37,9 +37,9 @@ module Construqt
         self.delegate.services
       end
 
-      def dhcp_range
+      def dhcp
         self.address && self.address.ips.each do |adr|
-          return adr.options["dhcp_range"] if adr.options["dhcp_range"]
+          return adr.options["dhcp"] if adr.options["dhcp"]
         end
         nil
       end
