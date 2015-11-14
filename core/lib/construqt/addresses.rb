@@ -361,10 +361,12 @@ module Construqt
             end
           end
           #puts ">>>>>>>>>#{self.dst_tag},#{self.via_tag}"
-          [OpenStruct.new(:dsts => Construqt::Tags.ips_net(self.dst_tag, Construqt::Addresses::IPV6),
-                          :vias => Construqt::Tags.ips_hosts(self.via_tag, Construqt::Addresses::IPV6)),
-          OpenStruct.new(:dsts => Construqt::Tags.ips_net(self.dst_tag, Construqt::Addresses::IPV4),
-                         :vias => Construqt::Tags.ips_hosts(self.via_tag, Construqt::Addresses::IPV4))].each do |blocks|
+          ipv6 = OpenStruct.new(:dsts => Construqt::Tags.ips_net(self.dst_tag, Construqt::Addresses::IPV6),
+                                :vias => Construqt::Tags.ips_hosts(self.via_tag, Construqt::Addresses::IPV6))
+          vias = Construqt::Tags.ips_hosts(self.via_tag, Construqt::Addresses::IPV4)
+          ipv4 = OpenStruct.new(:dsts => Construqt::Tags.ips_net(self.dst_tag, Construqt::Addresses::IPV4),
+                                :vias => Construqt::Tags.ips_hosts(self.via_tag, Construqt::Addresses::IPV4))
+          [ipv6, ipv4].each do |blocks|
             next unless blocks.vias
             next unless blocks.dsts
             next if blocks.dsts.empty?

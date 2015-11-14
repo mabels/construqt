@@ -48,6 +48,7 @@ module Construqt
   require_relative 'construqt/routing_table.rb'
   require_relative 'construqt/bgps.rb'
   require_relative 'construqt/dhcp.rb'
+  require_relative 'construqt/ntp.rb'
   require_relative 'construqt/users.rb'
   require_relative 'construqt/cert_store.rb'
   require_relative 'construqt/firewalls.rb'

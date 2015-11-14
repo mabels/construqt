@@ -49,6 +49,17 @@ def firewall(region)
     end
   end
 
+  Construqt::Firewalls.add("wl-printer") do |fw|
+    fw.forward do |fwd|
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection
+        .from_net("#WL-PRINTABLE-NET#WL-PRINTABLE-BACKBONE")
+        .to_net("#WL-PRINTABLE-NET").to_filter_local.tcp.dport(9100).dport(515).dport(631).from_is_outside
+
+#      fwd.add.action(Construqt::Firewalls::Actions::DROP)
+#        .from_net("#WL-PRINTABLE-NET").from_filter_local.to_net("#INTERNET").from_is_inside
+    end
+  end
+
   Construqt::Firewalls.add("service-smtp") do |fw|
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-smtp-de").tcp.dport(25).dport(587).dport(465).from_is_outside

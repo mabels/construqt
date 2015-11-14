@@ -24,18 +24,18 @@ module Construqt
       end
     end
 
-    @tags = {}
-    @object_id_tags = {}
+    TAGS = {}
+    OBJECT_ID_TAGS = {}
     def self.join(tags, obj)
       tags && tags.sort.uniq.each do |tag|
-        @tags[tag] ||= []
-        @tags[tag] << obj unless @tags[tag].include?(obj)
+        TAGS[tag] ||= []
+        TAGS[tag] << obj unless TAGS[tag].include?(obj)
       end
       if obj.respond_to? :tags
         obj.tags = tags
       end
-      @object_id_tags[obj.object_id] ||= []
-      @object_id_tags[obj.object_id] = (@object_id_tags[obj.object_id] + tags).uniq
+      OBJECT_ID_TAGS[obj.object_id] ||= []
+      OBJECT_ID_TAGS[obj.object_id] = (OBJECT_ID_TAGS[obj.object_id] + tags).uniq
     end
 
     def self.add(tag_str, &block)
@@ -56,7 +56,7 @@ module Construqt
     end
 
     def self.from(obj)
-      @object_id_tags[obj.object_id]
+      OBJECT_ID_TAGS[obj.object_id]
     end
 
     def self.resolv(tag)
@@ -66,7 +66,7 @@ module Construqt
       tags << parsed[:first] if parsed[:first]
       tags = tags + parsed['#'] if parsed['#']
 #puts "TAG[#{tag}] + #{tags}"
-      tags.map{|i| @tags[i]}.compact.flatten
+      tags.map{|i| TAGS[i]}.compact.flatten
     end
 
     def self.find(tag, clazz = nil)
@@ -104,6 +104,8 @@ module Construqt
           obj
         elsif obj.respond_to? :ips
           obj.ips
+        elsif  obj.kind_of?(Construqt::Flavour::DeviceDelegate)
+          obj.address.ips
         elsif obj.kind_of?(Construqt::Flavour::HostDelegate)
           res = obj.interfaces.values.map do |i|
             if i.address

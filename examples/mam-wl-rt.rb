@@ -1,6 +1,6 @@
 require 'resolv'
 
-def mam_ipsec_connection(region, left, right, fw_suffix, vlan)
+def mam_ipsec_connection(region, left, right, fw_suffix, vlan, fws = [])
     Construqt::Ipsecs.connection("#{left.name}<=>#{right.name}",
             "password" => IPSEC_PASSWORD,
             "transport_family" => Construqt::Addresses::IPV4,
@@ -22,7 +22,7 @@ def mam_ipsec_connection(region, left, right, fw_suffix, vlan)
                         .add_ip("169.254.#{vlan}.6/30#GW-#{left.name}#SERVICE-TRANSIT-#{fw_suffix}")
                         .add_ip("2602:ffea:1:7dd:#{vlan}::6/126#SERVICE-TRANSIT-#{fw_suffix}#GW-#{left.name}")
                         .add_route_from_tags("#INTERNET", "#FANOUT-#{fw_suffix}-GW"),
-              'firewalls' => ['net-forward', 'ssh-srv', 'icmp-ping', 'block'],
+              'firewalls' => fws+['net-forward', 'ssh-srv', 'icmp-ping', 'block'],
               "host" => left,
               "remote" => region.interfaces.find(left, "v24").address,
               "any" => true
@@ -38,11 +38,21 @@ def mam_actions(region)
   "rt-ab-us" => lambda do |my, net, peers|
     mam_ipsec_connection(region, my, peers[:us], "US", net[:block])
   end,
-  "rt-mam-de" => lambda do |my, net, peers|
-    mam_ipsec_connection(region, my, peers[:de], "DE", net[:block])
+  "rt-wl-mgt" => lambda do |my, net, peers|
+    mam_ipsec_connection(region, my, peers[:de], "DE", net[:block], net[:ipsec_fws])
   end,
   "rt-mam-wl-us" => lambda do |my, net, peers|
     mam_ipsec_connection(region, my, peers[:us], "US", net[:block])
+  end,
+  "rt-wl-printer" => lambda do |my, net, peers|
+    # add backroute
+    adr = region.interfaces.find("rt-wl-printer", "v24").address
+    Construqt::Tags.find("#WL-PRINTABLE-NET").each do |iface|
+      via = iface.host.interfaces.find_by_name("v24").address.first_ipv4
+      iface.address.v4s.each do |dst|
+        adr.add_route(dst.network.to_string, via.to_s)
+      end
+    end
   end
   }
 end
@@ -85,6 +95,13 @@ ip6_tables
 bonding
 8021q
 MODULES
+  mal_wl_printer = region.hosts.add("wl-printer", "flavour" => "unknown") do |printer|
+     printer.id = printer.configip = Construqt::HostId.create do |my|
+       my.interfaces << region.interfaces.add_device(printer, "eth", "mtu" => 1500,
+                                                     "default_name" => "ether",
+                                                     "address" => region.network.addresses.add_ip("192.168.208.208/24"))
+    end
+  end
   mam_wl_rt = region.hosts.add("mam-wl-rt",
                                "flavour" => "ubuntu",
                                "files" => [region.resources.find("odroid.modules")]) do |host|
@@ -103,7 +120,7 @@ MODULES
     end
     # 66,67 service
     # 202-207 router
-    [66,68,202,203,206,207].each do |vlan|
+    [66,68,202,203,206,207,208].each do |vlan|
       region.interfaces.add_bridge(host, "br#{vlan}", "mtu" => 1500,
                                    "interfaces" => [
                                     region.interfaces.add_vlan(host, "eth0.#{vlan}",
@@ -155,9 +172,10 @@ MODULES
         end
       }, # aiccu
       { :name => "rt-mam-wl-us",  :fws => ["net-forward"], :tag => "#SERVICE-NET-US", :ssid => "MAM-WL-US", :ipsec => Resolv.getaddress("fanout-us.adviser.com"), :block => 68  },
-      #{ :name => "rt-mam-de", :fws => ["net-forward"], :tag => "#SERVICE-NET-DE", :ipsec => Resolv.getaddress("fanout-de.adviser.com"), :block => 66 },
+      { :name => "rt-wl-mgt", :fws => ["net-forward"], :ipsec_fws => ["vpn-server-net"], :tag => "#SERVICE-NET-DE", :ipsec => Resolv.getaddress("fanout-de.adviser.com"), :block => 66 },
       { :name => "rt-ab-us", :fws => ["net-forward"], :tag => "#SERVICE-NET-US", :ipsec => Resolv.getaddress("fanout-us.adviser.com"), :block => 206 }, # airbnb-us
-      { :name => "rt-ab-de", :fws => ["net-forward"], :tag => "#SERVICE-NET-DE", :ipsec => Resolv.getaddress("fanout-de.adviser.com"), :block => 207 }  # airbnb-de
+      { :name => "rt-ab-de", :fws => ["net-forward"], :tag => "#SERVICE-NET-DE", :ipsec => Resolv.getaddress("fanout-de.adviser.com"), :block => 207 },  # airbnb-de
+      { :name => "rt-wl-printer", :fws => ["wl-printer"], :tag => "#MAM-WL-PRINTER", :block => 208 },
     ].each do |net|
       wifi_ifs = []
       if WIFI_PSKS[net[:name]]
@@ -177,9 +195,8 @@ MODULES
       end
 
       rts[net[:name]] = region.hosts.add(net[:name], "flavour" => "ubuntu", "mother" => mam_wl_rt,
-                                         "lxc_deploy" => [Construqt::Hosts::Lxc::AA_PROFILE_UNCONFINED,
-                                                          Construqt::Hosts::Lxc::RESTART,
-                                                          Construqt::Hosts::Lxc::KILLSTOP]) do |host|
+                                         "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined
+                                                          .restart.killstop.release("trusty")) do |host|
         region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                      :description=>"#{host.name} lo",
                                      "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -187,16 +204,17 @@ MODULES
           my.interfaces << region.interfaces.add_device(host, "v24", "mtu" => 1500,
                 "plug_in" => Construqt::Cables::Plugin.new.iface(mam_wl_rt.interfaces.find_by_name("br24")),
                 'firewalls' => net[:fws] + ['service-transit-local', 'ssh-srv', 'icmp-ping', 'block'],
-                'address' => region.network.addresses.add_ip("192.168.0.#{net[:block]}/24")
+                'address' => region.network.addresses.add_ip("192.168.0.#{net[:block]}/24#WL-PRINTABLE-BACKBONE")
+                                      .add_route_from_tags("#wl-printer", "#rt-wl-printer-v24")
                                       .add_route(net[:ipsec]||"0.0.0.0/0", "192.168.0.1"))
         end
-        internal_if = region.interfaces.add_device(host, "v#{net[:block]}", "mtu" => 1500,
+        internal_if = region.interfaces.add_device(host, "v#{net[:block]}#WL-PRINTABLE-NET", "mtu" => 1500,
               "plug_in" => Construqt::Cables::Plugin.new.iface(mam_wl_rt.interfaces.find_by_name("br#{net[:block]}")),
               'address' => region.network.addresses
                       .add_ip("192.168.#{net[:block]}.1/24#INTERNAL-NET#NET-#{net[:name]}#{net[:tag]||""}",
-              "dhcp" => Construqt::Dhcp.new.start("192.168.#{net[:block]}.100")
-                                           .end("192.168.#{net[:block]}.200")
-                                           .domain(net[:name]))
+                          "dhcp" => Construqt::Dhcp.new.start("192.168.#{net[:block]}.100")
+                                                       .end("192.168.#{net[:block]}.200")
+                                                       .domain(net[:name]))
                       .add_ip("2a01:4f8:d15:1190:192:168:#{net[:block]}:1/123#INTERNAL-NET"))
         net[:action] && net[:action].call(host, internal_if)
         wifi_ifs.each do |iface|

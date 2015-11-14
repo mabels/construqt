@@ -7,7 +7,7 @@ module AlwaysConnected
     address = region.network.addresses.add_ip("169.254.69.#{BORDER_ACCESS.length+33}/24")
                                       .add_ip("fd:a9fe:49::#{BORDER_ACCESS.length+33}/64")
     BORDER_ACCESS << region.hosts.add("ao-border-#{ifname}", "flavour" => "ubuntu", "mother" => mother,
-                     "lxc_deploy" => [Construqt::Hosts::Lxc::RESTART]) do |host|
+                                      "lxc_deploy" => Construqt::Hosts::Lxc.new.restart) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -43,7 +43,7 @@ module AlwaysConnected
   def self.router(mother)
     region = mother.region
     region.hosts.add("ao-router", "flavour" => "ubuntu", "mother" => mother,
-                     "lxc_deploy" => [Construqt::Hosts::Lxc::RESTART]) do |host|
+                     "lxc_deploy" => Construqt::Hosts::Lxc.new.restart) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -59,7 +59,7 @@ module AlwaysConnected
   def self.access_controller(mother)
     region = mother.region
     region.hosts.add("ao-access-ctl", "flavour" => "ubuntu", "mother" => mother,
-                     "lxc_deploy" => [Construqt::Hosts::Lxc::RESTART]) do |host|
+                     "lxc_deploy" => Construqt::Hosts::Lxc.new.restart) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -75,7 +75,7 @@ module AlwaysConnected
   def self.encrypter_region(mother, rname, address)
     region = mother.region
     region.hosts.add("ao-tunnel-#{rname}", "flavour" => "ubuntu", "mother" => mother,
-                     "lxc_deploy" => [Construqt::Hosts::Lxc::RESTART]) do |host|
+                     "lxc_deploy" => Construqt::Hosts::Lxc.new.restart) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -90,7 +90,7 @@ module AlwaysConnected
   def self.access_pointer(mother, rname, ifname, ssid, address)
     region = mother.region
     region.hosts.add("ao-ap-#{rname}-#{ifname}", "flavour" => "ubuntu", "mother" => mother,
-                    "lxc_deploy" => [Construqt::Hosts::Lxc::RESTART]) do |host|
+                     "lxc_deploy" => Construqt::Hosts::Lxc.new.restart) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

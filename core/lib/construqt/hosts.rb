@@ -1,38 +1,8 @@
-
+require_relative 'hosts/lxc.rb'
+require_relative 'hosts/vagrant.rb'
 module Construqt
 
   class Hosts
-    module Lxc
-      RECREATE = "recreate"
-      RESTART = "restart"
-      KILLSTOP = "killstop"
-      AA_PROFILE_UNCONFINED = "aa_profile_unconfined"
-    end
-
-    class Vagrant
-      def net(net)
-        @net = net
-        self
-      end
-      def get_net
-        @net
-      end
-      def auto_config(mode = false)
-        @auto_config = mode
-        self
-      end
-      def get_auto_config
-        @auto_config
-      end
-
-      def ssh_host_port(port)
-        @ssh_host_port = port
-        self
-      end
-      def get_ssh_host_port
-        @ssh_host_port
-      end
-    end
 
   	attr_reader :region
     def initialize(region)
@@ -61,7 +31,7 @@ module Construqt
     end
 
     def add(host_name, cfg, &block)
-      (host_name, host) = Construqt::Tags.add(host_name) { |name| add_internal(name, cfg) { |h| block.call(h) } }
+      (host_name, host) = Construqt::Tags.add("#{host_name}##{host_name}") { |name| add_internal(name, cfg) { |h| block.call(h) } }
       host
     end
 
@@ -78,7 +48,7 @@ module Construqt
       #binding.pry
       throw "id is not allowed" if cfg['id']
       throw "configip is not allowed" if cfg['configip']
-      throw "Host with the name #{name} exisits" if @hosts[name]
+      throw "Host with the name [#{name}] exists" if @hosts[name]
       cfg['interfaces'] = HostInterfaces.new
       cfg['id'] ||=nil
       cfg['configip'] ||=nil

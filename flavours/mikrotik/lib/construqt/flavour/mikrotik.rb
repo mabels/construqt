@@ -40,7 +40,7 @@ module Construqt
             "default-name" => Schema.identifier.required.key.noset
           }
           host.result.render_mikrotik_set_by_key(default, {
-            "l2mtu" => iface.mtu,
+            "l2mtu" => iface.mtu + 80, # vlans and mpls need more space
             "mtu" => iface.mtu,
             "name" => iface.name,
             "default-name" => iface.default_name
@@ -327,7 +327,8 @@ TESTNAME
                                                  { "name" => host.name }, "system", "identity")
 
           host.result.render_mikrotik_set_direct({ "time-zone-name"=> Schema.identifier.required.key },
-                                                 { "time-zone-name" => host.time_zone||'MET' }, "system", "clock")
+                                                 { "time-zone-name" => host.time_zone||host.region.network.ntp.get_timezone },
+                                                   "system", "clock")
 
           #/system ntp client> set secondary-ntp=2a04:2f80:2:1704::4711 primary-ntp=2a04:2f80:4:1706::4711
           host.result.render_mikrotik_set_direct({
@@ -335,8 +336,8 @@ TESTNAME
                                                    "primary-ntp"=> Schema.address.required.key,
                                                    "secondary-ntp"=> Schema.address.required.key
                                                  }, {
-                                                   "primary-ntp" => host.region.network.ntp_servers.ips.first,
-                                                   "secondary-ntp" => host.region.network.ntp_servers.ips.last
+                                                   "primary-ntp" => host.region.network.ntp.servers.ips.first,
+                                                   "secondary-ntp" => host.region.network.ntp.servers.ips.last
                                                  }, "system", "ntp", "client")
 
           dns = host.region.network.dns_resolver.nameservers.ips

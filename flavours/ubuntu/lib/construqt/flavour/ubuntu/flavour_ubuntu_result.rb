@@ -687,17 +687,13 @@ VRRP
           out = []
           host.region.hosts.get_hosts.select {|h| @host.delegate == h.mother }.each do |lxc|
             next unless lxc.lxc_deploy
-            next if lxc.lxc_deploy.empty?
             out << "# LXC Container #{lxc.name} [#{lxc.lxc_deploy}]\n"
             out << '[ "true" = "$(. /etc/default/lxc-net && echo $USE_LXC_BRIDGE)" ] && echo USE_LXC_BRIDGE="false" >> /etc/default/lxc-net'
             base_dir = File.join("/var", "lib", "lxc", lxc.name)
             lxc_rootfs = File.join(base_dir, "rootfs")
             sh_lxc_name =  Shellwords.escape(lxc.name)
-            quick_stop = lxc.lxc_deploy.include?(Construqt::Hosts::Lxc::KILLSTOP) ? " -k" : ""
-            if lxc.lxc_deploy.include? Construqt::Hosts::Lxc::AA_PROFILE_UNCONFINED
-              out += lxc_update_config(base_dir, "lxc.aa_profile", "unconfined")
-            end
-            if lxc.lxc_deploy.include? Construqt::Hosts::Lxc::RECREATE
+            quick_stop = lxc.lxc_deploy.killstop? ? " -k" : ""
+            if lxc.lxc_deploy.recreate?
               out << "echo start LXC-RECREATE #{sh_lxc_name}"
               out << "lxc-ls --running | grep -q '#{sh_lxc_name}' && lxc-stop -n '#{sh_lxc_name}'#{quick_stop}"
               out << "[ -d #{lxc_rootfs}/usr/share] && lxc-destroy -f -n '#{sh_lxc_name}'"
@@ -705,17 +701,30 @@ VRRP
               out << "chroot #{lxc_rootfs} /bin/bash /root/deployer.sh"
               out << "echo fix config of #{sh_lxc_name} in #{lxc_rootfs}"
               out += lxc_reference_net_config(base_dir)
+              if lxc.lxc_deploy.aa_profile_unconfined?
+                out += lxc_update_config(base_dir, "lxc.aa_profile", "unconfined")
+              end
               out << "lxc-start -d -n '#{sh_lxc_name}'"
-            elsif lxc.lxc_deploy.include? Construqt::Hosts::Lxc::RESTART
+            elsif lxc.lxc_deploy.restart?
               out << "echo start LXC-RESTART #{sh_lxc_name}"
               out << "lxc-ls --running | grep -q '#{sh_lxc_name}' && lxc-stop -n '#{sh_lxc_name}'#{quick_stop}"
               out << "[ -d #{lxc_rootfs}/usr/share ] || lxc-create -n '#{sh_lxc_name}' -t #{lxc.flavour.name}"
               out << "chroot #{lxc_rootfs} /bin/bash /root/deployer.sh"
               out << "echo fix config of #{sh_lxc_name} in #{lxc_rootfs}"
               out += lxc_reference_net_config(base_dir)
+              if lxc.lxc_deploy.aa_profile_unconfined?
+                out += lxc_update_config(base_dir, "lxc.aa_profile", "unconfined")
+              end
               out << "lxc-start -d -n '#{sh_lxc_name}'"
             end
           end
+          out
+        end
+
+        def setup_ntp(host)
+          out = []
+          out << "cp /usr/share/zoneinfo/#{host.time_zone || host.region.network.ntp.get_timezone} /etc/localtime"
+          # missing /etc/ntp.conf writer
           out
         end
 
@@ -761,12 +770,18 @@ then
   echo "nameserver 8.8.8.8" > /etc/resolv.conf
 fi
 apt-get -qq -y install $updates
+if [ $? != 0 ]
+then
+  apt-get update
+  apt-get -qq -y install $updates
+fi
 if [ ! -d /root/construqt.git ]
 then
  echo generate history in /root/construqt.git
  git init --bare /root/construqt.git
 fi
 BASH
+          out += setup_ntp(host)
           out += components_hash.values.select{|i| i.instance_of?(Array) }.flatten
 
           out += sh_function_git_add

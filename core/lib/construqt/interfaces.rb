@@ -31,9 +31,11 @@ module Construqt
       end
     end
 
-    def add_device(host, dev_name, cfg)
+    def add_device(host, dev_name_tag, cfg)
       cfg = cfg.clone
       delegates = {}
+      dev_parsed = Construqt::Tags.parse(dev_name_tag)
+      dev_name = dev_parsed[:first]
       throw "Host not found:#{dev_name}" unless host
       binding.pry if host.interfaces[dev_name]
       throw "Interface is duplicated:#{host.name}:#{dev_name}" if host.interfaces[dev_name]
@@ -51,7 +53,7 @@ module Construqt
       cfg['plug_in'] ||= nil
       cfg['services'] ||= []
       delegates['firewalls'] = cfg.delete('firewalls')||[]
-      (dev_name, iface) = Construqt::Tags.add(dev_name) { |name| host.flavour.create_interface(name, cfg) }
+      (dev_name, iface) = Construqt::Tags.add("#{dev_name_tag}##{host.name}-#{dev_name}") { |name| host.flavour.create_interface(name, cfg) }
 #binding.pry
       #    iface.clazz.attach = iface
       attach_firewalls(iface, delegates['firewalls'])
