@@ -8,13 +8,12 @@ module Construqt
         end
 
         def write_sntp(host)
-          if host.delegate.sntp
-            @result.add("sntp server priority 1").add(host.delegate.sntp)
+          if host.region.network.ntp.servers.first_ipv4 
+            @result.add("sntp server priority 1").add(host.region.network.ntp.servers.first_ipv4)
             @result.add("timesync sntp")
             @result.add("sntp unicast")
           end
         end
-
       end
       Construqt::Flavour::Ciscian.add_dialect(Hp2530g)
     end

@@ -184,8 +184,12 @@ puts "host => #{host && host.name} #{self.delegate.class.name}"
         @bgps = []
         @users = host.users || host.region.users
       end
-
-      def lxc_deploy
+	  
+	  def spanning_tree
+        self.delegate.spanning_tree
+      end
+      
+	  def lxc_deploy
         self.delegate.lxc_deploy
       end
 

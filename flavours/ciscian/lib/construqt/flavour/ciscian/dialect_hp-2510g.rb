@@ -49,8 +49,8 @@ module Construqt
           @result.add("max-vlans").add(64)
           @result.add("snmp-server community \"public\"")
 
-          if host.delegate.contact
-            @result.add("snmp-server contact").add(host.delegate.contact).quotes
+          if host.region.network.contact
+            @result.add("snmp-server contact").add(host.region.network.contact).quotes
           end
 
           if host.delegate.location
@@ -79,6 +79,10 @@ module Construqt
 
           write_sntp(host)
 
+          if host.delegate.spanning_tree
+           @result.add("spanning-tree")
+          end
+
           if host.delegate.logging
             @result.add("logging").add(host.delegate.logging)
           end
@@ -92,6 +96,7 @@ module Construqt
             @result.add("sntp unicast")
           end
         end
+		
 
         def add_device(device)
         end
