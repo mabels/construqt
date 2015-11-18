@@ -77,17 +77,20 @@ module Construqt
             end
           end
 
-          if host.delegate.sntp
-            @result.add("sntp server").add(host.delegate.sntp)
-            @result.add("timesync sntp")
-            @result.add("sntp unicast")
-          end
-
+          write_sntp(host)
 
           if host.delegate.logging
             @result.add("logging").add(host.delegate.logging)
           end
 
+        end
+
+        def write_sntp(host)
+          if host.delegate.sntp
+            @result.add("sntp server").add(host.delegate.sntp)
+            @result.add("timesync sntp")
+            @result.add("sntp unicast")
+          end
         end
 
         def add_device(device)

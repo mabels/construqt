@@ -2,6 +2,9 @@
 module Construqt
   module Flavour
     class Unknown
+      def name
+        'unknown'
+      end
       class Factory
         def name
           'unknown'
@@ -14,6 +17,7 @@ module Construqt
 
 
       class Device < OpenStruct
+        include Construqt::Cables::Plugin::Single
         def initialize(cfg)
           super(cfg)
         end
@@ -23,6 +27,7 @@ module Construqt
       end
 
       class Vrrp < OpenStruct
+        include Construqt::Cables::Plugin::Single
         def initialize(cfg)
           super(cfg)
         end
@@ -32,6 +37,7 @@ module Construqt
       end
 
       class Bond < OpenStruct
+        include Construqt::Cables::Plugin::Multiple
         def initialize(cfg)
           super(cfg)
         end
@@ -41,6 +47,7 @@ module Construqt
       end
 
       class Wlan < OpenStruct
+        include Construqt::Cables::Plugin::Multiple
         def initialize(cfg)
           super(cfg)
         end
@@ -50,6 +57,7 @@ module Construqt
       end
 
       class Vlan < OpenStruct
+        include Construqt::Cables::Plugin::Multiple
         def initialize(cfg)
           super(cfg)
         end
@@ -59,6 +67,7 @@ module Construqt
       end
 
       class Bridge < OpenStruct
+        include Construqt::Cables::Plugin::Multiple
         def initialize(cfg)
           super(cfg)
         end
