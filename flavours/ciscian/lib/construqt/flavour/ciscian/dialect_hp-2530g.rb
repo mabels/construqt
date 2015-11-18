@@ -45,6 +45,9 @@ module Construqt
             @result.add("sntp unicast")
           end
 
+          if host.delegate.plug_in
+              @result.add(host.delegate.plug_in)
+          end
 
           if host.delegate.logging
             @result.add("logging").add(host.delegate.logging)
