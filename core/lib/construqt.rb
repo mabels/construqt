@@ -66,7 +66,7 @@ module Construqt
   require_relative 'construqt/tags.rb'
   require_relative 'construqt/flavour/flavour.rb'
   require_relative 'construqt/flavour/node.rb'
-
+  require_relative 'construqt/spanning_tree.rb'
 #  [ 'onstruqt/flavour/unknown/unknown.rb',
 #    'construqt/flavour/ciscian/ciscian.rb',
 #    'construqt/flavour/plantuml/plantuml.rb',
