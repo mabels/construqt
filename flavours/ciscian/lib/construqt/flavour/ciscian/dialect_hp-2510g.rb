@@ -90,8 +90,8 @@ module Construqt
         end
 
         def write_sntp(host)
-          if host.delegate.sntp
-            @result.add("sntp server").add(host.delegate.sntp)
+          if host.region.network.ntp.servers.first_ipv4 
+            @result.add("sntp server ").add(host.region.network.ntp.servers.first_ipv4)
             @result.add("timesync sntp")
             @result.add("sntp unicast")
           end
