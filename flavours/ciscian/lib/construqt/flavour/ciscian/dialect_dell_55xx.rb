@@ -48,11 +48,11 @@ module Construqt
           @result.add("ip ssh server", Ciscian::SingleValueVerb)
 
           @result.add("snmp-server location", Ciscian::SingleValueVerb).add(@result.host.name)
-          @result.add("snmp-server contact", Ciscian::SingleValueVerb).add("TODO")
+          @result.add("snmp-server contact", Ciscian::SingleValueVerb).add(host.region.network.contact)
 
           @result.add("clock timezone", Ciscian::SingleValueVerb).add("GMT +1")
           @result.add("clock summer-time", Ciscian::SingleValueVerb).add("GMT recurring eu")
-          @result.add("clock source sntp", Ciscian::SingleValueVerb)
+          @result.add("clock source sntp", Ciscian::SingleValueVerb).add(host.region.network.ntp.servers.first_ipv4)
           @result.add("sntp unicast client enable", Ciscian::SingleValueVerb)
           @result.add("sntp server TODO poll", Ciscian::SingleValueVerb)
 

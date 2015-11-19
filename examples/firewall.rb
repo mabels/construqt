@@ -1,12 +1,11 @@
 
 
 def firewall(region)
-
   Construqt::Firewalls.add("fix-mss") do |fw|
     fw.forward do |fwd|
       fwd.add.from_net("#SERVICE-NET-DE#SERVICE-NET-US#SERVICE-TRANSIT-DE#IPSECVPN-DE#IPSECVPN-US").mss(1280).action(Construqt::Firewalls::Actions::TCPMSS)
-#      fwd.add.to_net("#SERVICE-NET#SERVICE-TRANSIT#IPSECVPN").mss(1380).action(Construqt::Firewalls::Actions::TCPMSS)
-#  iptables -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS  --clamp-mss-to-pmtu
+      #      fwd.add.to_net("#SERVICE-NET#SERVICE-TRANSIT#IPSECVPN").mss(1380).action(Construqt::Firewalls::Actions::TCPMSS)
+      #  iptables -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS  --clamp-mss-to-pmtu
     end
   end
 
@@ -15,15 +14,18 @@ def firewall(region)
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#FANOUT-DE-BACKEND#FANOUT-US-BACKEND#IPSECVPN-DE#IPSECVPN-US").to_net("#SERVICE-NET-DE#SERVICE-NET-US#SERVICE-TRANSIT-DE").from_is_outside
     end
   end
+
   Construqt::Firewalls.add("net-nat") do |fw|
     fw.nat do |nat|
       nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("#INTERNAL-NET").from_filter_local.to_source.from_is_inside
     end
   end
+
   Construqt::Firewalls.add("net-forward") do |fw|
     fw.forward do |fordward|
       fordward.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#INTERNAL-NET").connection.from_filter_local.from_is_inside
     end
+
     fw.host do |host|
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INTERNET").from_is_inside
     end
@@ -55,8 +57,8 @@ def firewall(region)
         .from_net("#WL-PRINTABLE-NET#WL-PRINTABLE-BACKBONE")
         .to_net("#WL-PRINTABLE-NET").to_filter_local.tcp.dport(9100).dport(515).dport(631).from_is_outside
 
-#      fwd.add.action(Construqt::Firewalls::Actions::DROP)
-#        .from_net("#WL-PRINTABLE-NET").from_filter_local.to_net("#INTERNET").from_is_inside
+      #      fwd.add.action(Construqt::Firewalls::Actions::DROP)
+      #        .from_net("#WL-PRINTABLE-NET").from_filter_local.to_net("#INTERNET").from_is_inside
     end
   end
 
@@ -65,11 +67,13 @@ def firewall(region)
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-smtp-de").tcp.dport(25).dport(587).dport(465).from_is_outside
     end
   end
+
   Construqt::Firewalls.add("service-imap") do |fw|
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-imap-de").tcp.dport(993).from_is_outside
     end
   end
+
   Construqt::Firewalls.add("service-dns") do |fw|
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-bind-de").udp.dport(53).from_is_outside
@@ -82,6 +86,7 @@ def firewall(region)
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-smtp-us").tcp.dport(25).dport(587).dport(465).from_is_outside
     end
   end
+
   Construqt::Firewalls.add("service-us-dns") do |fw|
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-bind-us").udp.dport(53).from_is_outside
@@ -89,12 +94,12 @@ def firewall(region)
     end
   end
 
-
   Construqt::Firewalls.add("service-ssh-hgw") do |fw|
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv6.connection.from_net("#INTERNET").to_net("SERVICE-NET-DE-HGW").tcp.dport(22).from_is_outside
     end
   end
+
   Construqt::Firewalls.add("service-ad") do |fw|
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).from_host("#HOST-ad-de").to_host("HOST-ad")
@@ -108,6 +113,7 @@ def firewall(region)
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET")
         .to_my_net.icmp.type(Construqt::Firewalls::ICMP::Ping).from_is_outside
     end
+
     fw.forward do |forward|
       forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET")
         .to_net("#SERVICE-NET-DE#SERVICE-TRANSIT-DE#IPSECVPN-DE#IPSECVPN-US#INTERNAL-NET").to_filter_local.icmp.type(Construqt::Firewalls::ICMP::Ping).from_is_outside
@@ -118,6 +124,7 @@ def firewall(region)
     fw.host do |host|
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_me.tcp.dport(22).from_is_outside
     end
+
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_me.tcp.dport(22).from_is_outside
     end
@@ -136,7 +143,6 @@ def firewall(region)
         .to_net("#SERVICE-TRANSIT-DE#SERVICE-IPSEC#IPSECVPN-DE").to_filter_local
     end
   end
-
 
   Construqt::Firewalls.add("service-us-transit") do |fw|
     fw.host do |host|
@@ -158,6 +164,7 @@ def firewall(region)
     fw.host do |host|
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INTERNET").from_is_inside
     end
+
     fw.forward do |forward|
       forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#FANOUT-DE-BACKEND#SERVICE-NET-DE#SERVICE-TRANSIT-DE#IPSECVPN-DE#INTERNAL-NET").to_net("#INTERNET").from_is_inside
     end
@@ -168,6 +175,7 @@ def firewall(region)
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#SERVICE-IPSEC-US").to_net("#SERVICE-IPSEC-US").from_is_inside
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INTERNET").from_is_inside
     end
+
     fw.forward do |forward|
       forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#FANOUT-US-BACKEND#SERVICE-IPSEC-US#IPSECVPN-US#SERVICE-NET-US#SERVICE-TRANSIT-US").to_net("#INTERNET").from_is_inside
     end
@@ -178,8 +186,39 @@ def firewall(region)
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).link_local.from_is_outside
       host.add.action(Construqt::Firewalls::Actions::DROP).log("HOST")
     end
+
     fw.forward do |forward|
       forward.add.action(Construqt::Firewalls::Actions::DROP).log("FORWARD")
+    end
+  end
+
+  Construqt::Firewalls.add("fw-outbound") do |fw|
+    fw.forward do |forward|
+      forward.ipv6
+      forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("@2000::/3").to_host("@2001:6f8:900:82bf:192:168:67:2").tcp.dport(22)
+      forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("DEFAULT").from_is_outside
+      forward.add.action(Construqt::Firewalls::Actions::DROP).log("FORWARD")
+    end
+
+    fw.host do |host|
+      host.ipv6
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).link_local
+      host.add.action(Construqt::Firewalls::Actions::DROP).log('HOST')
+    end
+  end
+
+  Construqt::Firewalls.add("fw-sixxs") do |fw|
+    fw.forward do |forward|
+      forward.ipv6
+      forward.add.action(Construqt::Firewalls::Actions::TCPMSS)
+    end
+
+    fw.host do |host|
+      host.ipv6
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("@2000::/3").to_me.tcp.dport(22).from_is_outside
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("@2000::/3").to_me.icmp.type(Construqt::Firewalls::ICMP::Ping).from_is_outside
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_me.to_net("@2000::/3")
+      host.add.action(Construqt::Firewalls::Actions::DROP).log('HOST')
     end
   end
 end

@@ -90,13 +90,13 @@ module Construqt
         end
 
         def write_sntp(host)
-          if host.region.network.ntp.servers.first_ipv4 
+          if host.region.network.ntp.servers.first_ipv4
             @result.add("sntp server ").add(host.region.network.ntp.servers.first_ipv4)
             @result.add("timesync sntp")
             @result.add("sntp unicast")
           end
         end
-		
+
 
         def add_device(device)
         end

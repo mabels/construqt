@@ -1,11 +1,30 @@
 
 module AlwaysConnected
 
+  def self.run()
+    mother = AlwaysConnected.mother(region)
+
+    AlwaysConnected.border_access(mother, "eth0")
+    AlwaysConnected.border_access(mother, "wlan0")
+    AlwaysConnected.border_access(mother, "usb0")
+    AlwaysConnected.border_access(mother, "usbnet0")
+
+    AlwaysConnected.router(mother)
+    AlwaysConnected.access_controller(mother)
+
+    AlwaysConnected.access_pointer(mother, "de", "wlan1", "MAM-AL-DE",
+                                   region.network.addresses.add_ip("169.254.69.65/24")
+      .add_ip("fd:a9fe:49::65/64"))
+
+    AlwaysConnected.encrypter_region(mother, "de", region.network.addresses.add_ip("169.254.69.97/24")
+      .add_ip("fd:a9fe:49::97/64"))
+  end
+
   BORDER_ACCESS = []
   def self.border_access(mother, ifname)
     region = mother.region
     address = region.network.addresses.add_ip("169.254.69.#{BORDER_ACCESS.length+33}/24")
-                                      .add_ip("fd:a9fe:49::#{BORDER_ACCESS.length+33}/64")
+      .add_ip("fd:a9fe:49::#{BORDER_ACCESS.length+33}/64")
     BORDER_ACCESS << region.hosts.add("ao-border-#{ifname}", "flavour" => "ubuntu", "mother" => mother,
                                       "lxc_deploy" => Construqt::Hosts::Lxc.new.restart) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
@@ -13,13 +32,14 @@ module AlwaysConnected
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
       host.configip = host.id ||= Construqt::HostId.create do |my|
         my.interfaces << iface = region.interfaces.add_device(host, "br666", "mtu" => 1500,
-              "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
-              'address' => address.add_route_from_tags("#INTERNET", "#ROUTER", "metric" => 100))
+                                                              "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
+                                                              'address' => address.add_route_from_tags("#INTERNET", "#ROUTER", "metric" => 100))
       end
+
       region.interfaces.add_device(mother, ifname, "mtu" => 1500)
       region.interfaces.add_device(host, "border", "mtu" => 1500,
-            "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name(ifname)).type_phys,
-            'address' => region.network.addresses.add_ip(Construqt::Addresses::DHCPV4))
+                                   "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name(ifname)).type_phys,
+                                   'address' => region.network.addresses.add_ip(Construqt::Addresses::DHCPV4))
     end
   end
 
@@ -31,13 +51,13 @@ module AlwaysConnected
       host.configip = host.id ||= Construqt::HostId.create do |my|
         my.interfaces << iface = region.interfaces.add_bridge(host, "br666", "mtu" => 1500,
                                                               "interfaces" => [],
-                     'address' => region.network.addresses.add_ip("169.254.69.1/24")
-                                                          .add_ip("fd:a9fe:49::1/64")
-                                    .add_route_from_tags("#INTERNET", "#ROUTER", "metric" => 100))
+                                                              'address' => region.network.addresses.add_ip("169.254.69.1/24")
+          .add_ip("fd:a9fe:49::1/64")
+          .add_route_from_tags("#INTERNET", "#ROUTER", "metric" => 100))
       end
+
       # hack das kommt dynamisch
     end
-
   end
 
   def self.router(mother)
@@ -49,9 +69,9 @@ module AlwaysConnected
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
       host.configip = host.id ||= Construqt::HostId.create do |my|
         my.interfaces << iface = region.interfaces.add_device(host, "br666", "mtu" => 1500,
-                     "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
-                     'address' => region.network.addresses.add_ip("169.254.69.8/24#ROUTER")
-                                                          .add_ip("fd:a9fe:49::8/64#ROUTER"))
+                                                              "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
+                                                              'address' => region.network.addresses.add_ip("169.254.69.8/24#ROUTER")
+          .add_ip("fd:a9fe:49::8/64#ROUTER"))
       end
     end
   end
@@ -65,9 +85,9 @@ module AlwaysConnected
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
       host.configip = host.id ||= Construqt::HostId.create do |my|
         my.interfaces << iface = region.interfaces.add_device(host, "br666", "mtu" => 1500,
-                     "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
-                     'address' => region.network.addresses.add_ip("169.254.69.4/24")
-                                                          .add_ip("fd:a9fe:49::4/64"))
+                                                              "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
+                                                              'address' => region.network.addresses.add_ip("169.254.69.4/24")
+          .add_ip("fd:a9fe:49::4/64"))
       end
     end
   end
@@ -81,8 +101,8 @@ module AlwaysConnected
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
       host.configip = host.id ||= Construqt::HostId.create do |my|
         my.interfaces << iface = region.interfaces.add_device(host, "br666", "mtu" => 1500,
-                     "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
-                     'address' => address)
+                                                              "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
+                                                              'address' => address)
       end
     end
   end
@@ -96,14 +116,14 @@ module AlwaysConnected
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
       host.configip = host.id ||= Construqt::HostId.create do |my|
         my.interfaces << iface = region.interfaces.add_device(host, "br666", "mtu" => 1500,
-                     "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
-                     'address' => address)
+                                                              "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
+                                                              'address' => address)
       end
+
       region.interfaces.add_device(mother, ifname, "mtu" => 1500)
       region.interfaces.add_device(host, "wlan", "mtu" => 1500,
-            "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name(ifname)).type_phys,
-            'address' => region.network.addresses.add_ip("172.25.69.0/24"))
+                                   "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name(ifname)).type_phys,
+                                   'address' => region.network.addresses.add_ip("172.25.69.0/24"))
     end
   end
 end
-
