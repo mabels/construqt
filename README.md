@@ -1,13 +1,20 @@
-construqt
-=========
+# what is construqt
 
-Construqt Complex Routerconfiguration for a LIR-Setup
+construqt is an interface to describe strong depending network structures.
 
-There is no documentation or anything helpful. I'm currently focus on an implementation so everything is changing.
+construqt describes connections(left,right) with same syntax, and hides 
+the implementation details from user. It is vendor agnostic.
 
+construqt uses a programming language(ruby) to describe
+the network. There is no static configuration file or format or syntax.
 
-There are now parts of my homenetwork as living examples. Just go to examples and do ruby construqt.rb
-and have a look in the generated cfgs directory.
+construqt knows the described network connections and generates a 
+network-documentation on the fly.
+
+# examples
+
+There are now parts of my homenetwork as living examples. Just go to 
+examples and do ruby construqt.rb and have a look in the generated cfgs directory.
 
 Here are the hand drawn picture of the example network
 

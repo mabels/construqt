@@ -189,7 +189,7 @@
 
    Copyright [2014-2015] [Meno Abels]
    Copyright [2014-2015] [Marcel Richter]
-   Copyright [2014] [Rasmus Heimbaecher]
+   Copyright [2015] [Rasmus Heimbaecher]
    Copyright [2015] [Hauke Lampe]
 
    Licensed under the Apache License, Version 2.0 (the "License");
