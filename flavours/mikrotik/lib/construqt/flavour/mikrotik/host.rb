@@ -13,7 +13,7 @@ module Construqt
           host = delegate_host.delegate
           host.result.render_mikrotik_set_direct(
             {"contact" => Schema.string.required.key },
-            {"contact" => "#{ENV['USER']}-#{`hostname`.strip}-#{`git  show --format=%H -q`.strip}-#{Time.now.to_i} <#{delegate_host.region.network.contact}>" }, "snmp")
+            {"contact" => "#{ENV['USER']}-#{`hostname`.strip}-#{`git  show --format=%h -q`.strip}-#{Time.now.to_i} <#{delegate_host.region.network.contact}>" }, "snmp")
 
           host.result.add(<<TESTNAME, nil, "system", "identity")
 {

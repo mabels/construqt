@@ -49,9 +49,9 @@ module Construqt
               @result.add("snmp-server community \"public\"")
 
 
-              contact = "#{ENV['USER']}-#{`hostname`.strip}-#{`git  show --format=%H -q`.strip}-#{Time.now.to_i}"
+              contact = "#{ENV['USER']}-#{`hostname`.strip}-#{`git  show --format=%h -q`.strip}-#{Time.now.to_i}"
               if host.region.network.contact
-                contact = " <#{host.region.network.contact}>"
+                contact = "#{contact} <#{host.region.network.contact}>"
               end
               @result.add('snmp-server contact').add(contact).quotes
 
