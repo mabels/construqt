@@ -222,7 +222,7 @@ USER
           end
 
           def build_config(unused, unused2)
-            puts ">>>>>#{self.cfg.transport_family}"
+            #puts ">>>>>#{self.cfg.transport_family}"
             if self.cfg.transport_family == Construqt::Addresses::IPV6
               local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(self.remote.first_ipv6) }
               transport_left=self.remote.first_ipv6.to_s

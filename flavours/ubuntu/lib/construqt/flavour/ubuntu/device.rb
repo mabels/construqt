@@ -60,7 +60,7 @@ module Construqt
             return []
           elsif neigh.kind_of?(Construqt::Tags::ResolverAdr) || neigh.kind_of?(Construqt::Tags::ResolverNet)
             ret = neigh.resolv()
-            puts "self.proxy_neigh2ips>>>>>#{neigh} #{ret.map{|i| i.class.name}} "
+            #puts "self.proxy_neigh2ips>>>>>#{neigh} #{ret.map{|i| i.class.name}} "
             return ret
           end
           return neigh.ips
@@ -68,7 +68,7 @@ module Construqt
 
         def self.proxy_neigh(ifname, iface, lines)
           proxy_neigh2ips(iface.proxy_neigh).each do |ip|
-            puts "**********#{ip.class.name}"
+            #puts "**********#{ip.class.name}"
               list = []
               if ip.network.to_string == ip.to_string
                 list += ip.map{|i| i}

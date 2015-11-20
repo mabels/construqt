@@ -370,7 +370,7 @@ module Construqt
             next unless blocks.vias
             next unless blocks.dsts
             next if blocks.dsts.empty?
-            puts ">>>>>>>>>#{self.dst_tag} #{blocks.dsts.map{|i| i.to_s}},#{self.via_tag} #{blocks.vias.map{|i| i.to_s}}"
+            #puts ">>>>>>>>>#{self.dst_tag} #{blocks.dsts.map{|i| i.to_s}},#{self.via_tag} #{blocks.vias.map{|i| i.to_s}}"
             blocks.vias.each do |via|
               blocks.dsts.each do |dst|
                 ret += @address.build_route(dst.to_string, via.to_s+routing_table, options).resolv

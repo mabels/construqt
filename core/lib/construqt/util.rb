@@ -207,5 +207,18 @@ module Construqt
         " "+str.strip
       end
     end
+
+    def self.snake_case(str)
+      str.gsub(/::/, '/').
+        gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
+        gsub(/([a-z\d])([A-Z])/,'\1_\2').
+        tr("-", "_").
+        downcase
+    end
+
+    def self.camel_case(str)
+      return self if self !~ /_/ && self =~ /[A-Z]+.*/
+      split('_').map{|e| e.capitalize}.join
+    end
   end
 end

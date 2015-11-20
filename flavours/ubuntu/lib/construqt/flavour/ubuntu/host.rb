@@ -186,7 +186,7 @@ SSH
             end
           end
 
-          puts host.name
+          #puts host.name
           #binding.pry
           create_lxc_containers(host)
           create_vagrant_containers(host)

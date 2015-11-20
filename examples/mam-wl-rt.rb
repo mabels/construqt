@@ -100,12 +100,13 @@ module MamWl
   def self.mam_wl_switches(region)
     setup_vlan_templates(region)
     {
-      "03" => { "dialect" => "hp-2510g"},
-      "07" => { "dialect" => "hp-2530g"}
+      "03" => { "dialect" => "hp2510g"},
+      "07" => { "dialect" => "hp2530g"}
     }.each do |sw, val|
       region.hosts.add("sw-hp#{sw}",
                        "flavour" => "ciscian",
-                       "dialect" => val["dialect"],
+                       "dialect" => "hp",
+                       "type" => val["dialect"],
                        #"spanning_tree" => Construqt::SpanningTree.new,
                        "logging" => "192.168.42.1") do |switch|
         region.interfaces.add_device(switch, "ge1", "template" => region.templates.find("kde"))

@@ -12,7 +12,8 @@ CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../../'
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/ubuntu/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/mikrotik/lib",
-  "#{CONSTRUQT_PATH}/construqt/flavours/ciscian/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/ciscian/core/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/ciscian/dialects/hp/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/unknown/lib"
 ].each{|path| $LOAD_PATH.unshift(path) }
 require 'rubygems'

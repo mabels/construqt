@@ -129,7 +129,7 @@ module Construqt
         #        binding.pry if host && host.name == "ct-iar1-ham"
         #        binding.pry if self.class.name[self.class.name.rindex(':')+1..-1] == "DeviceDelegate"
         #binding.pry
-puts "host => #{host && host.name} #{self.delegate.class.name}"
+#puts "host => #{host && host.name} #{self.delegate.class.name}"
         Flavour.call_aspects("#{simple_name}.build_config", host, my||self)
         self.delegate.build_config(host, my||self)
       end
