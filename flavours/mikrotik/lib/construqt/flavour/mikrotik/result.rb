@@ -187,7 +187,8 @@ module Construqt
             "routing bgp instance",
             "routing bgp peer",
             "tool graphing interface",
-            "ip service"
+            "ip service",
+            "snmp"
           ].map do |path|
               if sorted[path]
                 sorted[path]
