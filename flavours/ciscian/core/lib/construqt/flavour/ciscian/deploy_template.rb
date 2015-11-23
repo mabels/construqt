@@ -34,7 +34,7 @@ cd $CONSTRUQT_PATH
 bash $CONSTRUQT_PATH/construqt/switch/deploy/deploy.sh $FLAVOUR $SWITCH_IP #{user} "$CURRENT_DIR/$FLAVOUR.cfg"
 cd - > /dev/null
 TEMPLATE
-          Util.write_str(template, File.join(host.name, 'deploy.sh'))
+          Util.write_str(host.region, template, File.join(host.name, 'deploy.sh'))
               end
             end
           end

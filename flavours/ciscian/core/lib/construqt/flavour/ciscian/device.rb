@@ -12,7 +12,7 @@ module Construqt
         end
 
         def build_config(host, device)
-          host.result.dialect.add_device(device)
+          host.flavour.dialect.add_device(device)
         end
       end
     end

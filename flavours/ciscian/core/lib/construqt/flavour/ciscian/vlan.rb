@@ -12,7 +12,7 @@ module Construqt
         end
 
         def build_config(host, device)
-          host.result.dialect.add_vlan(device)
+          host.flavour.dialect.add_vlan(device)
         end
       end
     end

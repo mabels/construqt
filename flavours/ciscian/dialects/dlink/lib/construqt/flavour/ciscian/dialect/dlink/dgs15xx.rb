@@ -161,7 +161,7 @@ module Construqt
               end
             end
 
-            Construqt::Flavour::Ciscian.add_dialect(Dgs15xx)
+            #Construqt::Flavour::Ciscian.add_dialect(Dgs15xx)
           end
         end
       end

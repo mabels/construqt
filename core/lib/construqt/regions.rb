@@ -1,9 +1,14 @@
 
 module Construqt
   module Regions
-    @regions = {}
+    REGIONS = {}
     class Region
-      attr_reader :name, :cables, :hosts, :interfaces, :users, :vlans, :network, :templates, :resources, :services, :registry
+      attr_reader :name, :cables, :hosts, :interfaces, :users, :vlans, :network,
+                  :templates, :resources, :services, :registry, :flavour_factory,
+                  :aspects
+      include Construqt::Util::Chainable
+      chainable_attr_value :dest_path
+
       def initialize(name, network, registry)
         @name = name
         @network = network
@@ -16,23 +21,30 @@ module Construqt
         @cables = Construqt::Cables.new(self)
         @services = Construqt::Services.new(self)
         @resources = Construqt::Resources.new(self)
+        @flavour_factory = Construqt::Flavour::Factory.new(self)
+        @aspects = []
       end
 
       def get_default_group
         "admin"
       end
+
+      def add_aspect(aspect)
+        @aspects << aspect
+      end
+
     end
 
     def self.add(name, network, registry = nil)
-      throw "region names #{name} has to be unique" if @regions[name]
+      throw "region names #{name} has to be unique" if REGIONS[name]
       ret = Region.new(name, network, registry)
-      @regions[name] = ret
+      REGIONS[name] = ret
       ret
     end
 
     def self.find(name)
-      throw "region with name #{name} not found" unless @regions[name]
-      @regions[name]
+      throw "region with name #{name} not found" unless REGIONS[name]
+      REGIONS[name]
     end
   end
 end

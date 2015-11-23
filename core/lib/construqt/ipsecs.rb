@@ -31,7 +31,7 @@ module Construqt
 
       def build_config()
         (self.rights+self.lefts).each do |iface|
-          iface.build_config(nil, nil)
+          iface.build_config(iface.host, iface)
         end
       end
 

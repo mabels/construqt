@@ -53,7 +53,7 @@ module Construqt
   require_relative 'construqt/cert_store.rb'
   require_relative 'construqt/firewalls.rb'
   require_relative 'construqt/resource.rb'
-  require_relative 'construqt/flavour/delegates.rb'
+  require_relative 'construqt/flavour/delegate.rb'
   require_relative 'construqt/hostid.rb'
   require_relative 'construqt/hosts.rb'
   require_relative 'construqt/interfaces.rb'
@@ -64,7 +64,8 @@ module Construqt
   require_relative 'construqt/regions.rb'
   require_relative 'construqt/vlans.rb'
   require_relative 'construqt/tags.rb'
-  require_relative 'construqt/flavour/flavour.rb'
+  require_relative 'construqt/flavour/factory.rb'
+  require_relative 'construqt/flavour/dialect_factory_base.rb'
   require_relative 'construqt/flavour/node.rb'
   require_relative 'construqt/spanning_tree.rb'
 #  [ 'onstruqt/flavour/unknown/unknown.rb',

@@ -100,13 +100,13 @@ module MamWl
   def self.mam_wl_switches(region)
     setup_vlan_templates(region)
     {
-      "03" => { "dialect" => "hp2510g"},
-      "07" => { "dialect" => "hp2530g"}
+      "03" => { "type" => "hp2510g"},
+      "07" => { "type" => "hp2530g"}
     }.each do |sw, val|
       region.hosts.add("sw-hp#{sw}",
                        "flavour" => "ciscian",
                        "dialect" => "hp",
-                       "type" => val["dialect"],
+                       "type" => val["type"],
                        #"spanning_tree" => Construqt::SpanningTree.new,
                        "logging" => "192.168.42.1") do |switch|
         region.interfaces.add_device(switch, "ge1", "template" => region.templates.find("kde"))
@@ -168,14 +168,16 @@ bonding
 MODULES
     mal_wl_printer = region.hosts.add("wl-printer", "flavour" => "unknown") do |printer|
       printer.id = printer.configip = Construqt::HostId.create do |my|
-        my.interfaces << region.interfaces.add_device(printer, "eth", "mtu" => 1500,
+        my.interfaces << eth = region.interfaces.add_device(printer, "eth", "mtu" => 1500,
                                                       "default_name" => "ether",
                                                       "address" => region.network.addresses.add_ip("192.168.208.208/24"))
+
+        region.cables.add(eth, region.interfaces.find("sw-hp03", "ge8"))
       end
     end
 
     mam_wl_rt = region.hosts.add("mam-wl-rt",
-                                 "flavour" => "ubuntu",
+                                 "flavour" => "nixian", "dialect" => "ubuntu",
                                  "files" => [region.resources.find("odroid.modules")]) do |host|
                                    region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                                                 :description=>"#{host.name} lo",
@@ -270,7 +272,7 @@ MODULES
                                          end
                                        end
 
-                                       rts[net[:name]] = region.hosts.add(net[:name], "flavour" => "ubuntu", "mother" => mam_wl_rt,
+                                       rts[net[:name]] = region.hosts.add(net[:name], "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mam_wl_rt,
                                                                           "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined
                                          .restart.killstop.release("trusty")) do |host|
                                          region.interfaces.add_device(host, "lo", "mtu" => "9000",

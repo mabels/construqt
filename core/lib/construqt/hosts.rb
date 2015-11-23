@@ -57,7 +57,7 @@ module Construqt
       cfg['dns_server'] ||= false
       cfg['result'] = nil
       cfg['shadow'] ||= nil
-      cfg['flavour'] = Flavour.factory(cfg)
+      cfg['flavour'] = @region.flavour_factory.produce(cfg)
       #		cfg['clazz'] = cfg['flavour'].clazz("host")
       throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
       cfg['region'] = @region
@@ -102,8 +102,14 @@ module Construqt
     end
 
     def commit(hosts = nil)
-      (hosts || @hosts.values).each { |h| h.commit }
-      Flavour.call_aspects("completed", nil, nil)
+      regions = {}
+      (hosts || @hosts.values).each do |h|
+        h.commit
+        regions[h.region.object_id] = h.region
+      end
+      regions.values.each do |region|
+        region.flavour_factory.call_aspects("completed", region, nil)
+      end
     end
   end
 end

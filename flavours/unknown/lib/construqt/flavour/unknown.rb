@@ -10,11 +10,9 @@ module Construqt
           'unknown'
         end
         def factory(cfg)
-          FlavourDelegate.new(Unknown.new)
+          Construqt::Flavour::Delegate::FlavourDelegate.new(Unknown.new)
         end
       end
-      Construqt::Flavour.add(Factory.new)
-
 
       class Device < OpenStruct
         include Construqt::Cables::Plugin::Single

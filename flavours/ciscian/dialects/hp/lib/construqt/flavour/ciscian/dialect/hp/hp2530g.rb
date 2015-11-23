@@ -7,13 +7,13 @@ module Construqt
           class Hp2530g < Hp2510g
             def write_sntp(host)
               if host.region.network.ntp.servers.first_ipv4
-                @result.add('sntp server priority 1').add(host.region.network.ntp.servers.first_ipv4)
-                @result.add('timesync sntp')
-                @result.add('sntp unicast')
+                host.result.add('sntp server priority 1').add(host.region.network.ntp.servers.first_ipv4)
+                host.result.add('timesync sntp')
+                host.result.add('sntp unicast')
               end
             end
           end
-          Construqt::Flavour::Ciscian.add_dialect(Hp2530g)
+          #Construqt::Flavour::Ciscian.add_dialect(Hp2530g)
         end
       end
     end

@@ -4,45 +4,17 @@ require 'rexml/cdata'
 
 module Construqt
   module Flavour
-    module Plantuml
+    class Plantuml
 
-      def self.name
+      def name
         'plantuml'
       end
 
-      Flavour.add_aspect(self)
+#      Flavour.add_aspect(self)
 
       def self.simple(clazz)
         #     clazz
         clazz.name[clazz.name.rindex(':')+1..-1].gsub(/Delegate$/,'')
-      end
-
-      TREE = {}
-      SINGLE_WIRE = {}
-      FORMATS = ['svg']
-
-      def self.add_format(format)
-        FORMATS << format
-      end
-
-      def self.connect(node, out, path)
-        return if node.drawed!
-        #    Construqt.logger.debug("planuml.draw:#{node.reference.name} #{node.ident} ")
-        node.out_links.each do |n|
-          #      Construqt.logger.debug("planuml.draw:Out:#{node.reference.name} #{node.ident}:#{n.ident}")
-          unless simple(node.reference.class) == "Host"
-            out << "#{node.ident} .. #{n.ident}"
-          end
-
-          connect(n, out, path + [n.reference.name])
-        end
-        node.wire_out_links.each do |n|
-          key = [node.ident,n.ident].sort.join('..')
-          unless SINGLE_WIRE[key]
-            SINGLE_WIRE[key] = true
-            out << "#{node.ident} .. #{n.ident}"
-          end
-        end
       end
 
       def self.ident(path, content)
@@ -58,8 +30,39 @@ module Construqt
         end
       end
 
+
+      def initialize
+        @tree = {}
+        @single_wire = {}
+        @formats = ['svg']
+      end
+
+      def add_format(format)
+        @formats.include?(format) || @formats << format
+      end
+
+      def connect(node, out, path)
+        return if node.drawed!
+        #    Construqt.logger.debug("planuml.draw:#{node.reference.name} #{node.ident} ")
+        node.out_links.each do |n|
+          #      Construqt.logger.debug("planuml.draw:Out:#{node.reference.name} #{node.ident}:#{n.ident}")
+          unless Plantuml.simple(node.reference.class) == "Host"
+            out << "#{node.ident} .. #{n.ident}"
+          end
+
+          connect(n, out, path + [n.reference.name])
+        end
+        node.wire_out_links.each do |n|
+          key = [node.ident,n.ident].sort.join('..')
+          unless @single_wire[key]
+            @single_wire[key] = true
+            out << "#{node.ident} .. #{n.ident}"
+          end
+        end
+      end
+
       def self.draw(node, out, path, flat, level = 0, parent = nil)
-        n_kind = simple(node.reference.class)
+        n_kind = Plantuml.simple(node.reference.class)
         if n_kind == "Host"
           # root calls but we have in_links so this is part of a
           # mother child connection
@@ -111,7 +114,7 @@ UML
         end
         binding.pry if name == 'ipsec'
         address = iface.address
-        if iface.kind_of? Construqt::Flavour::IpsecVpnDelegate
+        if iface.kind_of? Construqt::Flavour::Delegate::IpsecVpnDelegate
           out << "auth_method = #{iface.auth_method}"
           out << "leftpsk = #{iface.leftpsk}"
           if iface.leftcert
@@ -177,7 +180,7 @@ UML
         name.gsub(/[^0-9a-zA-Z_]/, '_')
       end
 
-      def self.add_node_factory(type, host, *args)
+      def add_node_factory(type, host, *args)
         factory = {
           "BondDelegate.build_config" => lambda do |type, host, *args|
             args.first
@@ -230,67 +233,67 @@ UML
           if obj
             ident = obj.ident
             throw "A object needs a ident #{obj.class.name}" unless ident
-            TREE[ident] ||= Node.new(obj)
+            @tree[ident] ||= Node.new(obj)
           end
         else
           Construqt.logger.debug "Planuml:add_node_factory type not found #{type}"
         end
       end
 
-      def self.build_tree
+      def build_tree
         #binding.pry
-        TREE.each do |ident, node|
+        @tree.each do |ident, node|
           #binding.pry
           #Construqt.logger.debug "Planuml:build_tree=#{node.reference.class.name}=#{simple(node.reference.class)}"
           {
             "Vrrp" => lambda do |node|
               node.reference.delegate.interfaces.each do |i|
-                node.connect TREE[i.ident]
+                node.connect @tree[i.ident]
               end
               binding.pry if node.reference.cable.nil?
               node.reference.cable.connections.each do |c|
-                node.wire_connect TREE[c.iface.ident]
+                node.wire_connect @tree[c.iface.ident]
               end
             end,
             "Vlan" => lambda do |node|
               node.reference.interfaces.each do |vlan_iface|
-                node.connect TREE[vlan_iface.ident]
+                node.connect @tree[vlan_iface.ident]
               end
               node.reference.cable.connections.each do |c|
-                node.wire_connect TREE[c.iface.ident]
+                node.wire_connect @tree[c.iface.ident]
               end
             end,
             "Bond" => lambda do |node|
               node.reference.delegate.interfaces.each do |i|
                 #Construqt.logger.debug(">>>>>>>>>> BOND -> #{simple(i.clazz)} #{i.name}")
-                node.connect TREE[i.ident]
+                node.connect @tree[i.ident]
               end
               node.reference.cable.connections.each do |c|
-                node.wire_connect TREE[c.iface.ident]
+                node.wire_connect @tree[c.iface.ident]
               end
             end,
             "Bridge" => lambda do |node|
               node.reference.delegate.interfaces.each do |i|
                 #binding.pry
-                node.connect TREE[i.ident]
+                node.connect @tree[i.ident]
               end
               node.reference.cable.connections.each do |c|
                 #binding.pry
-                node.wire_connect TREE[c.iface.ident]
+                node.wire_connect @tree[c.iface.ident]
               end
             end,
             "Wlan" => lambda do |node|
               if node.reference.master_if
-                node.connect TREE[node.reference.master_if.ident]
+                node.connect @tree[node.reference.master_if.ident]
               end
               node.reference.cable.connections.each do |c|
-                node.wire_connect TREE[c.iface.ident]
+                node.wire_connect @tree[c.iface.ident]
               end
             end,
             "Device" => lambda do |node|
               node.reference.cable.connections.each do |c|
                 #binding.pry
-                node.wire_connect TREE[c.iface.ident]
+                node.wire_connect @tree[c.iface.ident]
               end
               binding.pry if node.reference.cable.nil?
             end,
@@ -301,38 +304,38 @@ UML
             end,
             "Gre" => lambda do |node|
               interface = node.reference.delegate.remote.interface
-              node.connect TREE[interface.ident]
+              node.connect @tree[interface.ident]
             end,
             "Opvn" => lambda do |node|
             end,
             "IpsecVpn" => lambda do |node|
               interface = node.reference.delegate.left_interface
-              node.connect TREE[interface.ident]
+              node.connect @tree[interface.ident]
             end,
             "Ipsec" => lambda do |node|
               [node.reference.lefts.first, node.reference.rights.first].each do |iface|
-                binding.pry unless TREE[iface.interface.ident]
-                node.connect TREE[iface.interface.ident]
+                binding.pry unless @tree[iface.interface.ident]
+                node.connect @tree[iface.interface.ident]
               end
             end,
             "Bgp" => lambda do |node|
               #binding.pry
               [node.reference.lefts.first, node.reference.rights.first].each do |iface|
-                node.connect TREE[iface.my.ident]
+                node.connect @tree[iface.my.ident]
               end
             end,
             "Host" => lambda do |node|
               if node.reference.mother
-                TREE[node.reference.mother.ident].connect node
+                @tree[node.reference.mother.ident].connect node
               end
               node.reference.interfaces.values.each do |iface|
-                next if simple(iface.class) == "Vrrp"
-                Construqt.logger.debug "Planuml:Host:#{iface.name}:#{iface.ident}:#{simple(iface.class)}"
-                node.connect TREE[iface.ident]
+                next if Plantuml.simple(iface.class) == "Vrrp"
+                Construqt.logger.debug "Planuml:Host:#{iface.name}:#{iface.ident}:#{Plantuml.simple(iface.class)}"
+                node.connect @tree[iface.ident]
               end
             end
 
-          }[simple(node.reference.class)].call(node)
+          }[Plantuml.simple(node.reference.class)].call(node)
         end
       end
 
@@ -371,27 +374,28 @@ JS
         File.open(fname, 'w') { |o| xml.write( o ) }
       end
 
-      def self.call(type, *args)
-        add_node_factory(type, *args)
+      def call(type, host_or_region, *args)
+        add_node_factory(type, host_or_region, *args)
         factory = {
           "completed" => lambda do |type, *args|
             build_tree
             out = []
             last = nil
-            TREE.values.each do |node|
+            @tree.values.each do |node|
               #           next unless node.in_links.empty?
-              last = layout_helper(out, last, node,
-                                   draw(node, out, [node.reference.name],
-                                        ['Vrrp', 'Ipsec', 'Bgp'].include?(simple(node.reference.class))))
+              last = Plantuml.layout_helper(out, last, node,
+                                   Plantuml.draw(node, out, [node.reference.name],
+                                        ['Vrrp', 'Ipsec', 'Bgp'].include?(Plantuml.simple(node.reference.class))))
             end
 
-            TREE.values.each { |n| n.drawed = false }
-            TREE.values.each do |node|
+            @tree.values.each { |n| n.drawed = false }
+            @tree.values.each do |node|
               #           next unless node.in_links.empty?
               connect(node, out, [node.reference.name])
             end
 
-            File.open("cfgs/world.puml", 'w') do |file|
+            dst_path = Construqt::Util.dst_path(host_or_region)
+            File.open(File.join(dst_path, "world.puml"), 'w') do |file|
               file.puts(<<UML)
 @startuml
 skinparam object {
@@ -445,11 +449,12 @@ UML
               plantuml_jar = "$HOME/Downloads/plantuml.jar"
             end
 
-            FORMATS.each do |format|
-              Construqt.logger.debug "Planuml:Creating world of #{format}"
-              system("java -Xmx2048m -jar \"#{plantuml_jar}\" -Djava.awt.headless=true -graphvizdot \"#{dot}\" -t#{format} cfgs/world.puml")
+            @formats.each do |format|
+              Construqt.logger.debug "Planuml:Creating world #{File.join(dst_path,"world.puml")} to #{format}"
+              system("java -Xmx2048m -jar \"#{plantuml_jar}\" -Djava.awt.headless=true -graphvizdot \"#{dot}\""+
+                     " -t#{format} #{File.join(dst_path,"world.puml")}")
             end
-            patch_connection_highlight("cfgs/world.svg")
+            Plantuml.patch_connection_highlight(File.join(dst_path, "world.svg"))
           end
 
         }

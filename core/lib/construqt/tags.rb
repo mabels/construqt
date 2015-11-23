@@ -104,9 +104,9 @@ module Construqt
           obj
         elsif obj.respond_to? :ips
           obj.ips
-        elsif  obj.kind_of?(Construqt::Flavour::DeviceDelegate)
+        elsif  obj.kind_of?(Construqt::Flavour::Delegate::DeviceDelegate)
           obj.address.ips
-        elsif obj.kind_of?(Construqt::Flavour::HostDelegate)
+        elsif obj.kind_of?(Construqt::Flavour::Delegate::HostDelegate)
           res = obj.interfaces.values.map do |i|
             if i.address
               i.address.ips

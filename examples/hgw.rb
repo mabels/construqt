@@ -1,6 +1,6 @@
 module Hgw
   def self.run(region, fanout_de)
-    kuckpi = region.hosts.add("kuckpi", "flavour" => "ubuntu") do |host|
+    kuckpi = region.hosts.add("kuckpi", "flavour" => "nixian", "dialect" => "ubuntu") do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -24,7 +24,7 @@ module Hgw
       end
     end
 
-    service_de_hgw = region.hosts.add("service-de-hgw", "flavour" => "ubuntu", "mother" => kuckpi) do |host|
+    service_de_hgw = region.hosts.add("service-de-hgw", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => kuckpi) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -72,7 +72,7 @@ module Hgw
                                  }
                                 )
 
-    kucksdu = region.hosts.add("kucksdu", "flavour" => "ubuntu") do |host|
+    kucksdu = region.hosts.add("kucksdu", "flavour" => "nixian", "dialect" => "ubuntu") do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -83,7 +83,7 @@ module Hgw
       end
     end
 
-    dvb_link = region.hosts.add("dvb-link", "flavour" => "ubuntu", "mother" => kuckpi) do |host|
+    dvb_link = region.hosts.add("dvb-link", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => kuckpi) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

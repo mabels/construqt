@@ -1,6 +1,6 @@
 module FanoutDe
   def self.run(region)
-    fanout_de = region.hosts.add("fanout-de", "flavour" => "ubuntu") do |host|
+    fanout_de = region.hosts.add("fanout-de", "flavour" => "nixian", "dialect" => "ubuntu") do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -37,7 +37,7 @@ module FanoutDe
     end
 
     ['smtp-de', 'bind-de', 'imap-de'].each_with_index do |name, idx|
-      region.hosts.add(name, "flavour" => "ubuntu", "mother" => fanout_de,
+      region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => fanout_de,
                        "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined.restart.killstop) do |host|
         region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                      :description=>"#{host.name} lo",

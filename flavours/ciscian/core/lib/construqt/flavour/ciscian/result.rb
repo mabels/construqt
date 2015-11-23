@@ -2,18 +2,18 @@ module Construqt
   module Flavour
     class Ciscian
       class Result
-        attr_accessor :dialect, :host, :sections
+        attr_accessor :host, :sections
         def initialize(host)
           @host = host
           @sections = {}
           throw 'ciscian flavour can only be created with dialect' unless host.dialect
           throw 'ciscian flavour can only be created with type' unless host.type
-          require "construqt/flavour/ciscian/dialect/#{host.dialect}/#{host.type}.rb"
-          if Ciscian.dialects[host.dialect].nil? ||
-             Ciscian.dialects[host.dialect][host.type].nil?
-            throw "cannot load dialect file #{host.dialect}/#{host.type}"
-          end
-          self.dialect = Ciscian.dialects[host.dialect][host.type].new(self)
+          #require "construqt/flavour/ciscian/dialect/#{host.dialect}/#{host.type}.rb"
+          #if Ciscian.dialects[host.dialect].nil? ||
+          #   Ciscian.dialects[host.dialect][host.type].nil?
+          #  throw "cannot load dialect file #{host.dialect}/#{host.type}"
+          #end
+          #self.dialect = Ciscian.dialects[host.dialect][host.type].new(self)
         end
 
         class Lines
@@ -67,7 +67,7 @@ module Construqt
 
         def serialize
           block = []
-          section_keys = dialect.sort_section_keys(@sections.keys)
+          section_keys = @host.flavour.dialect.sort_section_keys(@sections.keys)
           section_keys.each do |key|
             section = @sections[key]
             block += section.serialize
@@ -76,8 +76,9 @@ module Construqt
         end
 
         def commit
+          dialect = @host.flavour.dialect
           dialect.commit
-          Util.write_str(serialize.join("\n"), File.join(@host.name, "#{@host.fname || Construqt::Util.snake_case(dialect.class.name.split("::").last)}.cfg"))
+          Util.write_str(@host.region, serialize.join("\n"), File.join(@host.name, "#{@host.fname || Construqt::Util.snake_case(dialect.class.name.split("::").last)}.cfg"))
           external = @host.id.interfaces.first.address
           # external_ip=external.first_ipv4.nil? ? external.first_ipv6.to_s : external.first_ipv4.to_s
           external_ip = @host.name

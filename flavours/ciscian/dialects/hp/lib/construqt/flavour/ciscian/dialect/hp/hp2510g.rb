@@ -5,10 +5,6 @@ module Construqt
         module Hp
           class Hp2510g
 
-            def initialize(result)
-              @result = result
-            end
-
             def commit
             end
 
@@ -44,55 +40,56 @@ module Construqt
             end
 
             def add_host(host)
-              @result.add('hostname').add(@result.host.name).quotes
-              @result.add('max-vlans').add(64)
-              @result.add("snmp-server community \"public\"")
+              result = host.result
+              result.add('hostname').add(result.host.name).quotes
+              result.add('max-vlans').add(64)
+              result.add("snmp-server community \"public\"")
 
 
               contact = "#{ENV['USER']}-#{`hostname`.strip}-#{`git  show --format=%h -q`.strip}-#{Time.now.to_i}"
               if host.region.network.contact
                 contact = "#{contact} <#{host.region.network.contact}>"
               end
-              @result.add('snmp-server contact').add(contact).quotes
+              result.add('snmp-server contact').add(contact).quotes
 
               if host.delegate.location
-                @result.add('snmp-server location').add(host.delegate.location).quotes
+                result.add('snmp-server location').add(host.delegate.location).quotes
               end
 
               # enable ssh per default
-              @result.add('ip ssh')
-              @result.add('ip ssh filetransfer')
+              result.add('ip ssh')
+              result.add('ip ssh filetransfer')
 
               # disable tftp per default
-              @result.add('no tftp client')
-              @result.add('no tftp server')
+              result.add('no tftp client')
+              result.add('no tftp server')
 
               # timezone defaults
-              @result.add('time timezone').add(60)
-              @result.add('time daylight-time-rule').add('Western-Europe')
-              @result.add('console inactivity-timer').add(10)
+              result.add('time timezone').add(60)
+              result.add('time daylight-time-rule').add('Western-Europe')
+              result.add('console inactivity-timer').add(10)
 
-              @result.host.interfaces.values.each do |iface|
+              result.host.interfaces.values.each do |iface|
                 next unless iface.delegate.address
                 iface.delegate.address.routes.each do |route|
-                  @result.add("ip route #{route.dst} #{route.dst.netmask} #{route.via}")
+                  result.add("ip route #{route.dst} #{route.dst.netmask} #{route.via}")
                 end
               end
 
               write_sntp(host)
 
-              @result.add('spanning-tree') if host.delegate.spanning_tree
+              result.add('spanning-tree') if host.delegate.spanning_tree
 
               if host.delegate.logging
-                @result.add('logging').add(host.delegate.logging)
+                result.add('logging').add(host.delegate.logging)
               end
             end
 
             def write_sntp(host)
               if host.region.network.ntp.servers.first_ipv4
-                @result.add('sntp server ').add(host.region.network.ntp.servers.first_ipv4)
-                @result.add('timesync sntp')
-                @result.add('sntp unicast')
+                host.result.add('sntp server ').add(host.region.network.ntp.servers.first_ipv4)
+                host.result.add('timesync sntp')
+                host.result.add('sntp unicast')
               end
             end
 
@@ -100,12 +97,13 @@ module Construqt
             end
 
             def add_bond(bond)
-              @result.add('trunk', TrunkVerb).add('{+ports}' => bond.interfaces.map { |i| i.delegate.number }, '{*channel}' => bond.delegate.number, '{=mode}' => 'LACP')
-              @result.add("spanning-tree #{expand_vlan_device_name(bond)} priority 4")
+              result.add('trunk', TrunkVerb).add('{+ports}' => bond.interfaces.map { |i| i.delegate.number }, '{*channel}' => bond.delegate.number, '{=mode}' => 'LACP')
+              result.add("spanning-tree #{expand_vlan_device_name(bond)} priority 4")
             end
 
             def add_vlan(vlan)
-              @result.add("vlan #{vlan.delegate.vlan_id}", NestedSection) do |section|
+              result = vlan.host.result
+              result.add("vlan #{vlan.delegate.vlan_id}", NestedSection) do |section|
                 next unless vlan.delegate.description && !vlan.delegate.description.empty?
                 throw 'vlan name too long, max 32 chars' if vlan.delegate.description.length > 32
                 section.add('name').add(vlan.delegate.description).quotes
@@ -189,7 +187,7 @@ module Construqt
             end
           end
 
-          Construqt::Flavour::Ciscian.add_dialect(Hp2510g)
+          #Construqt::Flavour::Ciscian.add_dialect(Hp2510g)
         end
       end
     end

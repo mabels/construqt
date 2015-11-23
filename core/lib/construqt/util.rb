@@ -62,13 +62,17 @@ module Construqt
       end
     end
 
-    def self.read_str(*path)
-      path = File.join("cfgs", *path)
+    def self.dst_path(region)
+      region.get_dest_path || "cfgs"
+    end
+
+    def self.read_str(region, *path)
+      path = File.join(dst_path(region), *path)
       IO.read(path)
     end
 
-    def self.write_gzip(str, *path)
-      path = File.join("cfgs", *path)+".gz"
+    def self.write_gzip(region, str, *path)
+      path = File.join(dst_path(region), *path)+".gz"
       FileUtils.mkdir_p(File.dirname(path))
       Zlib::GzipWriter.open(path) do |gz|
           gz.write str
@@ -76,8 +80,8 @@ module Construqt
       path
     end
 
-    def self.write_str(str, *path)
-      path = File.join("cfgs", *path)
+    def self.write_str(region, str, *path)
+      path = File.join(dst_path(region), *path)
       FileUtils.mkdir_p(File.dirname(path))
       File.open(path, 'w') {|f| f.write(str) }
       Construqt.logger.info "Write:#{path}"

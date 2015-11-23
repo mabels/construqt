@@ -27,11 +27,11 @@ module Construqt
           'mikrotik'
         end
         def factory(cfg)
-          FlavourDelegate.new(Mikrotik.new)
+          Construqt::Flavour::Delegate::FlavourDelegate.new(Mikrotik.new)
         end
       end
 
-      Construqt::Flavour.add(Factory.new)
+      #Construqt::Flavour.add(Factory.new)
 
       def set_ipv6_address(host, cfg)
         default = {

@@ -15,7 +15,7 @@ module Construqt
         end
 
         def build_config(host, _unused)
-          host.result.dialect.add_host(host)
+          host.flavour.dialect.add_host(host)
         end
       end
     end

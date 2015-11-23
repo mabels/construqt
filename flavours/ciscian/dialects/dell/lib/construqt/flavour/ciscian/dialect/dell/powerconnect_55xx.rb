@@ -135,7 +135,7 @@ module Construqt
               end
             end
           end
-          Construqt::Flavour::Ciscian.add_dialect(PowerConnect55xx)
+          #Construqt::Flavour::Ciscian.add_dialect(PowerConnect55xx)
       end
     end
   end

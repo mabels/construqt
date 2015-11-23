@@ -149,7 +149,7 @@ module Construqt
             key = blocks.first.path.join(' ')
             digests = blocks.select{|i| i.digest }
 
-            sorted[key] = Util.write_str([
+            sorted[key] = Util.write_str(@host.region, [
               "/#{key}",
               blocks.map{|i|i.block}.join("\n"),
               remove_condition(digests, key),
@@ -197,7 +197,7 @@ module Construqt
                 ""
               end
             end.join("\n")
-            Util.write_str(all, File.join(@host.name, "all.rsc"))
+            Util.write_str(@host.region, all, File.join(@host.name, "all.rsc"))
         end
       end
     end

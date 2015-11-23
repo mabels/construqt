@@ -1,6 +1,6 @@
 module Scott
   def self.run(region)
-    scott = region.hosts.add("scott", "flavour" => "ubuntu") do |host|
+    scott = region.hosts.add("scott", "flavour" => "nixian", "dialect" => "ubuntu") do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -23,7 +23,7 @@ module Scott
       end
     end
 
-    region.hosts.add("aiccu", "flavour" => "ubuntu", "mother" => scott) do |aiccu|
+    region.hosts.add("aiccu", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => scott) do |aiccu|
       region.interfaces.add_device(aiccu, "lo", "mtu" => "1500",
                                    :description=>"#{aiccu.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
