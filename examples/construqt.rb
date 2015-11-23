@@ -41,7 +41,6 @@ def setup_region(name, network)
   region.flavour_factory.add(Construqt::Flavour::Mikrotik::Factory.new)
   ciscian = Construqt::Flavour::Ciscian::Factory.new
   ciscian.add_dialect(Construqt::Flavour::Ciscian::Dialect::Hp::Factory.new)
-  ciscian.add_dialect(Construqt::Flavour::Ciscian::Dialect::Hp::Factory.new)
   region.flavour_factory.add(ciscian)
   if ARGV.include?("plantuml")
     require 'construqt/flavour/plantuml.rb'
