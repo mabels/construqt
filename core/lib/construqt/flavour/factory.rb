@@ -12,7 +12,7 @@ module Construqt
       end
 
       def add(flavour)
-        Construqt.logger.info "setup flavour by #{flavour.name}"
+        Construqt.logger.info "setup flavour for #{flavour.name}"
         @flavour_factory[flavour.name.downcase] = Delegate::FlavourDelegate.new(flavour)
       end
 

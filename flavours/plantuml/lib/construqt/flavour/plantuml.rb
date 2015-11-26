@@ -451,8 +451,10 @@ UML
 
             @formats.each do |format|
               Construqt.logger.debug "Planuml:Creating world #{File.join(dst_path,"world.puml")} to #{format}"
-              system("java -Xmx2048m -jar \"#{plantuml_jar}\" -Djava.awt.headless=true -graphvizdot \"#{dot}\""+
-                     " -t#{format} #{File.join(dst_path,"world.puml")}")
+              cmd = "java -Xmx2048m -jar \"#{plantuml_jar}\" -Djava.awt.headless=true -graphvizdot \"#{dot}\""+
+                     " -t#{format} #{File.join(dst_path,"world.puml")}"
+              Construqt.logger.debug "Planuml:Creating running: #{cmd}"
+              system(cmd)
             end
             Plantuml.patch_connection_highlight(File.join(dst_path, "world.svg"))
           end

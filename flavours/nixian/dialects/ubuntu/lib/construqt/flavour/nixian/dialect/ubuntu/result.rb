@@ -144,6 +144,7 @@ module Construqt
             def lxc_reference_net_config(base_dir)
               ruby = []
               right = Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::LXC)
+              ruby << "cp #{base_dir}/../#{File.basename(base_dir)}.network.config #{base_dir}/network.config"
               ruby << "/etc/lxc/update_network_in_config #{base_dir}/config #{base_dir}/network.config #{base_dir}/update.config.list"
               ruby << "for i in `cat #{base_dir}/update.config.list`"
               ruby << "do"
@@ -202,30 +203,34 @@ module Construqt
                 lxc_rootfs = File.join(base_dir, "rootfs")
                 sh_lxc_name =  Shellwords.escape(lxc.name)
                 quick_stop = lxc.lxc_deploy.killstop? ? " -k" : ""
+                if lxc.lxc_deploy.get_release
+                  release = " -- -r #{lxc.lxc_deploy.get_release}"
+                end
                 if lxc.lxc_deploy.recreate?
                   out << "echo start LXC-RECREATE #{sh_lxc_name}"
                   out << "lxc-ls --running | grep -q '#{sh_lxc_name}' && lxc-stop -n '#{sh_lxc_name}'#{quick_stop}"
                   out << "[ -d #{lxc_rootfs}/usr/share] && lxc-destroy -f -n '#{sh_lxc_name}'"
-                  out << "lxc-create -n '#{sh_lxc_name}' -t #{lxc.flavour.name}"
+                  release = ""
+                  out << "lxc-create -n '#{sh_lxc_name}' -t #{lxc.flavour.name}#{release}"
+                  out << "cp #{base_dir}/../#{lxc.name}.deployer.sh #{lxc_rootfs}/root/deployer.sh"
                   out << "chroot #{lxc_rootfs} /bin/bash /root/deployer.sh"
                   out << "echo fix config of #{sh_lxc_name} in #{lxc_rootfs}"
                   out += lxc_reference_net_config(base_dir)
                   if lxc.lxc_deploy.aa_profile_unconfined?
                     out += lxc_update_config(base_dir, "lxc.aa_profile", "unconfined")
                   end
-
                   out << "lxc-start -d -n '#{sh_lxc_name}'"
                 elsif lxc.lxc_deploy.restart?
                   out << "echo start LXC-RESTART #{sh_lxc_name}"
                   out << "lxc-ls --running | grep -q '#{sh_lxc_name}' && lxc-stop -n '#{sh_lxc_name}'#{quick_stop}"
-                  out << "[ -d #{lxc_rootfs}/usr/share ] || lxc-create -n '#{sh_lxc_name}' -t #{lxc.flavour.name}"
+                  out << "[ -d #{lxc_rootfs}/usr/share ] || lxc-create -n '#{sh_lxc_name}' -t #{lxc.flavour.name}#{release}"
+                  out << "cp #{base_dir}/../#{lxc.name}.deployer.sh #{lxc_rootfs}/root/deployer.sh"
                   out << "chroot #{lxc_rootfs} /bin/bash /root/deployer.sh"
                   out << "echo fix config of #{sh_lxc_name} in #{lxc_rootfs}"
                   out += lxc_reference_net_config(base_dir)
                   if lxc.lxc_deploy.aa_profile_unconfined?
                     out += lxc_update_config(base_dir, "lxc.aa_profile", "unconfined")
                   end
-
                   out << "lxc-start -d -n '#{sh_lxc_name}'"
                 end
               end
@@ -249,7 +254,7 @@ module Construqt
               host.region.hosts.get_hosts.select {|h| @host.delegate == h.mother }.each do |lxc|
                 add(lxc, Util.read_str(@host.region, lxc.name, "deployer.sh"),
                     Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::LXC),
-                    "/var", "lib", "lxc", lxc.name, "rootfs", "root", "deployer.sh").skip_git
+                    "/var", "lib", "lxc", "#{lxc.name}.deployer.sh").skip_git
               end
 
               out = [<<BASH]

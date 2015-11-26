@@ -57,7 +57,7 @@ module Construqt
               return if networks.empty?
               host.result.add(lxc, networks.map{|n| n.render}.join("\n"),
                               Construqt::Resources::Rights.root_0644,
-                              "var", "lib", "lxc", networks.first.iface.host.name, "network.config")
+                              "var", "lib", "lxc", "#{networks.first.iface.host.name}.network.config")
             end
           end
         end

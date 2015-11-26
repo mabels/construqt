@@ -47,7 +47,6 @@ def setup_region(name, network)
     region.add_aspect(Construqt::Flavour::Plantuml.new)
   end
   region.network.ntp.add_server(region.network.addresses.add_ip("5.9.110.236").add_ip("178.23.124.2")).timezone("MET")
-
   region.services.add(Construqt::Services::Radvd.new("RADVD").adv_autonomous)
 
 
@@ -124,7 +123,7 @@ Scott.run(region)
 
 Construqt.produce(region)
 
-require_relative 'always-online'
+require_relative 'always-connected'
 AlwaysConnected.run(network)
 
 

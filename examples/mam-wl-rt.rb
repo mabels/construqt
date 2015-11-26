@@ -78,15 +78,15 @@ module MamWl
 
     region.templates.add("backbone", "vlans" =>
                          [
-      region.vlans.clone("death").untagged,
-      region.vlans.clone("kde").tagged,
-      region.vlans.clone("mam-wl-service").tagged,
-      region.vlans.clone("mam-us-service").tagged,
-      region.vlans.clone("mam-wl-de").tagged,
-      region.vlans.clone("mam-wl-us").tagged,
-      region.vlans.clone("ab-wl-de").tagged,
-      region.vlans.clone("ab-wl-us").tagged,
-      region.vlans.clone("printer").tagged
+                           region.vlans.clone("death").untagged,
+                           region.vlans.clone("kde").tagged,
+                           region.vlans.clone("mam-wl-service").tagged,
+                           region.vlans.clone("mam-us-service").tagged,
+                           region.vlans.clone("mam-wl-de").tagged,
+                           region.vlans.clone("mam-wl-us").tagged,
+                           region.vlans.clone("ab-wl-de").tagged,
+                           region.vlans.clone("ab-wl-us").tagged,
+                           region.vlans.clone("printer").tagged
                          ])
 
     region.templates.add("mam-wl-de", "vlans" => [
@@ -109,22 +109,22 @@ module MamWl
                        "type" => val["type"],
                        #"spanning_tree" => Construqt::SpanningTree.new,
                        "logging" => "192.168.42.1") do |switch|
-        region.interfaces.add_device(switch, "ge1", "template" => region.templates.find("kde"))
-        region.interfaces.add_device(switch, "ge2", "template" => region.templates.find("backbone"))
-        region.interfaces.add_device(switch, "ge3", "template" => region.templates.find("backbone"))
-        region.interfaces.add_device(switch, "ge4", "template" => region.templates.find("backbone"))
-        region.interfaces.add_device(switch, "ge5", "template" => region.templates.find("backbone"))
-        region.interfaces.add_device(switch, "ge6", "template" => region.templates.find("mam-wl-de"))
-        region.interfaces.add_device(switch, "ge7", "template" => region.templates.find("mam-wl-de"))
-        region.interfaces.add_device(switch, "ge8", "template" => region.templates.find("printer"))
+                         region.interfaces.add_device(switch, "ge1", "template" => region.templates.find("kde"))
+                         region.interfaces.add_device(switch, "ge2", "template" => region.templates.find("backbone"))
+                         region.interfaces.add_device(switch, "ge3", "template" => region.templates.find("backbone"))
+                         region.interfaces.add_device(switch, "ge4", "template" => region.templates.find("backbone"))
+                         region.interfaces.add_device(switch, "ge5", "template" => region.templates.find("backbone"))
+                         region.interfaces.add_device(switch, "ge6", "template" => region.templates.find("mam-wl-de"))
+                         region.interfaces.add_device(switch, "ge7", "template" => region.templates.find("mam-wl-de"))
+                         region.interfaces.add_device(switch, "ge8", "template" => region.templates.find("printer"))
 
-        switch.id = switch.configip = Construqt::HostId.create do |my|
-          config_if = region.interfaces.find(switch, "mam-wl-service")
-          config_if.delegate.address=region.network.addresses.add_ip(Construqt::Addresses::DHCPV4)
-          config_if.delegate.igmp=true
-          my.interfaces << config_if
-        end
-      end
+                         switch.id = switch.configip = Construqt::HostId.create do |my|
+                           config_if = region.interfaces.find(switch, "mam-wl-service")
+                           config_if.delegate.address=region.network.addresses.add_ip(Construqt::Addresses::DHCPV4)
+                           config_if.delegate.igmp=true
+                           my.interfaces << config_if
+                         end
+                       end
     end
   end
 
@@ -169,8 +169,8 @@ MODULES
     mal_wl_printer = region.hosts.add("wl-printer", "flavour" => "unknown") do |printer|
       printer.id = printer.configip = Construqt::HostId.create do |my|
         my.interfaces << eth = region.interfaces.add_device(printer, "eth", "mtu" => 1500,
-                                                      "default_name" => "ether",
-                                                      "address" => region.network.addresses.add_ip("192.168.208.208/24"))
+                                                            "default_name" => "ether",
+                                                            "address" => region.network.addresses.add_ip("192.168.208.208/24"))
 
         region.cables.add(eth, region.interfaces.find("sw-hp03", "ge8"))
       end

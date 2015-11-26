@@ -12,6 +12,9 @@ WIFI_PSKS = {
       "rt-mam-wl-de-6"  => "wifi for free",
       "rt-ab-us"   => "wifi for free",
       "rt-ab-de"   => "wifi for free"
+      "ao-ac-mam-otr" => "wifi for free",
+      "ao-ac-mam-otr-de" => "wifi for free",
+      "ao-ac-mam-otr-us" => "wifi for free"
 }
 
 AICCU_DE = {
