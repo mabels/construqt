@@ -223,6 +223,11 @@ module Construqt
         @sports << port
         self
       end
+      def sport_range(lowport, upport)
+        @sports ||= []
+        @sports << [lowport, upport]
+        self
+      end
 
       def get_sports
         @sports ||= []
@@ -231,6 +236,11 @@ module Construqt
       def dport(port)
         @dports ||= []
         @dports << port
+        self
+      end
+      def dport_range(lowport, upport)
+        @dports ||= []
+        @dports << [lowport, upport]
         self
       end
 
