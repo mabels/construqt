@@ -1,0 +1,8 @@
+{
+  :local found [find name=<%= u.name.inspect %> ]
+  :if ($found = "") do={
+    add comment=<%= u.full_name.inspect %> name=<%= u.name %> password=<%= host.region.hosts.default_password %> group=full
+  } else={
+    set $found comment=<%= u.full_name.inspect %>
+  }
+}

@@ -1,0 +1,5 @@
+pre-up ip link set dev <%=bond_delegate.name%> mtu <%=bond_delegate.mtu%> address <%=mac_address%>
+bond-mode <%=bond_delegate.mode||'active-backup'%>
+bond-miimon 100
+bond-lacp-rate 1
+bond-slaves none

@@ -13,6 +13,9 @@ require_relative('ciscian/singlenestedverb')
 module Construqt
   module Flavour
     class Ciscian
+
+      DIRECTORY = File.dirname(__FILE__)
+
       class Factory < Construqt::Flavour::DialectFactoryBase
         def dialect_factory
           DialectFactory

@@ -29,27 +29,11 @@ module Construqt
                   end
 
                   return if addrs.empty?
-                  host.result.add(self, <<HEADER, Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "default", "racoon")
-# do not edit generated file
-#
-# this a a evil hack to avoid a raise condition on starting the
-# OS racoon in the same moment like our
-if [ "$STARTED_BY_CONSTRUQT" = "" ]
-then
-exit 0
-fi
-HEADER
+                  host.result.add(self, Construqt::Util.render(binding, "racoon_startup_hack.erb"),
+                    Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "default", "racoon")
 
-                  host.result.add(self, <<HEADER, Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "racoon", "racoon.conf")
-# do not edit generated file
-path pre_shared_key "/etc/racoon/psk.txt";
-path certificate "/etc/racoon/certs";
-log info;
-listen {
-                  #{Util.indent(addrs.keys.sort.map{|k| addrs[k] }.join("\n"), "  ")}
-strict_address;
-}
-HEADER
+                  host.result.add(self, Construqt::Util.render(binding, "racoon_header.erb"),
+                    Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "racoon", "racoon.conf")
                 end
 
                 #    def build_gre_config()
@@ -67,23 +51,8 @@ HEADER
 
                 def build_racoon_config(remote_ip)
                   #binding.pry
-                  self.host.result.add(self, <<RACOON, Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "racoon", "racoon.conf")
-# #{self.cfg.name}
-remote #{remote_ip} {
-exchange_mode main;
-lifetime time 24 hour;
-
-proposal_check strict;
-dpd_delay 30;
-ike_frag on;                    # use IKE fragmentation
-proposal {
-encryption_algorithm aes256;
-hash_algorithm sha1;
-authentication_method pre_shared_key;
-dh_group modp1536;
-}
-}
-RACOON
+                  self.host.result.add(self, Construqt::Util.render(binding, "racoon_remote.erb"),
+                    Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "racoon", "racoon.conf")
                 end
 
                 def from_to_sainfo(my_ip, other_ip)
@@ -95,15 +64,8 @@ RACOON
                     other_ip_str = other_ip.to_string
                   end
 
-                  self.host.result.add(self, <<RACOON, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::IPSEC), "etc", "racoon", "racoon.conf")
-sainfo address #{my_ip_str} any address #{other_ip_str} any {
-pfs_group 5;
-encryption_algorithm aes256;
-authentication_algorithm hmac_sha1;
-compression_algorithm deflate;
-lifetime time 1 hour;
-}
-RACOON
+                  self.host.result.add(self, Construqt::Util.render(binding, "racoon_sainfo.erb"),
+                    Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::IPSEC), "etc", "racoon", "racoon.conf")
                 end
 
                 def from_to_ipsec_conf(dir, remote_my, remote_other, my, other)

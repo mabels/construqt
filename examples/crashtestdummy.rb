@@ -11,7 +11,7 @@ WIFI_PSKS = {
       "rt-mam-wl-de"    => "wifi for free",
       "rt-mam-wl-de-6"  => "wifi for free",
       "rt-ab-us"   => "wifi for free",
-      "rt-ab-de"   => "wifi for free"
+      "rt-ab-de"   => "wifi for free",
       "ao-ac-mam-otr" => "wifi for free",
       "ao-ac-mam-otr-de" => "wifi for free",
       "ao-ac-mam-otr-us" => "wifi for free"
@@ -30,6 +30,9 @@ def ipsec_users()
     Construqt::Ipsecs::User.new("martina", "weg")
   ]
 end
+
+FANOUT_US_ADVISER_COM = "1.1.1.1"
+FANOUT_DE_ADVISER_COM = "2.2.2.2"
 
 def ipsec_certificate(network)
   network.cert_store.add_cacert("COMODORSADomainValidationSecureServerCA.crt", <<CERT)

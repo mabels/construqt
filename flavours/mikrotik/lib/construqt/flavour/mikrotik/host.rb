@@ -15,17 +15,7 @@ module Construqt
             {"contact" => Schema.string.required.key },
             {"contact" => "#{ENV['USER']}-#{`hostname`.strip}-#{`git  show --format=%h -q`.strip}-#{Time.now.to_i} <#{delegate_host.region.network.contact}>" }, "snmp")
 
-          host.result.add(<<TESTNAME, nil, "system", "identity")
-{
-:local identity [get]
-:if (($identity->"name") != "#{host.name}") do={
-:put "Execute /system identity set name=#{host.name}"
-:error ("The Script is for router #{host.name} this router named ".($identity->"name"))
-} else={
-:put "Configure #{host.name}"
-}
-}
-TESTNAME
+          host.result.add(Construqt::Util.render(binding, "host_testname.erb"), nil, "system", "identity")
           host.result.render_mikrotik_set_direct({ "name"=> Schema.identifier.required.key },
                                                  { "name" => host.name }, "system", "identity")
 
@@ -69,16 +59,7 @@ TESTNAME
           host.result.add_remove_pre_condition('comment~"CONSTRUQT\$"', "ipv6", "address")
           host.result.add_remove_pre_condition('comment~"CONSTRUQT\$"', "ipv6", "route")
           host.region.users.all.each do |u|
-            host.result.add(<<OUT, nil, "user")
-{
-:local found [find name=#{u.name.inspect} ]
-:if ($found = "") do={
- add comment=#{u.full_name.inspect} name=#{u.name} password=#{host.region.hosts.default_password} group=full
-} else={
-set $found comment=#{u.full_name.inspect}
-}
-      }
-OUT
+            host.result.add(Construqt::Util.render(binding, "host_user.erb"), nil, "user")
           end
 
           host.result.add("remove [find comment=REMOVE ]", nil, "user" )

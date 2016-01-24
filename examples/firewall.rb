@@ -15,6 +15,18 @@ def firewall(region)
     end
   end
 
+  Construqt::Firewalls.add("border-forward") do |fw|
+    fw.forward do |fwd|
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_is_outside
+    end
+  end
+  Construqt::Firewalls.add("border-masq") do |fw|
+    fw.nat do |nat|
+      nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).to_source.from_is_inside
+    end
+  end
+
+
   Construqt::Firewalls.add("net-nat") do |fw|
     fw.nat do |nat|
       nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("#INTERNAL-NET").from_filter_local.to_source.from_is_inside
@@ -123,10 +135,12 @@ def firewall(region)
   Construqt::Firewalls.add("ssh-srv") do |fw|
     fw.host do |host|
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_me.tcp.dport(22).from_is_outside
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_me.udp.dport_range(60000,60100).from_is_outside
     end
 
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_me.tcp.dport(22).from_is_outside
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_me.udp.dport_range(60000,60100).from_is_outside
     end
   end
 

@@ -1,0 +1,8 @@
+zone "<%=domain.to_s%>" {
+  type master;
+  file "<%=path%>";
+  notify <%=dns_server_conf.notify%>;
+  allow-query { any; };
+  <%=dns_server_conf.also_notify%>
+  <%=dns_server_conf.allow_update%>
+};

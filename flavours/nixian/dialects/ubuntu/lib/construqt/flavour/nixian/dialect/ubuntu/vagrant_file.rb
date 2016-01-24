@@ -26,15 +26,7 @@ module Construqt
             end
 
             def vfile_header
-              return <<OUT
-Vagrant.configure(2) do |config|
-  config.vm.box = "ubuntu/trusty32"
-  config.vm.hostname = "#{@child.name}"
-  config.vm.provider "virtualbox" do |v|
-    v.name = "Vagrant-#{@child.name}"
-  end
-
-OUT
+              Construqt::Util.render(binding, "vagrant_header.erb")
             end
 
             def vfile_network
@@ -59,14 +51,7 @@ OUT
             end
 
             def vfile_footer
-              return <<OUT
-  config.vm.provision :shell, :inline => "sudo echo #{@child.name} > /etc/hostname"
-  config.vm.provision :file, source: "../../../../../#{@child.name}/deployer.sh", destination: "deployer.sh"
-  config.vm.provision :shell, :inline => "sudo bash /home/vagrant/deployer.sh"
-  config.vm.provision :shell, :inline => "sudo reboot"
-end
-
-OUT
+              Construqt::Util.render(binding, "vagrant_footer.erb")
             end
 
             def render

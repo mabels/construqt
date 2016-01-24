@@ -32,10 +32,8 @@ HEADER
 
                   host.result.add(self, "# ipsec users", Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
                   out.each do |name, psk|
-                    host.result.add(self, <<USER, Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
-#{name} : XAUTH \"#{Util.password(psk)}\"
-#{name} : EAP   \"#{Util.password(psk)}\"
-USER
+                    host.result.add(self, Construqt::Util.render(binding, "strongswan_user.erb"),
+                      Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
                   end
                 end
 
@@ -138,7 +136,6 @@ USER
                   conn.to_h.each do |k,v|
                     out << Util.indent("#{k}=#{v}", 3)
                   end
-
                   out.join("\n")
                 end
               end

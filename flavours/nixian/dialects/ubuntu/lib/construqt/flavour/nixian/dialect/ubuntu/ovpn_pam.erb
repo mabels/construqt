@@ -1,0 +1,8 @@
+<% if(host.delegate.yubikey?) %>
+auth required pam_yubico.so id=16 authfile=/etc/yubikey_mappings
+<% end %>
+auth [success=1 default=ignore] pam_unix.so nullok_secure try_first_pass
+auth requisite pam_deny.so
+
+@include common-account
+@include common-session-noninteractive

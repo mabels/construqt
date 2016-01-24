@@ -6,18 +6,7 @@ module Construqt
           module Dns
 
             def self.write_header(dns_server_conf, region, domain)
-              ret = [<<OUT]
-; this is a generated file do not edit!!!!!
-; for #{domain.to_s}
-$TTL 86400      ; 1 day
-              #{domain}. IN SOA #{dns_server_conf.nameservers.first||"ns.#{region.network.domain}"}. #{region.network.contact}. (
-              #{dns_server_conf.serial||Time.now.to_i} ; serial
-10000      ; refresh (2 hours 46 minutes 40 seconds)
-3600       ; retry (1 hour)
-604800     ; expire (1 week)
-28800      ; minimum (8 hours)
-)
-OUT
+              ret = [Construqt::Util.render(binding, "dns_header.erb")]
               dns_server_conf.nameservers.each do |name|
                 ret << "#{domain}. 3600 IN NS #{name}."
               end
@@ -111,16 +100,10 @@ OUT
               end
 
               include.each do |domain,path|
-                host.result.add(self, <<DNS, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DNS), "etc/bind/#{dns_server_conf.named_conf_local}")
-zone "#{domain.to_s}" {
-        type master;
-        file "#{path}";
-        notify #{dns_server_conf.notify};
-        allow-query { any; };
-                #{dns_server_conf.also_notify}
-                #{dns_server_conf.allow_update}
-};
-DNS
+                host.result.add(self,
+                  Construqt::Util.render(binding, "dns_zone.erb"),
+                  Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DNS),
+                  "etc/bind/#{dns_server_conf.named_conf_local}")
               end
             end
           end

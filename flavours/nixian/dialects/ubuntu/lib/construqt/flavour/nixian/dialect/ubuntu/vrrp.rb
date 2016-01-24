@@ -12,11 +12,8 @@ module Construqt
 
             def self.header(host)
               return unless host.has_interface_with_component?(Construqt::Resources::Component::VRRP)
-              host.result.add(self, <<GLOBAL, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::VRRP), "etc", "keepalived", "keepalived.conf")
-global_defs {
-  lvs_id #{host.name}
-}
-GLOBAL
+              host.result.add(self, Construqt::Util.render(binding, "vrrp_global.erb"),
+                Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::VRRP), "etc", "keepalived", "keepalived.conf")
             end
 
             class RouteService

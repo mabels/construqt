@@ -1,0 +1,8 @@
+# Network configuration [<%= @name||"" %>]:[<%= @link %>]
+lxc.network.type = <%= @iface.plug_in.get_type %>
+lxc.network.flags = <%= @flags %>
+lxc.network.link = <%= @link %>
+lxc.network.hwaddr = <%= get_mac %>
+<% if @name %>
+lxc.network.name = <%= @name%>
+<% end %>

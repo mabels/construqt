@@ -36,7 +36,23 @@ module FanoutDe
         .add_ip("2a01:4f8:d15:1190:169:254:12:1/123#FANOUT-DE-BACKEND"))
     end
 
-    ['smtp-de', 'bind-de', 'imap-de'].each_with_index do |name, idx|
+    {'smtp-de' => nil,
+     'bind-de' => nil,
+     'imap-de' => nil,
+     'ovpn' => lambda { |host|
+       binding.pry
+        region.interfaces.add_openvpn(host, "tun1",
+                                      "cacert" => "cacert",
+                                      "hostcert" =>  "hostcert",
+                                      "hostkey" => "hostkey",
+                                      "dh1024" =>  "dh1024",
+                                      "network" => region.network.addresses.add_ip("192.168.72.192/26#IPSECVPN-DE"),
+                                      :users => region.users,
+                                      "ipv4" => true,
+                                      "firewall"=>'notrack',
+                                      "push_routes" => region.network.addresses.add_route("0.0.0.0/0"))
+     }}.each_with_index do |name_action, idx|
+      name, action = name_action
       region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => fanout_de,
                        "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined.restart.killstop) do |host|
         region.interfaces.add_device(host, "lo", "mtu" => "9000",
@@ -53,8 +69,10 @@ module FanoutDe
             .add_ip("2a01:4f8:d15:1190:169:254:12:#{10+idx}/123#HOST-#{name}#SERVICE-NET-DE")
             .add_route("2000::/3", "2a01:4f8:d15:1190:169:254:12:1"))
         end
+        action && action.call(host)
       end
     end
+
     fanout_de
   end
 end

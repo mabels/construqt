@@ -80,39 +80,7 @@ module Construqt
           enable = !cfg['no_auto_disable'] # HACK
           cfg.delete("no_auto_disable")
           prepared = prepare(default, cfg, enable)
-          ret = ["{"]
-          ret << "  :local found [find "+prepared.key+"]"
-          ret << "  :if ($found = \"\") do={"
-          ret << "    :put "+"/#{path.join(' ')} add #{prepared.add_line}".inspect
-          ret << "    add #{prepared.add_line}"
-          ret << "  } else={"
-          #ret << "    :put "+"/#{path.join(' ')} set #{prepared.add_line}".inspect
-          ret << "    :local record [get $found]"
-          prepared.result.keys.sort.each do |key|
-            next if prepared.result[key].nil?
-            if (prepared.result[key] == Schema::DISABLE)
-              ret << "    :if ([:len ($record->#{key.inspect})]!=0) do={"
-              ret << "       :put "+"/#{path.join(' ')} set [find #{prepared.key} ] !#{key}".inspect
-              ret << "       set $found !#{key}"
-              ret << "    }"
-              next
-            end
-            val = default[key].serialize(prepared.result[key])
-            next if val.to_s.empty?
-            compare_val = default[key].serialize_compare(prepared.result[key])
-            if compare_val
-              ret << "    :if (($record->#{key.inspect})!=#{compare_val}) do={"
-              ret << "       :put "+"/#{path.join(' ')} set [find #{prepared.key} ] #{key}=#{val}".inspect
-              ret << "       set $found #{key}=#{val}"
-              ret << "    }"
-            else
-              ret << "    set $found #{key}=#{val}"
-            end
-          end
-
-          ret << "  }"
-          ret << "}"
-          add(ret.join("\n"), prepared.key, *path)
+          add(Construqt::Util.render(binding, "result_render.erb"), prepared.key, *path)
         end
 
         def add(block, digest, *path)

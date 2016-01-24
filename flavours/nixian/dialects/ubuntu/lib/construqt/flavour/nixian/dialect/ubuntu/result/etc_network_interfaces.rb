@@ -62,15 +62,7 @@ module Construqt
 
                   def commit
                     return '' if @entry.skip_interfaces?
-                    ipv6_dhcp = "iface #{get_interface_name} inet6 dhcp" if @dhcpv6
-                    out = <<OUT
-# #{@entry.iface.clazz}
-#{@auto ? "auto #{get_interface_name}" : ''}
-#{ipv6_dhcp || ''}
-iface #{get_interface_name} #{@protocol} #{@mode}
-  up   /bin/bash /etc/network/#{get_interface_name}-up.iface
-  down /bin/bash /etc/network/#{get_interface_name}-down.iface
-OUT
+                    Construqt::Util.render(binding, "interfaces_iface.erb")
                   end
                 end
 
@@ -95,14 +87,8 @@ OUT
                   end
 
                   def write_s(component, direction, blocks)
-                    @entry.result.add(self.class, <<BLOCK, Construqt::Resources::Rights.root_0755(component), 'etc', 'network', "#{@entry.header.get_interface_name}-#{direction}.iface")
-#!/bin/bash
-exec > >(logger -t "#{@entry.header.get_interface_name}-#{direction}") 2>&1
-#{blocks.join("\n")}
-exit 0
-BLOCK
-                    # iptables-restore < /etc/network/iptables.cfg
-                    # ip6tables-restore < /etc/network/ip6tables.cfg
+                    @entry.result.add(self.class, Construqt::Util.render(binding, "interfaces_upscript_envelop.erb"),
+                      Construqt::Resources::Rights.root_0755(component), 'etc', 'network', "#{@entry.header.get_interface_name}-#{direction}.iface")
                   end
 
                   def ordered_lines(lines)

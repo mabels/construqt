@@ -1,0 +1,5 @@
+ruby << "/etc/lxc/update_config #{base_dir}/config #{base_dir}/update.config.list #{key} #{value}"
+ruby << "for i in `cat #{base_dir}/update.config.list`"
+ruby << 'do'
+ruby << "  git_add /$i #{right.owner} #{right.right} false"
+ruby << 'done'

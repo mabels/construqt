@@ -17,13 +17,8 @@ module Construqt
               end
 
               mac_address = bond_delegate.mac_address || Construqt::Util.generate_mac_address_from_name("#{host.name} #{bond_delegate.name}")
-              host.result.etc_network_interfaces.get(bond_delegate).lines.add(<<BOND)
-pre-up ip link set dev #{bond_delegate.name} mtu #{bond_delegate.mtu} address #{mac_address}
-bond-mode #{bond_delegate.mode||'active-backup'}
-bond-miimon 100
-bond-lacp-rate 1
-bond-slaves none
-BOND
+              host.result.etc_network_interfaces.get(bond_delegate)
+                .lines.add(Construqt::Util.render(binding, "bond_interfaces.erb"))
               Device.build_config(host, bond)
             end
           end

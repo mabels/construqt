@@ -34,22 +34,16 @@ module Construqt
 
             def render
               return unless @iface.plug_in
-              out = [
-                "# Network configuration [#{@name}||""]:[#{@link}]",
-                "lxc.network.type = #{@iface.plug_in.get_type}",
-                "lxc.network.flags = #{@flags}",
-                "lxc.network.link = #{@link}",
-                "lxc.network.hwaddr = #{get_mac}"
-              ]
-              out << "lxc.network.name = #{@name}" if @name
-              return out.join("\n")
+              return Construqt::Util.render(binding, "lxc_network_config.erb")
             end
 
             def self.create_lxc_network_patcher(host, lxc)
-              host.result.add(lxc, IO.read(File.join(File.dirname(__FILE__), "resources", "update_network_in_config.rb")),
-                              Construqt::Resources::Rights.root_0755, "etc", "lxc", "update_network_in_config")
-              host.result.add(lxc, IO.read(File.join(File.dirname(__FILE__), "resources", "update_config.rb")),
-                              Construqt::Resources::Rights.root_0755, "etc", "lxc", "update_config")
+              host.result.add(lxc,
+                Construqt::Util.render(binding, "lxc_network_update_network_in_config.rb"),
+                Construqt::Resources::Rights.root_0755, "etc", "lxc", "update_network_in_config")
+              host.result.add(lxc,
+                Construqt::Util.render(binding, "lxc_network_update_config.rb"),
+                Construqt::Resources::Rights.root_0755, "etc", "lxc", "update_config")
               true
             end
 

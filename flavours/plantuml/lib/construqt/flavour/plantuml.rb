@@ -75,11 +75,7 @@ module Construqt
           out << ident(path, "package \"#{node.ident}(#{node.reference.flavour.name})\" <<Node>> ##{color} {")
         else
           return false if node.drawed! #ugly
-          out << ident(path, <<UML)
-object #{node.ident} <<#{get_stereo_type(node, n_kind)}>> {
-          #{render_object_address(node.reference)}
-}
-UML
+          out << ident(path, Construqt::Util.render(binding, "object.erb"))
         end
         #binding.pry if node.ident == 'Host_scott'
 
@@ -348,28 +344,7 @@ UML
       def self.patch_connection_highlight(fname)
         xml = REXML::Document.new(IO.read(fname))
         js = REXML::Element.new "script"
-        js.text = REXML::CData.new(<<JS)
-var paths = document.getElementsByTagName("path");
-for (var i = 0; i < paths.length; ++i) {
-  paths[i].style["stroke-width"] = "4px";
-  paths[i].style["stroke-dasharray"] = "initial";
-}
-document.addEventListener("click", function(e) {
-  var target = e.target
-  console.log(target+":"+target.style["stroke-width"]);
-  if (target.tagName != "path") {
-    return;
-  }
-  if (parseInt(target.style["stroke-width"])==8) {
-    return;
-  }
-  var old_width = target.style["stroke-width"];
-  target.style["stroke-width"]="8px";
-  setTimeout(function() {
-    target.style["stroke-width"]=old_width;
-  }, 1000)
-});
-JS
+        js.text = REXML::CData.new(Construqt::Util.render(binding, "line_highlight.js"))
         xml.root.elements.add(js)
         File.open(fname, 'w') { |o| xml.write( o ) }
       end
@@ -396,41 +371,7 @@ JS
 
             dst_path = Construqt::Util.dst_path(host_or_region)
             File.open(File.join(dst_path, "world.puml"), 'w') do |file|
-              file.puts(<<UML)
-@startuml
-skinparam object {
-  ArrowColor<<Gre>> MediumOrchid
-  BackgroundColor<<Gre>> MediumOrchid
-  ArrowColor<<Bgp>> MediumSeaGreen
-  BackgroundColor<<Bgp>> MediumSeaGreen
-  ArrowColor<<Ipsec>> LightSkyBlue
-  BackgroundColor<<Ipsec>> LightSkyBlue
-  ArrowColor<<Vrrp>> OrangeRed
-  BackgroundColor<<Vrrp>> OrangeRed
-  ArrowColor<<Device>> YellowGreen
-  BackgroundColor<<Device>> YellowGreen
-  ArrowColor<<Bond>> Orange
-  BackgroundColor<<Bond>> Orange
-  ArrowColor<<Vlan>> Yellow
-  BackgroundColor<<Vlan>> Yellow
-  ArrowColor<<Wlan>> Red
-  BackgroundColor<<Wlan>> Red
-  ArrowColor<<WlanSlave>> OliveDrab
-  BackgroundColor<<WlanSlave>> OliveDrab
-  ArrowColor<<Bridge>> Pink
-  BackgroundColor<<Bridge>> Pink
-}
-skinparam stereotypeBackgroundColor<<Gre>> MediumOrchid
-skinparam stereotypeBackgroundColor<<Bgp>> MediumSeaGreen
-skinparam stereotypeBackgroundColor<<Ipsec>> LightSkyBlue
-skinparam stereotypeBackgroundColor<<Vrrp>> OrangeRed
-skinparam stereotypeBackgroundColor<<Device>> YellowGreen
-skinparam stereotypeBackgroundColor<<Bond>> Orange
-skinparam stereotypeBackgroundColor<<Vlan>> Yellow
-skinparam stereotypeBackgroundColor<<Wlan>> Red
-skinparam stereotypeBackgroundColor<<WlanSlave>> OliveDrab
-skinparam stereotypeBackgroundColor<<Bridge>> Pink
-UML
+              file.puts(Construqt::Util.render(binding, "startuml.res"))
               file.write(out.join("\n") + "\n")
               file.puts("@enduml")
             end

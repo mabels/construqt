@@ -1,4 +1,5 @@
 require 'zlib'
+require 'erb'
 module Construqt
   module Util
     module Chainable
@@ -223,6 +224,38 @@ module Construqt
     def self.camel_case(str)
       return self if self !~ /_/ && self =~ /[A-Z]+.*/
       split('_').map{|e| e.capitalize}.join
+    end
+
+    def self.get_directory(ns)
+      if ns.nil? || ns.empty?
+        raise "There must be a DIRECTORY const defined!"
+      end
+      m_name = (ns+["DIRECTORY"]).join("::")
+      begin
+        Object.const_get(m_name)
+      rescue NameError => e
+        ns.pop
+        get_directory(ns)
+      end
+    end
+
+    TEMPLATE_CACHE = {}
+
+    def self.read_template(context, fname)
+      # this is very ruby related, not nice but
+      # how to do it better?
+      name = (context.kind_of?(Module) && context.name) || context.class.name
+      directory = get_directory(name.split("::"))
+      fnames = Dir.glob(File.join(directory, "**", fname))
+      raise "File not found #{fname} in #{directory}" if fnames.empty?
+      raise "ambiguous files #{fnames.join(" ")}" if fnames.size > 1
+      IO.read(fnames.first)
+    end
+
+    def self.render(_binding, fname)
+      context = _binding.eval("self")
+      template = TEMPLATE_CACHE[fname] ||= read_template(context, fname)
+      ERB.new(template).result(_binding)
     end
   end
 end

@@ -1,0 +1,14 @@
+# #{self.cfg.name}
+remote #{remote_ip} {
+  exchange_mode main;
+  lifetime time 24 hour;
+  proposal_check strict;
+  dpd_delay 30;
+  ike_frag on;      # use IKE fragmentation
+  proposal {
+    encryption_algorithm aes256;
+    hash_algorithm sha1;
+    authentication_method pre_shared_key;
+    dh_group modp1536;
+  }
+}

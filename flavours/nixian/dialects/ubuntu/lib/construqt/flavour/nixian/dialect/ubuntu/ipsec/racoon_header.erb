@@ -1,0 +1,10 @@
+# do not edit generated file
+path pre_shared_key "/etc/racoon/psk.txt";
+path certificate "/etc/racoon/certs";
+log info;
+listen {
+  <% addrs.keys.sort.each do |k| %>
+    <%= addrs[k] %>
+  <% end %>
+  strict_address;
+}

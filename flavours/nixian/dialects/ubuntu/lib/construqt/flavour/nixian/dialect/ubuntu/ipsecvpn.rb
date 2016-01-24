@@ -23,26 +23,8 @@ module Construqt
 
             def render_ipv6_proxy(iface)
               return unless iface.ipv6_proxy
-              host.result.add(self, <<UPDOWN_SH, Construqt::Resources::Rights.root_0755, "etc", "ipsec.d", "#{iface.left_interface.name}-ipv6_proxy_updown.sh")
-#!/bin/bash
-if [ $PLUTO_VERB = "up-client-v6" ]
-then
-  ipaddr=$(echo $PLUTO_PEER_CLIENT | sed 's|/.*$||')
-  logger "proxy-up-client_ipv6=$ipaddr:#{iface.left_interface.name}"
-  ip -6 neigh add proxy $ipaddr dev #{iface.left_interface.name}
-  exit 0
-fi
-if [ $PLUTO_VERB = "down-client-v6" ]
-then
-  ipaddr=$(echo $PLUTO_PEER_CLIENT | sed 's|/.*$||')
-  logger "proxy-down-client_ipv6=$ipaddr:#{iface.left_interface.name}"
-  ip -6 neigh del proxy $ipaddr dev #{iface.left_interface.name}
-  exit 0
-fi
-
-#(date;echo $@;env) >> /tmp/ipsec.log
-exit 0
-UPDOWN_SH
+              host.result.add(self, Construqt::Util.render(binding, "ipsecvpn_updown.erb"),
+                Construqt::Resources::Rights.root_0755, "etc", "ipsec.d", "#{iface.left_interface.name}-ipv6_proxy_updown.sh")
             end
 
             def render_psk(host, iface)

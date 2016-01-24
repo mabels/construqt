@@ -1,0 +1,14 @@
+log syslog { debug, trace, info, remote, warning, error, auth, fatal, bug };
+router id <%= host.id.first_ipv4.first_ipv4.to_s %>;
+protocol device {
+}
+protocol direct {
+}
+protocol kernel {
+  learn;
+  persist;                # Don't remove routes on bird shutdown
+  scan time 20;           # Scan kernel routing table every 20 seconds
+  export all;             # Default is export none
+}
+protocol static {
+}

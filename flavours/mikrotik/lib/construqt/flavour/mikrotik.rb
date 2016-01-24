@@ -18,6 +18,8 @@ require_relative 'mikrotik/template.rb'
 module Construqt
   module Flavour
     class Mikrotik
+      DIRECTORY = File.dirname(__FILE__)
+
       def name
         "mikrotik"
       end

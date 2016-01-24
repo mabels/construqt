@@ -1,10 +1,13 @@
 
 module AlwaysConnected
-  BORDER_ACCESS = []
+  BORDER_ACCESS = {}
+  ACCESS_ROUTER = {}
 
   def self.ac_router(region, name, block, fws, mother)
-    region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother,
-                     "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined.restart.killstop.release("wily")) do |host|
+    ACCESS_ROUTER[name] = region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother,
+     "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined
+                                              .restart.killstop.release("wily")
+                                              .template("ao-template")) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -21,7 +24,7 @@ module AlwaysConnected
       region.interfaces.add_vlan(host, "eth0.#{block}", "mtu" => 1580, "vlan_id" => block, "interface" =>
         region.interfaces.add_device(host, "eth0", "mtu" => 1500,
                   "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br0"))),
-                                    'address' => region.network.addresses.add_ip("172.23.#{block}.1/24#NET-#{name}",
+                                    'address' => region.network.addresses.add_ip("172.23.#{block}.1/24#NET-#{name}#AO-INTERNAL",
                                     "dhcp" => Construqt::Dhcp.new.start("172.23.#{block}.100").end("172.23.#{block}.200").domain(name)))
     end
   end
@@ -43,9 +46,9 @@ module AlwaysConnected
                                          "psk" => Digest::SHA256.hexdigest(INTERNAL_PSK)[12..28],
                                          "hide_ssid" => true)
       [
-        { :name => "ao-ac-mam-otr",    :fws => ['net-nat', "net-forward"], :ssid => "MAM-OTR",    :block => 123 }, # homenet
-        { :name => "ao-ac-mam-otr-de", :fws => ['net-nat', "net-forward"], :ssid => "MAM-OTR-DE", :ipsec => Resolv.getaddress("fanout-de.adviser.com"), :block => 124 },
-        { :name => "ao-ac-mam-otr-us", :fws => ['net-nat', "net-forward"], :ssid => "MAM-OTR-US", :ipsec => Resolv.getaddress("fanout-us.adviser.com"), :block => 125 }
+        { :name => "ao-ac-mam-otr",    :fws => ["net-forward"], :ssid => "MAM-OTR",    :block => 123 }, # homenet
+        { :name => "ao-ac-mam-otr-de", :fws => ["net-forward"], :ssid => "MAM-OTR-DE", :ipsec => FANOUT_DE_ADVISER_COM, :block => 124 },
+        { :name => "ao-ac-mam-otr-us", :fws => ["net-forward"], :ssid => "MAM-OTR-US", :ipsec => FANOUT_US_ADVISER_COM, :block => 125 }
       ].each do |net|
         wifi_ifs = []
         if WIFI_PSKS[net[:name]]
@@ -63,7 +66,7 @@ module AlwaysConnected
           end
         end
 
-        ac_router(region, net[:name], net[:block], [], mother)
+        ac_router(region, net[:name], net[:block], net[:fws], mother)
 #        wifi_ifs.each do |iface|
 #          region.cables.add(iface, mother.interfaces.find_by_name("br#{net[:block]}"))
 #        end
@@ -74,10 +77,29 @@ module AlwaysConnected
       ap.configip = ap.id = Construqt::HostId.create do |my|
         my.interfaces << region.interfaces.add_bridge(ap, "bridge-local", "mtu" => 1500,
                                                       "interfaces" => [ether1,ether2]+wifi_vlans,
-                                                      'address' => region.network.addresses.add_ip("169.254.70.9/24"))
+                                                      'address' => region.network.addresses.add_ip("169.254.70.9/24#AO-INTERNAL"))
       end
     end
   end
+
+#  def self.create_templates(mother)
+#    region = mother.region
+#    region.hosts.add("ao-os-template", "flavour" => "nixian", "dialect" => "ubuntu",
+#                     "mother" => mother,
+#                     "lxc_deploy" => Construqt::Hosts::Lxc.new.template.upgrade) do |host|
+#      region.interfaces.add_device(host, "lo", "mtu" => "9000",
+#                                   :description=>"#{host.name} lo",
+#                                   "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
+#      host.configip = host.id ||= Construqt::HostId.create do |my|
+#        my.interfaces << iface = region.interfaces.add_device(host, "br666", "mtu" => 1500,
+#                              "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
+#                              'address' => region.network.addresses.add_ip("169.254.69.248/24#ROUTER")
+#          .add_ip("fd:a9fe:49::248/64#ROUTER"))
+#      end
+#    end
+#    AlwaysConnected.router(mother, "ao-router-template", 249, Construqt::Hosts::Lxc.new.template.overlay("ao-os-template"))
+#    AlwaysConnected.border_access(mother, "wlan-template", "lxc_deploy" => Construqt::Hosts::Lxc.new.stopped.clone("ao-os-template"))
+#  end
 
   def self.run(network)
     region = setup_region("always-connected", network)
@@ -88,7 +110,8 @@ module AlwaysConnected
     region.dest_path(File.join("cfgs", region.name))
     mother = AlwaysConnected.mother(region)
     #AlwaysConnected.border_access(mother, "eth0")
-    #AlwaysConnected.border_access(mother, "wlan0")
+
+    #AlwaysConnected.create_templates(mother)
 
     AlwaysConnected.mam_otr(mother)
     #    AlwaysConnected.border_access(mother, "usb0")
@@ -103,29 +126,39 @@ module AlwaysConnected
 
     #    AlwaysConnected.encrypter_region(mother, "de", region.network.addresses.add_ip("169.254.69.97/24")
     #      .add_ip("fd:a9fe:49::97/64"))
+
+    AlwaysConnected.border_access(mother, "wlan0", "ssid" => "HUAWEI-B593-A8F1", "psk" => "847MQ03T13D")
+    AlwaysConnected.router(mother, "ao-router", 8, Construqt::Hosts::Lxc.new.restart.template("ao-template"))
     Construqt.produce(region)
   end
 
-  def self.border_access(mother, ifname)
+  def self.border_access(mother, ifname, options = {})
     region = mother.region
-    address = region.network.addresses.add_ip("169.254.69.#{BORDER_ACCESS.length+33}/24")
+    address = region.network.addresses.add_ip("169.254.69.#{BORDER_ACCESS.length+33}/24#AO-INTERNAL")
       .add_ip("fd:a9fe:49::#{BORDER_ACCESS.length+33}/64")
-    BORDER_ACCESS << region.hosts.add("ao-border-#{ifname}", "flavour" => "nixian",
+    BORDER_ACCESS["ao-border-#{ifname}"] = region.hosts.add("ao-border-#{ifname}", "flavour" => "nixian",
                                       "dialect" => "ubuntu", "mother" => mother,
-                                      "lxc_deploy" => Construqt::Hosts::Lxc.new.restart) do |host|
+                                      "lxc_deploy" => Construqt::Hosts::Lxc.new.restart.template("ao-template")) do |host|
                                         region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                                                      :description=>"#{host.name} lo",
                                                                      "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
                                         host.configip = host.id ||= Construqt::HostId.create do |my|
                                           my.interfaces << iface = region.interfaces.add_device(host, "br666", "mtu" => 1500,
                                                                                                 "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
-                                                                                                'address' => address.add_route_from_tags("#INTERNET", "#ROUTER", "metric" => 100))
+                                                                                                'address' => address.add_route_from_tags("#AO-INTERNAL", "#ROUTER", "metric" => 100))
                                         end
 
                                         region.interfaces.add_device(mother, ifname, "mtu" => 1500)
-                                        region.interfaces.add_device(host, "border", "mtu" => 1500,
-                                                                     "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name(ifname)).type_phys,
-                                                                     'address' => region.network.addresses.add_ip(Construqt::Addresses::DHCPV4))
+                                        border_options = options.clone
+                                        border_options["mtu"] = 1500
+                                        border_options['firewalls'] = ['border-masq', 'icmp-ping', 'block']
+                                        border_options["plug_in"] = Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name(ifname)).type_phys
+                                        border_options["address"] = region.network.addresses.add_ip(Construqt::Addresses::DHCPV4)
+                                        if ifname.start_with?("wlan")
+                                          region.interfaces.add_wlan(host, "border", border_options)
+                                        else
+                                          region.interfaces.add_device(host, "border", border_options)
+                                        end
                                       end
   end
 
@@ -137,29 +170,29 @@ module AlwaysConnected
       host.configip = host.id ||= Construqt::HostId.create do |my|
         my.interfaces << iface = region.interfaces.add_bridge(host, "br666", "mtu" => 1500,
                                                               "interfaces" => [],
-                                                              'address' => region.network.addresses.add_ip("169.254.69.1/24")
+                                                              'address' => region.network.addresses.add_ip("169.254.69.1/24#AO-INTERNAL")
           .add_ip("fd:a9fe:49::1/64")
           .add_route_from_tags("#INTERNET", "#ROUTER", "metric" => 100))
       end
 
       region.interfaces.add_bridge(host, "br0", "mtu" => 1500, "interfaces" => [
                                     region.interfaces.add_device(host, "eth0", "mtu" => 1500)
-                                  ], 'address' => region.network.addresses.add_ip("169.254.70.1/24"))
+                                  ], 'address' => region.network.addresses.add_ip("169.254.70.1/24#AO-INTERNAL"))
     end
   end
 
-  def self.router(mother)
+  def self.router(mother, name, ip, lxc_deploy)
     region = mother.region
-    region.hosts.add("ao-router", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother,
-                     "lxc_deploy" => Construqt::Hosts::Lxc.new.restart) do |host|
+    region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother,
+                     "lxc_deploy" => lxc_deploy) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
       host.configip = host.id ||= Construqt::HostId.create do |my|
         my.interfaces << iface = region.interfaces.add_device(host, "br666", "mtu" => 1500,
                                                               "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
-                                                              'address' => region.network.addresses.add_ip("169.254.69.8/24#ROUTER")
-          .add_ip("fd:a9fe:49::8/64#ROUTER"))
+                                                              'address' => region.network.addresses.add_ip("169.254.69.#{ip}/24#ROUTER")
+          .add_ip("fd:a9fe:49::#{ip}/64#ROUTER"))
       end
     end
   end
@@ -167,7 +200,7 @@ module AlwaysConnected
   def self.access_controller(mother)
     region = mother.region
     region.hosts.add("ao-access-ctl", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother,
-                     "lxc_deploy" => Construqt::Hosts::Lxc.new.restart) do |host|
+                     "lxc_deploy" => Construqt::Hosts::Lxc.new.restart.template("ao-template")) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -183,7 +216,7 @@ module AlwaysConnected
   def self.encrypter_region(mother, rname, address)
     region = mother.region
     region.hosts.add("ao-tunnel-#{rname}", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother,
-                     "lxc_deploy" => Construqt::Hosts::Lxc.new.restart) do |host|
+                     "lxc_deploy" => Construqt::Hosts::Lxc.new.restart.template("ao-template")) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -198,7 +231,7 @@ module AlwaysConnected
   def self.access_pointer(mother, rname, ifname, ssid, address)
     region = mother.region
     region.hosts.add("ao-ap-#{rname}-#{ifname}", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother,
-                     "lxc_deploy" => Construqt::Hosts::Lxc.new.restart) do |host|
+                     "lxc_deploy" => Construqt::Hosts::Lxc.new.restart.template("ao-template")) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

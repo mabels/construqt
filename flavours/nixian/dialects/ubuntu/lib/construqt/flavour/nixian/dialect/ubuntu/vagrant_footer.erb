@@ -1,0 +1,5 @@
+  config.vm.provision :shell, :inline => "sudo echo <%= @child.name %> > /etc/hostname"
+  config.vm.provision :file, source: "../../../../../<%= @child.name %>/deployer.sh", destination: "deployer.sh"
+  config.vm.provision :shell, :inline => "sudo bash /home/vagrant/deployer.sh"
+  config.vm.provision :shell, :inline => "sudo reboot"
+end

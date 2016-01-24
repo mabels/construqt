@@ -104,14 +104,24 @@ module Construqt
             def self.add_dhcp_server(host, ifname, iface, writer, family)
               return unless iface.dhcp
               host.result.add_component(Construqt::Resources::Component::DNSMASQ)
-              writer.lines.up("dnsmasq -u dnsmasq --strict-order --pid-file=/run/#{ifname}-dnsmasq.pid "+
-                              "--conf-file= --listen-address #{iface.address.first_ipv4} "+
-                              "--domain=#{iface.dhcp.get_domain} "+
-                              "--host-record=#{host.name}.#{iface.dhcp.get_domain}.,#{iface.address.first_ipv4} "+
-                              "--dhcp-range #{iface.dhcp.get_start},#{iface.dhcp.get_end} "+
-                              "--dhcp-lease-max=253 --dhcp-no-override --except-interface=lo "+
-                              "--interface=#{ifname} --dhcp-leasefile=/var/lib/misc/dnsmasq.#{ifname}.leases"+
-                              "--dhcp-authoritative")
+              dnsmasq_opts = [
+                "dnsmasq",
+                "-u dnsmasq",
+                "--strict-order",
+                "--pid-file=/run/#{ifname}-dnsmasq.pid",
+                "--conf-file=",
+                "--listen-address #{iface.address.first_ipv4}",
+                "--domain=#{iface.dhcp.get_domain}",
+                "--host-record=#{host.name}.#{iface.dhcp.get_domain}.,#{iface.address.first_ipv4}",
+                "--dhcp-range #{iface.dhcp.get_start},#{iface.dhcp.get_end}",
+                "--dhcp-lease-max=253",
+                "--dhcp-no-override",
+                "--except-interface=lo",
+                "--interface=#{ifname}",
+                "--dhcp-leasefile=/var/lib/misc/dnsmasq.#{ifname}.leases",
+                "--dhcp-authoritative"
+              ]
+              writer.lines.up(dnsmasq_opts.join(" "))
               writer.lines.down("kill `cat /run/#{ifname}-dnsmasq.pid`")
             end
 

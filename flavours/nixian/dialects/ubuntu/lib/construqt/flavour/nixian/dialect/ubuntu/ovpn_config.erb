@@ -1,0 +1,37 @@
+daemon
+local <%= local %>
+proto <%= local.ipv6? ? "udp6" : "udp" %>
+port 1194
+mode server
+tls-server
+dev <%= iface.name %>
+ca   /etc/openvpn/ssl/<%= iface.name %>-cacert.pem
+cert /etc/openvpn/ssl/<%= iface.name %>-hostcert.pem
+key  /etc/openvpn/ssl/<%= iface.name %>-hostkey.pem
+dh   /etc/openvpn/ssl/<%= iface.name %>-dh1024
+<% if iface.network.first_ipv4 %>
+server <%= iface.network.first_ipv4.to_s %> <%= iface.network.first_ipv4.netmask %>
+<% end %>
+<% if iface.network.first_ipv6 %>
+server-ipv6 <%= iface.network.first_ipv6.to_string %>
+<% end %>
+client-to-client
+keepalive 10 30
+cipher AES-128-CBC   # AES
+cipher BF-CBC        # Blowfish (default)
+comp-lzo
+max-clients 100
+user nobody
+group nogroup
+persist-key
+persist-tun
+status /etc/openvpn/status
+log-append  /var/log/openvpn-<%= iface.name %>.log
+mute 20
+<% unless push_routes.nil? || push_routes.empty?
+push_routes
+end %>
+mssfix <%= iface.mtu||1348 %>
+plugin /usr/lib/openvpn/openvpn-plugin-auth-pam.so openvpn
+client-cert-not-required
+script-security 2

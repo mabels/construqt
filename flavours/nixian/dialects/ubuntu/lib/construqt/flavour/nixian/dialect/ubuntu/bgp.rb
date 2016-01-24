@@ -33,23 +33,7 @@ module Construqt
 
             def self.header_bird(host, mode)
               #binding.pry
-              ret = <<BGP
-log syslog { debug, trace, info, remote, warning, error, auth, fatal, bug };
-router id #{host.id.first_ipv4.first_ipv4.to_s};
-protocol device {
-}
-protocol direct {
-}
-protocol kernel {
-        learn;
-        persist;                # Don't remove routes on bird shutdown
-        scan time 20;           # Scan kernel routing table every 20 seconds
-        export all;             # Default is export none
-}
-protocol static {
-}
-
-BGP
+              ret = Construqt::Util.render(binding, "bgp_header.erb")
               Bgps.filters.each do |filter|
                 ret = ret + "filter filter_#{filter.name} {\n"
                 filter.list.each do |rule|
@@ -87,22 +71,8 @@ BGP
               if self.my.address.first_ipv4 && self.other.my.address.first_ipv4
                 cname = "#{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)}"
                 write_start_stop(cname, self.my.address.first_ipv4, "gt4", "birdc")
-                self.my.host.result.add(self, <<BGP, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird.conf")
-protocol bgp #{cname} {
-        description "#{self.my.host.name} <=> #{self.other.host.name}";
-        direct;
-        next hop self;
-        connect retry time #{self.cfg.connect_retry||10};
-        hold time #{self.cfg.hold_time||10};
-        error wait time #{self.cfg.error_wait_time||"10,10"};
-                #{self.as == self.other.as ? '' : '#'}rr client;
-        local #{self.my.address.first_ipv4} as #{self.as.num};
-        neighbor #{self.other.my.address.first_ipv4}  as #{self.other.as.num};
-        password "#{Util.password(self.cfg.password)}";
-        import #{self.filter['in'] ? "filter filter_"+self.filter['in'].name : "all"};
-        export #{self.filter['out'] ? "filter filter_"+self.filter['out'].name : "all"};
-}
-BGP
+                self.my.host.result.add(self, Construqt::Util.render(binding, "bgp_peer_v4.erb"),
+                 Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird.conf")
               end
             end
 
@@ -129,22 +99,8 @@ BGP
               if self.my.address.first_ipv6 && self.other.my.address.first_ipv6
                 cname = "#{Util.clean_bgp(self.my.host.name)}_#{Util.clean_bgp(self.other.host.name)}"
                 write_start_stop(cname, self.my.address.first_ipv6, "gt6", "birdc6")
-                self.my.host.result.add(self, <<BGP, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird6.conf")
-protocol bgp #{cname} {
-        description "#{self.my.host.name} <=> #{self.other.host.name}";
-        direct;
-        next hop self;
-        connect retry time #{self.cfg.connect_retry||10};
-        hold time #{self.cfg.hold_time||10};
-        error wait time #{self.cfg.error_wait_time||"10,10"};
-                #{self.as == self.other.as ? '' : '#'}rr client;
-        local #{self.my.address.first_ipv6} as #{self.as.num};
-        neighbor #{self.other.my.address.first_ipv6}  as #{self.other.as.num};
-        password "#{Util.password(self.cfg.password)}";
-        import #{self.filter['in'] ? "filter filter_"+self.filter['in'].name : "all"};
-        export #{self.filter['out'] ? "filter filter_"+self.filter['out'].name : "all"};
-}
-BGP
+                self.my.host.result.add(self, Construqt::Util.render(binding, "bgp_peer_v6.erb"),
+                 Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird6.conf")
               end
             end
 

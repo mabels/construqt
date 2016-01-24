@@ -8,8 +8,15 @@ require_relative 'ubuntu/bgp.rb'
 require_relative 'ubuntu/opvn.rb'
 require_relative 'ubuntu/vrrp.rb'
 require_relative 'ubuntu/firewall.rb'
+require_relative 'ubuntu/lxc.rb'
 require_relative 'ubuntu/result.rb'
-require_relative 'ubuntu/services.rb'
+
+require_relative 'ubuntu/services/conntrack_d.rb'
+require_relative 'ubuntu/services/dhcp_v4_relay.rb'
+require_relative 'ubuntu/services/dhcp_v6_relay.rb'
+require_relative 'ubuntu/services/null.rb'
+require_relative 'ubuntu/services/radvd.rb'
+require_relative 'ubuntu/services/route_service.rb'
 
 require_relative 'ubuntu/bond.rb'
 require_relative 'ubuntu/bridge.rb'
@@ -26,7 +33,7 @@ module Construqt
     module Nixian
       module Dialect
         module Ubuntu
-
+          DIRECTORY = File.dirname(__FILE__)
 
           class Factory
             def name

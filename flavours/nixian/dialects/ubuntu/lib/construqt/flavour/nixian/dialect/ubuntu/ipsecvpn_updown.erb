@@ -1,0 +1,18 @@
+#!/bin/bash
+if [ $PLUTO_VERB = "up-client-v6" ]
+then
+  ipaddr=$(echo $PLUTO_PEER_CLIENT | sed 's|/.*$||')
+  logger "proxy-up-client_ipv6=$ipaddr:<%= iface.left_interface.name %>"
+  ip -6 neigh add proxy $ipaddr dev <%= iface.left_interface.name %>
+  exit 0
+fi
+if [ $PLUTO_VERB = "down-client-v6" ]
+then
+  ipaddr=$(echo $PLUTO_PEER_CLIENT | sed 's|/.*$||')
+  logger "proxy-down-client_ipv6=$ipaddr:<%= iface.left_interface.name %>"
+  ip -6 neigh del proxy $ipaddr dev <%= iface.left_interface.name %>
+  exit 0
+fi
+
+#(date;echo $@;env) >> /tmp/ipsec.log
+exit 0

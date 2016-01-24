@@ -1,0 +1,19 @@
+<<RADV, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::RADVD), "etc", "network", "radvd.#{ifname}.conf")
+interface #{ifname}
+{
+AdvManagedFlag on;
+AdvSendAdvert on;
+AdvOtherConfigFlag on;
+#AdvAutonomous on;
+#AdvLinkMTU 1480;
+#MinRtrAdvInterval 3;
+#MaxRtrAdvInterval 60;
+prefix #{iface.address.first_ipv6.network.to_string}
+{
+AdvOnLink on;
+AdvAutonomous #{@service.adv_autonomous? ? "on" : "off"};
+AdvRouterAddr on;
+};
+
+};
+RADV

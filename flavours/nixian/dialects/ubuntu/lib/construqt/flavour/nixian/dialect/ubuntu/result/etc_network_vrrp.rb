@@ -56,32 +56,10 @@ module Construqt
 
                 @interfaces.keys.sort.each do |ifname|
                   vrrp = @interfaces[ifname]
-                  result.add(self, <<VRRP, Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::VRRP), "etc", "network", "vrrp.#{ifname}.stop.sh")
-#!/bin/bash
-                  #{vrrp.render_backups}
-exit 0
-VRRP
-                  result.add(self, <<VRRP, Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::VRRP), "etc", "network", "vrrp.#{ifname}.sh")
-#!/bin/bash
-
-TYPE=$1
-NAME=$2
-STATE=$3
-
-case $STATE in
-  "MASTER")
-                  #{vrrp.render_masters}
-            exit 0
-            ;;
-  "BACKUP")
-                  #{vrrp.render_backups}
-            exit 0
-            ;;
-  *)        echo "unknown state"
-            exit 1
-            ;;
-esac
-VRRP
+                  result.add(self, Construqt::Util.render(binding, "vrrp_stop_script.erb"),
+                    Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::VRRP), "etc", "network", "vrrp.#{ifname}.stop.sh")
+                  result.add(self, Construqt::Util.render(binding, "vrrp_switch_script.erb"), 
+                    Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::VRRP), "etc", "network", "vrrp.#{ifname}.sh")
                 end
               end
             end

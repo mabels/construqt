@@ -5,6 +5,7 @@ module Construqt
         module Ubuntu
           module Firewall
 
+
             class ToFrom
               attr_reader :request_direction, :respond_direction, :rule, :ifname, :writer, :section
               def initialize(ifname, rule, section, writer = nil)
@@ -63,6 +64,11 @@ module Construqt
                   @to_from = to_from
                   @family = family
                   @begin_middle_end = BeginEndMiddle.new
+                end
+
+                def self.prepare_ports(ports)
+                  ports.map{|i| (i.instance_of?(Array) && i.join(":")) || i }
+                  .join(",")
                 end
 
                 def push_begin(str)
@@ -178,11 +184,11 @@ module Construqt
                     end
 
                     if to_from.rule.get_dports && !to_from.rule.get_dports.empty?
-                      begin_middle_end.push_middle("--dports #{to_from.rule.get_dports.join(",")}")
+                      begin_middle_end.push_middle("--dports #{Direction.prepare_ports(to_from.rule.get_dports)}")
                     end
 
                     if to_from.rule.get_sports && !to_from.rule.get_sports.empty?
-                      begin_middle_end.push_middle("--sports #{to_from.rule.get_sports.join(",")}")
+                      begin_middle_end.push_middle("--sports #{Direction.prepare_ports(to_from.rule.get_sports)}")
                     end
                   end
 
@@ -241,11 +247,11 @@ module Construqt
                     end
 
                     if to_from.rule.get_dports && !to_from.rule.get_dports.empty?
-                      begin_middle_end.push_middle("--sports #{to_from.rule.get_dports.join(",")}")
+                      begin_middle_end.push_middle("--sports #{Direction.prepare_ports(to_from.rule.get_dports)}")
                     end
 
                     if to_from.rule.get_sports && !to_from.rule.get_sports.empty?
-                      begin_middle_end.push_middle("--dports #{to_from.rule.get_sports.join(",")}")
+                      begin_middle_end.push_middle("--dports #{Direction.prepare_ports(to_from.rule.get_sports)}")
                     end
                   end
 

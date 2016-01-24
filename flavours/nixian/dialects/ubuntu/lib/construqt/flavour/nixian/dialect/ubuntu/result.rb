@@ -6,6 +6,7 @@ require_relative 'result/etc_network_interfaces'
 require_relative 'result/etc_network_iptables'
 require_relative 'result/etc_conntrackd_conntrackd'
 
+
 module Construqt
   module Flavour
     module Nixian
@@ -130,29 +131,6 @@ module Construqt
               }) { |r, block| r.merge(component_to_packages(block.right.component)) }
             end
 
-            def lxc_update_config(base_dir, key, value)
-              ruby = []
-              right = Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::LXC)
-              ruby << "/etc/lxc/update_config #{base_dir}/config #{base_dir}/update.config.list #{key} #{value}"
-              ruby << "for i in `cat #{base_dir}/update.config.list`"
-              ruby << "do"
-              ruby << "  git_add /$i #{right.owner} #{right.right} false"
-              ruby << "done"
-              ruby
-            end
-
-            def lxc_reference_net_config(base_dir)
-              ruby = []
-              right = Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::LXC)
-              ruby << "cp #{base_dir}/../#{File.basename(base_dir)}.network.config #{base_dir}/network.config"
-              ruby << "/etc/lxc/update_network_in_config #{base_dir}/config #{base_dir}/network.config #{base_dir}/update.config.list"
-              ruby << "for i in `cat #{base_dir}/update.config.list`"
-              ruby << "do"
-              ruby << "  git_add /$i #{right.owner} #{right.right} false"
-              ruby << "done"
-              ruby
-            end
-
             def sh_function_git_add()
               out = []
               out << "import_fname()"
@@ -193,55 +171,55 @@ module Construqt
               out
             end
 
-            def lxc_deploy(host)
-              out = []
-              host.region.hosts.get_hosts.select {|h| @host.delegate == h.mother }.each do |lxc|
-                next unless lxc.lxc_deploy
-                out << "# LXC Container #{lxc.name} [#{lxc.lxc_deploy}]\n"
-                out << '[ "true" = "$(. /etc/default/lxc-net && echo $USE_LXC_BRIDGE)" ] && echo USE_LXC_BRIDGE="false" >> /etc/default/lxc-net'
-                base_dir = File.join("/var", "lib", "lxc", lxc.name)
-                lxc_rootfs = File.join(base_dir, "rootfs")
-                sh_lxc_name =  Shellwords.escape(lxc.name)
-                quick_stop = lxc.lxc_deploy.killstop? ? " -k" : ""
-                if lxc.lxc_deploy.get_release
-                  release = " -- -r #{lxc.lxc_deploy.get_release}"
-                end
-                if lxc.lxc_deploy.recreate?
-                  out << "echo start LXC-RECREATE #{sh_lxc_name}"
-                  out << "lxc-ls --running | grep -q '#{sh_lxc_name}' && lxc-stop -n '#{sh_lxc_name}'#{quick_stop}"
-                  out << "[ -d #{lxc_rootfs}/usr/share] && lxc-destroy -f -n '#{sh_lxc_name}'"
-                  release = ""
-                  out << "lxc-create -n '#{sh_lxc_name}' -t #{lxc.flavour.name}#{release}"
-                  out << "cp #{base_dir}/../#{lxc.name}.deployer.sh #{lxc_rootfs}/root/deployer.sh"
-                  out << "chroot #{lxc_rootfs} /bin/bash /root/deployer.sh"
-                  out << "echo fix config of #{sh_lxc_name} in #{lxc_rootfs}"
-                  out += lxc_reference_net_config(base_dir)
-                  if lxc.lxc_deploy.aa_profile_unconfined?
-                    out += lxc_update_config(base_dir, "lxc.aa_profile", "unconfined")
-                  end
-                  out << "lxc-start -d -n '#{sh_lxc_name}'"
-                elsif lxc.lxc_deploy.restart?
-                  out << "echo start LXC-RESTART #{sh_lxc_name}"
-                  out << "lxc-ls --running | grep -q '#{sh_lxc_name}' && lxc-stop -n '#{sh_lxc_name}'#{quick_stop}"
-                  out << "[ -d #{lxc_rootfs}/usr/share ] || lxc-create -n '#{sh_lxc_name}' -t #{lxc.flavour.name}#{release}"
-                  out << "cp #{base_dir}/../#{lxc.name}.deployer.sh #{lxc_rootfs}/root/deployer.sh"
-                  out << "chroot #{lxc_rootfs} /bin/bash /root/deployer.sh"
-                  out << "echo fix config of #{sh_lxc_name} in #{lxc_rootfs}"
-                  out += lxc_reference_net_config(base_dir)
-                  if lxc.lxc_deploy.aa_profile_unconfined?
-                    out += lxc_update_config(base_dir, "lxc.aa_profile", "unconfined")
-                  end
-                  out << "lxc-start -d -n '#{sh_lxc_name}'"
-                end
-              end
-
-              out
-            end
-
             def setup_ntp(host)
               out = []
               out << "cp /usr/share/zoneinfo/#{host.time_zone || host.region.network.ntp.get_timezone} /etc/localtime"
               # missing /etc/ntp.conf writer
+              out
+            end
+
+            def sh_is_opt_set
+              out = []
+              out << "is_opt_set()"
+              out << "{"
+              out << "opt=$1"
+              out << "found=1"
+              out << "for i in $ARGS"
+              out << "do"
+              out << "if [ $i = $opt ]"
+              out << "then"
+              out << " found=0"
+              out << "fi"
+              out << "done"
+              out << "return $found"
+              out << "}"
+              out
+            end
+
+            def sh_install_packages
+              out = []
+              out << "install_packages()"
+              out << "{"
+              out << "packages=$*"
+              out << "updates=''"
+              out << 'for i in $packages'
+              out << 'do'
+              out << ' dpkg -l $i 2> /dev/null | grep -q "^ii\s\s*$i\s"'
+              out << ' if [ $? != 0 ]'
+              out << ' then'
+              out << '    updates="$updates $i"'
+              out << ' fi'
+              out << 'done'
+              out << '[ -f /etc/resolv.conf ] && mv /etc/resolv.conf /etc/resolv.conf.temp'
+              out << 'echo "nameserver 8.8.8.8" >> /etc/resolv.conf'
+              out << 'apt-get -qq -y install $updates'
+              out << 'if [ $? != 0 ]'
+              out << 'then'
+              out << '  apt-get update'
+              out << '  apt-get -qq -y install $updates'
+              out << 'fi'
+              out << '[ -f /etc/resolv.conf.temp ] && mv /etc/resolv.conf.temp /etc/resolv.conf'
+              out << '}'
               out
             end
 
@@ -251,15 +229,12 @@ module Construqt
               add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construqt::Resources::Rights.root_0644, "etc", "network", "interfaces")
               @etc_network_vrrp.commit(self)
 
-              host.region.hosts.get_hosts.select {|h| @host.delegate == h.mother }.each do |lxc|
-                add(lxc, Util.read_str(@host.region, lxc.name, "deployer.sh"),
-                    Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::LXC),
-                    "/var", "lib", "lxc", "#{lxc.name}.deployer.sh").skip_git
-              end
+              Lxc.write_deployers(@host)
 
               out = [<<BASH]
 #!/bin/bash
 hostname=`hostname`
+ARGS=$@
 if [ $hostname != "" ]
 then
   hostname=`grep '^\s*[^#]' /etc/hostname`
@@ -271,36 +246,25 @@ then
 else
  echo Configure Host #{@host.name}
 fi
-updates=''
-for i in #{components_hash.keys.join(" ")}
-do
- dpkg -l $i 2> /dev/null | grep -q "^ii\s\s*$i\s"
- if [ $? != 0 ]
- then
-    updates="$updates $i"
- fi
-done
-if [ ! -f /etc/resolv.conf ]
-then
-  # during boot strap there could be no resolv.conf
-  echo "nameserver 8.8.8.8" > /etc/resolv.conf
-fi
-apt-get -qq -y install $updates
-if [ $? != 0 ]
-then
-  apt-get update
-  apt-get -qq -y install $updates
-fi
+BASH
+              out += sh_is_opt_set
+              out += sh_function_git_add
+              out += sh_install_packages
+
+              out << "is_opt_set skip_packages || install_packages #{components_hash.keys.join(" ")}"
+
+              out << <<BASH
 if [ ! -d /root/construqt.git ]
 then
  echo generate history in /root/construqt.git
  git init --bare /root/construqt.git
 fi
 BASH
+
+
               out += setup_ntp(host)
               out += components_hash.values.select{|i| i.instance_of?(Array) }.flatten
 
-              out += sh_function_git_add
               out += @result.map do |fname, block|
                 if host.files
                   next [] if host.files.find{|file| file.path == fname && file.kind_of?(Construqt::Resources::SkipFile) }
@@ -323,7 +287,7 @@ BASH
                   "git_add #{["/"+fname, block.right.owner, block.right.right, block.skip_git?].map{|i| '"'+Shellwords.escape(i)+'"'}.join(' ')}"
                 ]
               end.flatten
-              out += lxc_deploy(@host)
+              out += Lxc.deploy(@host)
               out += [<<BASH]
 git --git-dir /root/construqt.git config user.name #{ENV['USER']}
 git --git-dir /root/construqt.git config user.email #{ENV['USER']}@construqt.net

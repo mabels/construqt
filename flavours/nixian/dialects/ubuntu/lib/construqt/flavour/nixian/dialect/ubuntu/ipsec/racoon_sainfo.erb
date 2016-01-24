@@ -1,0 +1,7 @@
+sainfo address <%= my_ip_str %> any address <%= other_ip_str %> any {
+  pfs_group 5;
+  encryption_algorithm aes256;
+  authentication_algorithm hmac_sha1;
+  compression_algorithm deflate;
+  lifetime time 1 hour;
+}
