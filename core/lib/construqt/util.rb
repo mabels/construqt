@@ -255,7 +255,7 @@ module Construqt
     def self.render(_binding, fname)
       context = _binding.eval("self")
       template = TEMPLATE_CACHE[fname] ||= read_template(context, fname)
-      ERB.new(template).result(_binding)
+      ERB.new(template, nil, '-').result(_binding)
     end
   end
 end

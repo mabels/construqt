@@ -126,6 +126,9 @@ Construqt.produce(region)
 require_relative 'always-connected'
 AlwaysConnected.run(network)
 
+require_relative 'scable'
+Scable.run(network)
+
 
 if ARGV.include?("de")
   require 'net/ssh'

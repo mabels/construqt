@@ -5,7 +5,7 @@ module Construqt
     class Region
       attr_reader :name, :cables, :hosts, :interfaces, :users, :vlans, :network,
                   :templates, :resources, :services, :registry, :flavour_factory,
-                  :aspects
+                  :aspects, :dns_resolver
       include Construqt::Util::Chainable
       chainable_attr_value :dest_path
 
@@ -22,6 +22,7 @@ module Construqt
         @services = Construqt::Services.new(self)
         @resources = Construqt::Resources.new(self)
         @flavour_factory = Construqt::Flavour::Factory.new(self)
+        @dns_resolver = Construqt::Dns.new(self, network)
         @aspects = []
       end
 
@@ -31,6 +32,11 @@ module Construqt
 
       def add_aspect(aspect)
         @aspects << aspect
+      end
+
+      def set_dns_resolver(nameservers, search = [])
+        @dns_resolver.nameservers = nameservers
+        @dns_resolver.search = search
       end
 
     end

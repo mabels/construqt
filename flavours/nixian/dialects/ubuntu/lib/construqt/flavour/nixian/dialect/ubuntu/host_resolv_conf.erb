@@ -1,0 +1,7 @@
+<% host.region.dns_resolver.nameservers.ips.each do |i| -%>
+nameserver <%= i.to_s %>
+<% end
+   if host.region.dns_resolver.search and !host.region.dns_resolver.search.empty?
+-%>
+search <%= host.region.dns_resolver.search.join(' ') %>
+<% end -%>

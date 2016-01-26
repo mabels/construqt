@@ -10,7 +10,7 @@ module Construqt
         @domain = "construqt.org"
         @contact = "soa@construqt.org"
         @addresses = Construqt::Addresses.new(self)
-        @dns_resolver = nil
+        @dns_resolver = Construqt::Dns.new(self)
         @ntp = Construqt::Ntp.new
         @routing_tables = Construqt::RoutingTables.new(self)
         @cert_store = Construqt::CertStore.new(self)
@@ -42,8 +42,9 @@ module Construqt
         @networks.find{ |my| (ip.ipv6? == my.ipv6? && ip.ipv4? == my.ipv4?) && my.include?(ip) }
       end
 
-      def set_dns_resolver(nameservers, search)
-        @dns_resolver = OpenStruct.new :nameservers => nameservers, :search => search
+      def set_dns_resolver(nameservers, search = [])
+        @dns_resolver.nameservers = nameservers
+        @dns_resolver.search = search
       end
 
       def dns_resolver

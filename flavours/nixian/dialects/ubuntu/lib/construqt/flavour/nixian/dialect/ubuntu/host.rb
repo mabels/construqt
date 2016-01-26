@@ -54,10 +54,8 @@ module Construqt
 
               host.result.add(self, host.name, Construqt::Resources::Rights.root_0644, "etc", "hostname")
               host.result.add(self, "# WTF resolvconf", Construqt::Resources::Rights.root_0644, "etc", "resolvconf", "resolv.conf.d", "orignal");
-              host.result.add(self,
-                              (host.region.network.dns_resolver.nameservers.ips.map{|i| "nameserver #{i.to_s}" }+
-                               ["search #{host.region.network.dns_resolver.search.join(' ')}"]).join("\n"),
-                              Construqt::Resources::Rights.root_0644, "etc", "resolv.conf")
+              host.result.add(self, Construqt::Util.render(binding, "host_resolv_conf.erb"),
+                                Construqt::Resources::Rights.root_0644, "etc", "resolv.conf")
 
 
               #binding.pry
