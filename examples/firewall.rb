@@ -173,6 +173,11 @@ def firewall(region)
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_net("#INTERNET").to_my_net.esp.from_is_outside
     end
   end
+  Construqt::Firewalls.add("host-outbound-simple") do |fw|
+    fw.host do |host|
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INTERNET").from_is_inside
+    end
+  end
 
   Construqt::Firewalls.add("host-outbound") do |fw|
     fw.host do |host|

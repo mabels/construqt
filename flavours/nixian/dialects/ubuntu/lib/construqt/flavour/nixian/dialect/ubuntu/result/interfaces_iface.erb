@@ -1,6 +1,10 @@
 # <%= @entry.iface.clazz %>
-<%= @auto ? "auto #{get_interface_name}" : '' %>
-<%= @dhcpv6 ? "iface #{get_interface_name} inet6 dhcp" : '' %>
+<% if @auto -%>
+auto <%= get_interface_name %>
+<% end -%>
+<% if @dhcpv6 -%>
+iface <%= get_interface_name %> inet6 dhcp
+<% end -%>
 iface <%= get_interface_name %> <%= @protocol %> <%= @mode %>
   up   /bin/bash /etc/network/<%= get_interface_name %>-up.iface
   down /bin/bash /etc/network/<%= get_interface_name %>-down.iface

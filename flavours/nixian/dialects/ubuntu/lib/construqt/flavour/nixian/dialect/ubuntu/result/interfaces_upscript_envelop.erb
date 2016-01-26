@@ -1,6 +1,6 @@
 #!/bin/bash
 exec > >(logger -t "#{@entry.header.get_interface_name}-#{direction}") 2>&1
-<% blocks.each do |line| %>
+<% blocks.each do |line| -%>
 <%= line %>
-<% end %>
+<% end -%>
 exit 0
