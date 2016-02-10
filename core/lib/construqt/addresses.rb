@@ -76,6 +76,10 @@ module Construqt
         @ipaddr.to_u32
       end
 
+      def to_u128
+        @ipaddr.to_u128
+      end
+
       def first
         @ipaddr.first
       end
