@@ -144,6 +144,16 @@ def firewall(region)
     end
   end
 
+  Construqt::Firewalls.add("http-srv") do |fw|
+    fw.host do |host|
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_me.tcp.dport(80).dport(443).from_is_outside
+    end
+
+    fw.forward do |fwd|
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_me.tcp.dport(80).dport(443).from_is_outside
+    end
+  end
+
   Construqt::Firewalls.add("service-transit") do |fw|
     fw.host do |host|
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#SERVICE-TRANSIT-DE#SERVICE-IPSEC#IPSECVPN-DE").to_net("#SERVICE-TRANSIT-DE#SERVICE-IPSEC#IPSECVPN-DE")

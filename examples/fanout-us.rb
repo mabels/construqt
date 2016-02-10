@@ -14,8 +14,8 @@ module FanoutUs
           .add_route("0.0.0.0/0#INTERNET", "162.218.210.1")
           .add_ip("2602:ffea:1:7dd::eb38/44")
           .add_route("2000::/3#INTERNET", "2602:ffea:1::1"),
-        "firewalls" => ["fix-mss", "host-us-outbound", "icmp-ping" , "ssh-srv", "ipsec-srv", "service-us-transit",
-                        "vpn-server-net",
+        "firewalls" => ["fix-mss", "host-us-outbound", "icmp-ping" , "http-srv",
+                        "ssh-srv", "ipsec-srv", "service-us-transit", "vpn-server-net",
                         "service-us-nat", "service-us-smtp", "service-us-dns", "block"])
       end
 

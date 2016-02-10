@@ -37,7 +37,7 @@ module Construqt
                     "auto_config: #{link.mother_if.vagrant.get_auto_config} "+
                     "# ->#{link.child_if.name}"
                 else
-                  "# skip #{link.mother_if} => #{link.child_if.name}"
+                  "# skip #{link.mother_if.name} => #{link.child_if.name}"
                 end
               end.join("\n")+"\n"
             end

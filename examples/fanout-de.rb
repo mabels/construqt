@@ -14,8 +14,8 @@ module FanoutDe
           .add_route("0.0.0.0/0#INTERNET", "78.47.4.49")
           .add_ip("2a01:4f8:d15:1190:78:47:4:51/64")
           .add_route("2000::/3#INTERNET", "2a01:4f8:d15:1190::1"),
-        "firewalls" => ["fix-mss", "host-outbound", "icmp-ping" , "ssh-srv", "ipsec-srv", "service-ssh-hgw",
-                        "service-transit",
+        "firewalls" => ["fix-mss", "host-outbound", "icmp-ping" , "http-srv", "ssh-srv", "ipsec-srv",
+                        "service-ssh-hgw", "service-transit",
                         "service-nat", "service-smtp", "service-dns", "service-imap", "vpn-server-net", "block"])
       end
 

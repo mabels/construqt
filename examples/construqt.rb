@@ -111,6 +111,10 @@ fanout_de = FanoutDe.run(region)
 require_relative "./fanout-us.rb"
 fanout_us = FanoutUs.run(region)
 
+require_relative "./fanout-connect.rb"
+FanoutConnect.run(region, fanout_de, fanout_us)
+
+
 require_relative "./hgw.rb"
 Hgw.run(region, fanout_de)
 
