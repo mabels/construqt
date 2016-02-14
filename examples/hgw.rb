@@ -45,7 +45,7 @@ module Hgw
     end
 
     Construqt::Ipsecs.connection("#{fanout_de.name}<=>#{service_de_hgw.name}",
-                                 "password" => IPSEC_PASSWORD,
+                                 "password" => IPSEC_PASSWORDS.call(fanout_de.name, service_de_hgw.name),
                                  "transport_family" => Construqt::Addresses::IPV4,
                                  "mtu_v4" => 1360,
                                  "mtu_v6" => 1360,

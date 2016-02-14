@@ -1,7 +1,7 @@
 module FanoutConnect
   def self.run(region, left, right)
     Construqt::Ipsecs.connection("#{left.name}<=>#{right.name}",
-                                 "password" => IPSEC_PASSWORD,
+                                 "password" => IPSEC_PASSWORDS.call(left.name, right.name),
                                  "transport_family" => Construqt::Addresses::IPV4,
                                  "mtu_v4" => 1360,
                                  "mtu_v6" => 1360,

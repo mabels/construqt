@@ -1,46 +1,9 @@
-
+require_relative 'ipsecs/user.rb'
+require_relative 'ipsecs/ipsec.rb'
 module Construqt
   module Ipsecs
-    class User
-      attr_reader :name, :psk
-      def initialize(name, psk)
-        @name = name
-        @psk = psk
-      end
-    end
-    class Ipsec
-      attr_reader :rights, :lefts, :transport_family, :password
-      attr_reader :name, :keyexchange, :description, :address
-      attr_reader :delegate, :tags, :mtu_v4, :mtu_v6, :cipher
-      def initialize(cfg)
-        @cfg = cfg
-        @cipher = @cfg['cipher']
-        @rights = @cfg['rights']
-        @lefts = @cfg['lefts']
-        @transport_family = @cfg['transport_family']
-        @password = @cfg['password']
-        @name = @cfg['name']
-        @keyexchange = @cfg['keyexchange']
-        @description = @cfg['description']
-        @address = @cfg['address']
-        @mtu_v4 = @cfg['mtu_v4']
-        @mtu_v6 = @cfg['mtu_v6']
-        @delegate = nil
-        @tags = nil
-      end
 
-      def build_config()
-        (self.rights+self.lefts).each do |iface|
-          iface.build_config(iface.host, iface)
-        end
-      end
-
-      def ident
-        self.lefts.first.ident
-      end
-    end
-
-    @ipsecs = {}
+    IPSECS = {}
     def self.add_connection(cfg, iname)
       throw "my not found #{cfg.keys.inspect}" unless cfg['my']
       throw "host not found #{cfg.keys.inspect}" unless cfg['host']
@@ -81,7 +44,7 @@ module Construqt
       cfg.delete('right')
       cfg['name'] = name
       cfg['transport_family'] ||= Construqt::Addresses::IPV6
-      cfg = @ipsecs[name] = Ipsec.new(cfg)
+      cfg = IPSECS[name] = Ipsec.new(cfg)
 
       cfg.lefts.each do |left|
         left.other = cfg.rights.first
@@ -114,11 +77,15 @@ module Construqt
       cfg
     end
 
-    def self.build_config()
+    def self.build_config(hosts_to_process)
       hosts = {}
-      @ipsecs.values.each do |ipsec|
+      IPSECS.values.each do |ipsec|
         (ipsec.rights+ipsec.lefts).each do |iface|
-          hosts[iface.host.object_id] ||= iface.host
+          unless hosts[iface.host.object_id]
+            if hosts_to_process.find { |host| host.object_id == iface.host.object_id }
+              hosts[iface.host.object_id] = iface.host
+            end
+          end
         end
       end
 
@@ -127,8 +94,8 @@ module Construqt
         host.flavour.ipsec.header(host) if host.flavour.ipsec.respond_to?(:header)
       end
 
-      @ipsecs.each do |name, ipsec|
-        ipsec.build_config()
+      IPSECS.each do |name, ipsec|
+        ipsec.build_config(hosts_to_process)
       end
     end
   end

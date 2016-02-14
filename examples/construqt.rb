@@ -111,6 +111,9 @@ fanout_de = FanoutDe.run(region)
 require_relative "./fanout-us.rb"
 fanout_us = FanoutUs.run(region)
 
+require_relative 'scable'
+Scable.run(network, fanout_de)
+
 require_relative "./fanout-connect.rb"
 FanoutConnect.run(region, fanout_de, fanout_us)
 
@@ -130,8 +133,6 @@ Construqt.produce(region)
 require_relative 'always-connected'
 AlwaysConnected.run(network)
 
-require_relative 'scable'
-Scable.run(network)
 
 
 if ARGV.include?("de")

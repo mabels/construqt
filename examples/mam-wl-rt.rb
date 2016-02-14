@@ -4,7 +4,7 @@ module MamWl
 
   def self.mam_ipsec_connection(region, left, right, fw_suffix, vlan, fws = [])
     Construqt::Ipsecs.connection("#{left.name}<=>#{right.name}",
-                                 "password" => IPSEC_PASSWORD,
+                                 "password" => IPSEC_PASSWORDS.call(left.name,right.name),
                                  "transport_family" => Construqt::Addresses::IPV4,
                                  "mtu_v4" => 1360,
                                  "mtu_v6" => 1360,

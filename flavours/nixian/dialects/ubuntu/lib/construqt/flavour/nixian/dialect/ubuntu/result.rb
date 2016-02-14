@@ -5,7 +5,8 @@ require_relative 'result/etc_network_vrrp'
 require_relative 'result/etc_network_interfaces'
 require_relative 'result/etc_network_iptables'
 require_relative 'result/etc_conntrackd_conntrackd'
-
+require_relative 'ipsec/ipsec_secret'
+require_relative 'ipsec/ipsec_cert_store'
 
 module Construqt
   module Flavour
@@ -15,12 +16,15 @@ module Construqt
 
           class Result
             attr_reader :etc_network_interfaces, :etc_network_iptables, :etc_conntrackd_conntrackd
+            attr_reader :ipsec_secret, :ipsec_cert_store, :host
             def initialize(host)
               @host = host
               @etc_network_interfaces = EtcNetworkInterfaces.new(self)
               @etc_network_iptables = EtcNetworkIptables.new
               @etc_conntrackd_conntrackd = EtcConntrackdConntrackd.new(self)
               @etc_network_vrrp = EtcNetworkVrrp.new
+              @ipsec_secret = Ipsec::IpsecSecret.new(self)
+              @ipsec_cert_store = Ipsec::IpsecCertStore.new(self)
               @result = {}
             end
 
@@ -28,9 +32,6 @@ module Construqt
               @etc_network_vrrp.get(ifname)
             end
 
-            def host
-              @host
-            end
 
             def add_component(component)
               @result[component] ||= ArrayWithRight.new(Construqt::Resources::Rights.root_0644(component))
@@ -228,6 +229,8 @@ module Construqt
               add(EtcNetworkIptables, etc_network_iptables.commitv6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6), "etc", "network", "ip6tables.cfg")
               add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construqt::Resources::Rights.root_0644, "etc", "network", "interfaces")
               @etc_network_vrrp.commit(self)
+              ipsec_secret.commit
+              ipsec_cert_store.commit
 
               Lxc.write_deployers(@host)
 

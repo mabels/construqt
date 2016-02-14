@@ -87,7 +87,7 @@ module Construqt
       cfg
     end
 
-    def self.build_config()
+    def self.build_config(hosts_to_process)
       #binding.pry
       hosts = {}
       @bgps.values.each do |bgp|

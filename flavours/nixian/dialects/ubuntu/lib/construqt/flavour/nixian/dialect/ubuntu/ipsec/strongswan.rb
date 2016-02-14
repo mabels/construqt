@@ -10,54 +10,8 @@ module Construqt
                 end
 
                 def self.header(host)
-                  render_certs(host)
-                  render_private_keys(host)
-                  render_users(host)
-                  host.result.add(self, <<HEADER, Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
-config setup
-  uniqueids=yes
-HEADER
-                end
-
-                def self.render_users(host)
-                  #binding.pry
-                  out = {}
-                  host.interfaces.values.each do |iface|
-                    next unless iface.kind_of?(Construqt::Flavour::Delegate::IpsecVpnDelegate)
-                    next unless iface.users
-                    iface.users.each do |user|
-                      out[user.name] = user.psk
-                    end
-                  end
-
-                  host.result.add(self, "# ipsec users", Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
-                  out.each do |name, psk|
-                    host.result.add(self, Construqt::Util.render(binding, "strongswan_user.erb"),
-                      Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
-                  end
-                end
-
-                def self.render_private_keys(host)
-                  host.result.add(self, "# ipsec private keys", Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
-                  host.region.network.cert_store.all_private.keys.each do |key|
-                    host.result.add(self, ": RSA #{key}", Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
-                  end
-                end
-
-                def self.render_certs(host)
-                  host.region.network.cert_store.all.each do |key, datas|
-                    datas.each do |name, data|
-                      host.result.add(self, data, Construqt::Resources::Rights.root_0600, "etc", "ipsec.d", key, name)
-                    end
-                  end
-                end
-
-                def psk(ip, cfg)
-                  [
-                    "# #{cfg.name}",
-                    "#{ip} : PSK \"#{Util.password(cfg.password)}\"",
-                    "#{self.other.host.name} : PSK \"#{Util.password(cfg.password)}\""
-                  ].join("\n")
+                  host.result.add(self, Construqt::Util.render(binding, "strongswan_header.erb"),
+                    Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
                 end
 
                 def build_config(unused, unused2)
@@ -78,6 +32,11 @@ HEADER
                     gt = "gt4"
                   end
 
+                  if leftsubnet.nil? or leftsubnet.empty? or
+                     rightsubnet.nil? or rightsubnet.empty?
+                    throw "we need a transport_left and transport_right for #{self.host.name}-#{self.other.host.name}"
+                  end
+
                   if local_if.clazz == "vrrp"
                     writer = host.result.etc_network_vrrp(local_if.name)
                     writer.add_master("/usr/sbin/ipsec up #{self.host.name}-#{self.other.host.name} &", 1000)
@@ -94,9 +53,8 @@ HEADER
                     writer.lines.down("/usr/sbin/ipsec down #{self.host.name}-#{self.other.host.name} &", -1000)
                   end
 
-                  host.result.add(self, psk(transport_right, cfg),
-                                  Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::IPSEC),
-                                  "etc", "ipsec.secrets")
+                  host.result.ipsec_secret.add_psk(transport_right, cfg.password, cfg.name)
+                  host.result.ipsec_secret.add_psk(self.other.host.name, cfg.password)
 
                   conn = OpenStruct.new
                   conn.leftid=self.host.name
@@ -128,7 +86,8 @@ HEADER
                   conn.rekeymargin="3m"
                   conn.closeaction="restart"
                   conn.auto=self.auto || "start"
-                  self.host.result.add(self, render_conn(conn), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
+                  self.host.result.add(self, render_conn(conn),
+                    Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
                 end
 
                 def render_conn(conn)

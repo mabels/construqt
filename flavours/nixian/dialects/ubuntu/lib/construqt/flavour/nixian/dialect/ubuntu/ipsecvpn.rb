@@ -13,9 +13,13 @@ module Construqt
               #puts ">>>>>>>>>>>>>>>>>>>>>>#{host.name} #{iface.name}"
               render_ipv6_proxy(iface)
               if iface.leftpsk
-                self.host.result.add(self, render_psk(host, iface),
-                                     Construqt::Resources::Rights::root_0600(Construqt::Resources::Component::IPSEC), "etc", "ipsec.secrets")
+                comment = "#{host.name}-#{iface.name}"
+                iface.left_interface.address.ips.each do |ip|
+                  self.host.result.ipsec_secret.add_any_psk(ip.to_s, Util.password(iface.leftpsk), comment)
+                  comment = nil
+                end
               end
+              self.host.result.ipsec_secret.add_users_psk(host)
 
               self.host.result.add(self, render_ikev1(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
               self.host.result.add(self, render_ikev2(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
@@ -25,16 +29,6 @@ module Construqt
               return unless iface.ipv6_proxy
               host.result.add(self, Construqt::Util.render(binding, "ipsecvpn_updown.erb"),
                 Construqt::Resources::Rights.root_0755, "etc", "ipsec.d", "#{iface.left_interface.name}-ipv6_proxy_updown.sh")
-            end
-
-            def render_psk(host, iface)
-              out = []
-              out << "## #{host.name}-#{iface.name}"
-              iface.left_interface.address.ips.each do |ip|
-                out << "#{ip.to_s} %any : PSK \"#{iface.leftpsk}\""
-              end
-
-              out.join("\n")
             end
 
             def render_ikev1(host, iface)
@@ -69,6 +63,7 @@ module Construqt
               conn.leftauth = "pubkey"
               if iface.leftcert
                 conn.leftcert = iface.leftcert.name
+                host.result.ipsec_secret.add_cert(iface.leftcert)
               end
 
               conn.left = [iface.left_interface.address.first_ipv4,iface.left_interface.address.first_ipv6].compact.join(",")
@@ -92,7 +87,6 @@ module Construqt
               conn.to_h.each do |k,v|
                 out << Util.indent("#{k}=#{v}", 3)
               end
-
               out.join("\n")
             end
           end

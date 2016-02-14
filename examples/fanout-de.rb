@@ -25,7 +25,7 @@ module FanoutDe
                                      "auth_method" => :internal,
                                      "left_interface" => left_if,
                                      "leftpsk" => IPSEC_LEFT_PSK,
-                                     "leftcert" => region.network.cert_store.get_cert("fanout-de_adviser_com.crt"),
+                                     "leftcert" => region.network.cert_store.find_package("fanout-de"),
                                      "right_address" => region.network.addresses.add_ip("192.168.72.64/26#IPSECVPN-DE")
         .add_ip("2a01:4f8:d15:1190::cafe:0/112#IPSECVPN-DE"),
       "ipv6_proxy" => true)

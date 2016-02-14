@@ -87,8 +87,8 @@ module Construqt
     hosts = region_or_hosts if region_or_hosts.kind_of?(Array)
     hosts = region_or_hosts.hosts.get_hosts if region_or_hosts.kind_of?(Construqt::Regions::Region)
     throw "need a region or hosts list" unless hosts
-    Construqt::Ipsecs.build_config()
-    Construqt::Bgps.build_config()
+    Construqt::Ipsecs.build_config(hosts)
+    Construqt::Bgps.build_config(hosts)
     hosts.inject({}) do |r, host|
       if r[host.region.name].nil?
         host.region.registry && host.region.registry.produce
