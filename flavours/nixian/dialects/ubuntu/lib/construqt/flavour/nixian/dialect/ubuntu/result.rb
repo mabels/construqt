@@ -133,95 +133,19 @@ module Construqt
             end
 
             def sh_function_git_add()
-              out = []
-              out << "import_fname()"
-              out << "{"
-              out << "  fname=$1"
-              out << "  IMPORT_FNAME='/'`dirname $fname`'/.'`basename $fname`'.import'"
-              out << "}"
-              out << "git_add()"
-              out << "{"
-              out << "  fname=$1"
-              out << "  owner=$2"
-              out << "  right=$3"
-              out << "  skip_git=$4"
-              out << "  import_fname $fname"
-              out << "  ifname=$IMPORT_FNAME"
-              out << "  chown $owner $ifname"
-              out << "  chmod $right $ifname"
-              out << "  if [ ! -f /$fname ]"
-              out << "  then"
-              out << "    mv $ifname /$fname"
-              out << "    echo created /$fname to $owner:$right skip_git $skip_git"
-              out << "  else"
-              out << "    diff -rq $ifname /$fname"
-              out << "    if [ $? != 0 ]"
-              out << "    then"
-              out << "      mv $ifname /$fname"
-              out << "      echo updated /$fname to $owner:$right skip_git $skip_git"
-              out << "    else"
-              out << "      rm $ifname"
-              out << "      echo unchanged /$fname to $owner:$right skip_git $skip_git"
-              out << "    fi"
-              out << '    if [ "$skip_git" = "false" ]'
-              out << "    then"
-              out << "      git --git-dir /root/construqt.git --work-tree=/ add /$fname"
-              out << "    fi"
-              out << "  fi"
-              out << "}"
-              out
+              Construqt::Util.render(binding, "result_git_add.sh.erb")
             end
 
             def setup_ntp(host)
-              out = []
-              out << "cp /usr/share/zoneinfo/#{host.time_zone || host.region.network.ntp.get_timezone} /etc/localtime"
-              # missing /etc/ntp.conf writer
-              out
+              ["cp /usr/share/zoneinfo/#{host.time_zone || host.region.network.ntp.get_timezone} /etc/localtime"]
             end
 
             def sh_is_opt_set
-              out = []
-              out << "is_opt_set()"
-              out << "{"
-              out << "opt=$1"
-              out << "found=1"
-              out << "for i in $ARGS"
-              out << "do"
-              out << "if [ $i = $opt ]"
-              out << "then"
-              out << " found=0"
-              out << "fi"
-              out << "done"
-              out << "return $found"
-              out << "}"
-              out
+              Construqt::Util.render(binding, "result_is_opt_set.sh.erb")
             end
 
             def sh_install_packages
-              out = []
-              out << "install_packages()"
-              out << "{"
-              out << "packages=$*"
-              out << "updates=''"
-              out << 'for i in $packages'
-              out << 'do'
-              out << ' dpkg -l $i 2> /dev/null | grep -q "^ii\s\s*$i\s"'
-              out << ' if [ $? != 0 ]'
-              out << ' then'
-              out << '    updates="$updates $i"'
-              out << ' fi'
-              out << 'done'
-              out << '[ -f /etc/resolv.conf ] && mv /etc/resolv.conf /etc/resolv.conf.temp'
-              out << 'echo "nameserver 8.8.8.8" >> /etc/resolv.conf'
-              out << 'apt-get -qq -y install $updates'
-              out << 'if [ $? != 0 ]'
-              out << 'then'
-              out << '  apt-get update'
-              out << '  apt-get -qq -y install $updates'
-              out << 'fi'
-              out << '[ -f /etc/resolv.conf.temp ] && mv /etc/resolv.conf.temp /etc/resolv.conf'
-              out << '}'
-              out
+              Construqt::Util.render(binding, "result_install_packages.sh.erb")
             end
 
             def commit
@@ -234,36 +158,15 @@ module Construqt
 
               Lxc.write_deployers(@host)
 
-              out = [<<BASH]
-#!/bin/bash
-hostname=`hostname`
-ARGS=$@
-if [ $hostname != "" ]
-then
-  hostname=`grep '^\s*[^#]' /etc/hostname`
-fi
-if [ "$hostname" != "#{@host.name}" ]
-then
- echo 'You try to run a deploy script on a host which has not the right name $hostname != #{@host.name}'
- exit 47
-else
- echo Configure Host #{@host.name}
-fi
-BASH
-              out += sh_is_opt_set
-              out += sh_function_git_add
-              out += sh_install_packages
+              out = [Construqt::Util.render(binding, "result_host_check.sh.erb")]
+
+              out << sh_is_opt_set
+              out << sh_function_git_add
+              out << sh_install_packages
 
               out << "is_opt_set skip_packages || install_packages #{components_hash.keys.join(" ")}"
 
-              out << <<BASH
-if [ ! -d /root/construqt.git ]
-then
- echo generate history in /root/construqt.git
- git init --bare /root/construqt.git
-fi
-BASH
-
+              out << Construqt::Util.render(binding, "result_git_init.sh.erb")
 
               out += setup_ntp(host)
               out += components_hash.values.select{|i| i.instance_of?(Array) }.flatten
@@ -291,11 +194,7 @@ BASH
                 ]
               end.flatten
               out += Lxc.deploy(@host)
-              out += [<<BASH]
-git --git-dir /root/construqt.git config user.name #{ENV['USER']}
-git --git-dir /root/construqt.git config user.email #{ENV['USER']}@construqt.net
-git --git-dir /root/construqt.git --work-tree=/ commit -q -m #{Shellwords.escape("#{ENV['USER']} #{`hostname`.strip} #{`git log --pretty=format:"%h - %an, %ar : %s" -1`.strip}")} > /dev/null && echo COMMITED
-BASH
+              out += [Construqt::Util.render(binding, "result_git_commit.sh.erb")]
               Util.write_str(@host.region, out.join("\n"), @host.name, "deployer.sh")
             end
           end

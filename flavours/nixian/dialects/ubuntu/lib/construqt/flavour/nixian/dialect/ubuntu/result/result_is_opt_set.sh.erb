@@ -1,0 +1,13 @@
+is_opt_set()
+{
+  opt=$1
+  found=1
+  for i in $ARGS
+  do
+    if [ $i = $opt ]
+    then
+     found=0
+    fi
+  done
+  return $found
+}

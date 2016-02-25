@@ -62,7 +62,7 @@ module Construqt
               conn.keyexchange = "ikev2"
               conn.leftauth = "pubkey"
               if iface.leftcert
-                conn.leftcert = iface.leftcert.name
+                conn.leftcert = iface.leftcert.cert.name
                 host.result.ipsec_secret.add_cert(iface.leftcert)
               end
 

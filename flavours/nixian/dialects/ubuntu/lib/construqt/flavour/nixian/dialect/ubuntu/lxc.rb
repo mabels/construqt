@@ -4,27 +4,15 @@ module Construqt
       module Dialect
         module Ubuntu
           module Lxc
+
             def self.update_config(base_dir, key, value)
-              ruby = []
               right = Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::LXC)
-              ruby << "/etc/lxc/update_config #{base_dir}/config #{base_dir}/update.config.list #{key} #{value}"
-              ruby << "for i in `cat #{base_dir}/update.config.list`"
-              ruby << 'do'
-              ruby << "  git_add /$i #{right.owner} #{right.right} false"
-              ruby << 'done'
-              ruby
+              [Construqt::Util.render(binding, "lxc_update_config.sh.erb")]
             end
 
             def self.reference_net_config(base_dir)
-              ruby = []
               right = Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::LXC)
-              ruby << "cp #{base_dir}/../#{File.basename(base_dir)}.network.config #{base_dir}/network.config"
-              ruby << "/etc/lxc/update_network_in_config #{base_dir}/config #{base_dir}/network.config #{base_dir}/update.config.list"
-              ruby << "for i in `cat #{base_dir}/update.config.list`"
-              ruby << 'do'
-              ruby << "  git_add /$i #{right.owner} #{right.right} false"
-              ruby << 'done'
-              ruby
+              [Construqt::Util.render(binding, "lxc_update_network_config.sh.erb")]
             end
 
             def self.templates(host)
@@ -34,11 +22,9 @@ module Construqt
                   ret[lxc.lxc_deploy.get_template] ||= []
                   ret[lxc.lxc_deploy.get_template] << lxc
                 end
-
                 ret
               end
-
-              #binding.pry
+              #binding.pry if host.name == "ao-mother"
               out
             end
 
@@ -77,7 +63,6 @@ module Construqt
                 elsif ret && !h.lxc_deploy.get_release.nil? && h.lxc_deploy.get_release != ret
                   throw "diffrent releases on one template [#{hosts.map{|h|h.lxc_deploy.get_release}.join(":")}]"
                 end
-
                 ret
               end
             end
@@ -89,7 +74,6 @@ module Construqt
                 elsif ret && h.flavour.name != ret
                   throw "diffrent releases on one template"
                 end
-
                 ret
               end
             end
@@ -133,7 +117,7 @@ module Construqt
                 out << "echo LXC clone from overlay:#{name} to #{host.name}"
                 out << stop_lxc_container(host)
                 lxc_root = File.join("/var", "lib", "lxc", host.name)
-                out << "[ -d #{lxc_root}] && lxc-destroy -n #{host.name}"
+                out << "[ -d #{lxc_root} ] && lxc-destroy -n #{host.name}"
                 out << "lxc-clone -s -B overlayfs #{name} #{host.name}"
                 out << "echo fix config of #{host.name} in #{lxc_root}"
                 out += reference_net_config(lxc_root)
@@ -150,21 +134,23 @@ module Construqt
 
             def self.deploy(host)
               out = []
-              out << '[ "true" = "$(. /etc/default/lxc-net && echo $USE_LXC_BRIDGE)" ] && echo USE_LXC_BRIDGE="false" >> /etc/default/lxc-net'
               # if this a mother
               return out unless i_ma_the_mother?(host)
+              
+              out << '[ "true" = "$(. /etc/default/lxc-net && echo $USE_LXC_BRIDGE)" ] && echo USE_LXC_BRIDGE="false" >> /etc/default/lxc-net'
               # find all templates
               templates(host).each do |name, hosts|
-                out << "echo LXC create overlay:#{name} for [#{hosts.map{|h| h.name}.join(":")}]"
+                out << "echo 'LXC create overlay:#{name} for [#{hosts.map{|h| h.name}.join(":")}]'"
                 out += create_template(name, hosts)
                 out += deploy_clones(name, hosts)
               end
 
               # deploy standalones
-              host.region.hosts.get_hosts.select { |h| h.lxc_deploy && host.delegate == h.mother }.each do |lxc|
+              host.region.hosts.get_hosts.select do |h|
+                  h.lxc_deploy && host.delegate == h.mother && !h.lxc_deploy.get_template
+              end.each do |lxc|
                 out += deploy_standalone(lxc)
               end
-
               out
             end
 
@@ -187,6 +173,8 @@ module Construqt
                 out << "echo start LXC-RESTART #{host.name}"
                 out << stop_lxc_container(host)
                 out << "[ -d #{lxc_rootfs}/usr/share ] || lxc-create -n '#{host.name}' -t #{host.flavour.name}#{release}"
+              else
+                out << "echo start LXC-CREATE #{host.name}"
               end
               out << "echo fix config of #{host.name} in #{lxc_rootfs}"
               out += reference_net_config(base_dir)

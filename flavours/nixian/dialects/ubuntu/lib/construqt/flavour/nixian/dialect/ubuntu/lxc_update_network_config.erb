@@ -1,6 +1,0 @@
-ruby << "cp #{base_dir}/../#{File.basename(base_dir)}.network.config #{base_dir}/network.config"
-ruby << "/etc/lxc/update_network_in_config #{base_dir}/config #{base_dir}/network.config #{base_dir}/update.config.list"
-ruby << "for i in `cat #{base_dir}/update.config.list`"
-ruby << 'do'
-ruby << "  git_add /$i #{right.owner} #{right.right} false"
-ruby << 'done'

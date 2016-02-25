@@ -42,6 +42,9 @@ module Construqt
       def find_by_name(name)
         self[name] || throw("Interface with name [#{name}] not found on host [#{@host.name}]")
       end
+      def find_by_name!(name)
+        self[name]
+      end
     end
 
     def add_internal(name, cfg, &block)

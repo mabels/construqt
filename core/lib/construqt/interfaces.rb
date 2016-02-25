@@ -213,8 +213,12 @@ module Construqt
       iface
     end
 
-    def find_by_name(iface_name)
+    def find_by_name!(iface_name)
       ret = @interfaces[iface_name]
+    end
+
+    def find_by_name(iface_name)
+      ret = find_by_name!(iface_name)
       throw "interfaces with name #{iface_name} not found" if ret.nil? or ret.empty?
       ret
     end

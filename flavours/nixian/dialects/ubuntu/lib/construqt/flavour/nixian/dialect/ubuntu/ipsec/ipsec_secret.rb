@@ -43,6 +43,7 @@ module Construqt
               end
 
               def render_users
+                return "" if @users.empty?
                 out = ['# ipsec users']
                 @users.each do |name, psk|
                   out << render_line(name, nil, "EAP", psk)

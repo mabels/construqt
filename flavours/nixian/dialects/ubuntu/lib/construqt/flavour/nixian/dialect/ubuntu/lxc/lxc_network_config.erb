@@ -2,7 +2,9 @@
 lxc.network.type = <%= @iface.plug_in.get_type %>
 lxc.network.flags = <%= @flags %>
 lxc.network.link = <%= @link %>
+<% if @iface.plug_in.get_type != "phys" -%>
 lxc.network.hwaddr = <%= get_mac %>
-<% if @name %>
+<% end -%>
+<% if @name -%>
 lxc.network.name = <%= @name%>
-<% end %>
+<% end -%>

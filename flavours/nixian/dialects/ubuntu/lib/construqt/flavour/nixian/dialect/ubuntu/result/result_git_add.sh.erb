@@ -1,0 +1,36 @@
+import_fname()
+{
+  fname=$1
+  IMPORT_FNAME='/'`dirname $fname`'/.'`basename $fname`'.import'
+}
+
+git_add()
+{
+  fname=$1
+  owner=$2
+  right=$3
+  skip_git=$4
+  import_fname $fname
+  ifname=$IMPORT_FNAME
+  chown $owner $ifname
+  chmod $right $ifname
+  if [ ! -f /$fname ]
+  then
+    mv $ifname /$fname
+    echo created /$fname to $owner:$right skip_git $skip_git
+  else
+    diff -rq $ifname /$fname
+    if [ $? != 0 ]
+    then
+      mv $ifname /$fname
+      echo updated /$fname to $owner:$right skip_git $skip_git
+    else
+      rm $ifname
+      echo unchanged /$fname to $owner:$right skip_git $skip_git
+    fi
+    if [ "$skip_git" = "false" ]
+    then
+      git --git-dir /root/construqt.git --work-tree=/ add /$fname
+    fi
+  fi
+}

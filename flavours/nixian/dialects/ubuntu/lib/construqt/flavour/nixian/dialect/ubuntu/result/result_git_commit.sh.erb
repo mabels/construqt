@@ -1,0 +1,6 @@
+git --git-dir /root/construqt.git config user.name <%= ENV['USER'] %>
+git --git-dir /root/construqt.git config user.email <%= ENV['USER'] %>@construqt.net
+git --git-dir /root/construqt.git --work-tree=/ commit -q \
+-m <%= Shellwords.escape("#{ENV['USER']} #{`hostname`.strip} "+
+    "#{`git log --pretty=format:"%h - %an, %ar : %s" -1`.strip}")
+    %> > /dev/null && echo COMMITED

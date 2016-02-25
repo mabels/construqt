@@ -178,9 +178,9 @@ def firewall(region)
 
   Construqt::Firewalls.add("ipsec-srv") do |fw|
     fw.host do |host|
-      host.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_net("#INTERNET").to_my_net.udp.dport("isakmp")
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#INTERNET").to_my_net.udp.dport("isakmp")
         .dport("ipsec-nat-t").from_is_outside
-      host.add.action(Construqt::Firewalls::Actions::ACCEPT).ipv4.from_net("#INTERNET").to_my_net.esp.from_is_outside
+      host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#INTERNET").to_my_net.esp.from_is_outside
     end
   end
   Construqt::Firewalls.add("host-outbound-simple") do |fw|

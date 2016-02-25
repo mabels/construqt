@@ -1,0 +1,22 @@
+install_packages()
+{
+  packages=$*
+  updates=''
+  for i in $packages
+  do
+    dpkg -l $i 2> /dev/null | grep -q "^ii\s\s*$i\s"
+    if [ $? != 0 ]
+    then
+      updates="$updates $i"
+    fi
+  done
+  [ -f /etc/resolv.conf ] && mv /etc/resolv.conf /etc/resolv.conf.temp
+  echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+  apt-get -qq -y install $updates
+  if [ $? != 0 ]
+  then
+    apt-get update
+    apt-get -qq -y install $updates
+  fi
+  [ -f /etc/resolv.conf.temp ] && mv /etc/resolv.conf.temp /etc/resolv.conf
+}
