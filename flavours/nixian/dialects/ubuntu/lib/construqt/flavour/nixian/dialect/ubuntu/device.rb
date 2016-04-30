@@ -101,6 +101,21 @@ module Construqt
               end
             end
 
+            def self.add_dhcp_client(host, ifname, iface, writer, family)
+              return if !(iface.address.nil? or iface.address.dhcpv4?)
+              dhcp_client_opts = [
+                "/sbin/dhclient",
+                "-nw",
+                "-pf /run/dhclient.#{ifname}.pid",
+                "-lf /var/lib/dhcp/dhclient.#{ifname}.leases",
+                "-I",
+                "-df /var/lib/dhcp/dhclient6.#{ifname}.leases",
+                "#{ifname}"
+              ]
+              writer.lines.up(dhcp_client_opts.join(" "))
+              writer.lines.down("kill `cat /run/dhclient.#{ifname}.pid`")
+            end
+
             def self.add_dhcp_server(host, ifname, iface, writer, family)
               return unless iface.dhcp
               host.result.add_component(Construqt::Resources::Component::DNSMASQ)
@@ -140,6 +155,7 @@ module Construqt
               writer.lines.down("ip link set dev #{ifname} down")
               add_address(host, ifname, iface.delegate, writer.lines, writer, family)
               #binding.pry if ifname == "v202"
+              add_dhcp_client(host, ifname, iface, writer, family)
               add_dhcp_server(host, ifname, iface, writer, family)
               add_services(host, ifname, iface.delegate, writer, family)
             end

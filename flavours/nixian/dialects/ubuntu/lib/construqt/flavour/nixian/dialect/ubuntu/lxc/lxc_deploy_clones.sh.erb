@@ -1,0 +1,13 @@
+echo LXC clone from overlay:<%= name %> to <% host.name %>
+<%= stop_lxc_container(host) %>
+<% lxc_root = File.join("/var", "lib", "lxc", host.name) -%>
+[ -d <%= lxc_root %> ] && lxc-destroy -n <%= host.name %>
+lxc-clone -s -B overlayfs <%= name %> <%= host.name %>
+echo fix config of <%= host.name %> in <%= lxc_root %>
+<%= reference_net_config(lxc_root) %>
+<% if host.lxc_deploy.aa_profile_unconfined? -%>
+  <%= update_config(lxc_root, 'lxc.aa_profile', 'unconfined') %>
+<% end -%>
+lxc-execute -n '<%= host.name %>' -- \
+ /bin/bash -c 'cat > /root/deployer.sh' < <%= lxc_root %>/../<% host.name %>.deployer.sh"
+lxc-execute -n '<%= host.name %>' --  /bin/bash /root/deployer.sh

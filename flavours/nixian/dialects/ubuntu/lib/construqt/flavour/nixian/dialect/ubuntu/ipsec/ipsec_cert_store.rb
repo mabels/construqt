@@ -19,7 +19,7 @@ module Construqt
               end
               def commit
                 unify_write("private", @packages.values.map{|p| p.key })
-                unify_write("cert", @packages.values.map{|p| p.cert })
+                unify_write("certs", @packages.values.map{|p| p.cert })
                 unify_write("cacerts", @packages.values.map{|p| p.cacerts }.flatten)
               end
             end

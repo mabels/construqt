@@ -10,7 +10,7 @@ module Construqt
                 end
 
                 def self.header(host)
-                  host.result.add(self, Construqt::Util.render(binding, "strongswan_header.erb"),
+                  host.result.add(:ipsec, Construqt::Util.render(binding, "strongswan_header.erb"),
                     Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
                 end
 
@@ -86,7 +86,7 @@ module Construqt
                   conn.rekeymargin="3m"
                   conn.closeaction="restart"
                   conn.auto=self.auto || "start"
-                  self.host.result.add(self, render_conn(conn),
+                  self.host.result.add(:ipsec, render_conn(conn),
                     Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
                 end
 

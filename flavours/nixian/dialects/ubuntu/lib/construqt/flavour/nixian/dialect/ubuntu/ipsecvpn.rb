@@ -21,8 +21,8 @@ module Construqt
               end
               self.host.result.ipsec_secret.add_users_psk(host)
 
-              self.host.result.add(self, render_ikev1(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
-              self.host.result.add(self, render_ikev2(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
+              self.host.result.add(:ipsec, render_ikev1(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
+              self.host.result.add(:ipsec, render_ikev2(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
             end
 
             def render_ipv6_proxy(iface)

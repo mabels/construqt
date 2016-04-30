@@ -1,5 +1,6 @@
 require 'zlib'
 require 'erb'
+require 'shellwords'
 module Construqt
   module Util
     module Chainable
@@ -61,6 +62,10 @@ module Construqt
 
         clazz.send("define_method", get_name, get_name_proc)
       end
+    end
+
+    def self.sh_escape(*str)
+      str.map{|s| Shellwords.escape(s) }.join(" ")
     end
 
     def self.dst_path(region)

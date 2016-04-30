@@ -34,17 +34,18 @@ module Construqt
 
 
             def add_component(component)
-              @result[component] ||= ArrayWithRight.new(Construqt::Resources::Rights.root_0644(component))
+              @result[component] ||= ArrayWithRightAndClazz.new(Construqt::Resources::Rights.root_0644(component), component.to_sym)
             end
 
             def empty?(name)
               not @result[name]
             end
 
-            class ArrayWithRight < Array
-              attr_accessor :right
-              def initialize(right)
+            class ArrayWithRightAndClazz < Array
+              attr_accessor :right, :clazz
+              def initialize(right, clazz)
                 self.right = right
+                self.clazz = clazz
               end
 
               def skip_git?
@@ -60,11 +61,11 @@ module Construqt
               path = File.join(*path)
               throw "not a right #{path}" unless right.respond_to?('right') && right.respond_to?('owner')
               unless @result[path]
-                @result[path] = ArrayWithRight.new(right)
+                @result[path] = ArrayWithRightAndClazz.new(right, clazz)
                 #binding.pry
                 #@result[path] << [clazz.xprefix(@host)].compact
               end
-
+              throw "clazz missmatch for path:#{path} [#{@result[path].clazz.class.name}] [#{clazz.class.name}]" unless clazz == @result[path].clazz
               @result[path] << block+"\n"
               @result[path]
             end
@@ -109,7 +110,9 @@ module Construqt
                 cp::RADVD => { "radvd" => true },
                 cp::DNSMASQ => { "dnsmasq" => true },
                 cp::CONNTRACKD => { "conntrackd" => true, "conntrack" => true },
-                cp::LXC => { "lxc" => true, "ruby" => true, "rubygems-integration" => ['gem install linux-lxc --no-ri --no-rdoc'] },
+                cp::LXC => { "lxc" => true, "ruby" => true, "rubygems-integration" => [
+                  '[ "$(gem list -i linux-lxc)" = "true" ] || gem install linux-lxc --no-ri --no-rdoc'
+                ] },
                 cp::DHCPRELAY => { "wide-dhcpv6-relay" => true, "dhcp-helper" => true }
               }[component]
               throw "Component with name not found #{component}" unless ret
@@ -148,6 +151,29 @@ module Construqt
               Construqt::Util.render(binding, "result_install_packages.sh.erb")
             end
 
+            def write_file(host, fname, block)
+              if host.files
+                return [] if host.files.find do |file|
+                  file.path == fname && file.kind_of?(Construqt::Resources::SkipFile)
+                end
+              end
+              text = block.flatten.select{|i| !(i.nil? || i.strip.empty?) }.join("\n")
+              return [] if text.strip.empty?
+              Util.write_str(@host.region, text, @host.name, fname)
+              gzip_fname = Util.write_gzip(@host.region, text, @host.name, fname)
+              [
+                File.dirname("/#{fname}").split('/')[1..-1].inject(['']) do |res, part|
+                  res << File.join(res.last, part); res
+                end.select{|i| !i.empty? }.map do |i|
+                  "[ ! -d #{i} ] && mkdir #{i} && chown #{block.right.owner} #{i} && chmod #{directory_mode(block.right.right)} #{i}"
+                end,
+                "import_fname #{fname}",
+                "openssl enc -base64 -d <<BASE64 | gunzip > $IMPORT_FNAME", Base64.encode64(IO.read(gzip_fname)).chomp, "BASE64",
+                "git_add #{["/"+fname, block.right.owner, block.right.right, block.skip_git?].map{|i| '"'+Shellwords.escape(i)+'"'}.join(' ')}"
+              ]
+
+            end
+
             def commit
               add(EtcNetworkIptables, etc_network_iptables.commitv4, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4), "etc", "network", "iptables.cfg")
               add(EtcNetworkIptables, etc_network_iptables.commitv6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6), "etc", "network", "ip6tables.cfg")
@@ -157,42 +183,40 @@ module Construqt
               ipsec_cert_store.commit
 
               Lxc.write_deployers(@host)
-
-              out = [Construqt::Util.render(binding, "result_host_check.sh.erb")]
+              out = ["#!/bin/bash", "ARGS=$@"]
 
               out << sh_is_opt_set
               out << sh_function_git_add
               out << sh_install_packages
 
-              out << "is_opt_set skip_packages || install_packages #{components_hash.keys.join(" ")}"
+              out << Construqt::Util.render(binding, "result_package_list.sh.erb")
+
+              out << "grep -q '/var/lib/lxcfs' /root/construqt.git/info/exclude || \\"
+              out << "  echo '/var/lib/lxcfs' >> /root/construqt.git/info/exclude"
+
+              out << "if [ $(is_opt_set skip_mother) != found ]"
+              out << "then"
+              out << Construqt::Util.render(binding, "result_host_check.sh.erb")
+
+              out << "[ $(is_opt_set skip_packages) != found ] && install_packages #{components_hash.keys.join(' ')}"
 
               out << Construqt::Util.render(binding, "result_git_init.sh.erb")
 
               out += setup_ntp(host)
               out += components_hash.values.select{|i| i.instance_of?(Array) }.flatten
 
-              out += @result.map do |fname, block|
-                if host.files
-                  next [] if host.files.find{|file| file.path == fname && file.kind_of?(Construqt::Resources::SkipFile) }
+              @result.each do |fname, block|
+                if !block.clazz.respond_to?(:belongs_to_mother?) ||
+                   block.clazz.belongs_to_mother?
+                  out += write_file(host, fname, block)
                 end
-
-                text = block.flatten.select{|i| !(i.nil? || i.strip.empty?) }.join("\n")
-                next if text.strip.empty?
-                Util.write_str(@host.region, text, @host.name, fname)
-                gzip_fname = Util.write_gzip(@host.region, text, @host.name, fname)
-                #          binding.pry
-                #
-                [
-                  File.dirname("/#{fname}").split('/')[1..-1].inject(['']) do |res, part|
-                    res << File.join(res.last, part); res
-                  end.select{|i| !i.empty? }.map do |i|
-                    "[ ! -d #{i} ] && mkdir #{i} && chown #{block.right.owner} #{i} && chmod #{directory_mode(block.right.right)} #{i}"
-                  end,
-                  "import_fname #{fname}",
-                  "openssl enc -base64 -d <<BASE64 | gunzip > $IMPORT_FNAME", Base64.encode64(IO.read(gzip_fname)).chomp, "BASE64",
-                  "git_add #{["/"+fname, block.right.owner, block.right.right, block.skip_git?].map{|i| '"'+Shellwords.escape(i)+'"'}.join(' ')}"
-                ]
-              end.flatten
+              end
+              out << "fi"
+              @result.each do |fname, block|
+                if block.clazz.respond_to?(:belongs_to_mother?) && !block.clazz.belongs_to_mother?
+                  out += write_file(host, fname, block)
+                end
+              end
               out += Lxc.deploy(@host)
               out += [Construqt::Util.render(binding, "result_git_commit.sh.erb")]
               Util.write_str(@host.region, out.join("\n"), @host.name, "deployer.sh")

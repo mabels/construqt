@@ -5,7 +5,7 @@ module AlwaysConnected
 
   def self.ac_router(region, name, block, fws, mother)
     ACCESS_ROUTER[name] = region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother,
-                                           "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined.release("wily")) do |host|
+                                           "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined.release("xenial")) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -139,7 +139,7 @@ module AlwaysConnected
     # "lxc_deploy" => Construqt::Hosts::Lxc.new.restart.template("ao-template")
     BORDER_ACCESS["ao-border-#{ifname}"] = region.hosts.add("ao-border-#{ifname}", "flavour" => "nixian",
                                       "dialect" => "ubuntu", "mother" => mother,
-                                      "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined.release("wily")) do |host|
+                                      "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined.release("xenial")) do |host|
                                         region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                                                      :description=>"#{host.name} lo",
                                                                      "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

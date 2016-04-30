@@ -1,6 +1,6 @@
-#!/bin/bash
+
 hostname=`hostname`
-ARGS=$@
+
 if [ $hostname != "" ]
 then
   hostname=`grep '^\s*[^#]' /etc/hostname`

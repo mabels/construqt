@@ -1,0 +1,18 @@
+if [ $(is_opt_set nolxc) != found ]
+then
+  [ "true" = "$(. /etc/default/lxc-net && echo $USE_LXC_BRIDGE)" ] && \
+   echo USE_LXC_BRIDGE="false" >> /etc/default/lxc-net
+  # find all templates
+  <% templates(host).each do |name, hosts| -%>
+    echo 'LXC create overlay:<%= name %> for [<%= "#{hosts.map{|h| h.name}.join(":")}" %>]'
+    <%= create_template(name, hosts) %>
+    <%= deploy_clones(name, hosts) %>
+  <% end -%>
+  # deploy standalones
+  <% host.region.hosts.get_hosts.select do |h|
+      h.lxc_deploy && host.delegate == h.mother && \
+      !h.lxc_deploy.get_template
+     end.each do |lxc| -%>
+    <%= deploy_standalone(lxc) %>
+  <% end -%>
+fi

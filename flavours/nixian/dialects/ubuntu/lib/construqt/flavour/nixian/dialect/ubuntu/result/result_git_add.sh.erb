@@ -6,31 +6,33 @@ import_fname()
 
 git_add()
 {
-  fname=$1
+  fname=/$1
+  fname=$(echo $fname | sed 's|//*|/|g')
   owner=$2
   right=$3
   skip_git=$4
   import_fname $fname
   ifname=$IMPORT_FNAME
+  hostname=$(cat /etc/hostname)
   chown $owner $ifname
   chmod $right $ifname
-  if [ ! -f /$fname ]
+  if [ ! -f $fname ]
   then
-    mv $ifname /$fname
-    echo created /$fname to $owner:$right skip_git $skip_git
+    mv $ifname $fname
+    echo created $hostname:$fname to $owner:$right skip_git $skip_git
   else
-    diff -rq $ifname /$fname
+    diff -rq $ifname $fname
     if [ $? != 0 ]
     then
-      mv $ifname /$fname
-      echo updated /$fname to $owner:$right skip_git $skip_git
+      mv $ifname $fname
+      echo updated $hostname:$fname to $owner:$right skip_git $skip_git
     else
       rm $ifname
-      echo unchanged /$fname to $owner:$right skip_git $skip_git
+      echo unchanged $hostname:$fname to $owner:$right skip_git $skip_git
     fi
     if [ "$skip_git" = "false" ]
     then
-      git --git-dir /root/construqt.git --work-tree=/ add /$fname
+      git --git-dir /root/construqt.git --work-tree=/ add $fname
     fi
   fi
 }

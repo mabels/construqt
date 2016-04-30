@@ -22,7 +22,7 @@ KEY
           my.interfaces << left_if = region.interfaces.add_device(host, "enp7s0f1", "mtu" => 1500,
             'address' => region.network.addresses.add_ip("2a04:2f80:3:5cab:1e:#{id}::#{id}/112")
             .add_route("2000::/3", "2a04:2f80:3:5cab:1e:#{id}::0/112"),
-          "firewalls" => ["host-outbound-simple", "service-transit-local", "icmp-ping" , "ssh-srv", "block"])
+          "firewalls" => ["host-outbound-simple", "service-transit-local", "icmp-ping" , "ipsec-srv", "ssh-srv", "block"])
         end
 
         Construqt::Ipsecs.connection("#{fanout_de.name}<=>#{host.name}",
