@@ -62,6 +62,7 @@ REGION.hosts.add("Construqt-Host-Dhcp", "flavour" => "nixian", "dialect" => "ubu
         "firewalls" => ["l-outbound", "l-outbound-host"],
         'address' => REGION.network.addresses
           .add_ip(Construqt::Addresses::DHCPV4)
+          .add_ip(Construqt::Addresses::DHCPV6)
           #.add_ip("10.11.12.13/24")
         )
         #)
@@ -272,7 +273,10 @@ class FirewallTest < Test::Unit::TestCase
     end.attach_iface(TEST_IF_NOADDR)
     writer = TestWriter.new
     Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
-    assert_equal [], writer.ipv4.rows
+    assert_equal [
+      "{FORWARD} -i testif -p tcp -s 0.0.0.0/0 -m multiport --dports 80,443 -j DNAT",
+      "{FORWARD} -o testif -p tcp -d 0.0.0.0/0 -m multiport --sports 80,443 -j DNAT"
+    ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
 
@@ -1372,7 +1376,12 @@ class FirewallTest < Test::Unit::TestCase
       "{Fk3EKrBPaMT0svWooAAQ} -j RETURN",
       "{OUTPUT} -o testif -d 224.0.0.18/32 -j Fk3EKrBPaMT0svWooAAQ"
     ], writer.ipv4.rows
-    assert_equal [], writer.ipv6.rows
+    assert_equal [
+      "{INPUT} -i testif -d 5::5:5:0/124 -j ACCEPT",
+      "{INPUT} -i testif -d 5::5:6:0/124 -j ACCEPT",
+      "{OUTPUT} -o testif -s 5::5:5:0/124 -j ACCEPT",
+      "{OUTPUT} -o testif -s 5::5:6:0/124 -j ACCEPT"
+    ], writer.ipv6.rows
   end
 
   def test_forward_1_1
@@ -1500,10 +1509,12 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
-      "BLA"
+      "{FORWARD} -i testif -d 0.0.0.0/0 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT",
+      "{FORWARD} -o testif -s 0.0.0.0/0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
     ], writer.ipv4.rows
     assert_equal [
-      "BLA"
+      "{FORWARD} -i testif -d 2000::/3 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT",
+      "{FORWARD} -o testif -s 2000::/3 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
     ], writer.ipv6.rows
   end
 
@@ -1512,15 +1523,14 @@ class FirewallTest < Test::Unit::TestCase
     writer = TestWriter.new
     Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [
-      "BLA"
+      "{INPUT} -i testif -d 0.0.0.0/0 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT",
+      "{OUTPUT} -o testif -s 0.0.0.0/0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
     ], writer.ipv4.rows
     assert_equal [
-      "BLA"
+      "{INPUT} -i testif -d 2000::/3 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT",
+      "{OUTPUT} -o testif -s 2000::/3 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
     ], writer.ipv6.rows
-
   end
-
-
 end
 
 #result = RubyProf.stop

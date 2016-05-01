@@ -75,9 +75,9 @@ module Construqt
             end
 
             def self.write_direction(direction, begin_middle_end)
-#binding.pry
               src_list = direction.src_ip_list
               dst_list = direction.dst_ip_list
+#binding.pry
               # cases
               #
               # to_list.empty? and from_list.empty?
@@ -95,22 +95,22 @@ module Construqt
               #
               # to_list.empty? and not from_list.empty?
               #
-              if src_list.empty? && dst_list.size_without_missing > 0
+              if (src_list.empty? || src_list.size_without_missing == 0) &&
+                dst_list.size_without_missing > 0
                 dst_list.each_without_missing do |dest_ip|
                   write_line(direction, begin_middle_end, nil, dest_ip)
                 end
-
                 return
               end
 
               #
               # not to_list.empty? and from_list.empty?
               #
-              if src_list.size_without_missing > 0 && dst_list.empty?
+              if src_list.size_without_missing > 0 &&
+                (dst_list.empty? || dst_list.size_without_missing == 0)
                 src_list.each_without_missing do |src_ip|
                   write_line(direction, begin_middle_end, src_ip, nil)
                 end
-
                 return
               end
 
