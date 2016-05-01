@@ -22,8 +22,8 @@ module AlwaysConnected
       region.interfaces.add_vlan(host, "eth0.#{block}", "mtu" => 1580, "vlan_id" => block, "interface" =>
         region.interfaces.add_device(host, "eth0", "mtu" => 1500,
                   "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br0"))),
-                                    'address' => region.network.addresses.add_ip("172.23.#{block}.1/24#NET-#{name}#AO-INTERNAL",
-                                    "dhcp" => Construqt::Dhcp.new.start("172.23.#{block}.100").end("172.23.#{block}.200").domain(name)))
+        'address' => region.network.addresses.add_ip("172.23.#{block}.1/24#NET-#{name}#AO-INTERNAL",
+        "dhcp" => Construqt::Dhcp.new.start("172.23.#{block}.100").end("172.23.#{block}.200").domain(name)))
     end
   end
 

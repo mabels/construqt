@@ -102,7 +102,8 @@ module Construqt
             end
 
             def self.add_dhcp_client(host, ifname, iface, writer, family)
-              return if !(iface.address.nil? or iface.address.dhcpv4?)
+              return if iface.address.nil?
+              return if !iface.address.dhcpv4?
               dhcp_client_opts = [
                 "/sbin/dhclient",
                 "-nw",
