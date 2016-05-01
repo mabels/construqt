@@ -194,6 +194,11 @@ module Construqt
               out << "grep -q '/var/lib/lxcfs' /root/construqt.git/info/exclude || \\"
               out << "  echo '/var/lib/lxcfs' >> /root/construqt.git/info/exclude"
 
+              out << "for i in $(seq 8)"
+              out << "do"
+              out << "  systemctl mask container-getty@\$i.service > /dev/null"
+              out << "done"
+
               out << "if [ $(is_opt_set skip_mother) != found ]"
               out << "then"
               out << Construqt::Util.render(binding, "result_host_check.sh.erb")

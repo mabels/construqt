@@ -17,7 +17,7 @@ def firewall(region)
 
   Construqt::Firewalls.add("border-forward") do |fw|
     fw.forward do |fwd|
-      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_is_outside
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_is_inside
     end
   end
   Construqt::Firewalls.add("border-masq") do |fw|

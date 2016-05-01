@@ -337,9 +337,9 @@ module Construqt
             end
 
             def self.write_direction(direction, begin_middle_end)
+#binding.pry
               src_list = direction.src_ip_list
               dst_list = direction.dst_ip_list
-
               # cases
               #
               # to_list.empty? and from_list.empty?

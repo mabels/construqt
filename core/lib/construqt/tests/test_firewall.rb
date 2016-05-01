@@ -44,17 +44,38 @@ REGION.network.addresses
   .add_ip("4.4.4.1/24#TEST_TO_FILTER")
   .add_ip("5.5.5.1/24#TEST_FROM_FILTER")
 
+Construqt::Firewalls.add("l-outbound") do |fw|
+  fw.forward do |forward|
+    forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INDERNET").from_is_outside
+  end
+end
+
+Construqt::Firewalls.add("l-outbound-host") do |fw|
+  fw.host do |host|
+    host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INDERNET").from_is_outside
+  end
+end
+
+REGION.hosts.add("Construqt-Host-Dhcp", "flavour" => "nixian", "dialect" => "ubuntu") do |cq|
+  cq.configip = cq.id ||= Construqt::HostId.create do |my|
+    my.interfaces << DHCP_IF = REGION.interfaces.add_device(cq, "v998", "mtu" => 1500,
+        "firewalls" => ["l-outbound", "l-outbound-host"],
+        'address' => REGION.network.addresses
+          .add_ip(Construqt::Addresses::DHCPV4)
+          #.add_ip("10.11.12.13/24")
+        )
+        #)
+  end
+  REGION.interfaces.add_device(cq, "v999", "mtu" => 1500,
+        'address' => REGION.network.addresses.add_ip("172.16.1.1/24"))
+end
+
 REGION.hosts.add("Construqt-Host-ipv4", "flavour" => "nixian", "dialect" => "ubuntu") do |cq|
   cq.configip = cq.id ||= Construqt::HostId.create do |my|
     my.interfaces << TEST_IF_IPV4 = REGION.interfaces.add_device(cq, "v998", "mtu" => 1500, 'address' => REGION.network.addresses.add_ip("1.2.2.3"))
   end
 end
 
-Construqt::Firewalls.add("l-outbound") do |fw|
-  fw.forward do |forward|
-    forward.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INDERNET").from_is_outside
-  end
-end
 
 
 Construqt::Firewalls.add("l-host-outbound") do |fw|
@@ -160,7 +181,7 @@ class FirewallTest < Test::Unit::TestCase
   end
 
   def create_rule(iface = TEST_IF)
-    rule = Construqt::Firewalls::Firewall::Forward::ForwardEntry.new(nil).action("<action>")
+    rule = Construqt::Firewalls::ForwardEntry.new(nil).action("<action>")
     rule.attached_interface = iface
     rule
   end
@@ -1445,19 +1466,12 @@ class FirewallTest < Test::Unit::TestCase
   end
 
   def test_dynamic_ip_and_snat
-    dhcp_if = nil
-    REGION.hosts.add("Construqt-Host-Dhcp", "flavour" => "nixian", "dialect" => "ubuntu") do |cq|
-      cq.configip = cq.id ||= Construqt::HostId.create do |my|
-        my.interfaces << dhcp_if = REGION.interfaces.add_device(cq, "v998", "mtu" => 1500,
-            'address' => REGION.network.addresses.add_ip(Construqt::Addresses::DHCPV4))
-      end
-    end
     fw = Construqt::Firewalls.add("dhcp-net-nat") do |fw|
       fw.nat do |nat|
         nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT)
           .from_net("#TEST_FROM_FILTER").to_source.from_is_inside
       end
-    end.attach_iface(dhcp_if)
+    end.attach_iface(DHCP_IF)
     writer = TestWriter.new
     Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "dhcpif", writer)
     assert_equal [
@@ -1471,7 +1485,7 @@ class FirewallTest < Test::Unit::TestCase
       fw.nat do |nat|
         nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).to_source.from_is_inside
       end
-    end.attach_iface(dhcp_if)
+    end.attach_iface(DHCP_IF)
     writer = TestWriter.new
     Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "dhcpif", writer)
     assert_equal [
@@ -1480,6 +1494,33 @@ class FirewallTest < Test::Unit::TestCase
     assert_equal [
     ], writer.ipv6.rows
   end
+
+  def test_dynamic_ip_and_from_my_net_forward
+    fw = Construqt::Firewalls.find('l-outbound').attach_iface(DHCP_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    assert_equal [
+      "BLA"
+    ], writer.ipv4.rows
+    assert_equal [
+      "BLA"
+    ], writer.ipv6.rows
+  end
+
+  def test_dynamic_ip_and_from_my_net_host
+    fw = Construqt::Firewalls.find('l-outbound-host').attach_iface(DHCP_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
+    assert_equal [
+      "BLA"
+    ], writer.ipv4.rows
+    assert_equal [
+      "BLA"
+    ], writer.ipv6.rows
+
+  end
+
+
 end
 
 #result = RubyProf.stop

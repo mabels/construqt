@@ -101,6 +101,7 @@ module AlwaysConnected
 
   def self.run(network)
     region = setup_region("always-connected", network)
+    tag_internet =  region.network.addresses.add_ip("0.0.0.0/0#INTERNET").add_ip("2000::/3#INTERNET")
     if ARGV.include?("ao-plantuml")
       require 'construqt/flavour/plantuml.rb'
       region.add_aspect(Construqt::Flavour::Plantuml.new)
@@ -152,7 +153,7 @@ module AlwaysConnected
                                         mother_if = mother.interfaces.find_by_name!(ifname) || region.interfaces.add_device(mother, ifname, "mtu" => 1500)
                                         border_options = options.clone
                                         border_options["mtu"] = 1500
-                                        border_options['firewalls'] = ['border-forward', 'border-masq', 'icmp-ping', 'block']
+                                        border_options['firewalls'] = ['host-outbound', 'border-forward', 'border-masq', 'icmp-ping', 'block']
                                         border_options["address"] = region.network.addresses.add_ip(Construqt::Addresses::DHCPV4)
                                         border_options["plug_in"] = Construqt::Cables::Plugin.new.iface(mother_if)
                                         if border_options['ssid']
