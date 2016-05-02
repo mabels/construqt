@@ -71,7 +71,6 @@ region.network.addresses.add_ip("192.168.0.1/24#KDE-WL");
 
 firewall(region)
 
-
 region.network.addresses.add_ip("2000::/3#DEFAULT")
 
 

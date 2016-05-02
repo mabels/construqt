@@ -6,6 +6,8 @@ module Construqt
   module Flavour
     class Plantuml
 
+      DIRECTORY = File.dirname(__FILE__)
+      
       def name
         'plantuml'
       end
@@ -225,6 +227,7 @@ module Construqt
 
         method = factory[type]
         if method
+#Construqt.logger.debug "type:#{host.name}"
           obj = method.call(type, host, *args)
           if obj
             ident = obj.ident
@@ -310,8 +313,9 @@ module Construqt
             end,
             "Ipsec" => lambda do |node|
               [node.reference.lefts.first, node.reference.rights.first].each do |iface|
-                binding.pry unless @tree[iface.interface.ident]
-                node.connect @tree[iface.interface.ident]
+                if @tree[iface.interface.ident]
+                  node.connect @tree[iface.interface.ident]
+                end
               end
             end,
             "Bgp" => lambda do |node|

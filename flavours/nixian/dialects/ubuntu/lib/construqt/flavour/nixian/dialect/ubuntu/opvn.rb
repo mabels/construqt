@@ -9,9 +9,13 @@ module Construqt
             include Construqt::Cables::Plugin::Single
             attr_accessor :delegate
             attr_reader :address,:template,:plug_in,:network,:mtu,:clazz,:dh1024
-            attr_reader :ipv6,:push_routes,:cacert,:name,:hostcert,:hostkey
+            attr_reader :ipv6,:push_routes,:cacert,:name,:hostcert,:hostkey,:host
+            attr_reader :description, :firewalls
             def initialize(cfg)
               @name = cfg['name']
+              @host = cfg['host']
+              @description = cfg['description']
+              @firewalls = cfg['firewalls']
               @address = cfg['address']
               @template = cfg['template']
               @plug_in = cfg['plug_in']
