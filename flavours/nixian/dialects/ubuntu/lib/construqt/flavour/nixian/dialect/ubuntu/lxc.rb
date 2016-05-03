@@ -107,7 +107,7 @@ module Construqt
               quick_stop = host.lxc_deploy.killstop? ? ' -k' : ''
               # lxc stop works sometimes so we test it
               return <<-EOF
-              while $(lxc-ls --running | grep -q '#{host.name}')
+              while $(lxc-ls --running -1 | grep -q '^#{host.name}$')
               do
                 echo 'Stopping #{host.name}'
                 lxc-stop -n '#{host.name}'#{quick_stop}

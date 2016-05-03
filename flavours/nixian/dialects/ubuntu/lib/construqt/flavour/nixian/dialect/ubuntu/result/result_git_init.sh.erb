@@ -3,3 +3,5 @@ then
   echo generate history in /root/construqt.git
   git init --bare /root/construqt.git
 fi
+grep -q '/var/lib/lxcfs' /root/construqt.git/info/exclude || \
+  echo '/var/lib/lxcfs' >> /root/construqt.git/info/exclude

@@ -108,7 +108,9 @@ module Construqt
                 cp::OPENVPN => { "openvpn" => true },
                 cp::DNS => { "bind9" => true },
                 cp::RADVD => { "radvd" => true },
-                cp::DNSMASQ => { "dnsmasq" => true },
+                cp::DNSMASQ => { "dnsmasq" => [
+                    'update-rc.d dnsmasq disable'
+                ] },
                 cp::CONNTRACKD => { "conntrackd" => true, "conntrack" => true },
                 cp::LXC => { "lxc" => true, "ruby" => true, "rubygems-integration" => [
                   '[ "$(gem list -i linux-lxc)" = "true" ] || gem install linux-lxc --no-ri --no-rdoc'
@@ -191,8 +193,6 @@ module Construqt
 
               out << Construqt::Util.render(binding, "result_package_list.sh.erb")
 
-              out << "grep -q '/var/lib/lxcfs' /root/construqt.git/info/exclude || \\"
-              out << "  echo '/var/lib/lxcfs' >> /root/construqt.git/info/exclude"
 
               out << "for i in $(seq 8)"
               out << "do"

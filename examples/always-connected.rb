@@ -13,7 +13,7 @@ module AlwaysConnected
         my.interfaces << region.interfaces.add_device(host, "br666", "mtu" => 1500,
                     "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
                     'firewalls' => fws + ['service-transit-local', 'ssh-srv', 'icmp-ping', 'block'],
-                    'address' => region.network.addresses.add_ip("169.254.69.#{block}/24")
+                    'address' => region.network.addresses.add_ip("169.254.69.#{block}/24#AO-INTERNAL")
           .add_route("0.0.0.0/0", "169.254.69.1"))
       end
       #region.interfaces.add_bridge(mother, "br#{block}", "mtu" => 1500, "interfaces" => [
@@ -147,7 +147,7 @@ module AlwaysConnected
                                         host.configip = host.id ||= Construqt::HostId.create do |my|
                                           my.interfaces << iface = region.interfaces.add_device(host, "br666", "mtu" => 1500,
                                                                                                 "plug_in" => Construqt::Cables::Plugin.new.iface(mother.interfaces.find_by_name("br666")),
-                                                                                                'address' => address.add_route_from_tags("#AO-INTERNAL", "#ROUTER", "metric" => 100))
+                                                                                                'address' => address.add_route_nearest("#AO-INTERNAL", "metric" => 100))
                                         end
 
                                         mother_if = mother.interfaces.find_by_name!(ifname) || region.interfaces.add_device(mother, ifname, "mtu" => 1500)

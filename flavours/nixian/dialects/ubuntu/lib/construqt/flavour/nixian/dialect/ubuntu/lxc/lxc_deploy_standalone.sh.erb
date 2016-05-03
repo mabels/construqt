@@ -1,4 +1,5 @@
-if [ $(is_opt_set lxc_container) = found -a $(is_opt_set '<%= host.name %>') = found ]
+if [ $(is_opt_set lxc_container) != found ] || \
+   [ $(is_opt_set lxc_container) = found -a $(is_opt_set '<%= host.name %>') = found ]
 then
   <% if host.lxc_deploy.recreate? -%>
     echo start LXC-RECREATE <%= host.name %>
