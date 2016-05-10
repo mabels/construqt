@@ -5,7 +5,7 @@ end
 
 CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../../'
 [
-  "#{CONSTRUQT_PATH}/ipaddress/lib",
+  "#{CONSTRUQT_PATH}/ipaddress/ruby/lib",
   "#{CONSTRUQT_PATH}/construqt/core/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/plantuml/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/gojs/lib",

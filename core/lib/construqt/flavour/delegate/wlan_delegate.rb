@@ -4,7 +4,7 @@ module Construqt
 
       class WlanDelegate
         include Delegate
-        COMPONENT = Construqt::Resources::Component::UNREF
+        COMPONENT = Construqt::Resources::Component::WIRELESS
         def initialize(wlan)
           self.delegate = wlan
         end

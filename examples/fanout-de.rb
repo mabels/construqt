@@ -40,7 +40,7 @@ module FanoutDe
      'bind-de' => nil,
      'imap-de' => nil,
      'ovpn' => lambda { |host|
-#       binding.pry
+       #binding.pry
         region.interfaces.add_openvpn(host, "tun1",
                                       "cacert" => "cacert",
                                       "hostcert" =>  "hostcert",

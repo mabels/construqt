@@ -16,7 +16,7 @@ module Construqt
 
           class Result
             attr_reader :etc_network_interfaces, :etc_network_iptables, :etc_conntrackd_conntrackd
-            attr_reader :ipsec_secret, :ipsec_cert_store, :host
+            attr_reader :ipsec_secret, :ipsec_cert_store, :host, :package_builder, :results
             def initialize(host)
               @host = host
               @etc_network_interfaces = EtcNetworkInterfaces.new(self)
@@ -25,7 +25,43 @@ module Construqt
               @etc_network_vrrp = EtcNetworkVrrp.new
               @ipsec_secret = Ipsec::IpsecSecret.new(self)
               @ipsec_cert_store = Ipsec::IpsecCertStore.new(self)
-              @result = {}
+              @package_builder = Result.create_package_builder()
+              @results = {}
+            end
+
+            def self.create_package_builder
+              cps = Packages::Builder.new()
+              cp = Construqt::Resources::Component
+              cps.register(cp::UNREF).add("language-pack-en").add("language-pack-de")
+                            .add("git").add("aptitude").add("traceroute")
+                            .add("tcpdump").add("strace").add("lsof")
+                            .add("ifstat").add("mtr-tiny").add("openssl")
+              cps.register("Construqt::Flavour::Delegate::DeviceDelegate")
+              cps.register("Construqt::Flavour::Nixian::Dialect::Ubuntu::Wlan")
+              cps.register("Construqt::Flavour::Nixian::Dialect::Ubuntu::Bond").add("ifenslave")
+              cps.register("Construqt::Flavour::Delegate::VlanDelegate").add("vlan")
+              cps.register("Construqt::Flavour::Nixian::Dialect::Ubuntu::Gre")
+              cps.register("Construqt::Flavour::Delegate::GreDelegate")
+              cps.register("Construqt::Flavour::Delegate::BridgeDelegate").add("bridge-utils")
+              cps.register(cp::NTP).add("ntpd")
+              cps.register(cp::USB_MODESWITCH).add("usb-modeswitch").add("usb-modeswitch-data")
+              cps.register(cp::VRRP).add("keepalived")
+              cps.register(cp::FW4).add("iptables").add("ulogd2")
+              cps.register(cp::FW6).add("iptables").add("ulogd2")
+              cps.register(cp::IPSEC).add("strongswan")
+              cps.register(cp::SSH).add("openssh-server")
+              cps.register(cp::BGP).add("bird")
+              cps.register(cp::OPENVPN).add("openvpn")
+              cps.register(cp::DNS).add("bind9")
+              cps.register(cp::RADVD).add("radvd")
+              cps.register(cp::DNSMASQ).add("dnsmasq").cmd('update-rc.d dnsmasq disable')
+              cps.register(cp::CONNTRACKD).add("conntrackd").add("conntrack")
+              cps.register(cp::LXC).add("lxc").add("ruby").add("rubygems-integration")
+                  .cmd('[ $(gem list -i linux-lxc)" = "true" ] || gem install linux-lxc --no-ri --no-rdoc')
+              cps.register(cp::DHCPRELAY).add("wide-dhcpv6-relay").add("dhcp-helper")
+              cps.register(cp::WIRELESS).both("crda").both("iw").mother("linux-firmware")
+                  .add("wireless-regdb").add("wpasupplicant")
+              cps
             end
 
             def etc_network_vrrp(ifname)
@@ -34,11 +70,11 @@ module Construqt
 
 
             def add_component(component)
-              @result[component] ||= ArrayWithRightAndClazz.new(Construqt::Resources::Rights.root_0644(component), component.to_sym)
+              @results[component] ||= ArrayWithRightAndClazz.new(Construqt::Resources::Rights.root_0644(component), component.to_sym)
             end
 
             def empty?(name)
-              not @result[name]
+              not @results[name]
             end
 
             class ArrayWithRightAndClazz < Array
@@ -60,20 +96,20 @@ module Construqt
             def add(clazz, block, right, *path)
               path = File.join(*path)
               throw "not a right #{path}" unless right.respond_to?('right') && right.respond_to?('owner')
-              unless @result[path]
-                @result[path] = ArrayWithRightAndClazz.new(right, clazz)
+              unless @results[path]
+                @results[path] = ArrayWithRightAndClazz.new(right, clazz)
                 #binding.pry
-                #@result[path] << [clazz.xprefix(@host)].compact
+                #@results[path] << [clazz.xprefix(@host)].compact
               end
-              throw "clazz missmatch for path:#{path} [#{@result[path].clazz.class.name}] [#{clazz.class.name}]" unless clazz == @result[path].clazz
-              @result[path] << block+"\n"
-              @result[path]
+              throw "clazz missmatch for path:#{path} [#{@results[path].clazz.class.name}] [#{clazz.class.name}]" unless clazz == @results[path].clazz
+              @results[path] << block+"\n"
+              @results[path]
             end
 
             def replace(clazz, block, right, *path)
               path = File.join(*path)
-              replaced = !!@result[path]
-              @result.delete(path) if @result[path]
+              replaced = !!@results[path]
+              @results.delete(path) if @results[path]
               add(clazz, block, right, *path)
               replaced
             end
@@ -84,57 +120,6 @@ module Construqt
               0!=(mode & 060) && (mode = (mode | 010))
               0!=(mode & 0600) && (mode = (mode | 0100))
               "0#{mode.to_s(8)}"
-            end
-
-            def component_to_packages(component)
-              cp = Construqt::Resources::Component
-              ret = {
-                cp::UNREF => {},
-                "Construqt::Flavour::Delegate::DeviceDelegate" => {},
-                "Construqt::Flavour::Nixian::Dialect::Ubuntu::Wlan" => { },
-                "Construqt::Flavour::Nixian::Dialect::Ubuntu::Bond" => { "ifenslave" => true },
-                "Construqt::Flavour::Delegate::VlanDelegate" => { "vlan" => true },
-                "Construqt::Flavour::Nixian::Dialect::Ubuntu::Gre" => { },
-                "Construqt::Flavour::Delegate::GreDelegate" => {},
-                "Construqt::Flavour::Delegate::BridgeDelegate" => { "bridge-utils" => true },
-                cp::NTP => { "ntpd" => true},
-                cp::USB_MODESWITCH => { "usb-modeswitch" => true, "usb-modeswitch-data" => true },
-                cp::VRRP => { "keepalived" => true },
-                cp::FW4 => { "iptables" => true, "ulogd2" => true },
-                cp::FW6 => { "iptables" => true, "ulogd2" => true },
-                cp::IPSEC => { "strongswan" => true },
-                cp::SSH => { "openssh-server" => true },
-                cp::BGP => { "bird" => true },
-                cp::OPENVPN => { "openvpn" => true },
-                cp::DNS => { "bind9" => true },
-                cp::RADVD => { "radvd" => true },
-                cp::DNSMASQ => { "dnsmasq" => [
-                    'update-rc.d dnsmasq disable'
-                ] },
-                cp::CONNTRACKD => { "conntrackd" => true, "conntrack" => true },
-                cp::LXC => { "lxc" => true, "ruby" => true, "rubygems-integration" => [
-                  '[ "$(gem list -i linux-lxc)" = "true" ] || gem install linux-lxc --no-ri --no-rdoc'
-                ] },
-                cp::DHCPRELAY => { "wide-dhcpv6-relay" => true, "dhcp-helper" => true }
-              }[component]
-              throw "Component with name not found #{component}" unless ret
-              ret
-            end
-
-            def components_hash
-              @result.values.inject({
-                "language-pack-en" => true,
-                "language-pack-de" => true,
-                "git" => true,
-                "aptitude" => true,
-                "traceroute" => true,
-                "tcpdump" => true,
-                "strace" => true,
-                "lsof" => true,
-                "ifstat" => true,
-                "mtr-tiny" => true,
-                "openssl" => true,
-              }) { |r, block| r.merge(component_to_packages(block.right.component)) }
             end
 
             def sh_function_git_add()
@@ -203,21 +188,21 @@ module Construqt
               out << "then"
               out << Construqt::Util.render(binding, "result_host_check.sh.erb")
 
-              out << "[ $(is_opt_set skip_packages) != found ] && install_packages #{components_hash.keys.join(' ')}"
+              out << "[ $(is_opt_set skip_packages) != found ] && install_packages #{Lxc.package_list(@host).join(" ")}"
 
               out << Construqt::Util.render(binding, "result_git_init.sh.erb")
 
               out += setup_ntp(host)
-              out += components_hash.values.select{|i| i.instance_of?(Array) }.flatten
+              out += Lxc.commands(@host)
 
-              @result.each do |fname, block|
+              @results.each do |fname, block|
                 if !block.clazz.respond_to?(:belongs_to_mother?) ||
                    block.clazz.belongs_to_mother?
                   out += write_file(host, fname, block)
                 end
               end
               out << "fi"
-              @result.each do |fname, block|
+              @results.each do |fname, block|
                 if block.clazz.respond_to?(:belongs_to_mother?) && !block.clazz.belongs_to_mother?
                   out += write_file(host, fname, block)
                 end

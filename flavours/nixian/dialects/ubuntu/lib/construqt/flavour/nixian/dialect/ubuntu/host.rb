@@ -54,9 +54,9 @@ module Construqt
 
               host.result.add(self, host.name, Construqt::Resources::Rights.root_0644, "etc", "hostname")
               host.result.add(self, "# WTF resolvconf", Construqt::Resources::Rights.root_0644, "etc", "resolvconf", "resolv.conf.d", "orignal");
-              host.result.add(self, Construqt::Util.render(binding, "host_resolv_conf.erb"),
-                                Construqt::Resources::Rights.root_0644, "etc", "resolv.conf")
-
+              resolv_conf = Construqt::Util.render(binding, "host_resolv_conf.erb")
+              host.result.add(self, resolv_conf, Construqt::Resources::Rights.root_0644, "etc", "resolvconf", "resolv.conf.d", "base");
+              host.result.add(self, resolv_conf, Construqt::Resources::Rights.root_0644, "etc", "resolv.conf")
 
               #binding.pry
               Dns.build_config(host) if host.delegate.dns_server

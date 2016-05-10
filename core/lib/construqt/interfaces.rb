@@ -136,7 +136,6 @@ module Construqt
 
     def add_wlan(host, name, cfg)
       not cfg['ssid'] and throw "ssid not one found"
-
       cfg['clazz'] = "wlan"
       dev = add_device(host, name, cfg)
       dev.address.interface = host.interfaces[name] if dev.address

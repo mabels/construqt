@@ -39,7 +39,7 @@ module Construqt
                   next if dst_addr.include?(adr)
                   #puts "#{adr.to_s} #{dst.to_s} #{dst.container.interface.host.name} #{dst_addr.to_s}"
 #binding.pry
-                  ret += @address.build_route(dst_addr.to_string, dst.to_s+routing_table, options).resolv
+                  ret += @address.build_route(dst_addr.network.to_string, dst.to_s+routing_table, options).resolv
                 end
               end
             end

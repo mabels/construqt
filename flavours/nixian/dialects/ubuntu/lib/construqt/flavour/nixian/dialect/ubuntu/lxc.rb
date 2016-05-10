@@ -5,6 +5,45 @@ module Construqt
         module Ubuntu
           module Lxc
 
+            def self.package_list(host)
+              _package_list(host).keys
+            end
+
+            def self._host_package_list(host, match, result_package_list)
+              host.result.package_builder.list(host.result.results.values.map{|i| i.right.component }).each do |artefact|
+                artefact.packages.values.each do |p|
+                  next unless match.include?(p.target)
+                  result_package_list[p.name] = artefact
+                end
+              end
+            end
+
+            def self._package_list(host)
+              artefact_set = {}
+              result_package_list = {}
+              match = [Packages::Package::ME, Packages::Package::BOTH]
+              match << Packages::Package::MOTHER if i_ma_the_mother?(host)
+              self._host_package_list(host, match, result_package_list)
+              if i_ma_the_mother?(host)
+                host.region.hosts.get_hosts.select do |h|
+                  host.delegate == h.mother
+                end.each do |h|
+                  self._host_package_list(h, [Packages::Package::MOTHER, Packages::Package::BOTH], result_package_list)
+                end
+              end
+              result_package_list
+            end
+
+            def self.commands(host)
+              cmds = {}
+              _package_list(host).values.each do |artefact|
+                artefact.commands.each do |cmd|
+                  cmds[cmd] = artefact
+                end
+              end
+              cmds.keys
+            end
+
             def self.belongs_to_mother?
               false
             end
@@ -36,10 +75,13 @@ module Construqt
               host.region.hosts.get_hosts.find { |h| host.delegate == h.mother }
             end
 
-            def self.merge_components_hash(hosts)
+            def self.merge_package_list(hosts)
               hosts.inject({}) do |ret, host|
-                ret.merge(host.result.components_hash)
-              end
+                package_list(host).map do |package_name|
+                  ret[package_name] = nil
+                end
+                ret
+              end.keys
             end
 
             def self.write_deployers(host)
@@ -95,7 +137,7 @@ module Construqt
 
             def self.create_template(name, hosts)
               lxc_base = File.join("/var", "lib", "lxc")
-              package_list = merge_components_hash(hosts).keys.join(",")
+              package_list = merge_package_list(hosts).join(",")
               release = " -- --packages #{package_list}"
               if get_release(hosts)
                 release += " -r #{get_release(hosts)}"
@@ -107,7 +149,7 @@ module Construqt
               quick_stop = host.lxc_deploy.killstop? ? ' -k' : ''
               # lxc stop works sometimes so we test it
               return <<-EOF
-              while $(lxc-ls --running -1 | grep -q '^#{host.name}$')
+              while $(lxc-ls --running -1 | grep -q '^#{host.name}\s*$')
               do
                 echo 'Stopping #{host.name}'
                 lxc-stop -n '#{host.name}'#{quick_stop}

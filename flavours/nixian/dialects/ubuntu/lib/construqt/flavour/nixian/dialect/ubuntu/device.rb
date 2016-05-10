@@ -147,7 +147,8 @@ module Construqt
               #            Firewall.create(host, ifname||iface.name, iface, family)
               #            return
               #          end
-
+              #binding.pry if iface.name == "border" and iface.host.name == "ao-border-wlxc4e9841f0822"
+              host.result.add_component(iface.class.const_get("COMPONENT"))
               writer = host.result.etc_network_interfaces.get(iface, ifname)
               writer.header.protocol(Result::EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
               writer.lines.add(iface.delegate.flavour) if iface.delegate.flavour

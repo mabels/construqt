@@ -17,6 +17,7 @@ module Construqt
       LXC = :lxc
       DHCPRELAY = :dhcprelay
       DNSMASQ = :dnsmasq
+      WIRELESS = :wireless
     end
     module Rights
       def self.root_0600(component = Component::UNREF)
