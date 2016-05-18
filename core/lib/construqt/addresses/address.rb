@@ -37,6 +37,21 @@ module Construqt
         self.tags = []
         @loopback = @dhcpv4 = @dhcpv6 = false
         @name = nil
+        @service_ip = []
+      end
+
+      def add_service_ip(addr)
+        @service_ip << IPAddress.parse(addr)
+        self
+      end
+
+      def service_ip
+        addr = @network.addresses.create()
+        addr.add_ip((@service_ip.find{|i| i.ipv4? } || first_ipv4).to_s)
+        addr.add_ip((@service_ip.find{|i| i.ipv6? } || first_ipv6).to_s)
+        addr.host = self.host
+        addr.interface = self.interface
+        addr
       end
 
       def add_addr(addr)

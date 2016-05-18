@@ -19,14 +19,14 @@ module Construqt
                   if self.cfg.transport_family == Construqt::Addresses::IPV6
                     local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(self.remote.first_ipv6) }
                     transport_left=self.remote.first_ipv6.to_s
-                    transport_right=self.other.remote.first_ipv6.to_s
+                    transport_right=self.other.remote.service_ip.first_ipv6.to_s
                     leftsubnet = self.my.ips.select{|i| i.ipv6? }.map{|i| i.to_s }.first # join(',')
                     rightsubnet = self.other.my.ips.select{|i| i.ipv6? }.map{|i| i.to_s }.first #.join(',')
                     gt = "gt6"
                   else
                     local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(self.remote.first_ipv4) }
                     transport_left=self.remote.first_ipv4.to_s
-                    transport_right=self.other.remote.first_ipv4.to_s
+                    transport_right=self.other.remote.service_ip.first_ipv4.to_s
                     leftsubnet = self.my.ips.select{|i| i.ipv4? }.map{|i| i.to_s }.first # join(',')
                     rightsubnet = self.other.my.ips.select{|i| i.ipv4? }.map{|i| i.to_s }.first #.join(',')
                     gt = "gt4"

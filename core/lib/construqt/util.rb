@@ -78,7 +78,7 @@ module Construqt
     end
 
     def self.write_gzip(region, str, *path)
-      path = File.join(dst_path(region), *path)+".gz"
+      path = File.join(dst_path(region), '.zipped', *path)+".gz"
       FileUtils.mkdir_p(File.dirname(path))
       Zlib::GzipWriter.open(path) do |gz|
           gz.write str

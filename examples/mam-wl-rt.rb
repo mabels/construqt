@@ -294,7 +294,7 @@ MODULES
                                          "dhcp" => Construqt::Dhcp.new.start("192.168.#{net[:block]}.100")
                                            .end("192.168.#{net[:block]}.200")
                                            .domain(net[:name]))
-                                           .add_ip("2a01:4f8:d15:1190:192:168:#{net[:block]}:1/123#INTERNAL-NET"))
+                                           .add_ip("#{FanoutDe.cfg[:net6]}:192:168:#{net[:block]}:1/123#INTERNAL-NET"))
                                          net[:action] && net[:action].call(host, internal_if)
                                          wifi_ifs.each do |iface|
                                            region.cables.add(iface, mam_wl_rt.interfaces.find_by_name("br#{net[:block]}"))

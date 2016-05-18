@@ -40,7 +40,7 @@ module Hgw
       region.cables.add(region.interfaces.add_device(host, "br70", "mtu" => 1500,
                                                      'address' => region.network.addresses
         .add_ip("192.168.70.1/24#SERVICE-NET-DE-HGW#SERVICE-NET-DE")
-        .add_ip("2a01:4f8:d15:1190:192:168:70:1/123#SERVICE-NET-DE-HGW#SERVICE-NET-DE")),
+        .add_ip("#{FanoutDe.cfg[:net6]}:192:168:70:1/123#SERVICE-NET-DE-HGW#SERVICE-NET-DE")),
       region.interfaces.find(kuckpi, 'br70'))
     end
 
@@ -53,7 +53,7 @@ module Hgw
                                  "left" => {
                                    "my" => region.network.addresses.add_ip("169.254.70.1/30#SERVICE-IPSEC")
                                      .add_ip("169.254.70.5/30#SERVICE-TRANSIT-DE#FANOUT-DE-HGW-GW")
-                                     .add_ip("2a01:4f8:d15:1190::9/126#SERVICE-TRANSIT-DE#FANOUT-DE-HGW-GW")
+                                     .add_ip("#{FanoutDe.cfg[:net6]}::9/126#SERVICE-TRANSIT-DE#FANOUT-DE-HGW-GW")
                                      .add_route_from_tags("#SERVICE-NET-DE-HGW", "#SERVICE-DE-HGW"),
                                    "host" => fanout_de,
                                    "remote" => region.interfaces.find(fanout_de, "eth0").address,
@@ -63,7 +63,7 @@ module Hgw
                                  "right" => {
                                    "my" => region.network.addresses.add_ip("169.254.70.2/30")
                                      .add_ip("169.254.70.6/30#SERVICE-DE-HGW#SERVICE-NET-DE")
-                                     .add_ip("2a01:4f8:d15:1190::a/126#SERVICE-TRANSIT-DE#SERVICE-DE-HGW#SERVICE-NET-DE")
+                                     .add_ip("#{FanoutDe.cfg[:net6]}::a/126#SERVICE-TRANSIT-DE#SERVICE-DE-HGW#SERVICE-NET-DE")
                                      .add_route_from_tags("#INTERNET", "#FANOUT-DE-HGW-GW"),
                                    'firewalls' => ['host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit', 'block'],
                                    "host" => service_de_hgw,

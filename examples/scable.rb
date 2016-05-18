@@ -32,7 +32,7 @@ KEY
                                        "mtu_v6" => 1360,
                                        "left" => {
                                          "my" => region.network.addresses
-                                                      .add_ip("2a01:4f8:d15:1190:169:254:#{192+id}:1/126#SERVICE-TRANSIT-DE")
+                                                      .add_ip("#{FanoutDe.cfg[:net6]}:169:254:#{192+id}:1/126#SERVICE-TRANSIT-DE")
                                                       .add_ip("169.254.#{192+id}.1/30#SERVICE-IPSEC-DE#FANOUT-DE-SCABLE-#{id}")
                                                       .add_route_from_tags("#NET-#{fanout_de.name}", "#GW-#{fanout_de.name}"),
                                          "hosts" => [fanout_de],
@@ -40,7 +40,7 @@ KEY
                                        },
                                        "right" => {
                                          "my" => region.network.addresses
-                                                     .add_ip("2a01:4f8:d15:1190:169:254:#{192+id}:2/126#SERVICE-TRANSIT-DE")
+                                                     .add_ip("#{FanoutDe.cfg[:net6]}:169:254:#{192+id}:2/126#SERVICE-TRANSIT-DE")
                                                      .add_ip("169.254.#{192+id}.2/30#SERVICE-TRANSIT-DE")
                                                      .add_route_from_tags("#INTERNET", "#FANOUT-DE-SCABLE-#{id}"),
                                          "hosts" => [host],
