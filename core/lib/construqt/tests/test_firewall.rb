@@ -16,7 +16,7 @@ CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'./'
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/core/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/ubuntu/lib",
 #  "#{CONSTRUQT_PATH}/construqt/flavours/ubuntu/lib",
-  "#{CONSTRUQT_PATH}/ipaddress/lib"
+  "#{CONSTRUQT_PATH}/ipaddress/ruby/lib"
 ].each {|path| $LOAD_PATH.unshift(path) }
 require 'construqt'
 require 'construqt/flavour/nixian'
@@ -1531,6 +1531,28 @@ class FirewallTest < Test::Unit::TestCase
       "{OUTPUT} -o testif -s 2000::/3 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
     ], writer.ipv6.rows
   end
+
+
+  def test_nat_with_mapped
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.nat do |nat|
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INDERNET")
+          .to_me.tcp.dport(1194).dport(443).to_dest("Construqt-Host-ipv4", 2323).from_is_outside
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    assert_equal [
+      "{RW4jlPKRgfBXDGg6eOChfg} -d 5.5.5.5/32 -j DNAT --to-dest 1.2.2.3:2323",
+      "{RW4jlPKRgfBXDGg6eOChfg} -d 5.5.5.6/32 -j DNAT --to-dest 1.2.2.3:2323",
+      "{RW4jlPKRgfBXDGg6eOChfg} -d 5.5.6.5/32 -j DNAT --to-dest 1.2.2.3:2323",
+      "{RW4jlPKRgfBXDGg6eOChfg} -d 5.5.6.6/32 -j DNAT --to-dest 1.2.2.3:2323",
+      "{RW4jlPKRgfBXDGg6eOChfg} -j RETURN",
+      "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -m multiport --dports 1194,443 -j RW4jlPKRgfBXDGg6eOChfg"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
+  end
+
 end
 
 #result = RubyProf.stop

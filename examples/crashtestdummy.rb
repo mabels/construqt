@@ -48,6 +48,15 @@ AICCU_DE = {
   "password" => "passwort"
 }
 
+OPENVPN = {
+  "ovpn" => {
+    "dhfile" => "dhfile",
+    "cacert" => "cacert",
+    "hostcert" => "hostcert",
+    "hostkey" => "hostkey"
+  }
+}
+
 INTERNAL_PSK = "wifi for free"
 
 def ipsec_users()

@@ -65,10 +65,10 @@ module FanoutDe
      'ovpn' => lambda { |host|
        #binding.pry
         region.interfaces.add_openvpn(host, "tun1",
-                                      "cacert" => "cacert",
-                                      "hostcert" =>  "hostcert",
-                                      "hostkey" => "hostkey",
-                                      "dh1024" =>  "dh1024",
+                                      "cacert" => OPENVPN['ovpn']["cacert"],
+                                      "hostcert" =>  OPENVPN['ovpn']["hostcert"],
+                                      "hostkey" => OPENVPN['ovpn']["hostkey"],
+                                      "dh1024" =>  OPENVPN['ovpn']["dhfile"],
                                       "network" => region.network.addresses.add_ip("192.168.72.192/26#IPSECVPN-DE"),
                                       :users => region.users,
                                       "ipv4" => true,

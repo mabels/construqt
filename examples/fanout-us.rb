@@ -1,5 +1,6 @@
 module FanoutUs
   def self.run(region)
+    return
     fanout_us = region.hosts.add("fanout-us", "flavour" => "nixian", "dialect" => "ubuntu") do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",

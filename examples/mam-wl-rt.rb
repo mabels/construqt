@@ -249,9 +249,9 @@ MODULES
                                      end
 
                                      }, # aiccu
-                                     { :name => "rt-mam-wl-us",  :fws => ["net-forward"], :tag => "#SERVICE-NET-US", :ssid => "MAM-WL-US", :ipsec => FANOUT_US_ADVISER_COM, :block => 68  },
+                                     #{ :name => "rt-mam-wl-us",  :fws => ["net-forward"], :tag => "#SERVICE-NET-US", :ssid => "MAM-WL-US", :ipsec => FANOUT_US_ADVISER_COM, :block => 68  },
                                      { :name => "rt-wl-mgt", :fws => ["net-forward"], :ipsec_fws => ["vpn-server-net"], :tag => "#SERVICE-NET-DE", :ipsec => FANOUT_DE_ADVISER_COM, :block => 66 },
-                                     { :name => "rt-ab-us", :fws => ["net-forward"], :tag => "#SERVICE-NET-US", :ipsec => FANOUT_US_ADVISER_COM, :block => 206 }, # airbnb-us
+                                     #{ :name => "rt-ab-us", :fws => ["net-forward"], :tag => "#SERVICE-NET-US", :ipsec => FANOUT_US_ADVISER_COM, :block => 206 }, # airbnb-us
                                      { :name => "rt-ab-de", :fws => ["net-forward"], :tag => "#SERVICE-NET-DE", :ipsec => FANOUT_DE_ADVISER_COM, :block => 207 },  # airbnb-de
                                      { :name => "rt-wl-printer", :fws => ["wl-printer"], :tag => "#MAM-WL-PRINTER", :block => 208 },
                                    ].each do |net|

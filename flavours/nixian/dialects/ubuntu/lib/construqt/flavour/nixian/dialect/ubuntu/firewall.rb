@@ -271,9 +271,9 @@ module Construqt
                   rule.get_to_source.each do |src|
                     to_from = ToFrom.new(ifname||iface.name, rule, section, section.ipv4.postrouting)
                     if rule.from_is_inside?
-                      direction = to_from.request_direction(Construqt::Addresses::IPV4).push_end("--to-source #{src}")
+                      direction = to_from.request_direction(Construqt::Addresses::IPV4).push_end("--to-source #{src.to_s}")
                     else
-                      direction = to_from.respond_direction(Construqt::Addresses::IPV4).push_end("--to-source #{src}")
+                      direction = to_from.respond_direction(Construqt::Addresses::IPV4).push_end("--to-source #{src.to_s}")
                     end
 
                     write_table(direction.interface_direction("-o"))
@@ -296,9 +296,9 @@ module Construqt
                 rule.prerouting? && rule.get_to_dest.each do |dst|
                   to_from = ToFrom.new(ifname||iface.name, rule, section, section.ipv4.prerouting)
                   if rule.from_is_inside?
-                    direction = to_from.respond_direction(Construqt::Addresses::IPV4).push_end("--to-dest #{dst}")
+                    direction = to_from.respond_direction(Construqt::Addresses::IPV4).push_end("--to-dest #{dst.to_s}")
                   else
-                    direction = to_from.request_direction(Construqt::Addresses::IPV4).push_end("--to-dest #{dst}")
+                    direction = to_from.request_direction(Construqt::Addresses::IPV4).push_end("--to-dest #{dst.to_s}")
                   end
 
                   write_table(direction.interface_direction("-i"))
