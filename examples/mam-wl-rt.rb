@@ -274,7 +274,7 @@ MODULES
 
                                        rts[net[:name]] = region.hosts.add(net[:name], "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mam_wl_rt,
                                                                           "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined
-                                         .restart.killstop.release("trusty")) do |host|
+                                         .restart.killstop.release("xenial")) do |host|
                                          region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                                                       :description=>"#{host.name} lo",
                                                                       "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

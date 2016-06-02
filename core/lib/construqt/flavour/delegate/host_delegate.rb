@@ -37,7 +37,6 @@ module Construqt
           if self.delegate.add_groups.instance_of? String
             self.delegate.add_groups = [ self.delegate.add_groups ]
           end
-
           self.delegate.add_groups || []
         end
 

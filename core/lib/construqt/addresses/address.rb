@@ -41,7 +41,11 @@ module Construqt
       end
 
       def add_service_ip(addr)
-        @service_ip << IPAddress.parse(addr)
+        parsed = Construqt::Tags.parse(addr)
+        throw "add_service_ip needs a addr" unless parsed[:first]
+        ip = IPAddress.parse(parsed[:first])
+        Construqt::Tags.join(parsed['#'], ip)
+        @service_ip << ip
         self
       end
 
@@ -189,6 +193,7 @@ module Construqt
         #  src_tags = dst_tags.via
         #  routing_table = dst_tags.routing_table
         #  dst_tags = dst_tags.dest
+        #binding.pry if dst_tags == "#FANOUT-DE"
         throw "add_route_from_tags need a src_tags" if src_tags.nil?
         throw "add_route_from_tags need a dst_tags" if dst_tags.nil?
         @routes.add TagRoute.new(dst_tags, src_tags, options, self, routing_table)
@@ -267,7 +272,7 @@ module Construqt
         Route.new(dst_ips, via_ips, options)
       end
 
-      def add_route(dst, via, option = {})
+      def add_route(dst, via = nil, option = {})
         @routes.add(build_route(dst, via, option))
         self
       end

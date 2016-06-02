@@ -8,9 +8,9 @@ module Construqt
           class Opvn #< OpenStruct
             include Construqt::Cables::Plugin::Single
             attr_accessor :delegate
-            attr_reader :address,:template,:plug_in,:network,:mtu,:clazz,:dh1024
+            attr_reader :address,:template,:plug_in,:network,:mtu,:clazz,:dh
             attr_reader :ipv6,:push_routes,:cacert,:name,:hostcert,:hostkey,:host
-            attr_reader :description, :firewalls
+            attr_reader :description, :firewalls, :protocols
             def initialize(cfg)
               @name = cfg['name']
               @host = cfg['host']
@@ -27,7 +27,7 @@ module Construqt
               @cacert = cfg['cacert']
               @hostcert = cfg['hostcert']
               @hostkey = cfg['hostkey']
-              @dh1024 = cfg['dh1024']
+              @dh = cfg['dh']
             end
 
             def self.header(host)
@@ -47,7 +47,7 @@ module Construqt
               host.result.add(self, iface.cacert, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-cacert.pem")
               host.result.add(self, iface.hostcert, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-hostcert.pem")
               host.result.add(self, iface.hostkey, Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-hostkey.pem")
-              host.result.add(self, iface.dh1024, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-dh1024")
+              host.result.add(self, iface.dh, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}.dh")
               host.result.add(self, Construqt::Util.render(binding, "ovpn_config.erb"), Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "#{iface.name}.conf")
             end
           end

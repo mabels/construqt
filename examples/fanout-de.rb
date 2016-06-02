@@ -32,8 +32,8 @@ module FanoutDe
                                                                 "mtu" => 1500,
                                                                 'proxy_neigh' => Construqt::Tags.resolver_net("#SERVICE-TRANSIT-DE#SERVICE-NET-DE", Construqt::Addresses::IPV6),
                                                                 'address' => region.network.addresses
-          .add_ip("#{fanout[:ip]}#FANOUT-DE")
-          .add_service_ip(fanout[:ipe])
+          .add_ip(fanout[:ip])
+          .add_service_ip("#{fanout[:ipe]}#FANOUT-DE")
           .add_route("0.0.0.0/0#INTERNET", fanout[:gw])
           .add_ip(fanout[:ip6])
           .add_route("2000::/3#INTERNET", fanout[:gw6]),
@@ -63,17 +63,28 @@ module FanoutDe
      'bind-de' => nil,
      'imap-de' => nil,
      'ovpn' => lambda { |host|
-       #binding.pry
-        region.interfaces.add_openvpn(host, "tun1",
+       fanout = self.cfg
+       [
+         { name: "tun1", proto: "udp" },
+         { name: "tun2", proto: "udp6" },
+         { name: "tun3", proto: "tcp" },
+         { name: "tun4", proto: "tcp6" }
+       ].each_with_index do |p, idx|
+        region.interfaces.add_openvpn(host, p[:name],
                                       "cacert" => OPENVPN['ovpn']["cacert"],
                                       "hostcert" =>  OPENVPN['ovpn']["hostcert"],
                                       "hostkey" => OPENVPN['ovpn']["hostkey"],
-                                      "dh1024" =>  OPENVPN['ovpn']["dhfile"],
-                                      "network" => region.network.addresses.add_ip("192.168.72.192/26#IPSECVPN-DE"),
+                                      "dh" =>  OPENVPN['ovpn']["dhfile"],
+                                      "network" => region.network.addresses
+                                        .add_ip("192.168.72.#{64*idx}/26#IPSECVPN-DE")
+                                        .add_ip("#{fanout[:net6]}:192:168:72:#{64*idx}/122#IPSECVPN-DE"),
                                       :users => region.users,
-                                      "ipv4" => true,
+                                      "proto" => p[:proto],
                                       "firewall"=>'notrack',
-                                      "push_routes" => region.network.addresses.add_route("0.0.0.0/0"))
+                                      "push_routes" => region.network.addresses
+                                        .add_route("0.0.0.0/0")
+                                        .add_route("2000::/3"))
+      end
      }}.each_with_index do |name_action, idx|
       name, action = name_action
       region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => fanout_de,

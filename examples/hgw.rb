@@ -9,7 +9,8 @@ module Hgw
       host.configip = host.id ||= Construqt::HostId.create do |my|
         my.interfaces << region.interfaces.add_bridge(host, "br0", "mtu" => 1500,
                                                       "interfaces" => [eth0, wlan0],
-                                                      "address" => region.network.addresses.add_ip("192.168.178.14/24")
+                                                      "address" => region.network.addresses
+          .add_ip("192.168.178.14/24")
           .add_route("0.0.0.0/0", "192.168.178.1"))
       end
 
@@ -32,7 +33,8 @@ module Hgw
       host.configip = host.id ||= Construqt::HostId.create do |my|
         my.interfaces << iface = region.interfaces.add_device(host, "br0", "mtu" => 1500,
                                                               'firewalls' => ['host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit', "vpn-server-net", 'block'],
-                                                              'address' => region.network.addresses.add_ip("192.168.178.15/24")
+                                                              'address' => region.network.addresses
+          .add_ip("192.168.178.15/24")
           .add_route_from_tags("#FANOUT-DE", "#KDE-HGW"))
         region.cables.add(iface, region.interfaces.find(kuckpi, 'br0'))
       end

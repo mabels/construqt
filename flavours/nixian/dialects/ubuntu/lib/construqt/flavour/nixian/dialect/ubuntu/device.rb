@@ -43,7 +43,6 @@ module Construqt
                   end
                 end
               end
-
               iface.address.routes.each do |route|
                 if family.nil? ||
                     (!family.nil? && family == Construqt::Addresses::IPV6 && route.via.ipv6?) ||

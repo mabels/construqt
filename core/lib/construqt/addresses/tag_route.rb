@@ -13,6 +13,7 @@ module Construqt
       end
 
       def resolv
+        #binding.pry if self.dst_tag == "#FANOUT-DE"
         ret = []
         dst_parse = Construqt::Tags.parse(self.dst_tag)
         throw "routing tag not allowed in dst #{self.dst_tag}" if dst_parse['!']

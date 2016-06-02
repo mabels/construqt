@@ -94,6 +94,15 @@ module Construqt
       return str
     end
 
+    def self.open_file(region, *path, &block)
+      path = File.join(dst_path(region), *path)
+      FileUtils.mkdir_p(File.dirname(path))
+      File.open(path, 'w') {|f| block.call(f) }
+      Construqt.logger.info "Open:#{path}"
+      return str
+    end
+
+
     def self.get_serial_from_git
       `git log --pretty=format:'%at' -1`.strip.chomp
     end

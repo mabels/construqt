@@ -8,7 +8,7 @@ dev <%= iface.name %>
 ca   /etc/openvpn/ssl/<%= iface.name %>-cacert.pem
 cert /etc/openvpn/ssl/<%= iface.name %>-hostcert.pem
 key  /etc/openvpn/ssl/<%= iface.name %>-hostkey.pem
-dh   /etc/openvpn/ssl/<%= iface.name %>-dh1024
+dh   /etc/openvpn/ssl/<%= iface.name %>.dh
 <% if iface.network.first_ipv4 %>
 server <%= iface.network.first_ipv4.to_s %> <%= iface.network.first_ipv4.netmask %>
 <% end %>

@@ -50,7 +50,7 @@ def firewall(region)
       nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(993).to_dest("HOST-imap-de").from_is_outside
       nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.udp.dport(53).to_dest("HOST-bind-de").from_is_outside
       nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(53).to_dest("HOST-bind-de").from_is_outside
-      nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(1194).dport(443).to_dest("HOST-ovpn", 1194).from_is_outside
+      nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.udp.dport(1194).dport(443).to_dest("HOST-ovpn", 1194).from_is_outside
     end
   end
 

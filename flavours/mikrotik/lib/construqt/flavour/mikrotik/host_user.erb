@@ -5,4 +5,14 @@
   } else={
     set $found comment=<%= u.full_name.inspect %>
   }
+  <% u.public_key.lines.map{|i| i.strip }.each_with_index do |key, idx|
+      key_file= "ssh-#{u.name}-#{idx}.pub"
+      next if key.split(/\s+/).first == "ssh-ed25519"
+  %>
+    /file remove [find name=<%= key_file %> ]
+    /file> print file=<%= key_file %>
+    /file set [find name=<%= key_file %> ] contents=<%= key.inspect %>
+    /user ssh-keys remove [find user=<%= u.name %> ]
+    /user ssh-keys import public-key-file=<%= key_file %>
+  <% end %>
 }

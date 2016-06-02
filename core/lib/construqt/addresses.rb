@@ -39,8 +39,8 @@ module Construqt
       create.add_ip(ip, region)
     end
 
-    def add_route(dest, via = nil)
-      create.add_route(dest, via)
+    def add_route(dest, via = nil, options = {})
+      create.add_route(dest, via, options)
     end
 
     def set_name(name)

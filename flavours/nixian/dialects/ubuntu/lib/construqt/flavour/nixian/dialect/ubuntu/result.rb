@@ -1,5 +1,8 @@
 
 require 'shellwords'
+require 'net/http'
+require 'json'
+
 
 require_relative 'result/etc_network_vrrp'
 require_relative 'result/etc_network_interfaces'
@@ -157,10 +160,78 @@ module Construqt
                   "[ ! -d #{i} ] && mkdir #{i} && chown #{block.right.owner} #{i} && chmod #{directory_mode(block.right.right)} #{i}"
                 end,
                 "import_fname #{fname}",
-                "openssl enc -base64 -d <<BASE64 | gunzip > $IMPORT_FNAME", Base64.encode64(IO.read(gzip_fname)).chomp, "BASE64",
+                "base64 --decode <<BASE64 | gunzip > $IMPORT_FNAME", Base64.encode64(IO.read(gzip_fname)).chomp, "BASE64",
                 "git_add #{["/"+fname, block.right.owner, block.right.right, block.skip_git?].map{|i| '"'+Shellwords.escape(i)+'"'}.join(' ')}"
               ]
 
+            end
+
+            def offline_package
+              queue = Queue.new
+              uri = URI('https://woko.construqt.net:7878/')
+              req = Net::HTTP::Post.new(uri, initheader = {
+                  'Content-Type' =>'application/json'
+                })
+              package_params = {
+                "dist": "ubuntu",
+                "arch": "amd64",
+                "version": "xenial",
+                "packages": Lxc.package_list(@host)
+              }
+              req.body = package_params.to_json
+              res = Net::HTTP.start(uri.hostname, uri.port) do |http|
+                http.request(req)
+              end
+              packages = JSON.parse(res.body)
+              packages.each do |pkg|
+                queue << pkg
+              end
+              cache_path = File.join(Construqt::Util.dst_path(@host.region),
+                ".package-cache",
+                "#{package_params["dist"]}-#{package_params["version"]}-#{package_params["arch"]}")
+              threads = [8, queue.size].min.times.map do
+                Thread.new do
+                      while !queue.empty? && pkg = queue.pop
+                        fname = File.join(cache_path, pkg['name'])
+                        if File.exist?(fname)
+                          throw "unknown sum_type #{fname} #{pkg['sum_type']}" unless ['MD5Sum'].includes?(pkg['sum_type'])
+                          if Digest::MD5.file(fname).hexdigest.downcase == pkg['sum'].downcase
+                            next
+                          end
+                        end
+                        Construqt.logger.debug "Download from #{pkg['url']}"
+                        uri = URI(pkg['url'])
+                        res = Net::HTTP.start(uri.hostname, uri.port) do |http|
+                          res =  http.request(Net::HTTP::Get.new(uri))
+                          if Digest::MD5.hexdigest(res.body).downcase != pkg['sum'].downcase
+                            throw "downloaded file #{pkg['url']} checksum missmatch #{pkg['sum']}"
+                          end
+                          FileUtils.mkdir_p(File.dirname(fname))
+                          File.open(fname, 'w') { |file| file.write(res.body) }
+                        end
+                      end
+                    end
+                  end
+                end
+                threads.each(&:join)
+              end
+              var_cache_path = "/var/cache/apt/archives"
+              Util.open_file(@host.region, @host.name, "packager.sh") do |f|
+                f.println("#!/bin/bash")
+                f.println("ARGS=$@")
+                f.println("mkdir -p #{var_cache_path}")
+                packages.each do |pkg|
+                  fname = File.join(cache_path, pkg['name'])
+                  f.println("echo packager extract #{pkg['name']}")
+                  f.println "base64 --decode <<BASE64 > #{File.join(var_cache_path, pkg['name'])}"
+                  f.println  Base64.encode64(IO.read(fname))
+                  f.println "BASE64"
+                end
+              end
+              [ "if [ -f "packager.sh" ]",
+                "then",
+                "  sh packager.sh"
+                "fi"].join("\n")
             end
 
             def commit
@@ -177,6 +248,7 @@ module Construqt
               out << sh_is_opt_set
               out << sh_function_git_add
               out << sh_install_packages
+              out << offline_package
 
               out << Construqt::Util.render(binding, "result_package_list.sh.erb")
 
