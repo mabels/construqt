@@ -31,29 +31,54 @@ pub struct PkgDesc {
     pub sum: String,
 }
 
+#[derive(Debug, Clone, Deserialize,RustcDecodable, RustcEncodable)]
+pub struct ReqPackageList {
+    dist: String,
+    arch: String,
+    version: String,
+    packages: Vec<String>
+}
 
-pub fn parse(pkgs: &Vec<String>) -> Result<Vec<PkgDesc>, String> {
-    let mut apt_get_cmd = Command::new("apt-get");
+
+pub fn parse(req: &ReqPackageList) -> Result<Vec<PkgDesc>, String> {
+    let lxc_name = format!("{}-{}-{}", &req.dist, &req.version, &req.arch);
+    let mut fix_lxc_quirk_cmd = Command::new("lxc-info");
+    fix_lxc_quirk_cmd.arg("-n");
+    fix_lxc_quirk_cmd.arg(&lxc_name);
+    let fix_lxc_quirk_ = fix_lxc_quirk_cmd.output();
+    if fix_lxc_quirk_.is_err() {
+        return Err(format!("failed to execute lxc_info"));
+    }
+    let fix_lxc_quirk = fix_lxc_quirk_.unwrap();
+    if !fix_lxc_quirk.status.success() {
+        return Err(format!("failed to execute lxc_info for {} status {}", 
+		&lxc_name,
+		fix_lxc_quirk.status.code().unwrap()));
+    }
+    let mut apt_get_cmd = Command::new("lxc-execute");
+    apt_get_cmd.arg("-n");
+    apt_get_cmd.arg(&lxc_name);
+    apt_get_cmd.arg("--");
+    apt_get_cmd.arg("apt-get");
     apt_get_cmd.arg("install");
-    for pkg in pkgs {
-        println!("parse:1");
+    for pkg in &req.packages {
+        //println!("parse:1");
         apt_get_cmd.arg(pkg);
     }
     apt_get_cmd.arg("--print-uris").arg("-qq");
-    let status_ret = apt_get_cmd.status();
-    if status_ret.is_err() {
+    let apt_get_ = apt_get_cmd.output();
+    if apt_get_.is_err() {
         return Err(format!("failed to execute apt-get"));
     }
-    let status = status_ret.unwrap();
-    if false == status.success() {
-        return Err(format!("failed to execute apt-get status {}", status.code().unwrap()));
+    let apt_get = apt_get_.unwrap();
+    println!(">>>>{} {:?} {:?}", apt_get.status,
+			      apt_get.status.success(),
+    			      apt_get.status.code());
+    if !apt_get.status.success() {
+        return Err(format!("failed to execute apt-get status {}", apt_get.status.code().unwrap()));
     }
-    let apt_get = apt_get_cmd.output();
-    if apt_get.is_err() {
-        return Err(format!("failed to execute apt-get"));
-    }
-
-    return parse_from_string(&String::from_utf8_lossy(&apt_get.unwrap().stdout)
+	
+    return parse_from_string(&String::from_utf8_lossy(&apt_get.stdout)
         .as_ref()
         .to_string());
 }

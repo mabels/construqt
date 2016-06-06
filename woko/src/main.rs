@@ -19,32 +19,27 @@ use iron::prelude::*;
 
 use persistent::Read;
 use iron::status;
+use iron::headers;
 
 //use rustc_serialize::json::{self};
 use rustc_serialize::json;
 
-#[derive(Debug, Clone, Deserialize,RustcDecodable, RustcEncodable)]
-struct ReqPackageList {
-    dist: String,
-    arch: String,
-    version: String,
-    packages: Vec<String>
-}
-
 fn apt_process(req: &mut Request) -> IronResult<Response> {
 
-                println!(">-<");
-    let payload = req.get::<bodyparser::Struct<ReqPackageList>>();
-                println!(">+<");
+                //println!(">-<");
+    let payload = req.get::<bodyparser::Struct<apt::ReqPackageList>>();
+                //println!(">+<");
         match payload {
             Ok(Some(plist)) => {
-                println!(">0<");
-                let result = apt::parse(&plist.packages);
+                //println!(">0<");
+                let result = apt::parse(&plist);
                 if result.is_err() {
                     return Ok(Response::with((status::ServiceUnavailable,
                         format!("parse error {}", result.err().unwrap()))));
                 }
-                return Ok(Response::with((status::Ok, json::encode(&result.unwrap()).unwrap())));
+	        let mut resp = Response::with((status::Ok, json::encode(&result.unwrap()).unwrap()));
+		resp.headers.set(headers::ContentType::json());
+                return Ok(resp);
             }
             Ok(None) => return Ok(Response::with((status::ServiceUnavailable, "No Json found"))),
             Err(err) => return Ok(Response::with((status::ServiceUnavailable,
@@ -60,5 +55,5 @@ fn main() {
     chain.link_before(Read::<bodyparser::MaxBodyLength>::one(MAX_BODY_LENGTH));
     //chain.link_before(ResponseTime);
     //chain.link_after(ResponseTime);
-    Iron::new(chain).http("0.0.0.0:3000").unwrap();
+    Iron::new(chain).http("0.0.0.0:7878").unwrap();
 }
