@@ -11,6 +11,19 @@ the network. There is no static configuration file or format or syntax.
 construqt knows the described network connections and generates a 
 network-documentation on the fly.
 
+# woko service
+
+to build standalone/offline packages on a mac for linux dpkg based distros 
+you need a webservice which provides the list of packages and download 
+urls. This is not completed, infact the lxc containers are not apt update'ed.
+So the information could be get old.
+
+Here is it:
+```
+curl -i "woko.construqt.net:7878" -H "application/json" \
+-d '{"dist":"ubuntu","arch":"amd64","version":"xenial","packages":["strongswan"]}'
+```
+
 # examples
 
 There are now parts of my homenetwork as living examples. Just go to 
