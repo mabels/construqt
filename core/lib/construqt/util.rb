@@ -99,7 +99,7 @@ module Construqt
       FileUtils.mkdir_p(File.dirname(path))
       File.open(path, 'w') {|f| block.call(f) }
       Construqt.logger.info "Open:#{path}"
-      return str
+      return path
     end
 
 

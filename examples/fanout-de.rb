@@ -39,7 +39,9 @@ module FanoutDe
           .add_route("2000::/3#INTERNET", fanout[:gw6]),
         "firewalls" => ["fix-mss", "host-outbound", "icmp-ping" , "http-srv", "ssh-srv", "ipsec-srv",
                         "service-ssh-hgw", "service-transit",
-                        "service-nat", "service-smtp", "service-dns", "service-imap", "vpn-server-net", "block"])
+                        "service-woko",
+                        "service-nat", "service-smtp", "service-dns", "service-imap",
+                        "vpn-server-net", "block"])
       end
 
       region.interfaces.add_ipsecvpn(host, "roadrunner",
@@ -84,8 +86,10 @@ module FanoutDe
                                       "push_routes" => region.network.addresses
                                         .add_route("0.0.0.0/0")
                                         .add_route("2000::/3"))
-      end
-     }}.each_with_index do |name_action, idx|
+       end
+      },
+      'woko' => nil
+     }.each_with_index do |name_action, idx|
       name, action = name_action
       region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => fanout_de,
                        "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined.restart.killstop) do |host|

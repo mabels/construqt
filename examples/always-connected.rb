@@ -166,7 +166,7 @@ module AlwaysConnected
   end
 
   def self.mother(region)
-    region.hosts.add("ao-mother", "flavour" => "nixian", "dialect" => "ubuntu") do |host|
+    region.hosts.add("ao-mother", "flavour" => "nixian", "dialect" => "ubuntu", "arch" => "armhf", "packager" => true) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

@@ -36,9 +36,9 @@ module Construqt
               cps = Packages::Builder.new()
               cp = Construqt::Resources::Component
               cps.register(cp::UNREF).add("language-pack-en").add("language-pack-de")
-                            .add("git").add("aptitude").add("traceroute")
-                            .add("tcpdump").add("strace").add("lsof")
-                            .add("ifstat").add("mtr-tiny").add("openssl")
+                .add("git").add("aptitude").add("traceroute")
+                .add("tcpdump").add("strace").add("lsof")
+                .add("ifstat").add("mtr-tiny").add("openssl")
               cps.register("Construqt::Flavour::Delegate::DeviceDelegate")
               cps.register("Construqt::Flavour::Nixian::Dialect::Ubuntu::Wlan")
               cps.register("Construqt::Flavour::Nixian::Dialect::Ubuntu::Bond").add("ifenslave")
@@ -62,17 +62,16 @@ module Construqt
               cps.register(cp::DNSMASQ).add("dnsmasq").cmd('update-rc.d dnsmasq disable')
               cps.register(cp::CONNTRACKD).add("conntrackd").add("conntrack")
               cps.register(cp::LXC).add("lxc").add("ruby").add("rubygems-integration")
-                  .cmd('[ "$(gem list -i linux-lxc)" = "true" ] || gem install linux-lxc --no-ri --no-rdoc')
+                .cmd('[ "$(gem list -i linux-lxc)" = "true" ] || gem install linux-lxc --no-ri --no-rdoc')
               cps.register(cp::DHCPRELAY).add("wide-dhcpv6-relay").add("dhcp-helper")
               cps.register(cp::WIRELESS).both("crda").both("iw").mother("linux-firmware")
-                  .add("wireless-regdb").add("wpasupplicant")
+                .add("wireless-regdb").add("wpasupplicant")
               cps
             end
 
             def etc_network_vrrp(ifname)
               @etc_network_vrrp.get(ifname)
             end
-
 
             def add_component(component)
               @results[component] ||= ArrayWithRightAndClazz.new(Construqt::Resources::Rights.root_0644(component), component.to_sym)
@@ -106,6 +105,7 @@ module Construqt
                 #binding.pry
                 #@results[path] << [clazz.xprefix(@host)].compact
               end
+
               throw "clazz missmatch for path:#{path} [#{@results[path].clazz.class.name}] [#{clazz.class.name}]" unless clazz == @results[path].clazz
               @results[path] << block+"\n"
               @results[path]
@@ -149,6 +149,7 @@ module Construqt
                   file.path == fname && file.kind_of?(Construqt::Resources::SkipFile)
                 end
               end
+
               text = block.flatten.select{|i| !(i.nil? || i.strip.empty?) }.join("\n")
               return [] if text.strip.empty?
               Util.write_str(@host.region, text, @host.name, fname)
@@ -163,75 +164,94 @@ module Construqt
                 "base64 --decode <<BASE64 | gunzip > $IMPORT_FNAME", Base64.encode64(IO.read(gzip_fname)).chomp, "BASE64",
                 "git_add #{["/"+fname, block.right.owner, block.right.right, block.skip_git?].map{|i| '"'+Shellwords.escape(i)+'"'}.join(' ')}"
               ]
+            end
 
+            def find_cache_file(pkg, *paths)
+              fname = nil
+              my = paths.find do |path|
+                fname = File.join(path, pkg['name'])
+                ret = false
+                if File.exist?(fname)
+                  throw "unknown sum_type #{fname} #{pkg['sum_type']}" unless ['MD5Sum'].include?(pkg['sum_type'])
+                  if Digest::MD5.file(fname).hexdigest.downcase == pkg['sum'].downcase
+                    pkg['fname'] = fname
+                    Construqt.logger.debug "Incache #{fname}"
+                    ret = true
+                  end
+                end
+                ret
+              end
+              my || Construqt.logger.debug("Misscache #{fname}")
+              my
+            end
+
+
+            def fetch_action(queue, cache_path)
+              Thread.new do
+                while !queue.empty? && pkg = queue.pop
+                  next if find_cache_file(pkg, "/var/cache/apt/archives", cache_path)
+                  fname = File.join(cache_path, pkg['name'])
+                  Construqt.logger.debug "Download from #{pkg['url']} => #{fname} #{pkg['sum']}"
+                  uri = URI(pkg['url'])
+                  res = Net::HTTP.start(uri.hostname, uri.port) do |http|
+                    res =  http.request(Net::HTTP::Get.new(uri))
+                    chk = Digest::MD5.hexdigest(res.body).downcase
+                    if chk != pkg['sum'].downcase
+                      throw "downloaded file #{pkg['url']} checksum missmatch #{pkg['sum']} != #{chk}"
+                    end
+
+                    FileUtils.mkdir_p(File.dirname(fname))
+                    File.open(fname, 'w') { |file| file.write(res.body) }
+                    pkg['fname'] = fname
+                  end
+                end
+              end
             end
 
             def offline_package
-              queue = Queue.new
-              uri = URI('https://woko.construqt.net:7878/')
-              req = Net::HTTP::Post.new(uri, initheader = {
-                  'Content-Type' =>'application/json'
-                })
-              package_params = {
-                "dist": "ubuntu",
-                "arch": "amd64",
-                "version": "xenial",
-                "packages": Lxc.package_list(@host)
-              }
-              req.body = package_params.to_json
-              res = Net::HTTP.start(uri.hostname, uri.port) do |http|
-                http.request(req)
-              end
-              packages = JSON.parse(res.body)
-              packages.each do |pkg|
-                queue << pkg
-              end
-              cache_path = File.join(Construqt::Util.dst_path(@host.region),
-                ".package-cache",
-                "#{package_params["dist"]}-#{package_params["version"]}-#{package_params["arch"]}")
-              threads = [8, queue.size].min.times.map do
-                Thread.new do
-                      while !queue.empty? && pkg = queue.pop
-                        fname = File.join(cache_path, pkg['name'])
-                        if File.exist?(fname)
-                          throw "unknown sum_type #{fname} #{pkg['sum_type']}" unless ['MD5Sum'].includes?(pkg['sum_type'])
-                          if Digest::MD5.file(fname).hexdigest.downcase == pkg['sum'].downcase
-                            next
-                          end
-                        end
-                        Construqt.logger.debug "Download from #{pkg['url']}"
-                        uri = URI(pkg['url'])
-                        res = Net::HTTP.start(uri.hostname, uri.port) do |http|
-                          res =  http.request(Net::HTTP::Get.new(uri))
-                          if Digest::MD5.hexdigest(res.body).downcase != pkg['sum'].downcase
-                            throw "downloaded file #{pkg['url']} checksum missmatch #{pkg['sum']}"
-                          end
-                          FileUtils.mkdir_p(File.dirname(fname))
-                          File.open(fname, 'w') { |file| file.write(res.body) }
-                        end
-                      end
-                    end
-                  end
+              if @host.packager
+                uri = URI('https://woko.construqt.net:7878/')
+                req = Net::HTTP::Post.new(uri, initheader = { 'Content-Type' =>'application/json' })
+                package_params = {
+                  "dist" => "ubuntu",
+                  "arch" => @host.arch || "amd64",
+                  "version" => (@host.lxc_deploy && @host.lxc_deploy.get_release)||"xenial",
+                  "packages" => Lxc.package_list(@host)
+                }
+                req.body = package_params.to_json
+                res = Net::HTTP.start(uri.hostname, uri.port) do |http|
+                  http.request(req)
+                end
+
+                packages = JSON.parse(res.body)
+                queue = Queue.new
+                packages.each { |pkg| queue << pkg }
+                cache_path = File.join(ENV['HOME']||'./', ".construqt", "package-cache",
+                                       "#{package_params["dist"]}-#{package_params["version"]}-#{package_params["arch"]}")
+                threads = [8, queue.size].min.times.map do
+                  fetch_action(queue, cache_path)
                 end
                 threads.each(&:join)
-              end
-              var_cache_path = "/var/cache/apt/archives"
-              Util.open_file(@host.region, @host.name, "packager.sh") do |f|
-                f.println("#!/bin/bash")
-                f.println("ARGS=$@")
-                f.println("mkdir -p #{var_cache_path}")
-                packages.each do |pkg|
-                  fname = File.join(cache_path, pkg['name'])
-                  f.println("echo packager extract #{pkg['name']}")
-                  f.println "base64 --decode <<BASE64 > #{File.join(var_cache_path, pkg['name'])}"
-                  f.println  Base64.encode64(IO.read(fname))
-                  f.println "BASE64"
+
+                var_cache_path = "/var/cache/apt/archives"
+                Util.open_file(@host.region, @host.name, "packager.sh") do |f|
+                  f.puts("#!/bin/bash")
+                  f.puts("ARGS=$@")
+                  f.puts("mkdir -p #{var_cache_path}")
+                  packages.each do |pkg|
+                    f.puts("echo packager extract #{pkg['name']}")
+                    f.puts "base64 --decode <<BASE64 > #{File.join(var_cache_path, pkg['name'])}"
+                    f.puts  Base64.encode64(IO.read(pkg['fname']))
+                    f.puts "BASE64"
+                  end
                 end
               end
-              [ "if [ -f "packager.sh" ]",
-                "then",
-                "  sh packager.sh"
-                "fi"].join("\n")
+              [
+                'if [ -f "packager.sh" ]',
+                'then',
+                '  bash packager.sh',
+                'fi'
+              ].join("\n")
             end
 
             def commit
@@ -271,16 +291,18 @@ module Construqt
 
               @results.each do |fname, block|
                 if !block.clazz.respond_to?(:belongs_to_mother?) ||
-                   block.clazz.belongs_to_mother?
+                    block.clazz.belongs_to_mother?
                   out += write_file(host, fname, block)
                 end
               end
+
               out << "fi"
               @results.each do |fname, block|
                 if block.clazz.respond_to?(:belongs_to_mother?) && !block.clazz.belongs_to_mother?
                   out += write_file(host, fname, block)
                 end
               end
+
               out += Lxc.deploy(@host)
               out += [Construqt::Util.render(binding, "result_git_commit.sh.erb")]
               Util.write_str(@host.region, out.join("\n"), @host.name, "deployer.sh")
