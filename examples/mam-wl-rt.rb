@@ -208,10 +208,20 @@ MODULES
 
                                  rts = {}
                                  wifi_vlans = []
+                                 if_map = {
+                                   "basebox" => {
+                                     "2.4" => "wlan1",
+                                     "5.0" => "wlan2"
+                                   },
+                                   "wap-ac" => {
+                                     "2.4" => "wlan1",
+                                     "5.0" => "wlan2"
+                                   }
+                                 }['wap-ac']
                                  region.hosts.add('mam-ap', "flavour" => "mikrotik") do |ap|
-                                   wlan1 = region.interfaces.add_wlan(ap, "wlan1",
+                                   wlan1 = region.interfaces.add_wlan(ap, if_map['2.4'],
                                                                       "mtu" => 1500,
-                                                                      "default_name" => "wlan1",
+                                                                      "default_name" => if_map['2.4'],
                                                                       "band" => "2ghz-b/g/n",
                                                                       "channel_width" => "20/40mhz-Ce",
                                                                       "country" => "germany",
@@ -222,9 +232,9 @@ MODULES
                                                                       "psk" => Digest::SHA256.hexdigest(INTERNAL_PSK)[12..28],
                                                                       "hide_ssid" => true)
 
-                                   wlan2 = region.interfaces.add_wlan(ap, "wlan2",
+                                   wlan2 = region.interfaces.add_wlan(ap, if_map['5.0'],
                                                                       "mtu" => 1500,
-                                                                      "default_name" => "wlan2",
+                                                                      "default_name" => if_map['5.0'],
                                                                       "band" => "5ghz-a/n/ac",
                                                                       "channel_width" => "20/40/80mhz-Ceee",
                                                                       "country" => "germany",

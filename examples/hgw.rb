@@ -4,7 +4,7 @@ module Hgw
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
-      eth0 = region.interfaces.add_device(host, "eth0", "mtu" => 1500)
+      eth0 = region.interfaces.add_device(host, "enxb827eb32a400", "mtu" => 1500)
       wlan0 = region.interfaces.add_wlan(host, "wlan0", "mtu" => 1500, "ssid" => "VALADON-2", "psk" => VALADON_PSK)
       host.configip = host.id ||= Construqt::HostId.create do |my|
         my.interfaces << region.interfaces.add_bridge(host, "br0", "mtu" => 1500,

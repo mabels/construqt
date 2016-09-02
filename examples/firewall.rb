@@ -90,6 +90,21 @@ def firewall(region)
     end
   end
 
+  Construqt::Firewalls.add("service-jabber") do |fw|
+    fw.nat do |nat|
+      nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET")
+        .to_me.tcp.dport(5222).dport(5223).dport(5269)
+        .to_dest("HOST-jabber").from_is_outside
+    end
+
+    fw.forward do |fwd|
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection
+        .from_net("#INTERNET")
+        .to_host("HOST-jabber")
+        .tcp.dport(5222).dport(5223).dport(5269).from_is_outside
+    end
+  end
+
   Construqt::Firewalls.add("service-smtp") do |fw|
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-smtp-de").tcp.dport(25).dport(587).dport(465).from_is_outside

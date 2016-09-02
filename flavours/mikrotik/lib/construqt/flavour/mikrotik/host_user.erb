@@ -1,18 +1,23 @@
 {
   :local found [find name=<%= u.name.inspect %> ]
   :if ($found = "") do={
-    add comment=<%= u.full_name.inspect %> name=<%= u.name %> password=<%= host.region.hosts.default_password %> group=full
+    add comment=<%= u.full_name.inspect %> name=<%= u.name %> password="<%= host.region.hosts.default_password %>" group=full
   } else={
     set $found comment=<%= u.full_name.inspect %>
   }
   <% u.public_key.lines.map{|i| i.strip }.each_with_index do |key, idx|
-      key_file= "ssh-#{u.name}-#{idx}.pub"
-      next if key.split(/\s+/).first == "ssh-ed25519"
+      key_split = key.split(/\s+/)
+      type = key_split.first
+      key_owner = key_split.last
+      key_file = "ssh-#{u.name}-#{idx}-#{type}.txt"
+      next if type == "ssh-ed25519"
+      next if type == "ssh-dss"
   %>
-    /file remove [find name=<%= key_file %> ]
-    /file> print file=<%= key_file %>
-    /file set [find name=<%= key_file %> ] contents=<%= key.inspect %>
-    /user ssh-keys remove [find user=<%= u.name %> ]
-    /user ssh-keys import public-key-file=<%= key_file %>
+    /file remove [/file find where name=<%= key_file.inspect %> ]
+    /file print file=<%= key_file.inspect %>
+    :delay 1
+    /file set [/file find where name=<%= key_file.inspect %> ] contents=<%= key.inspect %>
+    :delay 1
+    /user ssh-keys import public-key-file=<%= key_file.inspect %> user=<%= u.name %>
   <% end %>
 }

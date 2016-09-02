@@ -16,6 +16,47 @@ module Construqt
           not @result[name]
         end
 
+        def break_into_lines(line, break_len = 7000, line_ext = " \\")
+          return [line] if line.length <= break_len
+          last_break = last_space = last_equal = 0
+          lines = []
+          chars = line.split("")
+          line_len = pos = 0
+          while pos < chars.length
+            if pos > 0 && line_len >= break_len
+              if last_space > 0 && last_equal == 0
+                  lines << chars[last_break..last_space].join("") + line_ext
+                  pos = last_space
+              else
+                  lines << chars[last_break..pos].join("") + line_ext
+              end
+              line_len = 0
+              last_break = pos + 1
+              last_space = last_equal = 0
+            else
+              c = chars[pos]
+              if [' ',"\t"].include?(c)
+                last_space = pos
+                last_equal = 0
+              elsif c == '=' && chars[pos+1] == '"' && last_equal == 0
+                last_equal = pos
+              end
+            end
+            line_len += 1
+            pos += 1
+          end
+          lines << chars[last_break..-1].join("")
+          lines
+        end
+
+        def write_str_crnl(region, str, *path)
+          r = []
+          s = str.lines.map(&:chomp).each do |line|
+            r << break_into_lines(line)
+          end
+          Util.write_str(region, r.join("\r\n"), *path)
+        end
+
         def prepare(default, cfg, enable = true)
           if enable
             default['disabled'] = Schema.boolean.default(false)
@@ -117,7 +158,7 @@ module Construqt
             key = blocks.first.path.join(' ')
             digests = blocks.select{|i| i.digest }
 
-            sorted[key] = Util.write_str(@host.region, [
+            sorted[key] = write_str_crnl(@host.region, [
               "/#{key}",
               blocks.map{|i|i.block}.join("\n"),
               remove_condition(digests, key),
@@ -164,7 +205,7 @@ module Construqt
                 Construqt.logger.warn "WARNING [#{path}] not found #{sorted.keys.join('-')}" unless sorted[path]
                 ""
               end
-            end.join("\n")
+            end.join("\r\n")
             Util.write_str(@host.region, all, File.join(@host.name, "all.rsc"))
         end
       end

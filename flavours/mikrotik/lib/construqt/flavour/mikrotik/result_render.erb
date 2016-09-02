@@ -1,7 +1,6 @@
 {
   :local found [find <%=prepared.key%>]
   :if ($found = "") do={
-    :put "+"/<%=path.join(' ')%> add <%=prepared.add_line%>".inspect
     add <%=prepared.add_line%>
   } else={
     :local record [get $found]
@@ -10,7 +9,6 @@
         if (prepared.result[key] == Schema::DISABLE)
      %>
         :if ([:len ($record-><%=key.inspect%>)]!=0) do={
-           :put "+"/<%=path.join(' ')%> set [find <%=prepared.key%> ] !<%=key%>".inspect
            set $found !<%=key%>
         }
      <% end
@@ -20,7 +18,6 @@
         if compare_val
       %>
       :if (($record-><%=key.inspect%>)!=<%=compare_val%>) do={
-         :put "+"/<%=path.join(' ')%> set [find <%=prepared.key%> ] <%=key%>=<%=val%>".inspect
          set $found <%=key%>=<%=val%>
       }
       <% else %>

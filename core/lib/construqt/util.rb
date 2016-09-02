@@ -94,6 +94,7 @@ module Construqt
       return str
     end
 
+
     def self.open_file(region, *path, &block)
       path = File.join(dst_path(region), *path)
       FileUtils.mkdir_p(File.dirname(path))
