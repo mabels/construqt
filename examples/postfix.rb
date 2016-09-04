@@ -15,18 +15,9 @@ module Postfix
           def initialize(service)
             @service = service
           end
-          def up(ifname)
-            #puts "Smtp:up"
-          end
-
-          def down(ifname)
-            #puts "Smtp:down"
-          end
-
           def vrrp(host, ifname, iface)
             puts "Smtp:vrrp"
           end
-
           def interfaces(host, ifname, iface, writer, family = nil)
                 return unless iface.address
                 host.result.add(self, <<MAINCF, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::RADVD), "etc", "postfix", "main.cf")

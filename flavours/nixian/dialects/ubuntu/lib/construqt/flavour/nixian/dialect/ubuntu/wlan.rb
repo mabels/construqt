@@ -1,3 +1,5 @@
+require 'openssl'
+
 module Construqt
   module Flavour
     module Nixian
