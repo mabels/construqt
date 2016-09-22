@@ -77,7 +77,7 @@ module Construqt
                 #puts "**********#{ip.class.name}"
                 list = []
                 if ip.network.to_string == ip.to_string
-                  list += ip.map{|i| i}
+                  ip.each_host{|i| list << i }
                 else
                   list << ip
                 end

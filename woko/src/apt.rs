@@ -7,6 +7,7 @@ extern crate time;
 extern crate persistent;
 extern crate rustc_serialize;
 extern crate serde_json;
+extern crate serde;
 
 use regex::Regex;
 use std::process::Command;
@@ -21,6 +22,7 @@ use std::process::Command;
 
 //use rustc_serialize::json::{self, ToJson, Json};
 //use rustc_serialize::json;
+//use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize, RustcDecodable, RustcEncodable)]
 pub struct PkgDesc {
@@ -39,6 +41,16 @@ pub struct ReqPackageList {
     packages: Vec<String>
 }
 
+
+impl Deserialize for ReqPackageList {
+    fn deserialize(deserializer: &mut ReqPackageList) -> Result<Self, ReqPackageList::Error> where D: Deserializer {
+      Ok(ReqPackageList{
+        dist: "",
+        arch: "",
+        version: "",
+        packages: vec![]
+    });
+}
 
 pub fn parse(req: &ReqPackageList) -> Result<Vec<PkgDesc>, String> {
     let lxc_name = format!("{}-{}-{}", &req.dist, &req.version, &req.arch);

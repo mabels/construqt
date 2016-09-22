@@ -22,12 +22,29 @@ module Construqt
         ret
       end
 
+      def ip_bits
+        @ipaddr.ip_bits
+      end
+      def host_address
+        @ipaddr.host_address
+      end
+
+      def is_ipv4
+        @ipaddr.ipv4?
+      end
       def ipv4?
         @ipaddr.ipv4?
       end
 
+      def is_ipv6
+        @ipaddr.ipv6?
+      end
       def ipv6?
         @ipaddr.ipv6?
+      end
+
+      def is_unspecified
+        @ipaddr.is_unspecified
       end
 
       def include?(a)
@@ -94,9 +111,9 @@ module Construqt
         @ipaddr.netmask
       end
 
-      def map(&block)
-        @ipaddr.map{|i| block.call(i) }
-      end
+#      def map(&block)
+#        @ipaddr.map{|i| block.call(i) }
+#      end
     end
   end
 end

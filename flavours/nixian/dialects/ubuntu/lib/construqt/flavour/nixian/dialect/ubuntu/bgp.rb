@@ -25,7 +25,8 @@ module Construqt
               :filter => lambda {|ip| ip.ipv4? }))
               host.result.add(self, bird_v4, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird.conf")
               bird_v6 = self.header_bird(host, OpenStruct.new(:net_clazz => lambda {|o|
-                (o.kind_of?(IPAddress::IPv6)||o.kind_of?(Construqt::Addresses::CqIpAddress)) && o.ipv6?
+                #(o.kind_of?(IPAddress::IPv6)||o.kind_of?(Construqt::Addresses::CqIpAddress)) && o.ipv6?
+                o.ipv6?
               },
               :filter => lambda {|ip| ip.ipv6? }))
               host.result.add(self, bird_v6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::BGP), "etc", "bird", "bird6.conf")

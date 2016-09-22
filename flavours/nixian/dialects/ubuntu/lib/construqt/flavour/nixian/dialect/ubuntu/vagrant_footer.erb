@@ -1,5 +1,15 @@
+
+  <% @mother.region.users.get_authorized_keys(@mother).each do |akey| %>
+    config.vm.provision 'shell', inline: "echo '<%= akey.strip %>' >> /root/.ssh/authorized_keys"
+    config.vm.provision 'shell', inline: "echo '<%= akey.strip %>' >> /home/ubuntu/.ssh/authorized_keys"
+  <% end %>
+  ["deployer.sh", "packager.sh"].each do |fname|
+    File.exists?(fname) && File.delete(fname)
+    File.link("../../../../../<%= @child.name %>/#{fname}", fname)
+  end
   config.vm.provision :shell, :inline => "sudo echo <%= @child.name %> > /etc/hostname"
-  config.vm.provision :file, source: "../../../../../<%= @child.name %>/deployer.sh", destination: "deployer.sh"
-  config.vm.provision :shell, :inline => "sudo bash /home/vagrant/deployer.sh"
+  #config.vm.provision :file, source: "../../../../../<%= @child.name %>/deployer.sh", destination: "deployer.sh"
+  config.vm.provision :shell, :inline => "sudo mv /vagrant/packager.sh /vagrant/deployer.sh /root"
+  config.vm.provision :shell, :inline => "sudo bash /root/deployer.sh"
   config.vm.provision :shell, :inline => "sudo reboot"
 end

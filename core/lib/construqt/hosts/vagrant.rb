@@ -3,6 +3,23 @@ module Construqt
   class Hosts
 
     class Vagrant
+      def initialize
+        @cfgs = []
+      end
+      def add_cfg(str)
+        @cfgs << str
+        self
+      end
+      def get_cfgs
+        @cfgs
+      end
+      def box(name)
+        @box = name
+        self
+      end
+      def get_box
+        @box || "ubuntu/trusty32"
+      end
       def net(net)
         @net = net
         self

@@ -128,11 +128,13 @@ module Construqt
           end
 
           def self.isSet?(val)
-            val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+            #val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+            val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress)
           end
 
           def self.serialize(schema, val)
-            throw "Address:val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+            #throw "Address:val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+            throw "Address:val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress)
             #        throw "only 0-9:\.\/ are allowed #{val}" unless val.match(/^[a-fA-F0-9:\.\/]+$/)
             return Flavour::Mikrotik.compress_address(val)
           end
@@ -144,11 +146,13 @@ module Construqt
           end
 
           def self.isSet?(val)
-            val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+            #val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+            val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress)
           end
 
           def self.serialize(schema, val)
-            throw "Address:val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+            #throw "Address:val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+            throw "Address:val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress)
             #        throw "only 0-9:\.\/ are allowed #{val}" unless val.match(/^[a-fA-F0-9:\.\/]+$/)
             return "#{Flavour::Mikrotik.compress_address(val)}/#{val.prefix}"
           end
@@ -160,11 +164,13 @@ module Construqt
           end
 
           def self.isSet?(val)
-            val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+            #val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+            val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress)
           end
 
           def self.serialize(schema, val)
-            throw "Network::val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+            #throw "Network::val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress::IPv6) || val.kind_of?(IPAddress::IPv4)
+            throw "Network::val must be ipaddress #{val.class.name} #{val} #{schema.field_name}" unless val.kind_of?(Construqt::Addresses::CqIpAddress) || val.kind_of?(IPAddress)
             #throw "only 0-9:\.\/ are allowed #{val}" unless val.match(/^[a-fA-F0-9:\.\/]+$/)
             return "#{Flavour::Mikrotik.compress_address(val)}/#{val.prefix}"
           end

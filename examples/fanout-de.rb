@@ -39,6 +39,7 @@ module FanoutDe
           .add_route("2000::/3#INTERNET", fanout[:gw6]),
         "firewalls" => ["fix-mss", "host-outbound", "icmp-ping" , "http-srv", "ssh-srv", "ipsec-srv",
                         "service-ssh-hgw", "service-transit",
+                        "service-sniproxy",
                         "service-woko", "service-jabber",
                         "service-nat", "service-smtp", "service-dns", "service-imap",
                         "vpn-server-net", "block"])
@@ -92,6 +93,9 @@ module FanoutDe
       'sni-test' => nil,
       'pam-gpg' => nil,
       'jabber' => nil,
+      'posco' => nil,
+      'trusty' => nil,
+      'sniproxy' => nil
      }.each_with_index do |name_action, idx|
       name, action = name_action
       region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => fanout_de,

@@ -50,7 +50,7 @@ def firewall(region)
       nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(993).to_dest("HOST-imap-de").from_is_outside
       nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.udp.dport(53).to_dest("HOST-bind-de").from_is_outside
       nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(53).to_dest("HOST-bind-de").from_is_outside
-      nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.udp.dport(1194).dport(443).to_dest("HOST-ovpn", 1194).from_is_outside
+      nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(443).to_dest("HOST-sniproxy", 4711).from_is_outside
     end
   end
 
@@ -120,6 +120,12 @@ def firewall(region)
   Construqt::Firewalls.add("service-ovpn") do |fw|
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-ovpn").tcp.dport(1194).from_is_outside
+    end
+  end
+
+  Construqt::Firewalls.add("service-sniproxy") do |fw|
+    fw.forward do |fwd|
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-sniproxy").tcp.dport(4711).from_is_outside
     end
   end
 

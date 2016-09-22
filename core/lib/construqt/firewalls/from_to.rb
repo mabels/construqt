@@ -150,9 +150,9 @@ module Construqt
       end
 
       def self.to_host_addr(addr)
-        if addr.to_i == 0 ||
-            (addr.ipv4? && addr.prefix != 32 && addr.network == addr) ||
-            (addr.ipv6? && addr.prefix != 128 && addr.network == addr)
+        if addr.is_unspecified() ||
+            (addr.ipv4? && addr.prefix.num != 32 && addr.network == addr) ||
+            (addr.ipv6? && addr.prefix.num != 128 && addr.network == addr)
           # default or i is a network
           nil
         else

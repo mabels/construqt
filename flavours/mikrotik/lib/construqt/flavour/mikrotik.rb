@@ -48,23 +48,22 @@ module Construqt
 
 
       def self.compress_address(val)
-        return val.compressed if val.ipv4?
-        found = 0
-        val.groups.map do |i|
-          if found > 0 && i != 0
-            found = -1
-          end
-
-          if found == 0 && i == 0
-            found += 1
-            ""
-          elsif found > 0 && i == 0
-            found += 1
-            nil
-          else
-            i.to_s 16
-          end
-        end.compact.join(":").sub(/:+$/, '::')
+        return val.to_s #if val.ipv4?
+        #found = 0
+        #val.groups.map do |i|
+        #  if found > 0 && i != 0
+        #    found = -1
+        #  end
+        #  if found == 0 && i == 0
+        #    found += 1
+        #    ""
+        #  elsif found > 0 && i == 0
+        #    found += 1
+        #    nil
+        #  else
+        #    i.to_s 16
+        #  end
+        #end.compact.join(":").sub(/:+$/, '::')
       end
 
       def ipsec

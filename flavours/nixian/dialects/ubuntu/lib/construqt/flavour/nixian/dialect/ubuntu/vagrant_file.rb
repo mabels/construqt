@@ -8,7 +8,9 @@ module Construqt
           class VagrantFile
             def initialize(mother, child)
               @mother = mother
+              @mother.delegate.vagrant_deploy ||= Construqt::Hosts::Vagrant.new
               @child = child
+              @child.delegate.vagrant_deploy ||= Construqt::Hosts::Vagrant.new
               @links = []
             end
 

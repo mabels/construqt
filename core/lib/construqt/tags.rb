@@ -119,8 +119,10 @@ module Construqt
           nil
         end
       end.flatten.compact.select do |i|
-        (((family==Construqt::Addresses::IPV4||family==IPAddress::IPv4) && i.ipv4?) ||
-         ((family==Construqt::Addresses::IPV6||family==IPAddress::IPv6) && i.ipv6?))
+        (((family==Construqt::Addresses::IPV4) && i.ipv4?) ||
+         ((family==Construqt::Addresses::IPV6) && i.ipv6?))
+#        (((family==Construqt::Addresses::IPV4||family==IPAddress::IPv4) && i.ipv4?) ||
+#         ((family==Construqt::Addresses::IPV6||family==IPAddress::IPv6) && i.ipv6?))
       end
     end
 

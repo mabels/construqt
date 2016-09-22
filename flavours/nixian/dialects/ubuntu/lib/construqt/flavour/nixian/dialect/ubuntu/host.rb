@@ -12,17 +12,20 @@ module Construqt
               super(cfg)
             end
 
-            def create_vagrant_containers(host)
-              host.region.hosts.get_hosts.select {|h| host == h.mother }.each do |vagrant|
+            def render_vagrant(host, vagrant)
                 vfile = VagrantFile.new(host, vagrant)
                 vagrant.interfaces.values.map do |iface|
                   if iface.cable and !iface.cable.connections.empty?
                     vfile.add_link(iface.cable.connections.first.iface, iface)
                   end
                 end
-
                 vfile.render
+            end
+            def create_vagrant_containers(host)
+              host.region.hosts.get_hosts.select {|h| host == h.mother }.each do |vagrant|
+                render_vagrant(host, vagrant)
               end
+              render_vagrant(host, host)
             end
 
             def create_lxc_containers(host)

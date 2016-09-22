@@ -20,9 +20,9 @@ module Construqt
     @logger.level = level
   end
 
-  if !IPAddress::IPv6.instance_methods.include?(:rev_domains)
-    @logger.fatal "you need the right ipaddress version from https://github.com/mabels/ipaddress"
-  end
+  #if !IPAddress::IPv6.instance_methods.include?(:rev_domains)
+  #  @logger.fatal "you need the right ipaddress version from https://github.com/mabels/ipaddress"
+  #end
 
   if !OpenStruct.instance_methods.include?(:to_h)
     OpenStruct.class_eval do

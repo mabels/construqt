@@ -25,6 +25,10 @@ module Construqt
           self.delegate.lxc_deploy
         end
 
+        def vagrant_deploy
+          self.delegate.vagrant_deploy
+        end
+
         def mother
           if self.delegate.respond_to? :mother
             self.delegate.mother
