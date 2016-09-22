@@ -1,0 +1,25 @@
+#!/bin/bash
+for CMD; do true; done
+SCRIPTNAME=$0
+ARGS=$@
+if [ "$CMD" = version ]
+then
+ echo #{chksum}
+ exit 0
+fi
+mkdir -p <%= var_cache_path %>
+if [ -f <%= "#{var_cache_path}/#{chksum}.packager.load" %> ]
+then
+  echo 'packager cached loaded $SCRIPTNAME/<%= chksum %>'
+  exit 0
+fi
+echo -n packager extract from $SCRIPTNAME/<%= chksum %> total <% packages.length %> packages:
+<% packages.each do |pkg| %>
+    echo -n .
+    base64 --decode <<BASE64 > <%= "#{File.join(var_cache_path, pkg['name'])}" %>
+    <%= Base64.encode64(IO.read(pkg['fname'] -%>
+    BASE64
+<% end %>
+touch <%= "#{var_cache_path}/#{chksum}.packager.load" %>
+find <%= var_cache_path %> -type f -mtime +10 -name '*.packager.load' | xargs rm -f
+echo done

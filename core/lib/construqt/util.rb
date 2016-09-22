@@ -94,6 +94,9 @@ module Construqt
       return str
     end
 
+    def self.get_filename(region, *path)
+      File.join(dst_path(region), *path)
+    end
 
     def self.open_file(region, *path, &block)
       path = File.join(dst_path(region), *path)
