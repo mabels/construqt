@@ -14,12 +14,3 @@ then
   exit 0
 fi
 echo -n packager extract from $SCRIPTNAME/<%= chksum %> total <% packages.length %> packages:
-<% packages.each do |pkg| %>
-    echo -n .
-    base64 --decode <<BASE64 > <%= "#{File.join(var_cache_path, pkg['name'])}" %>
-    <%= Base64.encode64(IO.read(pkg['fname'] -%>
-    BASE64
-<% end %>
-touch <%= "#{var_cache_path}/#{chksum}.packager.load" %>
-find <%= var_cache_path %> -type f -mtime +10 -name '*.packager.load' | xargs rm -f
-echo done

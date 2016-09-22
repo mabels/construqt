@@ -1,0 +1,4 @@
+
+touch <%= "#{var_cache_path}/#{chksum}.packager.load" %>
+find <%= var_cache_path %> -type f -mtime +10 -name '*.packager.load' | xargs rm -f
+echo done

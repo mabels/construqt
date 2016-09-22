@@ -26,7 +26,7 @@ module Construqt
               self._host_package_list(host, match, result_package_list)
               if i_ma_the_mother?(host)
                 host.region.hosts.get_hosts.select do |h|
-                  host.delegate == h.mother
+                  host.eq(h.mother)
                 end.each do |h|
                   self._host_package_list(h, [Packages::Package::MOTHER, Packages::Package::BOTH], result_package_list)
                 end
@@ -72,7 +72,7 @@ module Construqt
             end
 
             def self.i_ma_the_mother?(host)
-              host.region.hosts.get_hosts.find { |h| host.delegate == h.mother }
+              host.region.hosts.get_hosts.find { |h| host.eq(h.mother) }
             end
 
             def self.merge_package_list(hosts)
@@ -86,7 +86,7 @@ module Construqt
 
             def self.write_deployers(host)
               return unless i_ma_the_mother?(host)
-              host.region.hosts.get_hosts.select {|h| host.delegate == h.mother }.each do |lxc|
+              host.region.hosts.get_hosts.select {|h| host.eq(h.mother) }.each do |lxc|
                 host.result.add(Lxc, Util.read_str(host.region, lxc.name, "deployer.sh"),
                                 Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::LXC),
                                 "/var", "lib", "lxc", "#{lxc.name}.deployer.sh").skip_git
@@ -167,7 +167,25 @@ module Construqt
             def self.deploy(host)
               # if this a mother
               return [] unless i_ma_the_mother?(host)
-              [Construqt::Util.render(binding, "lxc/lxc_deploy.sh.erb")]
+              [
+                Construqt::Util.render(binding, "lxc/lxc_deploy.sh.erb")
+              ]
+            end
+
+            def self.find_lxc_used_interfaces(host)
+              ret = host.region.hosts.get_hosts.select {|h| host.eq(h.mother) }.map do |lxc|
+                lxc.interfaces.values.map do |iface|
+                  #puts iface.name
+                  if iface.cable and !iface.cable.connections.empty?
+                    throw "multiple connection cable are not allowed" if iface.cable.connections.length > 1
+                    iface.cable.connections.first.iface.name
+                  else
+                    nil
+                  end
+                end
+              end.flatten.compact.sort.uniq
+              #binding.pry
+              ret
             end
 
             def self.deploy_standalone(host)
@@ -177,6 +195,7 @@ module Construqt
               if host.lxc_deploy.get_release
                 release += " -r #{host.lxc_deploy.get_release}"
               end
+
               Construqt::Util.render(binding, "lxc/lxc_deploy_standalone.sh.erb")
             end
 

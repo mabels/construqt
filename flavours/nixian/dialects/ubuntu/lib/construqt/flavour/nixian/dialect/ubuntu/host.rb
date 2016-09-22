@@ -12,6 +12,10 @@ module Construqt
               super(cfg)
             end
 
+            def eq(oth)
+              delegate.eq(oth)
+            end
+
             def render_vagrant(host, vagrant)
                 vfile = VagrantFile.new(host, vagrant)
                 vagrant.interfaces.values.map do |iface|
@@ -22,7 +26,7 @@ module Construqt
                 vfile.render
             end
             def create_vagrant_containers(host)
-              host.region.hosts.get_hosts.select {|h| host == h.mother }.each do |vagrant|
+              host.region.hosts.get_hosts.select {|h| host.eq(h.mother) }.each do |vagrant|
                 render_vagrant(host, vagrant)
               end
               render_vagrant(host, host)
@@ -30,7 +34,7 @@ module Construqt
 
             def create_lxc_containers(host)
               once_per_host_which_have_lxcs = false
-              host.region.hosts.get_hosts.select {|h| host == h.mother }.each do |lxc|
+              host.region.hosts.get_hosts.select {|h| host.eq(h.mother) }.each do |lxc|
                 once_per_host_which_have_lxcs ||= LxcNetwork.create_lxc_network_patcher(host, lxc)
                 networks = lxc.interfaces.values.map do |iface|
                   if iface.cable and !iface.cable.connections.empty?

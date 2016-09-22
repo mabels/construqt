@@ -26,7 +26,7 @@ module Construqt
 
             def build_config(host, iface)
               iface = iface.delegate
-              my_iface = iface.interfaces.find{|iface| iface.host == host }
+              my_iface = iface.interfaces.find{|iface| iface.host.eq(host) }
               ret = []
               ret << "vrrp_instance #{iface.name} {"
               ret << "  state MASTER"

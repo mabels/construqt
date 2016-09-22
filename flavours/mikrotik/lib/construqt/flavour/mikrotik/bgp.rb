@@ -89,7 +89,7 @@ module Construqt
           as_s = {}
           Bgps.connections.each do |bgp|
             (bgp.rights+bgp.lefts).each do |my|
-              if my.host == host
+              if my.host.eq(host)
                 as_s[my.as] ||= OpenStruct.new(:host => host, :routing_table => my.as.routing_table)
 puts "XXXXX #{my.as.routing_table.class.name}"
                 throw "routing_table not matching" if as_s[my.as].routing_table != my.as.routing_table

@@ -27,6 +27,17 @@ module Construqt
         @delegate = a
       end
 
+      # i have currently no better idea
+      def duck_me_eq
+      end
+      def eq(oth)
+        if oth.respond_to?(:duck_me_eq)
+          delegate == oth.delegate
+        else
+          delegate == oth
+        end
+      end
+
       def tags
         @tags || []
       end

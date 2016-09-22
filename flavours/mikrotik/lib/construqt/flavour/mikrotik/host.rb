@@ -9,6 +9,10 @@ module Construqt
         def footer(_host)
         end
 
+        def eq(oth)
+          delegate.eq(oth)
+        end
+
         def self.header(delegate_host)
           host = delegate_host.delegate
           host.result.render_mikrotik_set_direct(

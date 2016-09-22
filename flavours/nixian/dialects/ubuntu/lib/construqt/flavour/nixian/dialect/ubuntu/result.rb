@@ -242,7 +242,15 @@ module Construqt
                                 else
                                   Construqt.logger.debug "Generate packager.sh #{packager_fname}"
                                   Util.open_file(@host.region, @host.name, 'packager.sh') do |f|
-                                    f.puts Construqt::Util.render(binding, 'packager.sh.erb')
+                                    # binding.pry
+                                    f.puts Construqt::Util.render(binding, 'packager.header.sh.erb')
+                                    packages.each do |pkg|
+                                        f.puts "echo -n ."
+                                        f.puts "base64 --decode <<BASE64 > #{File.join(var_cache_path, pkg['name'])}"
+                                        f.puts Base64.encode64(IO.read(pkg['fname']))
+                                        f.puts "BASE64"
+                                    end
+                                    f.puts Construqt::Util.render(binding, 'packager.footer.sh.erb')
                                   end
                               end
                             end

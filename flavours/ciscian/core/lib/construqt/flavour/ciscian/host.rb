@@ -6,6 +6,11 @@ module Construqt
           super(cfg)
         end
 
+        def eq(oth)
+          delegate.eq(oth)
+        end
+
+
         def header(_host)
           '# this is a generated file do not edit!!!!!'
         end

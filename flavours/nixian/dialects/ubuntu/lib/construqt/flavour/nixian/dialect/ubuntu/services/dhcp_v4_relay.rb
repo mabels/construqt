@@ -23,9 +23,9 @@ module Construqt
               end
 
               def vrrp(host, ifname, vrrp)
-                inbounds = Construqt::Tags.find(@service.inbound_tag).select{ |cqip| cqip.container.interface.host == host && cqip.ipv4? && !cqip.container.interface.name.empty? }
+                inbounds = Construqt::Tags.find(@service.inbound_tag).select{ |cqip| cqip.container.interface.host.eq(host) && cqip.ipv4? && !cqip.container.interface.name.empty? }
                 return if inbounds.empty?
-                iface = vrrp.interfaces.find{|_| _.host == host }
+                iface = vrrp.interfaces.find{|_| _.host.eq(host) }
                 return unless iface
                 upstreams = Construqt::Tags.find(@service.upstream_tag).select{ |cqip| cqip.ipv4? }
                 return if upstreams.empty?
@@ -35,7 +35,7 @@ module Construqt
               end
 
               def interfaces(host, ifname, iface, writer)
-                inbounds = Construqt::Tags.find(@service.inbound_tag).select{ |cqip| cqip.container.interface.host == host && cqip.ipv4? }
+                inbounds = Construqt::Tags.find(@service.inbound_tag).select{ |cqip| cqip.container.interface.host.eq(host) && cqip.ipv4? }
                 return if inbounds.empty?
                 upstreams = Construqt::Tags.find(@service.upstream_tag).select{ |cqip| cqip.ipv4? }
                 return if upstreams.empty?
