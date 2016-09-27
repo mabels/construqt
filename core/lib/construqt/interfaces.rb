@@ -153,7 +153,7 @@ module Construqt
 #            end
           end
         end
-        throw "only host ip's are allowed #{adr.to_s}" if adr.ipv6? && adr.prefix != 128
+        throw "only host ip's are allowed #{adr.to_s}" if adr.ipv6? && adr.prefix.num != 128
         nets[adr.network.to_s] = true
       end
       address = cfg['address']
