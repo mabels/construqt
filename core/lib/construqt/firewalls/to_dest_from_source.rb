@@ -22,23 +22,27 @@ module Construqt
         self
       end
 
-      def _to_dest_to_source(val)
+      def _to_dest_to_source(family, val)
         addr = nil
         if defined?(val) && val.ip == :my_first
-          ip = self.attached_interface.address.v4s.first
+          ip = if family == Construqt::Addresses::IPV4
+            self.attached_interface.address.v4s.first
+          else
+            self.attached_interface.address.v6s.first
+          end
           if ip
             addr = IpWithPort.new(ip, val.port)
           end
         elsif defined?(val) && val && !val.ip.strip.empty?
           addr = IpWithPort.new(
-            FromTo.resolver(val.ip, Construqt::Addresses::IPV4).first.ip_addr, val.port)
+            FromTo.resolver(val.ip, family).first.ip_addr, val.port)
 
         end
         addr ?  [addr] : []
       end
 
-      def get_to_source
-        _to_dest_to_source(@to_source)
+      def get_to_source(family)
+        _to_dest_to_source(family, @to_source)
       end
 
       def to_dest(val=:my_first, dest_port=nil)
@@ -46,8 +50,8 @@ module Construqt
         self
       end
 
-      def get_to_dest
-        _to_dest_to_source(@to_dest)
+      def get_to_dest(family)
+        _to_dest_to_source(family, @to_dest)
       end
     end
   end

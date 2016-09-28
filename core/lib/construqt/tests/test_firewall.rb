@@ -1135,9 +1135,9 @@ class FirewallTest < Test::Unit::TestCase
         nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv4.ipv6.from_net("@0.0.0.0/0").to_host("@8.8.4.4").tcp.dport(80).dport(443).to_source("@2.2.2.2").from_is_inside
 
         nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv4.ipv6.from_net("@2000::/4").to_host("@fd00::1:1:1:1").tcp.dport(80).dport(443).to_dest("@fd00::8:8:8:8").from_is_outside
-        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv4.ipv6.from_net("@2000::/4").to_host("@fd00::1:1:1:2").tcp.dport(80).dport(443).to_dest("@8.8.4.4").from_is_outside
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv4.ipv6.from_net("@2000::/4").to_host("@fd00::1:1:1:2").tcp.dport(80).dport(443).to_dest("@fd00::8:8:4:4").from_is_outside
 
-        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv4.ipv6.from_net("@fd00::47:11:0:0/64").to_net("@2000::/4").to_source("@9.9.9.9").from_is_inside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv4.ipv6.from_net("@fd00::47:11:0:0/64").to_net("@2000::/4").to_source("@fd00::9:9:9:9").from_is_inside
         nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv4.ipv6.from_net("@2000::/4").to_host("@fd00::8:8:8:8").tcp.dport(80).dport(443).to_source("@fd00::2:2:2:1").from_is_inside
         nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv4.ipv6.from_net("@2000::/4").to_host("@fd00::8:8:4:4").tcp.dport(80).dport(443).to_source("@fd00::2:2:2:2").from_is_inside
       end
@@ -1152,11 +1152,11 @@ class FirewallTest < Test::Unit::TestCase
       "{POSTROUTING} -o testif -p tcp -s 0.0.0.0/0 -d 8.8.4.4/32 -m multiport --dports 80,443 -j SNAT --to-source 2.2.2.2"
     ], writer.ipv4.rows
     assert_equal [
-     "{PREROUTING} -i testif -p tcp -s 2000::/4 -d fd00::1:1:1:1/128 -m multiport --dports 80,443 -j DNAT --to-dest",
-     "{PREROUTING} -i testif -p tcp -s 2000::/4 -d fd00::1:1:1:2/128 -m multiport --dports 80,443 -j DNAT --to-dest 8.8.4.4",
-     "{POSTROUTING} -o testif -s fd00::/64 -d 2000::/4 -j SNAT --to-source 9.9.9.9",
-     "{POSTROUTING} -o testif -p tcp -s 2000::/4 -d fd00::8:8:8:8/128 -m multiport --dports 80,443 -j SNAT --to-source",
-     "{POSTROUTING} -o testif -p tcp -s 2000::/4 -d fd00::8:8:4:4/128 -m multiport --dports 80,443 -j SNAT --to-source"
+     "{PREROUTING} -i testif -p tcp -s 2000::/4 -d fd00::1:1:1:1/128 -m multiport --dports 80,443 -j DNAT --to-dest fd00::8:8:8:8",
+     "{PREROUTING} -i testif -p tcp -s 2000::/4 -d fd00::1:1:1:2/128 -m multiport --dports 80,443 -j DNAT --to-dest fd00::8:8:4:4",
+     "{POSTROUTING} -o testif -s fd00::/64 -d 2000::/4 -j SNAT --to-source fd00::9:9:9:9",
+     "{POSTROUTING} -o testif -p tcp -s 2000::/4 -d fd00::8:8:8:8/128 -m multiport --dports 80,443 -j SNAT --to-source fd00::2:2:2:1",
+     "{POSTROUTING} -o testif -p tcp -s 2000::/4 -d fd00::8:8:4:4/128 -m multiport --dports 80,443 -j SNAT --to-source fd00::2:2:2:2"
       ], writer.ipv6.rows
   end
 
@@ -1585,7 +1585,7 @@ class FirewallTest < Test::Unit::TestCase
     Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
     assert_equal [], writer.ipv4.rows
     assert_equal [
-      "{PREROUTING} -i testif -p tcp -s 2000::/3 -d fd00::1:2:2:3/128 -m multiport --dports 1194,443 -j DNAT --to-dest 1.2.2.3:2323"
+      "{PREROUTING} -i testif -p tcp -s 2000::/3 -d fd00::1:2:2:3/128 -m multiport --dports 1194,443 -j DNAT --to-dest fd00::1:2:2:3:2323"
       ], writer.ipv6.rows
   end
 
@@ -1621,7 +1621,7 @@ class FirewallTest < Test::Unit::TestCase
       "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.2.2.3/32 -m multiport --dports 1194,443 -j DNAT --to-dest 1.2.2.3:2323"
     ], writer.ipv4.rows
     assert_equal [
-      "{PREROUTING} -i testif -p tcp -s 2000::/3 -d fd00::1:2:2:3/128 -m multiport --dports 1194,443 -j DNAT --to-dest 1.2.2.3:2323"
+      "{PREROUTING} -i testif -p tcp -s 2000::/3 -d fd00::1:2:2:3/128 -m multiport --dports 1194,443 -j DNAT --to-dest fd00::1:2:2:3:2323"
       ], writer.ipv6.rows
   end
 
