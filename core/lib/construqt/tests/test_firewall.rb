@@ -73,10 +73,17 @@ end
 
 REGION.hosts.add("Construqt-Host-ipv4", "flavour" => "nixian", "dialect" => "ubuntu") do |cq|
   cq.configip = cq.id ||= Construqt::HostId.create do |my|
-    my.interfaces << TEST_IF_IPV4 = REGION.interfaces.add_device(cq, "v998", "mtu" => 1500, 'address' => REGION.network.addresses.add_ip("1.2.2.3"))
+    my.interfaces << TEST_IF_IPV4 = REGION.interfaces.add_device(cq, "v998", "mtu" => 1500,
+      'address' => REGION.network.addresses.add_ip("1.2.2.3"))
   end
 end
 
+REGION.hosts.add("Construqt-Host-ipv4-ipv6", "flavour" => "nixian", "dialect" => "ubuntu") do |cq|
+  cq.configip = cq.id ||= Construqt::HostId.create do |my|
+    my.interfaces << TEST_IF_IPV4_IPV6 = REGION.interfaces.add_device(cq, "v998", "mtu" => 1500,
+      'address' => REGION.network.addresses.add_ip("1.2.2.3").add_ip("fd00::1:2:2:3"))
+  end
+end
 
 
 Construqt::Firewalls.add("l-host-outbound") do |fw|
@@ -1126,6 +1133,13 @@ class FirewallTest < Test::Unit::TestCase
         nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("@47.11.0.0/16").to_net("@0.0.0.0/0").to_source("@9.9.9.9").from_is_inside
         nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("@0.0.0.0/0").to_host("@8.8.8.8").tcp.dport(80).dport(443).to_source("@2.2.2.1").from_is_inside
         nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("@0.0.0.0/0").to_host("@8.8.4.4").tcp.dport(80).dport(443).to_source("@2.2.2.2").from_is_inside
+
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv6.from_net("@2000::/4").to_host("@fd00::1:1:1:1").tcp.dport(80).dport(443).to_dest("@fd00::8:8:8:8").from_is_outside
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv6.from_net("@2000::/4").to_host("@fd00::1:1:1:2").tcp.dport(80).dport(443).to_dest("@8.8.4.4").from_is_outside
+
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv6.from_net("@fd00::47:11:0:0/64").to_net("@2000::/4").to_source("@9.9.9.9").from_is_inside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv6.from_net("@2000::/4").to_host("@fd00::8:8:8:8").tcp.dport(80).dport(443).to_source("@fd00::2:2:2:1").from_is_inside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv6.from_net("@2000::/4").to_host("@fd00::8:8:4:4").tcp.dport(80).dport(443).to_source("@fd00::2:2:2:2").from_is_inside
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
@@ -1137,7 +1151,13 @@ class FirewallTest < Test::Unit::TestCase
       "{POSTROUTING} -o testif -p tcp -s 0.0.0.0/0 -d 8.8.8.8/32 -m multiport --dports 80,443 -j SNAT --to-source 2.2.2.1",
       "{POSTROUTING} -o testif -p tcp -s 0.0.0.0/0 -d 8.8.4.4/32 -m multiport --dports 80,443 -j SNAT --to-source 2.2.2.2"
     ], writer.ipv4.rows
-    assert_equal [], writer.ipv6.rows
+    assert_equal [
+     "{PREROUTING} -i testif -p tcp -s 2000::/4 -d fd00::1:1:1:1/128 -m multiport --dports 80,443 -j DNAT --to-dest",
+     "{PREROUTING} -i testif -p tcp -s 2000::/4 -d fd00::1:1:1:2/128 -m multiport --dports 80,443 -j DNAT --to-dest 8.8.4.4",
+     "{POSTROUTING} -o testif -s fd00::/64 -d 2000::/4 -j SNAT --to-source 9.9.9.9",
+     "{POSTROUTING} -o testif -p tcp -s 2000::/4 -d fd00::8:8:8:8/128 -m multiport --dports 80,443 -j SNAT --to-source",
+     "{POSTROUTING} -o testif -p tcp -s 2000::/4 -d fd00::8:8:4:4/128 -m multiport --dports 80,443 -j SNAT --to-source"
+      ], writer.ipv6.rows
   end
 
   def test_not_1_1
@@ -1549,6 +1569,73 @@ class FirewallTest < Test::Unit::TestCase
       "{RW4jlPKRgfBXDGg6eOChfg} -d 5.5.6.6/32 -j DNAT --to-dest 1.2.2.3:2323",
       "{RW4jlPKRgfBXDGg6eOChfg} -j RETURN",
       "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -m multiport --dports 1194,443 -j RW4jlPKRgfBXDGg6eOChfg"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
+  end
+
+  def test_nat_with_mapped_ipv6
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.nat do |nat|
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INDERNET")
+          .ipv6
+          .to_me.tcp.dport(1194).dport(443).to_dest("Construqt-Host-ipv4-ipv6", 2323).from_is_outside
+      end
+    end.attach_iface(TEST_IF_IPV4_IPV6)
+    writer = TestWriter.new
+    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    assert_equal [], writer.ipv4.rows
+    assert_equal [
+      "{PREROUTING} -i testif -p tcp -s 2000::/3 -d fd00::1:2:2:3/128 -m multiport --dports 1194,443 -j DNAT --to-dest 1.2.2.3:2323"
+      ], writer.ipv6.rows
+  end
+
+
+  def test_nat_with_mapped_ipv4
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.nat do |nat|
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INDERNET")
+          .ipv4
+          .to_me.tcp.dport(1194).dport(443).to_dest("Construqt-Host-ipv4-ipv6", 2323).from_is_outside
+      end
+    end.attach_iface(TEST_IF_IPV4_IPV6)
+    writer = TestWriter.new
+    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    assert_equal [
+      "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.2.2.3/32 -m multiport --dports 1194,443 -j DNAT --to-dest 1.2.2.3:2323"
+    ], writer.ipv4.rows
+    assert_equal [], writer.ipv6.rows
+  end
+
+  def test_nat_with_mapped_ipv4_ipv6
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.nat do |nat|
+        # binding.pry
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INDERNET")
+          .ipv4.ipv6
+          .to_me.tcp.dport(1194).dport(443).to_dest("Construqt-Host-ipv4-ipv6", 2323).from_is_outside
+      end
+    end.attach_iface(TEST_IF_IPV4_IPV6)
+    writer = TestWriter.new
+    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    assert_equal [
+      "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.2.2.3/32 -m multiport --dports 1194,443 -j DNAT --to-dest 1.2.2.3:2323"
+    ], writer.ipv4.rows
+    assert_equal [
+      "{PREROUTING} -i testif -p tcp -s 2000::/3 -d fd00::1:2:2:3/128 -m multiport --dports 1194,443 -j DNAT --to-dest 1.2.2.3:2323"
+      ], writer.ipv6.rows
+  end
+
+  def test_nat_with_mapped_without_ipv4_ipv6
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.nat do |nat|
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INDERNET")
+          .to_me.tcp.dport(1194).dport(443).to_dest("Construqt-Host-ipv4-ipv6", 2323).from_is_outside
+      end
+    end.attach_iface(TEST_IF_IPV4_IPV6)
+    writer = TestWriter.new
+    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    assert_equal [
+      "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.2.2.3/32 -m multiport --dports 1194,443 -j DNAT --to-dest 1.2.2.3:2323"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
