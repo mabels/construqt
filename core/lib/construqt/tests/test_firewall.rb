@@ -1127,19 +1127,19 @@ class FirewallTest < Test::Unit::TestCase
     fw = Construqt::Firewalls.add() do |fw|
       fw.nat do |nat|
         nat.ipv4
-        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("@0.0.0.0/0").to_host("@1.1.1.1").tcp.dport(80).dport(443).to_dest("@8.8.8.8").from_is_outside
-        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("@0.0.0.0/0").to_host("@1.1.1.2").tcp.dport(80).dport(443).to_dest("@8.8.4.4").from_is_outside
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv4.ipv6.from_net("@0.0.0.0/0").to_host("@1.1.1.1").tcp.dport(80).dport(443).to_dest("@8.8.8.8").from_is_outside
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv4.ipv6.from_net("@0.0.0.0/0").to_host("@1.1.1.2").tcp.dport(80).dport(443).to_dest("@8.8.4.4").from_is_outside
 
-        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("@47.11.0.0/16").to_net("@0.0.0.0/0").to_source("@9.9.9.9").from_is_inside
-        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("@0.0.0.0/0").to_host("@8.8.8.8").tcp.dport(80).dport(443).to_source("@2.2.2.1").from_is_inside
-        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("@0.0.0.0/0").to_host("@8.8.4.4").tcp.dport(80).dport(443).to_source("@2.2.2.2").from_is_inside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv4.ipv6.from_net("@47.11.0.0/16").to_net("@0.0.0.0/0").to_source("@9.9.9.9").from_is_inside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv4.ipv6.from_net("@0.0.0.0/0").to_host("@8.8.8.8").tcp.dport(80).dport(443).to_source("@2.2.2.1").from_is_inside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv4.ipv6.from_net("@0.0.0.0/0").to_host("@8.8.4.4").tcp.dport(80).dport(443).to_source("@2.2.2.2").from_is_inside
 
-        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv6.from_net("@2000::/4").to_host("@fd00::1:1:1:1").tcp.dport(80).dport(443).to_dest("@fd00::8:8:8:8").from_is_outside
-        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv6.from_net("@2000::/4").to_host("@fd00::1:1:1:2").tcp.dport(80).dport(443).to_dest("@8.8.4.4").from_is_outside
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv4.ipv6.from_net("@2000::/4").to_host("@fd00::1:1:1:1").tcp.dport(80).dport(443).to_dest("@fd00::8:8:8:8").from_is_outside
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv4.ipv6.from_net("@2000::/4").to_host("@fd00::1:1:1:2").tcp.dport(80).dport(443).to_dest("@8.8.4.4").from_is_outside
 
-        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv6.from_net("@fd00::47:11:0:0/64").to_net("@2000::/4").to_source("@9.9.9.9").from_is_inside
-        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv6.from_net("@2000::/4").to_host("@fd00::8:8:8:8").tcp.dport(80).dport(443).to_source("@fd00::2:2:2:1").from_is_inside
-        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv6.from_net("@2000::/4").to_host("@fd00::8:8:4:4").tcp.dport(80).dport(443).to_source("@fd00::2:2:2:2").from_is_inside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv4.ipv6.from_net("@fd00::47:11:0:0/64").to_net("@2000::/4").to_source("@9.9.9.9").from_is_inside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv4.ipv6.from_net("@2000::/4").to_host("@fd00::8:8:8:8").tcp.dport(80).dport(443).to_source("@fd00::2:2:2:1").from_is_inside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).ipv4.ipv6.from_net("@2000::/4").to_host("@fd00::8:8:4:4").tcp.dport(80).dport(443).to_source("@fd00::2:2:2:2").from_is_inside
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
