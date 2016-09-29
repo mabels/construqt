@@ -1,3 +1,4 @@
+require 'yaml'
 module Construqt
     module Flavour
         module Nixian
@@ -22,6 +23,24 @@ module Construqt
                         def etc_network_interfaces
                           @ures.etc_network_interfaces
                         end
+
+                        def write_cloud_config(deployer_sh)
+                          # binding.pry
+                          out = {}
+                          akeys = host.region.users.get_authorized_keys(host.delegate)
+                          out['ssh_authorized_keys'] = akeys
+                          out['coreos'] = { }
+                          out['write_files'] = [
+                            {
+                              "path"=> "/home/core/deployer.sh",
+                              "permissions"=> "0600",
+                              "owner"=> "root",
+                              "content"=> IO.read(deployer_sh)
+                            }
+                          ]
+                          Util.write_str(host.region, "#cloud-config\n\n"+YAML.dump(out), host.name, 'coreos-cloud-config')
+                        end
+
                         def commit
                           add(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::EtcNetworkIptables, @ures.etc_network_iptables.commitv4, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4), 'etc', 'network', 'iptables.cfg')
                           add(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::EtcNetworkIptables, @ures.etc_network_iptables.commitv6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6), 'etc', 'network', 'ip6tables.cfg')
@@ -79,7 +98,7 @@ module Construqt
 #                          out += Lxc.deploy(@host)
 #                          out += [Construqt::Util.render(binding, 'result_git_commit.sh.erb')]
                           Util.write_str(host.region, out.join("\n"), host.name, 'deployer.sh')
-
+                          write_cloud_config(Util.get_filename(host.region, host.name, 'deployer.sh'))
                         end
 
                     end
