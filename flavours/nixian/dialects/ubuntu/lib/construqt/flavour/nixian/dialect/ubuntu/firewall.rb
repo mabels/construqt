@@ -42,6 +42,9 @@ module Construqt
             end
 
             def self.write_jump_destination(direction, prefix, is_not, list, suffix)
+              direction.get_on_jump_table.each do |i|
+                prefix = Construqt::Util.space_behind(i.call(direction)) + prefix
+              end
               result = calc_hash_value(direction, prefix, is_not, list, suffix)
               # work on these do a better hashing
               unless direction.to_from.section.jump_destinations[result.hmac]
@@ -339,8 +342,19 @@ module Construqt
                         direction = to_from.request_direction(p[:family]).push_end("--to-dest #{dst.to_s}")
                       end
                       if dst.has_port?
-                        binding.pry
-                        direction.push_begin("-p WTF")
+                        direction.on_jump_table do
+                          ret = ""
+                          if rule.ipv6?
+                            ps = rule.get_protocols(p[:family])
+                            if ps.length == 0 || ps.length > 1
+                              raise "to many or null protocols"
+                              binding.pry
+                            end
+                            ret = "-p #{ps.first}"
+                          end
+                          ret
+                        end
+                        #direction.push_begin("-p WTF")
                       end
                       write_table(direction.interface_direction("-i"))
                       written = true

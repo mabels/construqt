@@ -5,7 +5,7 @@ module Construqt
         module Ubuntu
           module Firewall
             class Direction
-              attr_reader :to_from, :family, :protocol, :on_jump_tables #, :begin, :end, :middle
+              attr_reader :to_from, :family, :protocol  #, :begin, :end, :middle
               def initialize(to_from, family)
                 @to_from = to_from
                 @family = family
@@ -82,6 +82,10 @@ module Construqt
 
               def for_family?(family)
                 (family == Construqt::Addresses::IPV4 && @to_from.rule.ipv4?) || (family == Construqt::Addresses::IPV6 && @to_from.rule.ipv6?)
+              end
+
+              def get_on_jump_table
+                @on_jump_tables
               end
 
               def on_jump_table(&block)
