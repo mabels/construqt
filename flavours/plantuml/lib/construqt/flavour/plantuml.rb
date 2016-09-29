@@ -7,7 +7,7 @@ module Construqt
     class Plantuml
 
       DIRECTORY = File.dirname(__FILE__)
-      
+
       def name
         'plantuml'
       end
@@ -103,6 +103,12 @@ module Construqt
         if iface.respond_to?(:mtu) && iface.mtu
           out << "mtu = \"#{iface.mtu}\""
         end
+        if iface.respond_to?(:proxy_neigh) && iface.proxy_neigh
+          iface.proxy_neigh.resolv().each_with_index do |i, idx|
+            out << "proxy_neigh.#{idx} = #{i.to_string}"
+          end
+        end
+
         if iface.kind_of? Construqt::Ipsecs::Ipsec
           out << "password = #{iface.password}"
           out << "transport_family = #{iface.transport_family}"

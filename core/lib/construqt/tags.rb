@@ -23,6 +23,16 @@ module Construqt
         Construqt::Tags.ips_hosts(tag, family)
       end
     end
+    class ResolverAdrNet
+      def initialize(adr_tag, net_tag, family)
+        @adr_tag = ResolverAdr.new(adr_tag, family)
+        @net_tag = ResolverNet.new(net_tag, family)
+      end
+      def resolv()
+        binding.pry
+        IPAddress.summarize(@adr_tag.resolv+@net_tag.resolv)
+      end
+    end
 
     TAGS = {}
     OBJECT_ID_TAGS = {}
@@ -49,6 +59,10 @@ module Construqt
 
     def self.resolver_adr(tag, family)
       ResolverAdr.new(tag, family)
+    end
+
+    def self.resolver_adr_net(adr_tag, net_tag, family)
+      ResolverAdrNet.new(adr_tag, net_tag, family)
     end
 
     def self.resolver_net(tag, family)
@@ -128,7 +142,7 @@ module Construqt
 
     def self.ips_hosts(tag, family)
       IPAddress.summarize(ips_adr(tag, family).map do |i|
-        if i.network == i
+        if i.network.eq(i)
           nil
         else
           IPAddress.parse("#{i.to_s}/#{i.ipv4? ? 32 : 128}")

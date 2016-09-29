@@ -93,6 +93,10 @@ module Construqt
         self.delegate.default_name
       end
 
+      def proxy_neigh
+        self.delegate.proxy_neigh
+      end
+      
       def name
         self.delegate.name
       end

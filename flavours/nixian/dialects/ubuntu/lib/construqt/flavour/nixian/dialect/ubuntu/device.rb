@@ -63,7 +63,7 @@ module Construqt
             def self.proxy_neigh2ips(neigh)
               if neigh.nil?
                 return []
-              elsif neigh.kind_of?(Construqt::Tags::ResolverAdr) || neigh.kind_of?(Construqt::Tags::ResolverNet)
+              elsif neigh.respond_to?(:resolv)
                 ret = neigh.resolv()
                 #puts "self.proxy_neigh2ips>>>>>#{neigh} #{ret.map{|i| i.class.name}} "
                 return ret
