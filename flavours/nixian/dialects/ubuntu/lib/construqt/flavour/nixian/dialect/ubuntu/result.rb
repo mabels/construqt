@@ -65,6 +65,9 @@ module Construqt
               cps.register(cp::DHCPRELAY).add('wide-dhcpv6-relay').add('dhcp-helper')
               cps.register(cp::WIRELESS).both('crda').both('iw').mother('linux-firmware')
                 .add('wireless-regdb').add('wpasupplicant')
+              Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::FACTORY.keys.each do |srv|
+                srv.respond_to?(:add_component) && srv.add_component(cps)
+              end
               cps
             end
 
