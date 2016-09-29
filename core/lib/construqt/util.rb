@@ -231,6 +231,15 @@ module Construqt
       end
     end
 
+    def self.space_behind(str)
+      if str.nil? or str.empty?
+        ""
+      else
+        str.strip+" "
+      end
+    end
+
+
     def self.snake_case(str)
       str.gsub(/::/, '/').
         gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').

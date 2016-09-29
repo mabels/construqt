@@ -176,7 +176,7 @@ module Construqt
     end
 
     def add_bridge(host, name, cfg)
-      #cfg['interfaces'] = []
+      cfg['interfaces'] ||= []
       cfg['interfaces'].each do |interface|
         throw "interface not one same host:#{interface.host.name}:#{host.name}" unless host.name == interface.host.name
       end

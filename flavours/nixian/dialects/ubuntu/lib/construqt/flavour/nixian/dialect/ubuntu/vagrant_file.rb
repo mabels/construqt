@@ -60,7 +60,7 @@ module Construqt
               return if @links.empty?
               @mother.result.add(self, vfile_header+vfile_network+vfile_ssh_port+vfile_footer,
                                  Construqt::Resources::Rights.root_0644,
-                                 "var", "lib", "vagrant", @child.name, "VagrantFile")
+                                 "var", "lib", "vagrant", @child.name, "Vagrantfile")
             end
           end
         end

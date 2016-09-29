@@ -5,12 +5,22 @@ module Construqt
       class IpWithPort
         attr_reader :ip, :port
         def initialize(ip, port)
+          if ip.nil?
+            raise "ip is nil"
+          end
           @ip = ip
           @port = port
         end
+        def has_port?
+          !!@port
+        end
         def to_s
           if port
-            "#{ip.to_s}:#{port}"
+            if ip.ipv6?
+              "[#{ip.to_s}]:#{port}"
+            else
+              "#{ip.to_s}:#{port}"
+            end
           else
             ip.to_s
           end
@@ -34,9 +44,8 @@ module Construqt
             addr = IpWithPort.new(ip, val.port)
           end
         elsif defined?(val) && val && !val.ip.strip.empty?
-          addr = IpWithPort.new(
-            FromTo.resolver(val.ip, family).first.ip_addr, val.port)
-
+          ret = FromTo.resolver(val.ip, family).first.ip_addr
+          addr = IpWithPort.new(ret, val.port) unless ret.nil?
         end
         addr ?  [addr] : []
       end

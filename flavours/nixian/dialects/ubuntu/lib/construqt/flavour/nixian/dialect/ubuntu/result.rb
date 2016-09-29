@@ -211,6 +211,7 @@ module Construqt
             def offline_package
               if @host.packager
                 path = [ENV['HOME'] || './', '.construqt', 'package-cache']
+                FileUtils.mkdir_p path
                 cacheJd=DateTime.now.jd
                 package_params = {
                   'dist' => 'ubuntu',
