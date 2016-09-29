@@ -37,7 +37,7 @@ module Construqt
               end
 
               out << "-j #{return_action(is_not, _end)}"
-
+# binding.pry if out.find{|i| i.include?("--to-dest") }
               OpenStruct.new(:rows => out, :hmac => Digest::MD5.base64digest(out.join("\n")).gsub(/[^a-zA-Z0-9]/,''))
             end
 
@@ -77,7 +77,6 @@ module Construqt
             def self.write_direction(direction, begin_middle_end)
               src_list = direction.src_ip_list
               dst_list = direction.dst_ip_list
-#binding.pry
               # cases
               #
               # to_list.empty? and from_list.empty?
@@ -153,7 +152,9 @@ module Construqt
               # !DST-Target -j ACCEPT
               #
               if src_list.size_without_missing == 1 && dst_list.size_without_missing > 1
-                dst_action = write_jump_destination(direction, "-d", direction.is_not_dst_ip?, dst_list, "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(begin_middle_end.end)}")
+                # binding.pry
+                dst_action = write_jump_destination(direction, "-d", direction.is_not_dst_ip?, dst_list,
+                  "#{direction.to_from.rule.get_action}#{Construqt::Util.space_before(begin_middle_end.end)}")
                 write_line(direction, begin_middle_end, src_list.first, nil, dst_action)
                 return
               end
@@ -261,7 +262,7 @@ module Construqt
 
             def self.write_nat(fw, nat, ifname, section)
               # nat only for ipv4
-              return unless fw.ipv4?
+              #return unless fw.ipv4?
 
               get_rules(nat).each do |rule|
                 throw "ACTION must set #{ifname}" unless rule.get_action
@@ -271,14 +272,12 @@ module Construqt
                   written = write_postrouting_to_source(ifname, rule, section, written)
                   written = write_postrouting_masq(ifname, rule, section, written)
                 end
-
                 written = write_prerouting(ifname, rule, section, written)
-
-                unless written
-                  Construqt.logger.warn "rule doesn't wrote any thing #{rule.block.firewall.name} "+
-                    "#{ifname} #{rule.postrouting?} #{rule.get_to_source} "+
-                    "#{ifname} #{rule.prerouting?} #{rule.get_to_dest} "
-                end
+                # unless written
+                #   Construqt.logger.warn "rule doesn't wrote any thing #{rule.block.firewall.name} "+
+                #     "#{ifname} #{rule.postrouting?} #{rule.get_to_source} "+
+                #     "#{ifname} #{rule.prerouting?} #{rule.get_to_dest} "
+                # end
               end
             end
 
@@ -296,7 +295,6 @@ module Construqt
                       else
                         direction = to_from.respond_direction(p[:family]).set_action("MASQUERADE")
                       end
-
                       write_table(direction.interface_direction("-o"))
                       written = true
                     end
@@ -339,6 +337,10 @@ module Construqt
                         direction = to_from.respond_direction(p[:family]).push_end("--to-dest #{dst.to_s}")
                       else
                         direction = to_from.request_direction(p[:family]).push_end("--to-dest #{dst.to_s}")
+                      end
+                      if dst.has_port?
+                        binding.pry
+                        direction.push_begin("-p WTF")
                       end
                       write_table(direction.interface_direction("-i"))
                       written = true

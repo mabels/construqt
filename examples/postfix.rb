@@ -1,4 +1,5 @@
 module Postfix
+  POSTFIX = :postfix
 
   class Smtp
     include Construqt::Util::Chainable
@@ -20,7 +21,7 @@ module Postfix
           end
           def interfaces(host, ifname, iface, writer, family = nil)
                 return unless iface.address
-                host.result.add(self, <<MAINCF, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::RADVD), "etc", "postfix", "main.cf")
+                host.result.add(self, <<MAINCF, Construqt::Resources::Rights.root_0644(POSTFIX), "etc", "postfix", "main.cf")
 # #{@service.get_server_iface.host.name} #{@service.get_server_iface.address.first_ipv4}
 inet_protocols = all
 myhostname = #{iface.host.name}
