@@ -18,7 +18,10 @@ module Construqt
               else
                 host.result.etc_network_interfaces.get(iface).lines.add("bridge_ports none")
               end
-
+              iface.on_iface_up_down do |writer, ifname|
+                writer.lines.up("brctl addbr #{ifname}")
+                writer.lines.down("brctl delbr #{ifname}")
+              end
               Device.build_config(host, iface)
             end
           end

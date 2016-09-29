@@ -27,6 +27,16 @@ module Construqt
         @delegate = a
       end
 
+      def on_iface_up_down(&block)
+        @on_iface_up_down ||= []
+        @on_iface_up_down << block
+      end
+
+      def call_on_iface_up_down(writer, ifname)
+        @on_iface_up_down ||= []
+        @on_iface_up_down.each {|block| block.call(writer, ifname) }
+      end
+
       # i have currently no better idea
       def duck_me_eq
       end
@@ -96,7 +106,7 @@ module Construqt
       def proxy_neigh
         self.delegate.proxy_neigh
       end
-      
+
       def name
         self.delegate.name
       end

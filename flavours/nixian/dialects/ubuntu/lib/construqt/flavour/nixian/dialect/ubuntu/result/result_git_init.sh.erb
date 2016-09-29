@@ -1,7 +1,7 @@
-if [ ! -d /root/construqt.git ]
+if [ ! -d $CONSTRUQT_GIT ]
 then
-  echo generate history in /root/construqt.git
-  git init --bare /root/construqt.git
+  echo generate history in $CONSTRUQT_GIT
+  git init --bare $CONSTRUQT_GIT
 fi
-grep -q '/var/lib/lxcfs' /root/construqt.git/info/exclude || \
-  echo '/var/lib/lxcfs' >> /root/construqt.git/info/exclude
+grep -q '/var/lib/lxcfs' $CONSTRUQT_GIT/info/exclude || \
+  echo '/var/lib/lxcfs' >> $CONSTRUQT_GIT/info/exclude

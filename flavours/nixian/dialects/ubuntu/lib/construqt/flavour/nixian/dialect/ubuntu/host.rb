@@ -89,6 +89,11 @@ module Construqt
                 end
               end
 
+              ifnames = host.interfaces.keys
+              host.result.add(self, (["#!/bin/sh"]+ifnames.map{|ifn| "#{File.join("/etc", "network", "#{ifn}-up.iface")}"}).join("\n"),
+                Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::SSH), "etc", "network", "network_up.sh")
+              host.result.add(self,  (["#!/bin/sh"]+ifnames.map{|ifn| "#{File.join("/etc", "network", "#{ifn}-down.iface")}"}).join("\n"),
+                Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::SSH), "etc", "network", "network_down.sh")
               #puts host.name
               #binding.pry
               create_lxc_containers(host)

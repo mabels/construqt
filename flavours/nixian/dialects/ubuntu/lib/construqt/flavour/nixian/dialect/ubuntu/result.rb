@@ -309,6 +309,7 @@ module Construqt
                 'SCRIPT=$0',
                 'SCRIPTNAME=`basename $0`',
                 'SCRIPTPATH=`dirname $0`',
+                'CONSTRUQT_GIT=/root/construqt.git'
               ]
 
               out << sh_is_opt_set

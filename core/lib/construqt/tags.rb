@@ -29,7 +29,7 @@ module Construqt
         @net_tag = ResolverNet.new(net_tag, family)
       end
       def resolv()
-        binding.pry
+        # binding.pry
         IPAddress.summarize(@adr_tag.resolv+@net_tag.resolv)
       end
     end

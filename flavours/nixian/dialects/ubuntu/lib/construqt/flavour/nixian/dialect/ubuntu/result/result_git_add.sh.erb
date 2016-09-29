@@ -32,7 +32,7 @@ git_add()
     fi
     if [ "$skip_git" = "false" ]
     then
-      git --git-dir /root/construqt.git --work-tree=/ add $fname
+      git --git-dir $CONSTRUQT_GIT --work-tree=/ add $fname
     fi
   fi
 }

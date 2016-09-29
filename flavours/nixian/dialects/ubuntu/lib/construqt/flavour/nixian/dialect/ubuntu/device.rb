@@ -152,6 +152,7 @@ module Construqt
               writer.header.protocol(Result::EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
               writer.lines.add(iface.delegate.flavour) if iface.delegate.flavour
               ifname = ifname || writer.header.get_interface_name
+              iface.call_on_iface_up_down(writer, ifname)
               writer.lines.up("ip link set mtu #{mtu || iface.delegate.mtu} dev #{ifname} up")
               writer.lines.down("ip link set dev #{ifname} down")
               add_address(host, ifname, iface.delegate, writer.lines, writer, family)
