@@ -3,9 +3,9 @@
 
 extern crate regex;
 extern crate iron;
-extern crate bodyparser;
-extern crate time;
-extern crate persistent;
+//extern crate bodyparser;
+//extern crate time;
+//extern crate persistent;
 //extern crate rustc_serialize;
 extern crate serde_json;
 
