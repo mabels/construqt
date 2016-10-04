@@ -1,0 +1,17 @@
+[Unit]
+Description=<%= self.get_description %>
+<% @befores.each do |before| -%>
+Before=<%= before %>
+<% end -%>
+
+[Service]
+Type=<%= @type %>
+ExecStart=<%= @exec_start %>
+
+[Install]
+<% @wanted_bys.each do |wanted_by| -%>
+WantedBy=<%= wanted_by %>
+<% end -%>
+<% @alsos.each do |also| -%>
+Also=<%= also %>
+<% end -%>

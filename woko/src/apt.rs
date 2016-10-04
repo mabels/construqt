@@ -5,12 +5,14 @@ extern crate regex;
 //extern crate bodyparser;
 extern crate time;
 extern crate persistent;
-extern crate rustc_serialize;
+//extern crate rustc_serialize;
 extern crate serde_json;
 extern crate serde;
+//extern crate serde_derive;
 
 use regex::Regex;
 use std::process::Command;
+//use apt::serde::Deserialize;
 
 //use woko::apt;
 //use iron::prelude::*;
@@ -24,33 +26,38 @@ use std::process::Command;
 //use rustc_serialize::json;
 //use serde::Deserialize;
 
-#[derive(Debug, Clone, Deserialize, RustcDecodable, RustcEncodable)]
-pub struct PkgDesc {
-    pub url: String,
-    pub name: String,
-    pub size: usize,
-    pub sum_type: String,
-    pub sum: String,
-}
-
-#[derive(Debug, Clone, Deserialize,RustcDecodable, RustcEncodable)]
-pub struct ReqPackageList {
-    dist: String,
-    arch: String,
-    version: String,
-    packages: Vec<String>
-}
+include!(concat!(env!("OUT_DIR"), "/serde_types.rs"));
 
 
-impl Deserialize for ReqPackageList {
-    fn deserialize(deserializer: &mut ReqPackageList) -> Result<Self, ReqPackageList::Error> where D: Deserializer {
-      Ok(ReqPackageList{
-        dist: "",
-        arch: "",
-        version: "",
-        packages: vec![]
-    });
-}
+//#[derive(Serialize, Debug, Clone, Deserialize, RustcDecodable, RustcEncodable)]
+//pub struct PkgDesc {
+//    pub url: String,
+//    pub name: String,
+//    pub size: usize,
+//    pub sum_type: String,
+//    pub sum: String,
+//}
+
+//#[derive(Serialize, Debug, Clone, Deserialize,RustcDecodable, RustcEncodable)]
+//pub struct ReqPackageList {
+//    dist: String,
+//    arch: String,
+//    version: String,
+//    packages: Vec<String>
+//}
+
+
+
+//impl Deserialize for ReqPackageList {
+//    fn deserialize(deserializer: &mut ReqPackageList) -> Result<Self, ReqPackageList::Error> where Deserializer {
+//      Ok(ReqPackageList{
+//        dist: "",
+//        arch: "",
+//        version: "",
+//        packages: vec![]
+//      });
+//    }
+//}
 
 pub fn parse(req: &ReqPackageList) -> Result<Vec<PkgDesc>, String> {
     let lxc_name = format!("{}-{}-{}", &req.dist, &req.version, &req.arch);
