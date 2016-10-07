@@ -14,7 +14,7 @@ serde_codegen = "0.8"
 #nix = "0.7.0"
 #libc = "0.2.16"
 #iron = "0.4.0"
-hyper = "0.9.10"
+hyper = { git = "https://github.com/mabels/hyper.git" }
 #time = "0.1.35"
 regex = "0.1.77"
 #log = "0.3.6"

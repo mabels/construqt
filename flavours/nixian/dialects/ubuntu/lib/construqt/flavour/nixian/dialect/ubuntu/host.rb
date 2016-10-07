@@ -77,7 +77,7 @@ module Construqt
               akeys = host.region.users.get_authorized_keys(host)
 
               #host.result.add(self, skeys.join(), Construqt::Resources::Rights.root_0644, "etc", "shadow.merge")
-              host.result.add(self, akeys.join(), Construqt::Resources::Rights.root_0644, "root", ".ssh", "authorized_keys")
+              host.result.add(self, akeys.join("\n"), Construqt::Resources::Rights.root_0600, "root", ".ssh", "authorized_keys")
               host.result.add(self, ykeys.join("\n"), Construqt::Resources::Rights.root_0644, "etc", "yubikey_mappings")
 
               host.result.add(self, Construqt::Util.render(binding, "host_ssh.erb"),
