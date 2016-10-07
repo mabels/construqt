@@ -8,6 +8,7 @@ require_relative 'result/etc_network_vrrp'
 require_relative 'result/etc_network_interfaces'
 require_relative 'result/etc_network_iptables'
 require_relative 'result/etc_conntrackd_conntrackd'
+require_relative 'result/systemd_service'
 require_relative 'ipsec/ipsec_secret'
 require_relative 'ipsec/ipsec_cert_store'
 
@@ -215,7 +216,7 @@ module Construqt
               if @host.packager
                 path = [ENV['HOME'] || './', '.construqt', 'package-cache']
                 FileUtils.mkdir_p path
-                cacheJd=DateTime.now.jd
+                cacheJd=ENV['JD']||DateTime.now.jd
                 package_params = {
                   'dist' => 'ubuntu',
                   'arch' => @host.arch || 'amd64',
@@ -228,10 +229,10 @@ module Construqt
                 unless File.exist?(cacheFname)
                   Construqt.logger.debug "Load Woko for: #{File.basename(cacheFname)}"
 
-                  uri = URI('https://woko.construqt.net:7878/')
+                  uri = URI('https://woko.construqt.net/')
                   req = Net::HTTP::Post.new(uri, initheader = { 'Content-Type' => 'application/json' })
                   req.body = package_params.to_json
-                  res = Net::HTTP.start(uri.hostname, uri.port) do |http|
+                  res = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => uri.scheme == 'https') do |http|
                     http.request(req)
                   end
                   packages = JSON.parse(res.body)

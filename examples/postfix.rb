@@ -9,6 +9,9 @@ module Postfix
     def initialize(name)
       @name = name
     end
+    def self.add_component(cps)
+      cps.register(POSTFIX).add('postfix')
+    end
 
     module Renderer
       module Nixian

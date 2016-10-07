@@ -1,0 +1,9 @@
+#!/bin/sh
+docker network rm <%= iface.name %>
+docker network create --driver=bridge \
+  --opt=com.docker.network.bridge.enable_ip_masquerade=false \
+  --opt=com.docker.network.bridge.name=br169 \
+<% iface.address.ips.each do |adr| -%>
+  --gateway=<%= adr.to_s %> --subnet=<%= adr.network.to_string -%> \
+<% end -%>
+  <%= iface.name %>

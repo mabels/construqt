@@ -133,6 +133,9 @@ Ooble.run(region)
 require_relative "./postfix.rb"
 Postfix.run(region)
 
+require_relative "./clavator.rb"
+Clavator.run(region)
+
 Construqt.produce(region)
 
 require_relative 'always-connected'

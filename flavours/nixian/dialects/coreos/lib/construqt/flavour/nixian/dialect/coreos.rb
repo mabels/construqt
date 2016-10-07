@@ -72,6 +72,7 @@ module Construqt
               cfg['result'] = nil
               host = Construqt::Flavour::Nixian::Dialect::Ubuntu::Host.new(cfg)
               host.result = CoreOs::Result.new(host)
+              #binding.pry
               host
             end
 

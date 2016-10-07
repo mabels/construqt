@@ -9,15 +9,17 @@ module Construqt
               include Util::Chainable
               chainable_attr_value :description, "unknown"
               chainable_attr_value :name
+              chainable_attr_value :command, nil
               chainable_attr_value :type, "oneshot"
               chainable_attr_value :exec_start, ""
-              attr_reader :befores, :conflicts
+              attr_reader :afters, :befores, :conflicts
               def initialize(result, name)
                 # binding.pry
                 @name = name
                 @result = result
                 @entries = {}
                 @befores = []
+                @afters = []
                 @conflicts = []
                 @wanted_bys = []
                 #@default_dependencies = ['no']
@@ -34,6 +36,11 @@ module Construqt
                 self
               end
 
+              def after(name)
+                @afters << name
+                self
+              end
+
               def before(name)
                 @befores << name
                 self
@@ -44,8 +51,14 @@ module Construqt
                 self
               end
 
+              def as_systemd_file
+                Construqt::Util.render(binding, "systemd.erb")
+              end
+
+
+
               def commit
-                @result.add(SystemdService, Construqt::Util.render(binding, "systemd.erb"),
+                @result.add(SystemdService, as_systemd_file,
                   Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4),
                     'etc', 'systemd', 'system', @name)
 
