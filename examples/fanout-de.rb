@@ -59,7 +59,7 @@ module FanoutDe
                                    "mtu" => 1500,
                                    "interfaces" => [],
                                    "address" => region.network.addresses.add_ip("169.254.12.1/24#FANOUT-DE-BACKEND#FANOUT-DE-BR12")
-        .add_ip("#{fanout[:net6]}:169:254:12:1/123#FANOUT-DE-BACKEND"))
+        .add_ip("#{fanout[:net6]}:169:254:12:1/120#FANOUT-DE-BACKEND"))
     end
 
     {'smtp-de' => nil,
@@ -111,7 +111,7 @@ module FanoutDe
                                                                 'address' => region.network.addresses
             .add_ip("169.254.12.#{10+idx}/24#HOST-#{name}#SERVICE-NET-DE")
             .add_route("0.0.0.0/0", "169.254.12.1")
-            .add_ip("#{fanout[:net6]}:169:254:12:#{10+idx}/123#HOST-#{name}#SERVICE-NET-DE")
+            .add_ip("#{fanout[:net6]}:169:254:12:#{10+idx}/120#HOST-#{name}#SERVICE-NET-DE")
             .add_route("2000::/3", "#{fanout[:net6]}:169:254:12:1"))
         end
         action && action.call(host)

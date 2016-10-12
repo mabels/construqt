@@ -2,6 +2,28 @@ require 'resolv'
 
 module MamWl
 
+
+  def self.add_sms2mail(region, mam_wl_rt)
+    region.hosts.add('sms2mail', "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mam_wl_rt,
+                                       "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined
+      .restart.killstop.release("xenial")) do |host|
+      region.interfaces.add_device(host, "lo", "mtu" => "9000",
+                                   :description=>"#{host.name} lo",
+                                   "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
+      host.configip = host.id ||= Construqt::HostId.create do |my|
+        my.interfaces << region.interfaces.add_device(host, "eth0", "mtu" => 1500,
+                                                      "plug_in" => Construqt::Cables::Plugin.new.iface(mam_wl_rt.interfaces.find_by_name("br24")),
+                                                      'address' => region.network.addresses.add_ip("192.168.0.57/24")
+          .add_route("0.0.0.0/0", "192.168.0.1"))
+      end
+      region.interfaces.add_device(host, "lte", "mtu" => 1500,
+                                                 "plug_in" => Construqt::Cables::Plugin.new.iface(mam_wl_rt.interfaces.find_by_name("brlte")),
+                                                 'address' => region.network.addresses
+        .add_ip("192.168.8.57/24"))
+    end
+  end
+
+
   def self.mam_ipsec_connection(region, left, right, fw_suffix, vlan, fws = [])
     Construqt::Ipsecs.connection("#{left.name}<=>#{right.name}",
                                  "password" => IPSEC_PASSWORDS.call(left.name,right.name),
@@ -194,6 +216,9 @@ MODULES
                                        .add_route("0.0.0.0/0", "192.168.0.1"))
                                    end
 
+                                   region.interfaces.add_bridge(host, "brlte", "mtu" => 1500,
+                                                                "interfaces" => [region.interfaces.add_device(host, "usb0", {})])
+
                                    # 66,67 service
                                    # 202-207 router
                                    [66,68,202,203,206,207,208].each do |vlan|
@@ -205,6 +230,8 @@ MODULES
                                                                                                "interface" => eth0)])
                                    end
                                  end
+
+                                 add_sms2mail(region, mam_wl_rt)
 
                                  rts = {}
                                  wifi_vlans = []
