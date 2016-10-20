@@ -10,6 +10,10 @@ module Construqt
         @routing_table = routing_table
       end
 
+      def inspect
+        "@<#{self.class.name}:#{"%x"%object_id} ipaddr=#{ipaddr.to_string} container=#{container.inspect} options=#{options.inspect} routing_table="#{routing_table.inspect}">"
+      end
+
       def <=>(oth)
         if oth.kind_of?(CqIpAddress)
           ret = self.ipaddr <=> oth.ipaddr

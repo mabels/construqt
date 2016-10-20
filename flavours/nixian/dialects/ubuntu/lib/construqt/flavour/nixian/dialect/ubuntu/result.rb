@@ -62,6 +62,7 @@ module Construqt
               cps.register(cp::DNSMASQ).add('dnsmasq').cmd('update-rc.d dnsmasq disable')
               cps.register(cp::CONNTRACKD).add('conntrackd').add('conntrack')
               cps.register(cp::LXC).add('lxc').add('ruby').add('rubygems-integration')
+              cps.register(cp::DOCKER).add('docker.io')
                 .cmd('[ "$(gem list -i linux-lxc)" = "true" ] || gem install linux-lxc --no-ri --no-rdoc')
               cps.register(cp::DHCPRELAY).add('wide-dhcpv6-relay').add('dhcp-helper')
               cps.register(cp::WIRELESS).both('crda').both('iw').mother('linux-firmware')
@@ -304,6 +305,7 @@ module Construqt
               ipsec_cert_store.commit
 
               Lxc.write_deployers(@host)
+              Docker.write_deployers(@host)
               out = [
                 '#!/bin/bash',
                 'ARGS=$@',
@@ -352,6 +354,7 @@ module Construqt
               end
 
               out += Lxc.deploy(@host)
+              out += Docker.deploy(@host)
               out += [Construqt::Util.render(binding, 'result_git_commit.sh.erb')]
               Util.write_str(@host.region, out.join("\n"), @host.name, 'deployer.sh')
             end

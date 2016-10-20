@@ -79,6 +79,10 @@ module Construqt
       def key
         [left.name, right.name].sort.join("<=>")
       end
+
+      def inspect
+        "#<#{self.class.name} key=#{key}>"
+      end
     end
 
     class DirectedCable
@@ -89,6 +93,9 @@ module Construqt
       end
       def ident
         self.cable.key
+      end
+      def inspect
+        "#<#{self.class.name} @cable=#{@cable.inspect} @iface=#{@iface.inspect}>"
       end
     end
 

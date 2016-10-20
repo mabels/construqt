@@ -20,7 +20,7 @@ module Construqt
           super(cfg)
         end
 
-        def build_config(host, iface)
+        def build_config(host, iface, node)
         end
       end
 
@@ -30,7 +30,7 @@ module Construqt
           super(cfg)
         end
 
-        def build_config(host, iface)
+        def build_config(host, iface, node)
         end
       end
 
@@ -40,7 +40,7 @@ module Construqt
           super(cfg)
         end
 
-        def build_config(host, iface)
+        def build_config(host, iface, node)
         end
       end
 
@@ -50,7 +50,7 @@ module Construqt
           super(cfg)
         end
 
-        def build_config(host, iface)
+        def build_config(host, iface, node)
         end
       end
 
@@ -60,7 +60,7 @@ module Construqt
           super(cfg)
         end
 
-        def build_config(host, iface)
+        def build_config(host, iface, node)
         end
       end
 
@@ -70,7 +70,7 @@ module Construqt
           super(cfg)
         end
 
-        def build_config(host, iface)
+        def build_config(host, iface, node)
         end
       end
 
@@ -85,7 +85,7 @@ module Construqt
         def footer(host)
         end
 
-        def build_config(host, unused)
+        def build_config(host, unused, unused2)
         end
       end
 
@@ -94,7 +94,7 @@ module Construqt
           super(cfg)
         end
 
-        def build_config(host, iface)
+        def build_config(host, iface, node)
         end
       end
 
@@ -103,7 +103,7 @@ module Construqt
           super(cfg)
         end
 
-        def build_config(host, iface)
+        def build_config(host, iface, node)
         end
       end
 

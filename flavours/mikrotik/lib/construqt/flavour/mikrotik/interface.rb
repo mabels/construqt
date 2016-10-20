@@ -117,7 +117,7 @@ module Construqt
         end
 
 
-        def self.build_config(host, iface)
+        def self.build_config(host, iface, node)
           if iface.routing_table
             render_firewall_mangle_in_interface(host, iface)
           end

@@ -15,10 +15,28 @@ module Construqt
           @ipsecs = []
           @bgps = []
           @users = host.users || host.region.users
+          @graphs = {}
         end
+
+        def interface_graph
+          id = interfaces.values.map{|i| i.ident }.sort.join(":")
+          unless @graphs[id]
+            # binding.pry
+            @graphs[id] = Hosts::Grapher.build_interfaces(self)
+          end
+          @graphs[id]
+        end
+
+        # def inspect
+        #   "@<#{self.class.name}:#{self.object_id} name=#{name} mother=#{mother.inspect}>"
+        # end
 
         def spanning_tree
           self.delegate.spanning_tree
+        end
+
+        def docker_deploy
+          self.delegate.docker_deploy
         end
 
         def lxc_deploy

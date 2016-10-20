@@ -9,6 +9,10 @@ module Construqt
           self.delegate = gre
         end
 
+        def interfaces
+          self.delegate.interfaces
+        end
+
         def _ident
           "Gre_#{self.host.name}_#{self.name}"
         end

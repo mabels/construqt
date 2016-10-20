@@ -40,6 +40,10 @@ module Construqt
         @service_ip = []
       end
 
+      def inspect
+        "@<#{self.class.name}:#{"%x"%object_id} name=#{name.inspect} service_ip=#{service_ip.insepct}s=#{ips.inspect} host=${host.inspect} interface=${interface.inspect} routes=#{routes.inspect} tags=#{tags.inspect} loopback=#{loopback.inspect}>"
+      end
+
       def add_service_ip(addr)
         parsed = Construqt::Tags.parse(addr)
         throw "add_service_ip needs a addr" unless parsed[:first]

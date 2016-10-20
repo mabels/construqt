@@ -7,8 +7,15 @@ then
 fi
 if [ "$hostname" != "<%= @host.name %>" ]
 then
-  echo 'You try to run a deploy script on a host which has not the right name $hostname != <%= @host.name %>'
-  exit 47
+  if [ $(is_opt_set force_hostname) != found ]
+  then
+    echo 'You try to run a deploy script on a host which has not the right name $hostname != <%= @host.name %>'
+    exit 47
+  else
+    echo <%= @host.name %> > /etc/hostname
+    hostname <%= @host.name %>
+    echo Force Hostname to <%= @host.name %>
+  fi
 else
   echo Configure Host <%= @host.name %>
 fi

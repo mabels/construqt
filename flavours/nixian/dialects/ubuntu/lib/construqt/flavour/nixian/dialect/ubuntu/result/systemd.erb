@@ -6,7 +6,12 @@ Before=<%= before %>
 
 [Service]
 Type=<%= @type %>
+<% if !@exec_start.nil? && !@exec_start.empty? -%>
 ExecStart=<%= @exec_start %>
+<% end -%>
+<% if !@exec_stop.nil? && !@exec_stop.empty? -%>
+ExecStop=<%= @exec_stop %>
+<% end -%>
 
 [Install]
 <% @wanted_bys.each do |wanted_by| -%>

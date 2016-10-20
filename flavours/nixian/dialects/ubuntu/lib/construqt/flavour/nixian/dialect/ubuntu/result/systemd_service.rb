@@ -12,6 +12,7 @@ module Construqt
               chainable_attr_value :command, nil
               chainable_attr_value :type, "oneshot"
               chainable_attr_value :exec_start, ""
+              chainable_attr_value :exec_stop, ""
               attr_reader :afters, :befores, :conflicts
               def initialize(result, name)
                 # binding.pry
@@ -54,8 +55,6 @@ module Construqt
               def as_systemd_file
                 Construqt::Util.render(binding, "systemd.erb")
               end
-
-
 
               def commit
                 @result.add(SystemdService, as_systemd_file,

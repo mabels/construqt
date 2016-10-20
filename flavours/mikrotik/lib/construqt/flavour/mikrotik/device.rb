@@ -7,7 +7,7 @@ module Construqt
           super(cfg)
         end
 
-        def build_config(host, iface)
+        def build_config(host, iface, node)
           binding.pry if iface.default_name.nil? || iface.default_name.empty?
           iface = iface.delegate
           default = {
@@ -22,7 +22,7 @@ module Construqt
                                                    'name' => iface.name,
                                                    'default-name' => iface.default_name
                                                  }, 'interface')
-          Interface.build_config(host, iface)
+          Interface.build_config(host, iface, node)
         end
       end
     end

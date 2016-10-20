@@ -9,7 +9,7 @@ module Construqt
               super(cfg)
             end
 
-            def build_config(host, gre)
+            def build_config(host, gre, node)
               gre_delegate = gre.delegate
               prepare = { }
               if gre.ipsec.transport_family.nil? || gre.ipsec.transport_family == Construqt::Addresses::IPV6
@@ -63,7 +63,7 @@ module Construqt
                 writer = host.result.etc_network_interfaces.get(gre, iname)
                 writer.skip_interfaces.header.interface_name(iname)
                 writer.lines.up("ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}")
-                Device.build_config(host, gre, iname, cfg.family, cfg.mtu)
+                Device.build_config(host, gre, node, iname, cfg.family, cfg.mtu)
                 writer.lines.down("ip -#{cfg.prefix} tunnel del #{iname}")
               end
 

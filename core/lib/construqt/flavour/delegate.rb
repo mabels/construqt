@@ -21,6 +21,10 @@ module Construqt
         @delegate
       end
 
+      def inspect
+        "#<#{self.class.name}:#{"%x"%object_id} ident=#{_ident}>"
+      end
+
       def delegate=(a)
         throw "delegate needs to be !nil" unless a
         a.delegate = self
@@ -46,6 +50,10 @@ module Construqt
         else
           delegate == oth
         end
+      end
+
+      def belongs_to
+        self.delegate.belongs_to
       end
 
       def tags
@@ -164,7 +172,7 @@ module Construqt
         self.class.name[self.class.name.rindex(':')+1..-1]
       end
 
-      def build_config(host, my)
+      def build_config(host, my, node)
         #        binding.pry if host && host.name == "ct-iar1-ham"
         #        binding.pry if self.class.name[self.class.name.rindex(':')+1..-1] == "DeviceDelegate"
         #binding.pry
@@ -172,16 +180,12 @@ module Construqt
         #binding.pry unless host
         host.region.flavour_factory.call_aspects("#{simple_name}.build_config", host, my||self)
         #binding.pry
-        self.delegate.build_config(host, my||self)
+        self.delegate.build_config(host, my||self, node)
       end
 
       def ident
         self._ident.gsub(/[^0-9a-zA-Z_]/, '_')
       end
     end
-
-
-
-
   end
 end

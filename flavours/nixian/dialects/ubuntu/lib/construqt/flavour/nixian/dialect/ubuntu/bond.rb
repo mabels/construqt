@@ -11,6 +11,13 @@ module Construqt
             end
 
             def build_config(host, bond)
+#echo +bond0 > /sys/class/net/bonding_masters
+#echo +enp9s0f0 > /sys/class/net/bond0/bonding/slaves
+#echo +enp9s0f1 > /sys/class/net/bond0/bonding/slaves
+#echo -enp9s0f1 > /sys/class/net/bond0/bonding/slaves
+#echo -bond0 > /sys/class/net/bonding_masters
+
+
               bond_delegate = bond.delegate
               bond_delegate.interfaces.each do |i|
                 host.result.etc_network_interfaces.get(i).lines.add("bond-master #{bond_delegate.name}")

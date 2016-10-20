@@ -5,6 +5,13 @@ module Construqt
         module Ubuntu
           module Lxc
 
+
+            def self.write_deployers(host)
+              Container.write_deployers(host, lambda{|h| h.lxc_deploy }, Lxc,
+                    Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::LXC),
+                    lambda{|h| ["/var", "lib", "lxc", "#{h.name}.deployer.sh"]})
+            end
+
             def self.package_list(host)
               _package_list(host).keys
             end
@@ -22,9 +29,9 @@ module Construqt
               artefact_set = {}
               result_package_list = {}
               match = [Packages::Package::ME, Packages::Package::BOTH]
-              match << Packages::Package::MOTHER if i_ma_the_mother?(host)
+              match << Packages::Package::MOTHER if Container.i_ma_the_mother?(host)
               self._host_package_list(host, match, result_package_list)
-              if i_ma_the_mother?(host)
+              if Container.i_ma_the_mother?(host)
                 host.region.hosts.get_hosts.select do |h|
                   host.eq(h.mother)
                 end.each do |h|
@@ -71,10 +78,6 @@ module Construqt
               out
             end
 
-            def self.i_ma_the_mother?(host)
-              host.region.hosts.get_hosts.find { |h| host.eq(h.mother) }
-            end
-
             def self.merge_package_list(hosts)
               hosts.inject({}) do |ret, host|
                 package_list(host).map do |package_name|
@@ -84,22 +87,7 @@ module Construqt
               end.keys
             end
 
-            def self.write_deployers(host)
-              return unless i_ma_the_mother?(host)
-              host.region.hosts.get_hosts.select {|h| host.eq(h.mother) }.each do |lxc|
-                host.result.add(Lxc, Util.read_str(host.region, lxc.name, "deployer.sh"),
-                                Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::LXC),
-                                "/var", "lib", "lxc", "#{lxc.name}.deployer.sh").skip_git
-              end
-              # templates(host).each do |name, hosts|
-              #   binding.pry
-              #   host.result.add(host, (["!/bin/sh"]+
-              #                          [host.result.sh_install_packages]+
-              #                          ["install_packages #{merge_components_hash(hosts).keys.join(" ")}"]).join("\n"),
-              #   Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::LXC),
-              #   "var", "lib", "lxc", "#{name}.install_packages")
-              # end
-            end
+
 
             def self.release(hosts)
               release = hosts.inject(nil) do |ret, h|
@@ -166,7 +154,7 @@ module Construqt
 
             def self.deploy(host)
               # if this a mother
-              return [] unless i_ma_the_mother?(host)
+              return [] unless Container.i_ma_the_mother?(host)
               [
                 Construqt::Util.render(binding, "lxc/lxc_deploy.sh.erb")
               ]

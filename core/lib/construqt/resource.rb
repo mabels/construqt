@@ -15,6 +15,7 @@ module Construqt
       RADVD = :radvd
       CONNTRACKD = :conntrackd
       LXC = :lxc
+      DOCKER = :docker
       DHCPRELAY = :dhcprelay
       DNSMASQ = :dnsmasq
       WIRELESS = :wireless

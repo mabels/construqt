@@ -70,7 +70,7 @@ module Construqt
           host.result.add("set [ find name=admin] disable=yes", nil, "user")
         end
 
-        def build_config(_host, _unused)
+        def build_config(_host, _unused, _unused)
           ret = ["# host"]
         end
       end

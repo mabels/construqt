@@ -10,6 +10,14 @@ module Construqt
               super(cfg)
             end
 
+            def belongs_to
+              [self.host]
+            end
+
+            def inspect
+              "#<#{self.class.name}:#{"%x"%object_id} ident=#{self.delegate.name}>"
+            end
+
             def self.add_address(host, ifname, iface, lines, writer, family)
               if iface.address.nil?
                 Firewall.create(host, ifname, iface, family)
@@ -90,8 +98,8 @@ module Construqt
               end
             end
 
-            def build_config(host, iface)
-              self.class.build_config(host, iface)
+            def build_config(host, iface, node)
+              self.class.build_config(host, iface, node)
             end
 
             def self.add_services(host, ifname, iface, writer, family)
@@ -140,7 +148,9 @@ module Construqt
               writer.lines.down("kill `cat /run/#{ifname}-dnsmasq.pid`")
             end
 
-            def self.build_config(host, iface, ifname = nil, family = nil, mtu = nil)
+            def self.build_config(host, iface, node, ifname = nil, family = nil, mtu = nil)
+              # binding.pry
+              throw "need node as 3th parameter" unless node.kind_of?(Construqt::Graph::Node)
               #      binding.pry
               #          if iface.dynamic
               #            Firewall.create(host, ifname||iface.name, iface, family)

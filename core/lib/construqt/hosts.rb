@@ -1,5 +1,7 @@
+require_relative 'hosts/docker.rb'
 require_relative 'hosts/lxc.rb'
 require_relative 'hosts/vagrant.rb'
+require_relative 'hosts/grapher.rb'
 module Construqt
 
   class Hosts
@@ -8,6 +10,7 @@ module Construqt
     def initialize(region)
       @region = region
       @hosts = {}
+      @graphs = {}
       @default_pwd = SecureRandom.urlsafe_base64(24)
     end
 
@@ -86,6 +89,12 @@ module Construqt
       end
 
       @hosts[name] = host
+      host.region.services.services.values.each do |srv|
+        if srv.respond_to?(:completed_host)
+          srv.completed_host(host)
+        end
+      end
+      host
     end
 
     def find!(name)
@@ -98,17 +107,30 @@ module Construqt
       ret
     end
 
+    def host_graph(hosts = @hosts.values)
+      id = @hosts.values.map{|h| h.ident }.sort.join(":")
+      unless @graphs[id]
+        # binding.pry
+        @graphs[id] = Grapher.build_hosts(hosts)
+      end
+      @graphs[id]
+    end
+
     def build_config(hosts = nil)
-      (hosts || @hosts.values).each do |host|
-        host.build_config(host, nil)
+      #(hosts || @hosts.values).each do |host|
+      #  host.build_config(host, nil)
+      #end
+      Graph.low_first(host_graph(hosts)) do |hnode, level|
+        hnode.ref.build_config(hnode.ref, hnode.ref, hnode)
       end
     end
 
     def commit(hosts = nil)
       regions = {}
-      (hosts || @hosts.values).each do |h|
-        h.commit
-        regions[h.region.object_id] = h.region
+      Graph.low_first(host_graph(hosts || @hosts.values)) do |node, level|
+        next unless node.ref.region
+        node.ref.commit
+        regions[node.ref.region.object_id] = node.ref.region
       end
       regions.values.each do |region|
         region.flavour_factory.call_aspects("completed", region, nil)

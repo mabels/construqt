@@ -7,7 +7,7 @@ module Construqt
           super(cfg)
         end
 
-        def build_config(host, iface)
+        def build_config(host, iface, node)
           iface = iface.delegate
           default = {
             'auto-mac' => Schema.boolean.default(true),
@@ -29,7 +29,7 @@ module Construqt
                                           'bridge' => iface.name
                                         }, 'interface', 'bridge', 'port')
           end
-          Interface.build_config(host, iface)
+          Interface.build_config(host, iface, node)
         end
       end
     end

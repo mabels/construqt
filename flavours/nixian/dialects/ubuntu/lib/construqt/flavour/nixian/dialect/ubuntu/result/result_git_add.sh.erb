@@ -32,7 +32,7 @@ git_add()
     fi
     if [ "$skip_git" = "false" ]
     then
-      git --git-dir $CONSTRUQT_GIT --work-tree=/ add $fname
+      [ $(is_opt_set no_git) != found ] && git --git-dir $CONSTRUQT_GIT --work-tree=/ add $fname
     fi
   fi
 }

@@ -19,7 +19,7 @@ module Construqt
           '# this is a generated file do not edit!!!!!'
         end
 
-        def build_config(host, _unused)
+        def build_config(host, _unused, _unused)
           host.flavour.dialect.add_host(host)
         end
       end

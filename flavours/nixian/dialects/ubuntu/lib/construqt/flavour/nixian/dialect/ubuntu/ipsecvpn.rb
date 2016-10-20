@@ -9,7 +9,7 @@ module Construqt
               super(cfg)
             end
 
-            def build_config(host, iface)
+            def build_config(host, iface, node)
               #puts ">>>>>>>>>>>>>>>>>>>>>>#{host.name} #{iface.name}"
               render_ipv6_proxy(iface)
               if iface.leftpsk

@@ -66,6 +66,7 @@ module Construqt
   require_relative 'construqt/regions.rb'
   require_relative 'construqt/vlans.rb'
   require_relative 'construqt/tags.rb'
+  require_relative 'construqt/graph.rb'
   require_relative 'construqt/flavour/factory.rb'
   require_relative 'construqt/flavour/dialect_factory_base.rb'
   require_relative 'construqt/flavour/node.rb'
@@ -98,9 +99,9 @@ module Construqt
       r[host.region.name] << host
       r
     end.values.each do |hosts|
-      hosts = hosts.sort do |a, b|
-        (a.mother ? "" : a.name) <=> (b.mother ? "" : b.name)
-      end
+      hosts = hosts.sort { |a, b| a.ident <=> b.ident }
+      #   (a.mother ? "" : a.name) <=> (b.mother ? "" : b.name)
+      # end
       hosts.first.region.hosts.build_config(hosts)
       hosts.first.region.interfaces.build_config(hosts)
       hosts.first.region.hosts.commit(hosts)

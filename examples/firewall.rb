@@ -11,7 +11,7 @@ def firewall(region)
 
   Construqt::Firewalls.add("vpn-server-net") do |fw|
     fw.forward do |fwd|
-      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#FANOUT-DE-BACKEND#FANOUT-US-BACKEND#IPSECVPN-DE#IPSECVPN-US").to_net("#SERVICE-NET-DE#SERVICE-NET-US#SERVICE-TRANSIT-DE").from_is_outside
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#SERVICE-TRANSIT-DE##SERVICE-NET-DE#FANOUT-DE-BACKEND#FANOUT-US-BACKEND#IPSECVPN-DE#IPSECVPN-US").to_net("#SERVICE-NET-DE#SERVICE-NET-US#SERVICE-TRANSIT-DE").from_is_outside
     end
   end
 

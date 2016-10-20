@@ -43,7 +43,7 @@ module Construqt
       end
     end
 
-    attr_reader :region
+    attr_reader :region, :services
     def initialize(region)
       @region = region
       @services = {}

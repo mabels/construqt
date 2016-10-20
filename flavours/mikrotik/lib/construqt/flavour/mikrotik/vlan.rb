@@ -7,7 +7,7 @@ module Construqt
           super(cfg)
         end
 
-        def build_config(host, iface)
+        def build_config(host, iface, node)
           iface = iface.delegate
           default = {
             'interface' => Schema.identifier.required,
@@ -23,7 +23,7 @@ module Construqt
                                           'vlan-id' => iface.vlan_id
                                         }, 'interface', 'vlan')
           end
-          Interface.build_config(host, iface)
+          Interface.build_config(host, iface, node)
         end
       end
     end

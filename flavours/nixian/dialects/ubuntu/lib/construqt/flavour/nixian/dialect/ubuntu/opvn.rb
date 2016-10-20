@@ -30,12 +30,16 @@ module Construqt
               @dh = cfg['dh']
             end
 
+            def belongs_to
+              [self.host]
+            end
+
             def self.header(host)
               return unless host.has_interface_with_component?(Construqt::Resources::Component::OPENVPN)
               host.result.add(self, Construqt::Util.render(binding, "ovpn_pam.erb"), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::OPENVPN), "etc", "pam.d", "openvpn")
             end
 
-            def build_config(host, opvn)
+            def build_config(host, opvn, node)
               iface = opvn.delegate
               local = iface.ipv6 ? host.id.first_ipv6.first_ipv6 : host.id.first_ipv4.first_ipv4
               return unless local

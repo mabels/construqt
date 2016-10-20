@@ -11,7 +11,7 @@ module Construqt
           '# this is a generated file do not edit!!!!!'
         end
 
-        def build_config(host, device)
+        def build_config(host, device, node)
           host.flavour.dialect.add_vlan(device)
         end
       end

@@ -1,5 +1,6 @@
 module Construqt
   class Interfaces
+    attr_reader :region
     def initialize(region)
       @region = region
       @interfaces = {}
@@ -222,27 +223,45 @@ module Construqt
       ret
     end
 
-    def build_config(hosts = nil)
-      (hosts||Hosts.get_hosts).each do |host|
-        by_clazz = {}
-        #binding.pry if host.name == "kuckpi"
-        host.interfaces.values.each do |interface|
-          #throw "class less interface #{interface.inspect}" unless interface.clazz
-          #throw "no clazz defined in interface #{interface.clazz}" unless interface.clazz.name
-          name = interface.clazz # .name[interface.clazz.name.rindex(':')+1..-1].downcase
-          #puts "<<<<<<< #{name}"
-          by_clazz[name] ||= []
-          by_clazz[name] << interface
-        end
 
-        #binding.pry
-        ["host", "device", "wlan", "vlan", "bond", "bridge",
-         "vrrp", "gre", "bgp", "opvn", "ipsec", "ipsecvpn"].each do |key|
-          next unless by_clazz[key]
-          by_clazz[key].each do |interface|
-            #Construqt.logger.debug "Interface:build_config:#{interface.name}:#{interface.class.name}:#{interface.ident}"
-            interface.build_config(host, interface)
-          end
+    def build_config(hosts = nil)
+    #   # by_clazz = {}
+    #   # (hosts||Hosts.get_hosts).each do |host|
+    #   #   #binding.pry if host.name == "kuckpi"
+    #   #   host.interfaces.values.each do |interface|
+    #   #     #throw "class less interface #{interface.inspect}" unless interface.clazz
+    #   #     #throw "no clazz defined in interface #{interface.clazz}" unless interface.clazz.name
+    #   #     name = interface.clazz # .name[interface.clazz.name.rindex(':')+1..-1].downcase
+    #   #     #puts "<<<<<<< #{name}"
+    #   #     by_clazz[name] ||= []
+    #   #     by_clazz[name] << interface
+    #   #   end
+    #   # end
+    #   # by_clazz.each do |clazz, ifs|
+    #   #   puts "#{clazz}=>#{ifs.map{|i|i.ident}.join(",")}"
+    #   # end
+    #   #
+    #   #   run_graph(build_graph_for(host), 0) do |node, level|
+    #   #      node.ref.class.name
+    #   #      node_ref.build_config(host, interface)
+    #   #   end
+    #   #   #
+    #   #   # #binding.pry
+    #   #   # ["host", "device", "wlan", "vlan", "bond", "bridge",
+    #   #   #  "vrrp", "gre", "bgp", "opvn", "ipsec", "ipsecvpn"].each do |key|
+    #   #   #   next unless by_clazz[key]
+    #   #   #   by_clazz[key].each do |interface|
+    #   #   #     #Construqt.logger.debug "Interface:build_config:#{interface.name}:#{interface.class.name}:#{interface.ident}"
+    #   #   #     interface.build_config(host, interface)
+    #   #   #   end
+    #   #   # end
+    #   # end
+      Graph.low_first(region.hosts.host_graph(hosts)) do |hnode, level|
+        next unless hnode.ref.interface_graph
+        Graph.low_first(hnode.ref.interface_graph) do |inode, level|
+          next if !inode.ref.host or hnode.ref != inode.ref.host
+          # binding.pry
+          inode.ref.build_config(hnode.ref, inode.ref, inode)
         end
       end
     end

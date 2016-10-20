@@ -88,7 +88,7 @@ module Construqt
                                                  }, 'interface', 'wireless')
         end
 
-        def build_config(host, iface)
+        def build_config(host, iface, node)
           # binding.pry if iface.default_name.nil? || iface.default_name.empty?
           iface = iface.delegate
 
@@ -96,7 +96,7 @@ module Construqt
           wireless_vap(host, iface)
           wireless_if(host, iface)
 
-          Interface.build_config(host, iface)
+          Interface.build_config(host, iface, node)
         end
       end
     end

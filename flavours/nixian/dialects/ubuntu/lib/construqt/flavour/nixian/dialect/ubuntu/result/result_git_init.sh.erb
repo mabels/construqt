@@ -1,7 +1,10 @@
-if [ ! -d $CONSTRUQT_GIT ]
+if [ $(is_opt_set no_git) != found ]
 then
-  echo generate history in $CONSTRUQT_GIT
-  git init --bare $CONSTRUQT_GIT
+  if [ ! -d $CONSTRUQT_GIT ]
+  then
+    echo generate history in $CONSTRUQT_GIT
+    git init --bare $CONSTRUQT_GIT
+  fi
+  grep -q '/var/lib/lxcfs' $CONSTRUQT_GIT/info/exclude || \
+    echo '/var/lib/lxcfs' >> $CONSTRUQT_GIT/info/exclude
 fi
-grep -q '/var/lib/lxcfs' $CONSTRUQT_GIT/info/exclude || \
-  echo '/var/lib/lxcfs' >> $CONSTRUQT_GIT/info/exclude

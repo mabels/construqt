@@ -14,7 +14,7 @@ module Construqt
                     Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
                 end
 
-                def build_config(unused, unused2)
+                def build_config(unused, unused2, unused3)
                   #puts ">>>>>#{self.cfg.transport_family}"
                   if self.cfg.transport_family == Construqt::Addresses::IPV6
                     local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(self.remote.first_ipv6) }

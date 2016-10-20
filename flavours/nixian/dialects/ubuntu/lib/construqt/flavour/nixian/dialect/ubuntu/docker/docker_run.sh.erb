@@ -1,0 +1,7 @@
+#!/bin/bash
+basedir=/var/lib/docker/construqt/<%= docker.name %>
+docker_name=run_<%= docker.name %>
+echo "Basedir: $basedir"
+cd $basedir
+docker build -t $docker_name .
+exec docker run --privileged -t $docker_name 
