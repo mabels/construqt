@@ -23,7 +23,7 @@ module Construqt
         @resources = Construqt::Resources.new(self)
         @flavour_factory = Construqt::Flavour::Factory.new(self)
         @dns_resolver = Construqt::Dns.new(self, network)
-        @graph = Construqt::Graph.new(self)
+        @graph = Construqt::Graph.new()
         @aspects = []
       end
 

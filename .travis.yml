@@ -1,0 +1,21 @@
+language: rust
+dist: trusty
+
+rust:
+  - 1.12.0
+
+before_install:
+#  - sudo apt-get -qq update
+#  - sudo apt-get install -y libboost-all-dev cmake
+
+install:
+    - rvm use 2.2
+    - gem install jeweler test-unit construqt-ipaddress
+
+script:
+    - rvm use 2.2
+    - ruby core/lib/construqt/tests/test_firewall.rb
+    - ruby core/lib/construqt/tests/test_graph.rb
+    - (cd woko && cargo build --release --verbose)
+    - (cd woko && cargo test --release --verbose)
+

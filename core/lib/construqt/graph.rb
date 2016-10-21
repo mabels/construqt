@@ -82,39 +82,52 @@ module Construqt
             node.children.find{|i| !i.param.used(session)}
           )
         end
-        puts "find_start=>#{!ret || ret.ident}"
+        # puts "find_start=>#{!ret || ret.ident}"
         ret
       end
 
-      def walk(session, stop, base, level, &block)
-        #throw "illegal graph" if level < 0
+      def resolved(session, base)
         if !base.children.empty?
+          return !base.param.used(session)
+        end
+        #return false if !base.param.used(session)
+        #puts "end node #{base.ident} [#{base.parents.map{|i| "#{(i.param.used(session)&&"*")||""}:#{i.link.ident}"}.join(",")}]"
+        !base.parents.find{|i| !i.param.used(session)}
+      end
+
+      def walk(session, stop, base, level, seq, &block)
+        #throw "illegal graph" if level < 0
+        # if !base.children.empty?
           base.parents.each do |parent|
             next if parent.link == stop
             # next if parent.link
             next if parent.param.used(session)
             parent.param.set_used(session)
             # puts "#{level}-#{stop.ident}==#{parent.link.ident}-parent-enter"
-            walk(session, base, parent.link, level-1, &block)
+            seq = walk(session, base, parent.link, level-1, seq, &block)
             # puts "#{level}-#{stop.ident}==#{parent.link.ident}-parent-leave"
           end
+        if resolved(session, base) #base.param.used(session)
           base.param.set_used(session)
-          block.call(base, level)
-        else
-          if !base.parents.find{|i| !i.param.used(session)}
-            base.param.set_used(session)
-            block.call(base, level)
-          end
+          block.call(base, seq, level)
+          seq = seq+1
         end
+        # else
+        #   if !base.parents.find{|i| !i.param.used(session)}
+        #     base.param.set_used(session)
+        #     block.call(base, level)
+        #   end
+        # end
         # puts "#{level}-leave"
         base.children.each do |child|
           next if child.link == stop
           next if child.param.used(session)
           child.param.set_used(session)
           # puts "#{level}-#{stop.ident}==#{child.link.ident}-child-enter"
-          walk(session, child.link, child.link, 1+level, &block)
+          seq = walk(session, child.link, child.link, level+1, seq, &block)
           # puts "#{level}-#{stop.ident}==#{child.link.ident}-child-leave"
         end
+        seq
       end
 
       def run_session(&block)
@@ -129,8 +142,8 @@ module Construqt
           # should be while
           while (base = find_start(session))
             # binding.pry
-            walk(session, base, base, 0) do |node, level|
-              puts "****#{level}-#{Util.indent(node.ident, 2*level)}"
+            walk(session, base, base, 0, 0) do |node, seq, level|
+              puts "****#{seq}:#{level}-#{Util.indent("#{(node.children.empty?&&"*")||""}#{node.ident}", 2*seq)}"
             end
           end
         end
@@ -153,7 +166,7 @@ module Construqt
         end
         graph.run_session do |session|
           while (base = graph.find_start(session))
-            graph.walk(session, base, base, 0) do |node, level|
+            graph.walk(session, base, base, 0, 0) do |node, seq, level|
               return nil if level < 0
             end
           end
@@ -168,7 +181,7 @@ module Construqt
           while (base = find_start(session))
             flat = []
             ret.push flat
-            walk(session, base, base, 0) do |node, level|
+            walk(session, base, base, 0, 0) do |node, level|
               flat.push(node)
               # puts "****#{level}-#{Util.indent(node.ident, 2*level)}"
             end

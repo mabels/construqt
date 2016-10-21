@@ -49,13 +49,13 @@ class GraphTest < Test::Unit::TestCase
     end
     ret
   end
-  def off_test_empty
+  def test_empty
     host = Host.new("root")
     host.interfaces = host_interfaces []
-    ret = Construqt::Graph.root_first_list(Construqt::Hosts::Grapher.build_interfaces(host).first)
-    assert_equal(ret.map{|i|i.ident}, ["root"])
+    ret = Construqt::Graph.build_from_host(host)
+    assert_equal(ret.flat, [])
   end
-  def off_test_flat_empty
+  def test_flat_empty
     host = Host.new("root")
     host.interfaces = host_interfaces [
       Interface.new("dev0"),
@@ -63,11 +63,13 @@ class GraphTest < Test::Unit::TestCase
       Interface.new("dev2"),
       Interface.new("dev3")
     ]
-    ret = Construqt::Graph.root_first_list(Construqt::Hosts::Grapher.build_interfaces(host).first)
-    assert_equal(ret.map{|i|i.ident}, ["root", "dev0", "dev1", "dev2", "dev3"])
+    ret = Construqt::Graph.build_from_host(host)
+    flat = ret.flat
+    assert_equal(4, flat.length)
+    # assert_equal(ret.flat.first.map{|i|i.ident}, ["root", "dev0", "dev1", "dev2", "dev3"])
   end
 
-  def xx_test_simple_vlans_parent
+  def test_simple_vlans_parent
     host = Host.new("root")
     dev0 = Interface.new("dev0")
     vlan0 = Vlan.new("vlan0")
@@ -77,11 +79,14 @@ class GraphTest < Test::Unit::TestCase
     vlan1.parents.push dev1
 
     host.interfaces = host_interfaces [vlan1, dev0, vlan0, dev1]
-    ret = Construqt::Graph.root_first_list(Construqt::Hosts::Grapher.build_interfaces(host))
-    assert_equal(ret.map{|i|i.ident}, ["root", "dev1", "vlan1", "dev0", "vlan0"])
+    ret = Construqt::Graph.build_from_host(host)
+    flat = ret.flat
+    assert_equal(2, flat.length)
+    assert_equal(flat.first.map{|i|i.ident}, ["dev1", "vlan1"])
+    assert_equal(flat.last.map{|i|i.ident}, ["dev0", "vlan0"])
   end
 
-  def xx_test_simple_bridge_children
+  def test_simple_bridge_children
     host = Host.new("root")
     dev0 = Interface.new("dev0")
     br0 = Bridge.new("br0")
@@ -90,11 +95,14 @@ class GraphTest < Test::Unit::TestCase
     br1 = Bridge.new("br1")
     br1.children.push dev1
     host.interfaces = host_interfaces [br1,dev0, br0, dev1]
-    ret = Construqt::Graph.root_first_list(Construqt::Hosts::Grapher.build_interfaces(host))
-    assert_equal(ret.map{|i|i.ident}, ["root", "br1", "dev1", "br0", "dev0"])
+    ret = Construqt::Graph.build_from_host(host)
+    flat = ret.flat
+    assert_equal(2, flat.length)
+    assert_equal(flat.first.map{|i|i.ident}, ["br1", "dev1"])
+    assert_equal(flat.last.map{|i|i.ident}, ["br0", "dev0"])
   end
 
-  def off_create_host
+  def create_host
     #   root
     #  left  right mid
     # l1 l2  r1 r2  lu1
@@ -130,158 +138,6 @@ class GraphTest < Test::Unit::TestCase
     lu2.children.push lu3
     host.interfaces = host_interfaces [left,mid,right,lu3, l1,l2,r1,r2, lu1, lu2]
     host
-  end
-
-  def off_test_top_mosts
-
-    root, graph = Construqt::Hosts::Grapher.build_simple_from_host(create_host)
-    # Construqt::Graph.dump(root)
-
-    graph.visited.values.each do |n|
-      next if n == root
-      res = Construqt::Graph.top_mosts(n, root).map{|i|i.ident}
-      #puts "#{n.ident}:#{Construqt::Graph.top_mosts(n, root).map{|i|i.ident}.join(",")}"
-      case n.ident
-      when "left"
-        assert_equal ["left"], res
-      when "l1"
-        assert_equal ["left"], res
-      when "l2"
-        assert_equal ["left"], res
-      when "mid"
-        assert_equal ["mid"], res
-      when "lu2"
-        assert_equal ["mid","left","right"], res
-      when "right"
-        assert_equal ["right"], res
-      when "r1"
-        assert_equal ["right"], res
-      when "r2"
-        assert_equal ["right"], res
-      when "lu1"
-        assert_equal ["left","right"], res
-      end
-      # puts n.ident
-    end
-  end
-
-  def off_test_contains
-    root, graph = Construqt::Hosts::Grapher.build_simple_from_host(create_host)
-    Construqt::Graph.dump(root)
-    graph.visited.values.each do |n|
-      cts = Construqt::Graph.contains(n)
-      res = cts.map{|i|i.ident}
-      # puts "#{n.ident}=> #{cts.map{|i|i.ident.inspect}.join(",")}"
-      case n.ident
-      when "root"
-        assert_equal res, ["root","left","l1","lu1","lu2","l2","mid","right","r1","r2"]
-      when "left"
-        assert_equal res, ["left","l1","lu1","lu2","l2"]
-      when "l1"
-        assert_equal res, ["l1","lu1","lu2"]
-      when "l2"
-        assert_equal res, ["l2","lu1","lu2"]
-      when "mid"
-        assert_equal res, ["mid","lu2"]
-      when "lu2"
-        assert_equal res, ["lu2"]
-      when "right"
-        assert_equal res, ["right", "r1", "lu1", "lu2", "r2"]
-      when "r1"
-        assert_equal res, ["r1", "lu1", "lu2"]
-      when "r2"
-        assert_equal res, ["r2","lu1","lu2"]
-      when "lu1"
-        assert_equal res, ["lu1","lu2"]
-      end
-    end
-  end
-
-
-  def off_test_interface_graph
-    root, graph = Construqt::Hosts::Grapher.build_interfaces(create_host)
-    graph.visited.values.each do |n|
-      next if n == root
-      res = Construqt::Graph.top_mosts(n, root).map{|i|i.ident}
-      #puts "#{n.ident}:#{Construqt::Graph.top_mosts(n, root).map{|i|i.ident}.join(",")}"
-      case n.ident
-      when "left"
-        assert_equal ["left"], res
-      when "l1"
-        assert_equal ["left"], res
-      when "l2"
-        assert_equal ["left"], res
-      when "mid"
-        assert_equal ["mid"], res
-      when "lu2"
-        assert_equal ["mid","left","right"], res
-      when "right"
-        assert_equal ["right"], res
-      when "r1"
-        assert_equal ["right"], res
-      when "r2"
-        assert_equal ["right"], res
-      when "lu1"
-        assert_equal ["left","right"], res
-      end
-      # puts n.ident
-    end
-
-  end
-
-  def looped_graph
-    #   root
-    #  left  right mid
-    # l1 l2  r1 r2  lu1
-    #   lu1    lu2
-    #   lu2
-    host = Host.new("root")
-    left = Interface.new("left")
-    mid = Interface.new("mid")
-    right = Interface.new("right")
-
-    l1 = Interface.new("l1")
-    l2 = Interface.new("l2")
-    l3 = Interface.new("l3")
-    l4 = Interface.new("l4")
-
-    r1 = Interface.new("r1")
-    r2 = Interface.new("r2")
-    r3 = Interface.new("r3")
-    r4 = Interface.new("r4")
-
-    left.children.push l1
-    l1.children.push l2
-    l2.children.push l3
-    l3.children.push l4
-
-    right.children.push r1
-    r1.children.push l4
-    l4.children.push r2
-    r2.children.push l2
-    l2.children.push r3
-    r3.children.push r4
-
-    mid.children.push r1
-    r1.children.push r2
-    r2.children.push l2
-    l2.children.push r3
-    r3.children.push r4
-
-    host.interfaces = host_interfaces [
-      left,mid,right, l1,l2,l3,l4, r1,r2,r3,r4
-    ]
-    host
-  end
-
-
-  def xx_test_looped_grap
-    host = looped_graph
-    root,graph = Construqt::Hosts::Grapher.build_interfaces(host)
-    binding.pry
-    Construqt::Graph.dump(root)
-
-
   end
 
   def valid_graph
@@ -333,10 +189,10 @@ class GraphTest < Test::Unit::TestCase
     host
   end
 
-  def xx_test_dump_valid
-    graph = Construqt::Graph.build_from_host(valid_graph)
-    graph.dump
-  end
+  # def xx_test_dump_valid
+  #   graph = Construqt::Graph.build_from_host(valid_graph)
+  #   graph.dump
+  # end
   def test_dump_invalid
     graph = Construqt::Graph.build_from_host(invalid_graph)
     assert(!graph, "should be nil")
@@ -345,8 +201,9 @@ class GraphTest < Test::Unit::TestCase
   def test_flat_valid
     graph = Construqt::Graph.build_from_host(valid_graph)
     flat = graph.flat
-    assert_equal(["eth0", "eth1", "bond0", "br0", "vlan24", "br24",
-     "d0", "vlan7", "br7", "d1", "d2"], flat[0].map{|i| i.ident})
+    # graph.dump
+    assert_equal(["eth0", "eth1", "bond0", "br0", "vlan7",
+                  "br7", "br24", "d2", "d1", "vlan24", "d0"], flat[0].map{|i| i.ident})
     assert_equal(['eth3'], flat[1].map{|i| i.ident})
     assert_equal(["eth2", "vlan2"], flat[2].map{|i| i.ident})
   end
@@ -370,10 +227,11 @@ class GraphTest < Test::Unit::TestCase
 
     host.interfaces = host_interfaces [br0,vlan1,br1,br2,vlan2,dev0]
     ret = Construqt::Graph.build_from_host(host)
-    binding.pry
-    ret.dump
+    # binding.pry
+    # ret.dump
     flat = ret.flat
-    assert_equal(ret.map{|i|i.ident}, ["root", "br1", "dev1", "br0", "dev0"])
+    assert_equal(1, flat.length)
+    assert_equal(flat.first.map{|i|i.ident}, ["br0", "dev0", "br1", "vlan1", "br2", "vlan2"])
   end
 
 
