@@ -4,9 +4,15 @@ module Construqt
 
       class WlanDelegate
         include Delegate
+        include InterfaceNode
         COMPONENT = Construqt::Resources::Component::WIRELESS
         def initialize(wlan)
           self.delegate = wlan
+          self.init_node().parents(if  master_if
+            [master_if]
+          else
+            []
+          end)
         end
 
         def _ident

@@ -54,9 +54,17 @@ module Construqt
       cfg['plug_in'] ||= nil
       cfg['services'] ||= []
       delegates['firewalls'] = cfg.delete('firewalls')||[]
-      (dev_name, iface) = Construqt::Tags.add("#{dev_name_tag}##{host.name}-#{dev_name}") { |name| host.flavour.create_interface(name, cfg) }
-#binding.pry
-      #    iface.clazz.attach = iface
+      (dev_name, iface) = Construqt::Tags.add("#{dev_name_tag}##{host.name}-#{dev_name}") do |name|
+        host.flavour.create_interface(name, cfg)
+      end
+# #binding.pry
+#       #    iface.clazz.attach = iface
+#       if iface.respond_to?(:interfaces)
+#         iface.interfaces.each do |member|
+#             member.add_member(iface)
+#         end
+#       end
+      # binding.pry
       attach_firewalls(iface, delegates['firewalls'])
       host.interfaces[dev_name] = iface
       host.interfaces[dev_name].address.interface = host.interfaces[dev_name] if host.interfaces[dev_name].address
@@ -80,8 +88,9 @@ module Construqt
 
     def add_openvpn(host, name, cfg)
       cfg['clazz'] = "opvn"
-      cfg['ipv6'] ||= nil
-      cfg['ipv4'] ||= nil
+      throw "deprecated option 'ipv6'" if cfg['ipv6']
+      throw "deprecated option 'ipv4'" if cfg['ipv4']
+      throw "listen is missing" unless cfg['listen'] 
       dev = add_device(host, name, cfg)
       dev.address.interface = host.interfaces[name] if dev.address
       dev.network.name = "#{name}-#{host.name}"
@@ -94,6 +103,7 @@ module Construqt
       cfg['local'] ||= nil
       cfg['remote'] ||= nil
       dev = add_device(host, name, cfg)
+      #dev.interfaces = dev.create_interfaces(host, name, cfg)
       dev.address.interface = host.interfaces[name] if dev.address
       dev
     end
@@ -256,12 +266,13 @@ module Construqt
     #   #   #   end
     #   #   # end
     #   # end
-      Graph.low_first(region.hosts.host_graph(hosts)) do |hnode, level|
-        next unless hnode.ref.interface_graph
-        Graph.low_first(hnode.ref.interface_graph) do |inode, level|
-          next if !inode.ref.host or hnode.ref != inode.ref.host
-          # binding.pry
-          inode.ref.build_config(hnode.ref, inode.ref, inode)
+      region.hosts.host_graph(hosts).flat.each do |hnode_string|
+        hnode_string.each do |hnode|
+          hnode.ref.interface_graph.flat.each do |inode_string|
+            inode_string.each do |inode|
+              inode.ref.build_config(hnode.ref, inode.ref, inode)
+            end
+          end
         end
       end
     end

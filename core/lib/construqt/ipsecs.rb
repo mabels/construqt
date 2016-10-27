@@ -73,6 +73,10 @@ module Construqt
                                                                   "ipsec" => cfg
                                                                  )
       end
+      (cfg.rights+cfg.lefts).each do |node|
+        node.interface.create_interfaces(node.host, node.interface.name, node.cfg);
+      end
+
 
       cfg
     end

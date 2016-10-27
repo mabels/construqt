@@ -43,6 +43,7 @@ module Construqt
             'wlan' => WlanDelegate,
             'vlan' => VlanDelegate,
             'ipsecvpn' => IpsecVpnDelegate,
+            'tunnel' => TunnelDelegate,
             # "result" => ResultDelegate,
             'template' => TemplateDelegate
           }

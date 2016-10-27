@@ -41,7 +41,7 @@ module Construqt
       end
 
       def inspect
-        "@<#{self.class.name}:#{"%x"%object_id} name=#{name.inspect} service_ip=#{service_ip.insepct}s=#{ips.inspect} host=${host.inspect} interface=${interface.inspect} routes=#{routes.inspect} tags=#{tags.inspect} loopback=#{loopback.inspect}>"
+        "@<#{self.class.name}:#{"%x"%object_id} name=#{name.inspect} service_ip=XX ips=YY host=#{host.inspect} interface=#{interface.inspect} routes=#{routes.inspect} tags=#{tags.inspect} loopback=#{loopback.inspect}>"
       end
 
       def add_service_ip(addr)

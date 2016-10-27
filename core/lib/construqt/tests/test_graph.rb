@@ -22,7 +22,7 @@ require 'construqt'
 
 class GraphTest < Test::Unit::TestCase
   class Host
-    attr_accessor :interfaces, :ident, :name
+    attr_accessor :interfaces, :ident, :name, :mother
     def initialize(name)
       @ident = @name = name
       @interfaces = {}
@@ -52,7 +52,7 @@ class GraphTest < Test::Unit::TestCase
   def test_empty
     host = Host.new("root")
     host.interfaces = host_interfaces []
-    ret = Construqt::Graph.build_from_host(host)
+    ret = Construqt::Graph.build_interface_graph_from_host(host)
     assert_equal(ret.flat, [])
   end
   def test_flat_empty
@@ -63,7 +63,7 @@ class GraphTest < Test::Unit::TestCase
       Interface.new("dev2"),
       Interface.new("dev3")
     ]
-    ret = Construqt::Graph.build_from_host(host)
+    ret = Construqt::Graph.build_interface_graph_from_host(host)
     flat = ret.flat
     assert_equal(4, flat.length)
     # assert_equal(ret.flat.first.map{|i|i.ident}, ["root", "dev0", "dev1", "dev2", "dev3"])
@@ -79,7 +79,7 @@ class GraphTest < Test::Unit::TestCase
     vlan1.parents.push dev1
 
     host.interfaces = host_interfaces [vlan1, dev0, vlan0, dev1]
-    ret = Construqt::Graph.build_from_host(host)
+    ret = Construqt::Graph.build_interface_graph_from_host(host)
     flat = ret.flat
     assert_equal(2, flat.length)
     assert_equal(flat.first.map{|i|i.ident}, ["dev1", "vlan1"])
@@ -95,7 +95,7 @@ class GraphTest < Test::Unit::TestCase
     br1 = Bridge.new("br1")
     br1.children.push dev1
     host.interfaces = host_interfaces [br1,dev0, br0, dev1]
-    ret = Construqt::Graph.build_from_host(host)
+    ret = Construqt::Graph.build_interface_graph_from_host(host)
     flat = ret.flat
     assert_equal(2, flat.length)
     assert_equal(flat.first.map{|i|i.ident}, ["br1", "dev1"])
@@ -190,16 +190,16 @@ class GraphTest < Test::Unit::TestCase
   end
 
   # def xx_test_dump_valid
-  #   graph = Construqt::Graph.build_from_host(valid_graph)
+  #   graph = Construqt::Graph.build_interface_graph_from_host(valid_graph)
   #   graph.dump
   # end
   def test_dump_invalid
-    graph = Construqt::Graph.build_from_host(invalid_graph)
+    graph = Construqt::Graph.build_interface_graph_from_host(invalid_graph)
     assert(!graph, "should be nil")
   end
 
   def test_flat_valid
-    graph = Construqt::Graph.build_from_host(valid_graph)
+    graph = Construqt::Graph.build_interface_graph_from_host(valid_graph)
     flat = graph.flat
     # graph.dump
     assert_equal(["eth0", "eth1", "bond0", "br0", "vlan7",
@@ -226,12 +226,59 @@ class GraphTest < Test::Unit::TestCase
     br2.children.push vlan2
 
     host.interfaces = host_interfaces [br0,vlan1,br1,br2,vlan2,dev0]
-    ret = Construqt::Graph.build_from_host(host)
+    ret = Construqt::Graph.build_interface_graph_from_host(host)
     # binding.pry
     # ret.dump
     flat = ret.flat
     assert_equal(1, flat.length)
     assert_equal(flat.first.map{|i|i.ident}, ["br0", "dev0", "br1", "vlan1", "br2", "vlan2"])
+  end
+
+  def test_hosts
+    ship_1 = Host.new("ship-1")
+    container_1 = Host.new("container-1")
+    docker_1 = Host.new("docker-1")
+    docker_1.mother = container_1
+    container_2 = Host.new("container-2")
+    docker_2 = Host.new("docker-2")
+    docker_2.mother = container_2
+    container_3 = Host.new("container-3")
+    docker_3 = Host.new("docker-3")
+    docker_3.mother = container_3
+    container_1.mother = ship_1
+    container_2.mother = ship_1
+    container_3.mother = ship_1
+
+    ship_2 = Host.new("ship-2")
+    container_4 = Host.new("container-4")
+    container_5 = Host.new("container-5")
+    container_6 = Host.new("container-6")
+    container_4.mother = ship_2
+    container_5.mother = ship_2
+    container_6.mother = ship_2
+
+    ship_3 = Host.new("ship-3")
+
+    ret = Construqt::Graph.build_host_graph_from_hosts([
+        docker_1, docker_2, docker_3,
+        container_1, container_2, container_3, container_4, container_5, container_6,
+        ship_1, ship_2, ship_3
+      ])
+    # binding.pry
+    # ret.dump
+    flat = ret.flat
+    assert_equal(3, flat.length)
+    assert_equal(flat[0].map{|i|i.ident}, ["ship-1",
+       "container-1",
+       "docker-1",
+       "container-2",
+       "docker-2",
+       "container-3",
+       "docker-3"])
+    assert_equal(flat[1].map{|i|i.ident}, ["ship-2", "container-4", "container-5", "container-6"])
+    assert_equal(flat[2].map{|i|i.ident}, ["ship-3"])
+
+
   end
 
 

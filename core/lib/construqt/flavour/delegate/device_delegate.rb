@@ -4,13 +4,11 @@ module Construqt
 
       class DeviceDelegate
         include Delegate
+        include InterfaceNode
         COMPONENT = Construqt::Resources::Component::UNREF
         def initialize(device)
           self.delegate = device
-        end
-
-        def interfaces
-          self.delegate.interfaces
+          self.init_node()
         end
 
         def _ident

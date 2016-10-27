@@ -187,7 +187,8 @@ module AlwaysConnected
   def self.router(mother, name, ip, lxc_deploy)
     region = mother.region
     # "lxc_deploy" => lxc_deploy
-    region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother) do |host|
+    region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother,
+                     "lxc_deploy" => Construqt::Hosts::Lxc.new) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -219,7 +220,8 @@ module AlwaysConnected
   def self.encrypter_region(mother, rname, address)
     region = mother.region
     # "lxc_deploy" => Construqt::Hosts::Lxc.new.restart.template("ao-template")
-    region.hosts.add("ao-tunnel-#{rname}", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother) do |host|
+    region.hosts.add("ao-tunnel-#{rname}", "flavour" => "nixian", "dialect" => "ubuntu",
+                     "mother" => mother, "lxc_deploy" => Construqt::Hosts::Lxc.new) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -234,7 +236,8 @@ module AlwaysConnected
   def self.access_pointer(mother, rname, ifname, ssid, address)
     region = mother.region
     # "lxc_deploy" => Construqt::Hosts::Lxc.new.restart.template("ao-template")
-    region.hosts.add("ao-ap-#{rname}-#{ifname}", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother) do |host|
+    region.hosts.add("ao-ap-#{rname}-#{ifname}", "flavour" => "nixian", "dialect" => "ubuntu",
+                     "mother" => mother, "lxc_deploy" => Construqt::Hosts::Lxc.new) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

@@ -100,6 +100,7 @@ module Construqt
       r
     end.values.each do |hosts|
       hosts = hosts.sort { |a, b| a.ident <=> b.ident }
+      # binding.pry
       #   (a.mother ? "" : a.name) <=> (b.mother ? "" : b.name)
       # end
       hosts.first.region.hosts.build_config(hosts)

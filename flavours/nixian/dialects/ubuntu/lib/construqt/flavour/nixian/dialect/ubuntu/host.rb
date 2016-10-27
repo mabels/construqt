@@ -50,6 +50,7 @@ module Construqt
 
 
             def create_lxc_containers(host)
+              # binding.pry
               once_per_host_which_have_lxcs = false
               host.region.hosts.get_hosts.select {|h| host.eq(h.mother) }.each do |lxc|
                 next unless lxc.lxc_deploy
@@ -80,19 +81,18 @@ module Construqt
             def create_systemd_startup(host)
               #binding.pry
               #Graph.dump(host.interface_graph)
-              Graph.low_first(host.interface_graph) do |inode, level|
-                next if !inode.ref.host or host != inode.ref.host
-                # Construqt.logger.debug "#{inode.ident}.network"
-                # "network.target"
-                systemd = Result::SystemdService.new(host.result, "#{inode.ident}.network")
-                      .description("up and down of #{inode.ident}")
-                      .type("oneshot")
-                      .exec_start("/bin/bash /etc/network/#{inode.ref.name}-up.iface")
-                      .exec_stop("/bin/bash /etc/network/#{inode.ref.name}-down.iface")
-                write_before(host, inode, systemd)
-                host.result.add(Result::SystemdService, systemd.as_systemd_file,
-                  Construqt::Resources::Rights.root_0644,
-                  'etc', 'systemd', 'construqt', systemd.get_name)
+              host.interface_graph.flat do |iface_string|
+                iface_string.each do |inode|
+                  systemd = Result::SystemdService.new(host.result, "#{inode.ident}.network")
+                        .description("up and down of #{inode.ident}")
+                        .type("oneshot")
+                        .exec_start("/bin/bash /etc/network/#{inode.ref.name}-up.iface")
+                        .exec_stop("/bin/bash /etc/network/#{inode.ref.name}-down.iface")
+                  write_before(host, inode, systemd)
+                  host.result.add(Result::SystemdService, systemd.as_systemd_file,
+                    Construqt::Resources::Rights.root_0644,
+                    'etc', 'systemd', 'construqt', systemd.get_name)
+                end
               end
               #host.result.add(Result::SystemdService, active.join("\n"),
 
@@ -101,20 +101,22 @@ module Construqt
             end
 
             def create_plain_network_startup(host)
-              host.result.add(self, (["#!/bin/sh"]+
-                  Graph.root_first_list(host.interface_graph)
-                    .select{|inode| !(!inode.ref.host or host != inode.ref.host) }
-                    .map{|inode| "#{File.join("/etc", "network", "#{inode.ref.name}-up.iface")}" })
-                    .join("\n"),
-                  Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::SSH),
+              ups = []
+              downs = []
+              host.interface_graph.flat.each do |iface_string|
+                  ups.push("# up string")
+                  iface_string.each do |inode|
+                      ups.push("#{File.join("/etc", "network", "#{inode.ref.name}-up.iface")}")
+                      downs.unshift("#{File.join("/etc", "network", "#{inode.ref.name}-down.iface")}")
+                  end
+                  downs.unshift("# down string")
+              end
+              host.result.add(self, (["#!/bin/sh"]+ups).join("\n"),
+                  Construqt::Resources::Rights.root_0755,
                   "etc", "network", "network_up.sh")
 
-              host.result.add(self, (["#!/bin/sh"]+
-                  Graph.low_first_list(host.interface_graph)
-                    .select{|inode| !(!inode.ref.host or host != inode.ref.host) }
-                    .map{|inode| "#{File.join("/etc", "network", "#{inode.ref.name}-down.iface")}" })
-                    .join("\n"),
-                  Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::SSH),
+              host.result.add(self, (["#!/bin/sh"]+downs).join("\n"),
+                  Construqt::Resources::Rights.root_0755,
                   "etc", "network", "network_down.sh")
             end
 

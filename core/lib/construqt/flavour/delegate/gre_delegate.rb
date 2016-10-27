@@ -4,13 +4,16 @@ module Construqt
 
       class GreDelegate
         include Delegate
+        # include Member
+        include InterfaceNode
         COMPONENT = Construqt::Resources::Component::UNREF
         def initialize(gre)
           self.delegate = gre
+          self.init_node()
         end
 
-        def interfaces
-          self.delegate.interfaces
+        def create_interfaces(host, name, cfg)
+          self.delegate.create_interfaces(host, name, cfg)
         end
 
         def _ident

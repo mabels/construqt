@@ -25,7 +25,8 @@ module Hgw
       end
     end
 
-    service_de_hgw = region.hosts.add("service-de-hgw", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => kuckpi) do |host|
+    service_de_hgw = region.hosts.add("service-de-hgw", "flavour" => "nixian", "dialect" => "ubuntu",
+                                      "mother" => kuckpi, "lxc_deploy" => Construqt::Hosts::Lxc.new) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -85,7 +86,8 @@ module Hgw
       end
     end
 
-    dvb_link = region.hosts.add("dvb-link", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => kuckpi) do |host|
+    dvb_link = region.hosts.add("dvb-link", "flavour" => "nixian", "dialect" => "ubuntu",
+                                "mother" => kuckpi, "lxc_deploy" => Construqt::Hosts::Lxc.new) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

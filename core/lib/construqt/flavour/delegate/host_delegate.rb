@@ -6,7 +6,7 @@ module Construqt
       class HostDelegate
         include Delegate
         COMPONENT = Construqt::Resources::Component::UNREF
-        attr_reader :users, :bgps, :ipsecs
+        attr_reader :users, :bgps, :ipsecs, :interface_graph
         def initialize(host)
           #binding.pry
           #Construqt.logger.debug "HostDelegate.new(#{host.name})"
@@ -15,17 +15,17 @@ module Construqt
           @ipsecs = []
           @bgps = []
           @users = host.users || host.region.users
-          @graphs = {}
+          @interface_graph = Construqt::Graph.new
         end
 
-        def interface_graph
-          id = interfaces.values.map{|i| i.ident }.sort.join(":")
-          unless @graphs[id]
-            # binding.pry
-            @graphs[id] = Hosts::Grapher.build_interfaces(self)
-          end
-          @graphs[id]
-        end
+        # def interface_graph
+        #   id = interfaces.values.map{|i| i.ident }.sort.join(":")
+        #   unless @graphs[id]
+        #     # binding.pry
+        #     @graphs[id] = Construqt::Graph.build_interface_graph_from_host(self)
+        #   end
+        #   @graphs[id]
+        # end
 
         # def inspect
         #   "@<#{self.class.name}:#{self.object_id} name=#{name} mother=#{mother.inspect}>"
@@ -134,7 +134,8 @@ module Construqt
           #  footer_clazzes[iface.class.name] ||= iface if iface.delegate.respond_to? :footer
           #end
 
-          #binding.pry
+          # self.interfaces do 
+
           self.flavour.pre_clazzes do |key, clazz|
             self.region.flavour_factory.call_aspects("#{key}.header", self, nil)
             clazz.header(self) if clazz.respond_to? :header

@@ -4,9 +4,11 @@ module Construqt
 
       class BridgeDelegate
         include Delegate
+        include InterfaceNode
         COMPONENT = Construqt::Resources::Component::UNREF
         def initialize(bridge)
           self.delegate = bridge
+          self.init_node().children(self.delegate.interfaces)
         end
 
         def _ident
@@ -16,6 +18,8 @@ module Construqt
         def interfaces
           self.delegate.interfaces
         end
+
+
       end
     end
   end

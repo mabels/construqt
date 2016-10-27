@@ -23,7 +23,8 @@ module Scott
       end
     end
 
-    region.hosts.add("aiccu", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => scott) do |aiccu|
+    region.hosts.add("aiccu", "flavour" => "nixian", "dialect" => "ubuntu",
+                     "mother" => scott, "lxc_deploy" => Construqt::Hosts::Lxc.new) do |aiccu|
       region.interfaces.add_device(aiccu, "lo", "mtu" => "1500",
                                    :description=>"#{aiccu.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -42,7 +43,8 @@ module Scott
         region.cables.add(iface, region.interfaces.find("scott", "br67"))
       end
 
-      fbsd = region.hosts.add("fbsd", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => scott) do |host|
+      fbsd = region.hosts.add("fbsd", "flavour" => "nixian", "dialect" => "ubuntu",
+                              "mother" => scott, "lxc_deploy" => Construqt::Hosts::Lxc.new) do |host|
         region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                      :description=>"#{host.name} lo",
                                      "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

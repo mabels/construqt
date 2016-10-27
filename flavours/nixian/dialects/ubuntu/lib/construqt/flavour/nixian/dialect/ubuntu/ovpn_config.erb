@@ -1,6 +1,6 @@
 daemon
-local <%= local %>
-proto <%= local.ipv6? ? "udp6" : "udp" %>
+local <%= listen %>
+proto <%= proto %>
 port 1194
 mode server
 tls-server
@@ -15,6 +15,7 @@ server <%= iface.network.first_ipv4.to_s %> <%= iface.network.first_ipv4.netmask
 <% if iface.network.first_ipv6 %>
 server-ipv6 <%= iface.network.first_ipv6.to_string %>
 <% end %>
+writepid /run/openvpn.<%= iface.name %>.pid
 client-to-client
 keepalive 10 30
 cipher AES-128-CBC   # AES

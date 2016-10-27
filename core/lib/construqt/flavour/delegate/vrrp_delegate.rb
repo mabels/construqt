@@ -4,6 +4,7 @@ module Construqt
 
       class VrrpDelegate
         include Delegate
+        #include InterfaceNode
         COMPONENT = Construqt::Resources::Component::VRRP
         def initialize(vrrp)
           #binding.pry

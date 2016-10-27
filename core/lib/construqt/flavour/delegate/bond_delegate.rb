@@ -4,9 +4,11 @@ module Construqt
 
       class BondDelegate
         include Delegate
+        include InterfaceNode
         COMPONENT = Construqt::Resources::Component::UNREF
         def initialize(bond)
           self.delegate = bond
+          self.init_node().children(self.delegate.interfaces)
         end
 
         def _ident

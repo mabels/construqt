@@ -24,7 +24,7 @@ module Construqt
       end
 
       class Node
-        attr_reader :ref, :children, :parents, :param
+        attr_reader :ref, :children, :parents, :param, :graph
         def initialize(graph, ref)
           throw "Ref should not be a Node" if ref.kind_of?(Node)
           @ref = ref
@@ -149,7 +149,20 @@ module Construqt
         end
       end
 
-      def self.build_from_host(host)
+      def self.build_host_graph_from_hosts(hosts)
+        graph = Graph.new
+        hosts.each do |host|
+          my = graph.node_from_ref(host)
+          #puts "#{host.ident} mother=#{host.mother&&host.mother.ident}"
+          if my.ref.mother
+            pnode = graph.node_from_ref(my.ref.mother)
+            pnode.join_as_child(my)
+          end
+        end
+        graph
+      end
+
+      def self.build_interface_graph_from_host(host)
         graph = Graph.new
         host.interfaces.values.each do |iface|
           my = graph.node_from_ref(iface)

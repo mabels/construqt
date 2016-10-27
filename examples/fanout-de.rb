@@ -65,7 +65,7 @@ module FanoutDe
     {'smtp-de' => nil,
      'bind-de' => nil,
      'imap-de' => nil,
-     'ovpn' => lambda { |host|
+     'ovpn' => lambda { |host, iface|
        fanout = self.cfg
        [
          { name: "tun1", proto: "udp" },
@@ -78,6 +78,7 @@ module FanoutDe
                                       "hostcert" =>  OPENVPN['ovpn']["hostcert"],
                                       "hostkey" => OPENVPN['ovpn']["hostkey"],
                                       "dh" =>  OPENVPN['ovpn']["dhfile"],
+                                      "listen" => iface,
                                       "network" => region.network.addresses
                                         .add_ip("192.168.72.#{64*idx}/26#IPSECVPN-DE")
                                         .add_ip("#{fanout[:net6]}:192:168:72:#{64*idx}/122#IPSECVPN-DE"),
@@ -104,6 +105,7 @@ module FanoutDe
                                      :description=>"#{host.name} lo",
                                      "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
 
+        iface = nil
         host.configip = host.id ||= Construqt::HostId.create do |my|
           my.interfaces << iface = region.interfaces.add_device(host, "eth0",
                                                                 "plug_in" => Construqt::Cables::Plugin.new.iface(fanout_de.interfaces.find_by_name("br12")),
@@ -114,7 +116,7 @@ module FanoutDe
             .add_ip("#{fanout[:net6]}:169:254:12:#{10+idx}/120#HOST-#{name}#SERVICE-NET-DE")
             .add_route("2000::/3", "#{fanout[:net6]}:169:254:12:1"))
         end
-        action && action.call(host)
+        action && action.call(host, iface)
       end
     end
 

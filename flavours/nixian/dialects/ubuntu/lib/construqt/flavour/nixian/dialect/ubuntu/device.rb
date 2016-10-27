@@ -18,6 +18,13 @@ module Construqt
               "#<#{self.class.name}:#{"%x"%object_id} ident=#{self.delegate.name}>"
             end
 
+            def up_member(iface)
+              []
+            end
+            def down_member(iface)
+              []
+            end
+
             def self.add_address(host, ifname, iface, lines, writer, family)
               if iface.address.nil?
                 Firewall.create(host, ifname, iface, family)
@@ -148,7 +155,7 @@ module Construqt
               writer.lines.down("kill `cat /run/#{ifname}-dnsmasq.pid`")
             end
 
-            def self.build_config(host, iface, node, ifname = nil, family = nil, mtu = nil)
+            def self.build_config(host, iface, node, ifname = nil, family = nil, mtu = nil, skip_link = nil)
               # binding.pry
               throw "need node as 3th parameter" unless node.kind_of?(Construqt::Graph::Node)
               #      binding.pry
@@ -163,8 +170,15 @@ module Construqt
               writer.lines.add(iface.delegate.flavour) if iface.delegate.flavour
               ifname = ifname || writer.header.get_interface_name
               iface.call_on_iface_up_down(writer, ifname)
-              writer.lines.up("ip link set mtu #{mtu || iface.delegate.mtu} dev #{ifname} up")
-              writer.lines.down("ip link set dev #{ifname} down")
+              unless skip_link
+                writer.lines.up("ip link set mtu #{mtu || iface.delegate.mtu} dev #{ifname} up")
+                writer.lines.down("ip link set dev #{ifname} down")
+              end
+              iface.node.parents.each do |parent_node|
+                parent = parent_node.link.ref
+                parent.delegate.up_member(iface).each { |line| writer.lines.up(line) }
+                parent.delegate.down_member(iface).each { |line| writer.lines.down(line) }
+              end
               add_address(host, ifname, iface.delegate, writer.lines, writer, family)
               #binding.pry if ifname == "v202"
               add_dhcp_client(host, ifname, iface, writer, family)

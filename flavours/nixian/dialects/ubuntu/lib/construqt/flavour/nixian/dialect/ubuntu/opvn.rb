@@ -9,20 +9,24 @@ module Construqt
             include Construqt::Cables::Plugin::Single
             attr_accessor :delegate
             attr_reader :address,:template,:plug_in,:network,:mtu,:clazz,:dh
-            attr_reader :ipv6,:push_routes,:cacert,:name,:hostcert,:hostkey,:host
-            attr_reader :description, :firewalls, :protocols
+            attr_reader :listen,:push_routes,:cacert,:name,:hostcert,:hostkey,:host
+            attr_reader :description, :firewalls, :protocols, :proto, :flavour
+            attr_reader :services
             def initialize(cfg)
               @name = cfg['name']
               @host = cfg['host']
               @description = cfg['description']
+              @flavour = cfg['flavour']
+              @services = cfg['services']
               @firewalls = cfg['firewalls']
               @address = cfg['address']
               @template = cfg['template']
               @plug_in = cfg['plug_in']
               @network = cfg['network']
+              @proto = cfg['proto']
               @mtu = cfg['mtu']
               @clazz = cfg['clazz']
-              @ipv6 = cfg['ipv6']
+              @listen = cfg['listen']
               @push_routes = cfg['push_routes']
               @cacert = cfg['cacert']
               @hostcert = cfg['hostcert']
@@ -40,13 +44,28 @@ module Construqt
             end
 
             def build_config(host, opvn, node)
+
+              Device.build_config(host, opvn, node, nil, nil, nil, true)
+
               iface = opvn.delegate
-              local = iface.ipv6 ? host.id.first_ipv6.first_ipv6 : host.id.first_ipv4.first_ipv4
-              return unless local
+              proto = iface.proto
+              # binding.pry
+              listen = if proto.end_with?("6")
+                iface.listen.address.first_ipv6
+              else
+                iface.listen.address.first_ipv4
+              end
+              throw "no address found for #{proto}" unless listen
               push_routes = ""
               if iface.push_routes
                 push_routes = iface.push_routes.routes.each{|route| "push \"route #{route.dst.to_string}\"" }.join("\n")
               end
+
+              writer = host.result.etc_network_interfaces.get(iface)
+              writer.lines.up("mkdir -p /dev/net")
+              writer.lines.up("mknod /dev/net/tun c 10 200")
+              writer.lines.up("/usr/sbin/openvpn --config /etc/openvpn/#{iface.name}.conf")
+              writer.lines.down("kill $(cat /run/openvpn.#{iface.name}.pid)")
 
               host.result.add(self, iface.cacert, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-cacert.pem")
               host.result.add(self, iface.hostcert, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-hostcert.pem")

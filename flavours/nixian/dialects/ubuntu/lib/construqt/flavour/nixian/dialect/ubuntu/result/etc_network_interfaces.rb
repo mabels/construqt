@@ -44,12 +44,26 @@ module Construqt
                     self
                   end
 
+                  def auto
+                    @auto = true
+                  end
+
+                  def post_up(block, order = 0)
+                    @post_ups.push [order, block.each_line.map(&:strip).select { |i| !i.empty? }]
+                  end
+
+                  def pre_down(block, order = 0)
+                    @pre_downs.unshift [order, block.each_line.map(&:strip).select { |i| !i.empty? }]
+                  end
+
                   def initialize(entry)
                     @entry = entry
-                    @auto = true
+                    @auto = false
                     @mode = MODE_MANUAL
                     @protocol = PROTO_INET4
                     @interface_name = nil
+                    @post_ups = []
+                    @pre_downs = []
                   end
 
                   def interface_name(name)
@@ -75,12 +89,13 @@ module Construqt
                   end
 
                   def up(block, order = 0)
-                    @ups << [order, block.each_line.map(&:strip).select { |i| !i.empty? }]
+                    @ups.push [order, block.each_line.map(&:strip).select { |i| !i.empty? }]
                   end
 
                   def down(block, order = 0)
-                    @downs << [order, block.each_line.map(&:strip).select { |i| !i.empty? }]
+                    @downs.unshift [order, block.each_line.map(&:strip).select { |i| !i.empty? }]
                   end
+
 
                   def add(block)
                     @lines += block.each_line.map(&:strip).select { |i| !i.empty? }
@@ -91,16 +106,16 @@ module Construqt
                       Construqt::Resources::Rights.root_0755(component), 'etc', 'network', "#{@entry.header.get_interface_name}-#{direction}.iface")
                   end
 
-                  def ordered_lines(lines)
+                  def self.ordered_lines(lines)
                     result = lines.inject({}) { |r, l| r[l.first] ||= []; r[l.first] << l.last; r }
                     result.keys.sort.map { |key| result[key] }.flatten
                   end
 
                   def commit
-                    write_s(@entry.iface.class.name, 'up', ordered_lines(@ups))
-                    write_s(@entry.iface.class.name, 'down', ordered_lines(@downs))
+                    write_s(@entry.iface.class.name, 'up', Lines.ordered_lines(@ups))
+                    write_s(@entry.iface.class.name, 'down', Lines.ordered_lines(@downs))
                     sections = @lines.inject({}) { |r, line| key = line.split(/\s+/).first; r[key] ||= []; r[key] << line; r }
-                    sections.keys.sort.map do |key|
+                    ret = sections.keys.sort.map do |key|
                       sections[key].map { |j| "  #{j}" } if sections[key]
                     end.compact.flatten.join("\n") + "\n\n"
                   end
@@ -142,24 +157,45 @@ module Construqt
 
               def get(iface, name = nil)
                 throw "clazz needed #{name || iface.name}" unless iface.clazz
-                @entries[name || iface.name] ||= Entry.new(@result, iface)
+                ret = @entries[name || iface.name]
+                unless ret
+                  entry = Entry.new(@result, iface)
+                  ret = @entries[name || iface.name] = entry
+                end
+                ret
               end
 
               def commit
-                #      binding.pry
-                out = [@entries['lo']]
-                clazzes = {}
-                @entries.values.each do |entry|
-                  name = entry.iface.clazz # .name[entry.iface.clazz.name.rindex(':')+1..-1]
-                  # puts "NAME=>#{name}:#{entry.iface.clazz.name.rindex(':')+1}:#{entry.iface.clazz.name}:#{entry.name}"
-                  clazzes[name] ||= []
-                  clazzes[name] << entry
+                out = []
+                if_strings = @result.host.delegate.interface_graph.flat
+                if_strings.each do |if_string|
+                  if_string.each_with_index do |inode, idx|
+                    binding.pry unless @entries[inode.ref.name]
+                    out << @entries[inode.ref.name]
+                    if idx == 0
+                      @entries[inode.ref.name].header.auto
+                    end
+                    next if idx + 1 == if_string.length
+                    @entries[inode.ref.name].header.post_up "ifup #{if_string[idx+1].ref.name}"
+                    @entries[inode.ref.name].header.pre_down "ifdown #{if_string[idx+1].ref.name}"
+                  end
                 end
+                # out = [@entries['lo']]
+                #
+                # clazzes = {}
+                # @entries.values.each do |entry|
+                #   name = entry.iface.clazz # .name[entry.iface.clazz.name.rindex(':')+1..-1]
+                #   # puts "NAME=>#{name}:#{entry.iface.clazz.name.rindex(':')+1}:#{entry.iface.clazz.name}:#{entry.name}"
+                #   clazzes[name] ||= []
+                #   clazzes[name] << entry
+                # end
+                #
+                # %w(device wlan bond vlan bridge gre).each do |type|
+                #   out += (clazzes[type] || []).select { |i| !out.first || i.name != out.first.name }.sort { |a, b| a.name <=> b.name }
+                # end
 
-                %w(device wlan bond vlan bridge gre).each do |type|
-                  out += (clazzes[type] || []).select { |i| !out.first || i.name != out.first.name }.sort { |a, b| a.name <=> b.name }
-                end
-
+                # binding.pry if @resut.host.name == "scable-1"
+                  # binding.pry unless @entries[inode.ref.name]
                 out.flatten.compact.inject('') { |r, entry| r += entry.commit; r }
               end
             end

@@ -11,7 +11,7 @@ module Construqt
       end
 
       def inspect
-        "@<#{self.class.name}:#{"%x"%object_id} ipaddr=#{ipaddr.to_string} container=#{container.inspect} options=#{options.inspect} routing_table="#{routing_table.inspect}">"
+        "@<#{self.class.name}:#{"%x"%object_id} ipaddr=#{ipaddr.to_string} options=#{options.inspect} routing_table=#{routing_table.inspect}>"
       end
 
       def <=>(oth)

@@ -29,6 +29,7 @@ require_relative 'ubuntu/ipsecvpn.rb'
 require_relative 'ubuntu/template.rb'
 require_relative 'ubuntu/vlan.rb'
 require_relative 'ubuntu/wlan.rb'
+require_relative 'ubuntu/tunnel.rb'
 
 module Construqt
   module Flavour
@@ -78,6 +79,7 @@ module Construqt
                 "wlan" => Wlan,
                 "vlan" => Vlan,
                 "ipsecvpn" => IpsecVpn,
+                "tunnel" => Tunnel,
                 #"result" => Result,
                 #"ipsec" => Ipsec,
                 #"bgp" => Bgp,

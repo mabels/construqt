@@ -9,12 +9,16 @@ module Construqt
                   super(cfg)
                 end
 
+                def clazz
+                  "strongswan"
+                end
+
                 def self.header(host)
                   host.result.add(:ipsec, Construqt::Util.render(binding, "strongswan_header.erb"),
                     Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
                 end
 
-                def build_config(unused, unused2, unused3)
+                def build_config(host, iface, node)
                   #puts ">>>>>#{self.cfg.transport_family}"
                   if self.cfg.transport_family == Construqt::Addresses::IPV6
                     local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(self.remote.first_ipv6) }
@@ -43,15 +47,7 @@ module Construqt
                     writer.add_backup("/usr/sbin/ipsec down #{self.host.name}-#{self.other.host.name} &", -1000)
                     local_if.services << Construqt::Services::IpsecStartStop.new
                   else
-                    iname = local_if.name
-                    if local_if.clazz == "gre"
-                      iname = Util.clean_if(gt, iname)
                     end
-
-                    writer = host.result.etc_network_interfaces.get(local_if, iname)
-                    writer.lines.up("/usr/sbin/ipsec up #{self.host.name}-#{self.other.host.name} &", 1000)
-                    writer.lines.down("/usr/sbin/ipsec down #{self.host.name}-#{self.other.host.name} &", -1000)
-                  end
 
                   host.result.ipsec_secret.add_psk(transport_right, cfg.password, cfg.name)
                   host.result.ipsec_secret.add_psk(self.other.host.name, cfg.password)

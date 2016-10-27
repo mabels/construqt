@@ -1,6 +1,10 @@
 language: rust
 dist: trusty
 
+branches:
+    only:
+        - graph
+
 rust:
   - 1.12.0
 
