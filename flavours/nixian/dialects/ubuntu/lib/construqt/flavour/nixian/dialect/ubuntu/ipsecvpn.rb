@@ -11,6 +11,8 @@ module Construqt
 
             def build_config(host, iface, node)
               #puts ">>>>>>>>>>>>>>>>>>>>>>#{host.name} #{iface.name}"
+              # binding.pry
+              Device.build_config(host, iface, node, nil, nil, nil, true)
               render_ipv6_proxy(iface)
               if iface.leftpsk
                 comment = "#{host.name}-#{iface.name}"

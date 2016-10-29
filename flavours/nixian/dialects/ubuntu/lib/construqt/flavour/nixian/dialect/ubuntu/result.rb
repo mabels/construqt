@@ -44,7 +44,6 @@ module Construqt
               cps.register('Construqt::Flavour::Nixian::Dialect::Ubuntu::Bond').add('ifenslave')
               cps.register('Construqt::Flavour::Delegate::VlanDelegate').add('vlan')
               cps.register('Construqt::Flavour::Delegate::TunnelDelegate')
-              cps.register('Construqt::Flavour::Delegate::IpsecDelegate')
               cps.register('Construqt::Flavour::Nixian::Dialect::Ubuntu::Gre')
               cps.register('Construqt::Flavour::Delegate::GreDelegate')
               cps.register('Construqt::Flavour::Delegate::OpvnDelegate').add('openvpn')
@@ -54,9 +53,14 @@ module Construqt
               cps.register(cp::VRRP).add('keepalived')
               cps.register(cp::FW4).add('iptables').add('ulogd2')
               cps.register(cp::FW6).add('iptables').add('ulogd2')
-              cps.register(cp::IPSEC).add('strongswan')
-                .add('strongswan-plugin-eap-mschapv2')
-                .add('strongswan-plugin-xauth-eap')
+              [
+                cps.register('Construqt::Flavour::Delegate::IpsecVpnDelegate'),
+                cps.register('Construqt::Flavour::Delegate::IpsecDelegate'),
+                cps.register(cp::IPSEC)].each do |reg|
+                reg.add('strongswan')
+                  .add('strongswan-plugin-eap-mschapv2')
+                  .add('strongswan-plugin-xauth-eap')
+              end
               cps.register(cp::SSH).add('openssh-server')
               cps.register(cp::BGP).add('bird')
               cps.register(cp::OPENVPN).add('openvpn')

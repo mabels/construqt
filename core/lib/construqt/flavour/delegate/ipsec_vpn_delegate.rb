@@ -4,9 +4,11 @@ module Construqt
 
       class IpsecVpnDelegate
         include Delegate
+        include InterfaceNode
         COMPONENT = Construqt::Resources::Component::IPSEC
         def initialize(ipsecvpn)
           self.delegate = ipsecvpn
+          self.init_node().parents([ipsecvpn.left_interface])
         end
 
         def left_interface

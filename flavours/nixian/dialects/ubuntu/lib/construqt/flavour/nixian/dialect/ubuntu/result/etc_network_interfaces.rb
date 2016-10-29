@@ -175,9 +175,13 @@ module Construqt
                     if idx == 0
                       @entries[inode.ref.name].header.auto
                     end
-                    next if idx + 1 == if_string.length
-                    @entries[inode.ref.name].header.post_up "ifup #{if_string[idx+1].ref.name}"
-                    @entries[inode.ref.name].header.pre_down "ifdown #{if_string[idx+1].ref.name}"
+                    if idx + 1 == if_string.length
+                      @entries[inode.ref.name].header.post_up "/sbin/iptables-restore /etc/network/iptables.cfg"
+                      @entries[inode.ref.name].header.post_up "/sbin/ip6tables-restore /etc/network/ip6tables.cfg"
+                    else
+                      @entries[inode.ref.name].header.post_up "/sbin/ifup #{if_string[idx+1].ref.name}"
+                      @entries[inode.ref.name].header.pre_down "/sbin/ifdown #{if_string[idx+1].ref.name}"
+                    end
                   end
                 end
                 # out = [@entries['lo']]

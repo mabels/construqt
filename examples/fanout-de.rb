@@ -21,7 +21,8 @@ module FanoutDe
   end
   def self.run(region)
     fanout = self.cfg
-    fanout_de = region.hosts.add("fanout-de", "flavour" => "nixian", "dialect" => "ubuntu") do |host|
+    fanout_de = region.hosts.add("fanout-de", "flavour" => "nixian", "dialect" => "ubuntu",
+                                  "vagrant_deploy" => Construqt::Hosts::Vagrant.new.box("ubuntu/xenial64")) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -53,8 +54,8 @@ module FanoutDe
                                      "leftpsk" => IPSEC_LEFT_PSK,
                                      "leftcert" => region.network.cert_store.find_package("fanout-de"),
                                      "right_address" => region.network.addresses.add_ip("192.168.72.64/26#IPSECVPN-DE")
-        .add_ip("#{fanout[:net6]}::cafe:0/112#IPSECVPN-DE"),
-      "ipv6_proxy" => true)
+                                                        .add_ip("#{fanout[:net6]}::cafe:0/112#IPSECVPN-DE"),
+                                     "ipv6_proxy" => true)
       region.interfaces.add_bridge(host, "br12",
                                    "mtu" => 1500,
                                    "interfaces" => [],

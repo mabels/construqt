@@ -68,30 +68,29 @@ module Construqt
               end
             end
 
-            def write_before(host, inode, systemd)
-              if inode.children.select do |cl|
-                if cl.ref.host and host == cl.ref.host
-                  systemd.before("#{cl.ident}.network")
-                end
-              end.empty?
-                systemd.before("network.target")
-              end
-            end
-
             def create_systemd_startup(host)
               #binding.pry
               #Graph.dump(host.interface_graph)
-              host.interface_graph.flat do |iface_string|
-                iface_string.each do |inode|
-                  systemd = Result::SystemdService.new(host.result, "#{inode.ident}.network")
+              host.interface_graph.flat.each do |iface_string|
+                systemds = []
+                iface_string.each_with_index do |inode, idx|
+                  systemd = Result::SystemdService.new(host.result, "#{inode.ident}.service")
                         .description("up and down of #{inode.ident}")
                         .type("oneshot")
                         .exec_start("/bin/bash /etc/network/#{inode.ref.name}-up.iface")
                         .exec_stop("/bin/bash /etc/network/#{inode.ref.name}-down.iface")
-                  write_before(host, inode, systemd)
+                  if idx+1 == iface_string.length
+                    #last
+                    systemd.before("network.target")
+                  elsif idx == 0
+                    #first
+                  else
+                    systemd.after(systemds.last.get_name)
+                  end
                   host.result.add(Result::SystemdService, systemd.as_systemd_file,
                     Construqt::Resources::Rights.root_0644,
                     'etc', 'systemd', 'construqt', systemd.get_name)
+                  systemds.push systemd
                 end
               end
               #host.result.add(Result::SystemdService, active.join("\n"),
@@ -104,12 +103,15 @@ module Construqt
               ups = []
               downs = []
               host.interface_graph.flat.each do |iface_string|
-                  ups.push("# up string")
+                  chain = iface_string.map{|inode| inode.ref.name}.join(",")
+                  ups.push("# up chain [#{chain}]")
                   iface_string.each do |inode|
                       ups.push("#{File.join("/etc", "network", "#{inode.ref.name}-up.iface")}")
                       downs.unshift("#{File.join("/etc", "network", "#{inode.ref.name}-down.iface")}")
                   end
-                  downs.unshift("# down string")
+                  ups.push("/sbin/iptables-restore /etc/network/iptables.cfg")
+                  ups.push("/sbin/ip6tables-restore /etc/network/ip6tables.cfg")
+                  downs.unshift("# down [#{chain}]")
               end
               host.result.add(self, (["#!/bin/sh"]+ups).join("\n"),
                   Construqt::Resources::Rights.root_0755,

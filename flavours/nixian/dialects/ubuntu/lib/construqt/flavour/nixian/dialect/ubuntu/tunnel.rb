@@ -29,6 +29,7 @@ module Construqt
               # iname = Util.clean_if(cfg.gt, gre_delegate.name)
               # local_ifaces[local_iface.name] ||= OpenStruct.new(:iface => local_iface, :inames => [])
               # local_ifaces[local_iface.name].inames << iname
+              # binding.pry if iface.host.name == "rt-ab-de"
 
               writer = host.result.etc_network_interfaces.get(iface)
               #writer.skip_interfaces.header.interface_name(iname)

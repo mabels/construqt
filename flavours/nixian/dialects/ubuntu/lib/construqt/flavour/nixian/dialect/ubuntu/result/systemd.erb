@@ -3,6 +3,9 @@ Description=<%= self.get_description %>
 <% @befores.each do |before| -%>
 Before=<%= before %>
 <% end -%>
+<% @afters.each do |after| -%>
+After=<%= after %>
+<% end -%>
 
 [Service]
 Type=<%= @type %>

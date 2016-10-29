@@ -6,6 +6,17 @@ module Construqt
         @firewall = firewall
       end
 
+      def inspect
+        "#<#{self.class.name}:#{object_id} iface=#{@iface.ident} firewall=#{@firewall.name}>"
+      end
+      def to_s
+        inspect
+      end
+
+      def name
+        @firewall.name
+      end
+
       def get_raw
         @firewall.get_raw(@iface)
       end
