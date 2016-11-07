@@ -25,12 +25,27 @@ module Construqt
               def vlan_id
                 @interface.delegate.vlan_id(@interface) if @interface.delegate.respond_to?(:vlan_id)
               end
-              def commit
+
+
+              def as_string
                 systemd_netdev = self
                 iface = @interface
-                @interface.host.result.add(self,
-                  Construqt::Util.render(binding, "systemd_netdev.erb"),
-                  Construqt::Resources::Rights.root_0644, "etc", "systemd", "network", "#{self.name}.netdev")
+                Construqt::Util.render(binding, "systemd_netdev.erb")
+              end
+              def as_systemd_file
+                as_string
+              end
+              def get_command
+                nil
+              end
+              def get_name
+                name
+              end
+
+              def commit
+                @interface.host.result.add(self, self.as_string,
+                  Construqt::Resources::Rights.root_0644,
+                  "etc", "systemd", "network", "#{self.name}.netdev")
               end
             end
 
@@ -43,9 +58,15 @@ module Construqt
                 @interfaces[iface.name] ||= SystemdNetdev.new(iface)
               end
 
+              def netdevs(result)
+                result.host.interfaces.values.map do |iface|
+                  get(iface)
+                end
+              end
+
               def commit(result)
-                result.host.interfaces.values.each do |iface|
-                  get(iface).commit
+                netdevs(result).each do |sysdev|
+                  sysdev.commit
                 end
               end
             end

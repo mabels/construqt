@@ -31,7 +31,7 @@ module Construqt
                         def add_units(sysrv)
                           @yaml['coreos']['units'] << {
                             'name' => sysrv.get_name,
-                            'content' => sysrv.as_systemd_file
+                            'content' => sysrv.as_systemd_file.strip
                           }
                           if sysrv.get_command
                             @yaml['coreos']['units']['command'] = sysrv.get_command
@@ -102,64 +102,88 @@ module Construqt
 
                         def commit
                             # binding.pry
-                            add(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::EtcNetworkIptables, @ures.etc_network_iptables.commitv4, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4), 'etc', 'network', 'iptables.cfg')
-                            add(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::EtcNetworkIptables, @ures.etc_network_iptables.commitv6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6), 'etc', 'network', 'ip6tables.cfg')
-                            add(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::EtcNetworkInterfaces, @ures.etc_network_interfaces.commit, Construqt::Resources::Rights.root_0644, 'etc', 'network', 'interfaces')
+                            add(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::EtcNetworkIptables,
+                              @ures.etc_network_iptables.commitv4,
+                              Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4),
+                              'etc', 'network', 'iptables.cfg')
+                            add(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::EtcNetworkIptables,
+                              @ures.etc_network_iptables.commitv6,
+                              Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6),
+                              'etc', 'network', 'ip6tables.cfg')
+                            add(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::EtcNetworkInterfaces,
+                              @ures.etc_network_interfaces.commit,
+                              Construqt::Resources::Rights.root_0644,
+                              'etc', 'network', 'interfaces')
 
+                            #@ures.etc_systemd_netdev.commit(self)
+                            #@ures.etc_systemd_network.commit(self)
+
+
+                            Construqt::Flavour::Nixian::Dialect::Ubuntu::Docker.write_deployers(host)
 
                             ccc = CloudInit.new(host)
-                            host.interfaces.values.each do |iface|
-                              next unless iface.clazz == 'bridge'
-                              c_docker = Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::SystemdService.new(self, "construqt-#{iface.name}-docker.service")
-                              c_docker.description("Construqt Docker Network up script")
-                              c_docker.after("docker.service")
-                              c_docker.type("oneshot")
-                              c_docker.exec_start("/etc/network/#{iface.name}-docker-up.sh")
-                              c_docker.wanted_by("basic.target")
-                              ccc.add_units(c_docker)
-                              docker_up = Construqt::Util.render(binding, "docker_up.erb")
-                              # binding.pry
-                              add(self.class, docker_up, Construqt::Resources::Rights.root_0755, 'etc', 'network', "#{iface.name}-docker-up.sh")
-                              # writer = host.result.etc_network_interfaces.get(iface, iface.name)
-                              # writer.lines.up("ip link set mtu #{mtu || iface.delegate.mtu} dev #{ifname} up")
-                              # writer.lines.down("ip link set dev #{ifname} down")
-                              # docker network rm br169
-                              # docker network create --driver=bridge --gateway=169.254.200.1 --subnet=169.254.200.0/24 --gateway=fd00::1 --subnet=fd00::/64 br169
-                              #
-                              #                             docker network create --driver=bridge --gateway=169.254.200.1 --subnet=169.254.200.0/24 br169
-                              #                             docker run  --net=br169 --ip=169.254.200.200 busybox  ifconfi
-# #                            vips-eu-0 ~ # docker ps -q | xargs docker inspect --format '{{.State.Pid}}'
-# 3722
-# #vips-eu-0 ~ # ip link set netns 3722 dev lion-int
+                            @ures.etc_systemd_netdev.commit(@ures) # just for debugging
+                            @ures.etc_systemd_netdev.netdevs(@ures).each do |netdev|
+                              ccc.add_units(netdev)
+                            end
+                            @ures.etc_systemd_network.commit(@ures) # just for debugging
+                            @ures.etc_systemd_network.networks(@ures).each do |network|
+                              ccc.add_units(network)
+                            end
+
 #
-# vips-eu-0 ~ # nsenter -t 3722 -n ip a a 169.254.210.200/24 dev lion-int
-# vips-eu-0 ~ # nsenter -t 3722 -n  ip link set lion-int up
-# vips-eu-0 ~ # nsenter -t 3722 -n  ip r a 0.0.0.0/0 via 169.254.210.1
-# --opt=com.docker.network.bridge.enable_ip_masquerade=false \
-# --opt=com.docker.network.bridge.name=br169 \
-
-                            end
-
-                            c_up = Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::SystemdService.new(self, "construqt-network-up.service")
-                            c_up.description("Construqt Network up script")
-                            c_up.before("network.target")
-                            c_up.type("oneshot")
-                            c_up.exec_start("/etc/network/network_up.sh")
-                            c_up.wanted_by("basic.target")
-                            ccc.add_units(c_up)
-                            c_down = Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::SystemdService.new(self, "construqt-network-down.service")
-                            c_down.description("Construqt Network up script")
-                            c_down.before("shutdown.target")
-                            c_down.type("oneshot")
-                            c_down.exec_start("/etc/network/network_down.sh")
-                            c_down.wanted_by("shutdown.target")
-                            ccc.add_units(c_down)
-                            @ures.results.each do |fname, block|
-                                if !block.clazz.respond_to?(:belongs_to_mother?) ||
-                                   block.clazz.belongs_to_mother?
-                                    write_file(ccc, host, fname, block)
-                               end
-                            end
+#                             host.interfaces.values.each do |iface|
+#                               next unless iface.clazz == 'bridge'
+#                               c_docker = Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::SystemdService.new(self, "construqt-#{iface.name}-docker.service")
+#                               c_docker.description("Construqt Docker Network up script")
+#                               c_docker.after("docker.service")
+#                               c_docker.type("oneshot")
+#                               c_docker.exec_start("/etc/network/#{iface.name}-docker-up.sh")
+#                               c_docker.wanted_by("basic.target")
+#                               ccc.add_units(c_docker)
+#                               docker_up = Construqt::Util.render(binding, "docker_up.erb")
+#                               # binding.pry
+#                               add(self.class, docker_up, Construqt::Resources::Rights.root_0755, 'etc', 'network', "#{iface.name}-docker-up.sh")
+#                               # writer = host.result.etc_network_interfaces.get(iface, iface.name)
+#                               # writer.lines.up("ip link set mtu #{mtu || iface.delegate.mtu} dev #{ifname} up")
+#                               # writer.lines.down("ip link set dev #{ifname} down")
+#                               # docker network rm br169
+#                               # docker network create --driver=bridge --gateway=169.254.200.1 --subnet=169.254.200.0/24 --gateway=fd00::1 --subnet=fd00::/64 br169
+#                               #
+#                               #                             docker network create --driver=bridge --gateway=169.254.200.1 --subnet=169.254.200.0/24 br169
+#                               #                             docker run  --net=br169 --ip=169.254.200.200 busybox  ifconfi
+# # #                            vips-eu-0 ~ # docker ps -q | xargs docker inspect --format '{{.State.Pid}}'
+# # 3722
+# # #vips-eu-0 ~ # ip link set netns 3722 dev lion-int
+# #
+# # vips-eu-0 ~ # nsenter -t 3722 -n ip a a 169.254.210.200/24 dev lion-int
+# # vips-eu-0 ~ # nsenter -t 3722 -n  ip link set lion-int up
+# # vips-eu-0 ~ # nsenter -t 3722 -n  ip r a 0.0.0.0/0 via 169.254.210.1
+# # --opt=com.docker.network.bridge.enable_ip_masquerade=false \
+# # --opt=com.docker.network.bridge.name=br169 \
+#
+#                             end
+#
+#                             c_up = Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::SystemdService.new(self, "construqt-network-up.service")
+#                             c_up.description("Construqt Network up script")
+#                             c_up.before("network.target")
+#                             c_up.type("oneshot")
+#                             c_up.exec_start("/etc/network/network_up.sh")
+#                             c_up.wanted_by("basic.target")
+#                             ccc.add_units(c_up)
+#                             c_down = Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::SystemdService.new(self, "construqt-network-down.service")
+#                             c_down.description("Construqt Network up script")
+#                             c_down.before("shutdown.target")
+#                             c_down.type("oneshot")
+#                             c_down.exec_start("/etc/network/network_down.sh")
+#                             c_down.wanted_by("shutdown.target")
+#                             ccc.add_units(c_down)
+#                             @ures.results.each do |fname, block|
+#                                 if !block.clazz.respond_to?(:belongs_to_mother?) ||
+#                                    block.clazz.belongs_to_mother?
+#                                     write_file(ccc, host, fname, block)
+#                                end
+#                             end
 
                             # @ures.each do |fname, block|
                             #     if block.clazz.respond_to?(:belongs_to_mother?) && !block.clazz.belongs_to_mother?

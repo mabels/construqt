@@ -34,12 +34,24 @@ module Construqt
                 inode.parents.select{|link| link.link.ref.clazz == "bridge"}.map{ |i| i.link.ref }
               end
 
-              def commit
-                #binding.pry if @interface.host.name == "fanout-de" and @interface.name == "eth0"
+              def as_string
                 systemd_network = self
-                @interface.host.result.add(self,
-                  Construqt::Util.render(binding, "systemd_network.erb"),
-                  Construqt::Resources::Rights.root_0644, "etc", "systemd", "network", "#{self.name}.network")
+                Construqt::Util.render(binding, "systemd_network.erb")
+              end
+              def as_systemd_file
+                as_string
+              end
+              def get_command
+                nil
+              end
+              def get_name
+                name
+              end
+
+              def commit
+                @interface.host.result.add(self, as_string,
+                  Construqt::Resources::Rights.root_0644,
+                  "etc", "systemd", "network", "#{self.name}.network")
               end
 
             end
@@ -53,9 +65,15 @@ module Construqt
                 @interfaces[iface.name] ||= SystemdNetwork.new(iface)
               end
 
+              def networks(result)
+                result.host.interfaces.values.map do |iface|
+                  get(iface)
+                end
+              end
+
               def commit(result)
-                result.host.interfaces.values.each do |iface|
-                  get(iface).commit
+                networks(result).each do |network|
+                  network.commit
                 end
               end
             end
