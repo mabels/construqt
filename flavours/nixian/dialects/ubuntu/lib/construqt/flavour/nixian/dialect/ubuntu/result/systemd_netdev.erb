@@ -1,0 +1,26 @@
+
+[NetDev]
+Name=<%= systemd_netdev.name %>
+Kind=<%= systemd_netdev.kind %>
+<%- if iface.delegate.mtu -%>
+MTUBytes=<%= iface.delegate.mtu %>
+<%- end -%>
+<%- if iface.delegate.mac_address -%>
+MACAddress=<%= iface.delegate.mac_address %>
+<%- end -%>
+
+<%- if systemd_netdev.vlan_id -%>
+[VLAN]
+Id=<%= systemd_netdev.vlan_id %>
+<%- end -%>
+<%- if iface.delegate.respond_to?(:tunnel)
+  local = iface.delegate.tunnel.my.first_by_family(iface.delegate.tunnel.transport_family).to_s
+  remote = iface.delegate.tunnel.other.first_by_family(iface.delegate.tunnel.transport_family).to_s
+  -%>
+[Tunnel]
+Local=<%= local %>
+Remote=<%= remote %>
+<%- if systemd_netdev.tunnel_mode -%>
+Mode=<%= systemd_netdev.tunnel_mode %>
+<%- end -%>
+<%- end -%>

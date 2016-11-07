@@ -1,6 +1,4 @@
 #!/bin/bash
 exec > >(logger -t "<%= @entry.header.get_interface_name %>-<%= direction %>") 2>&1
-<% blocks.each do |line| -%>
-<%= line %>
-<% end -%>
+/bin/sh <%= sh_script %>
 exit 0

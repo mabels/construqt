@@ -16,10 +16,35 @@ module Construqt
       end
 
       class Link
+        include Comparable
         attr_reader :param, :link
         def initialize(link, param)
           @link = link;
           @param = param;
+        end
+      end
+
+      class Links
+        def initialize
+          @links = {}
+        end
+        def add(link)
+          @links[link.link.ident] ||= link
+        end
+        def empty?
+          @links.empty?
+        end
+        def each(&block)
+          @links.values.each(&block)
+        end
+        def find(&block)
+          @links.values.find(&block)
+        end
+        def select(&block)
+          @links.values.select(&block)
+        end
+        def map(&block)
+          @links.values.map(&block)
         end
       end
 
@@ -30,8 +55,8 @@ module Construqt
           @ref = ref
           @graph = graph
           @param = graph.create_link_param(ref, ref)
-          @children = Set.new
-          @parents = Set.new
+          @children = Links.new
+          @parents = Links.new
         end
 
         def inspect

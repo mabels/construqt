@@ -13,6 +13,14 @@ module Construqt
       def get_cfgs
         @cfgs
       end
+      def root_passwd(pwd)
+        @root_passwd = pwd
+        self
+      end
+      def get_root_password
+        @root_passwd
+      end
+
       def box(name)
         @box = name
         self

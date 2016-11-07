@@ -22,7 +22,9 @@ module FanoutDe
   def self.run(region)
     fanout = self.cfg
     fanout_de = region.hosts.add("fanout-de", "flavour" => "nixian", "dialect" => "ubuntu",
-                                  "vagrant_deploy" => Construqt::Hosts::Vagrant.new.box("ubuntu/xenial64")) do |host|
+                                  "vagrant_deploy" => Construqt::Hosts::Vagrant.new
+                                      .box("ubuntu/xenial64").root_passwd("/.")
+                                      .add_cfg('config.vm.network "public_network", bridge: "bridge0"')) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

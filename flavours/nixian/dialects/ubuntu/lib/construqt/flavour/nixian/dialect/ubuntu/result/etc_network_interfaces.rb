@@ -11,6 +11,78 @@ module Construqt
                 @entries = {}
               end
 
+              class Line
+                attr_reader :block, :order, :extra
+                def initialize(block, order, extra)
+                  @block = block
+                  @order = order
+                  @extra = extra
+                end
+                def lines
+                  @block.each_line.map(&:strip).select { |i| !i.empty? }
+                end
+              end
+
+              class Lines
+                def initialize(entry)
+                  @entry = entry
+                  @lines = []
+                  @ups = []
+                  @downs = []
+                end
+
+                def up(block, order = 0, extra = false)
+                  if order == :extra
+                    order = 0
+                    extra = true
+                  end
+                  binding.pry unless order.kind_of?(Fixnum)
+                  @ups.push Line.new(block, order, extra)
+                end
+
+                def down(block, order = 0, extra = false)
+                  if order == :extra
+                    order = 0
+                    extra = true
+                  end
+                  binding.pry unless order.kind_of?(Fixnum)
+                  @downs.unshift Line.new(block, order, extra)
+                end
+
+                def add(block, extra)
+                  @lines += Line.new(block, 0, extra).lines
+                end
+
+                def write_s(component, direction, blocks)
+                  @entry.result.add(self.class, Construqt::Util.render(binding, "interfaces_sh_envelop.erb"),
+                    Construqt::Resources::Rights.root_0755(component),
+                    'etc', 'network', "#{@entry.header.get_interface_name}-#{direction}.sh")
+                  sh_script = File.join('/etc', 'network', "#{@entry.header.get_interface_name}-#{direction}.sh")
+                  @entry.result.add(self.class, Construqt::Util.render(binding, "interfaces_upscript_envelop.erb"),
+                    Construqt::Resources::Rights.root_0755(component),
+                    'etc', 'network', "#{@entry.header.get_interface_name}-#{direction}.iface")
+                end
+
+                def self.ordered_lines(lines)
+                  # binding.pry
+                  result = lines.inject({}) { |r, l| r[l.order] ||= []; r[l.order] << l.lines; r }
+                  result.keys.sort.map { |key| result[key] }.flatten
+                end
+
+                def commit
+                  write_s(@entry.iface.class.name, 'up', Lines.ordered_lines(@ups))
+                  write_s(@entry.iface.class.name, 'down', Lines.ordered_lines(@downs))
+                  sections = @lines.inject({}) do |r, line|
+                    key = line.split(/\s+/).first; r[key] ||= []
+                    r[key] << line
+                    r
+                  end
+                  ret = sections.keys.sort.map do |key|
+                    sections[key].map { |j| "  #{j}" } if sections[key]
+                  end.compact.flatten.join("\n") + "\n\n"
+                end
+              end
+
               class Entry
                 class Header
                   MODE_MANUAL = :manual
@@ -49,11 +121,11 @@ module Construqt
                   end
 
                   def post_up(block, order = 0)
-                    @post_ups.push [order, block.each_line.map(&:strip).select { |i| !i.empty? }]
+                    @post_ups.push Line.new(block, order, false)
                   end
 
                   def pre_down(block, order = 0)
-                    @pre_downs.unshift [order, block.each_line.map(&:strip).select { |i| !i.empty? }]
+                    @pre_downs.unshift Line.new(block, order, false)
                   end
 
                   def initialize(entry)
@@ -80,46 +152,6 @@ module Construqt
                   end
                 end
 
-                class Lines
-                  def initialize(entry)
-                    @entry = entry
-                    @lines = []
-                    @ups = []
-                    @downs = []
-                  end
-
-                  def up(block, order = 0)
-                    @ups.push [order, block.each_line.map(&:strip).select { |i| !i.empty? }]
-                  end
-
-                  def down(block, order = 0)
-                    @downs.unshift [order, block.each_line.map(&:strip).select { |i| !i.empty? }]
-                  end
-
-
-                  def add(block)
-                    @lines += block.each_line.map(&:strip).select { |i| !i.empty? }
-                  end
-
-                  def write_s(component, direction, blocks)
-                    @entry.result.add(self.class, Construqt::Util.render(binding, "interfaces_upscript_envelop.erb"),
-                      Construqt::Resources::Rights.root_0755(component), 'etc', 'network', "#{@entry.header.get_interface_name}-#{direction}.iface")
-                  end
-
-                  def self.ordered_lines(lines)
-                    result = lines.inject({}) { |r, l| r[l.first] ||= []; r[l.first] << l.last; r }
-                    result.keys.sort.map { |key| result[key] }.flatten
-                  end
-
-                  def commit
-                    write_s(@entry.iface.class.name, 'up', Lines.ordered_lines(@ups))
-                    write_s(@entry.iface.class.name, 'down', Lines.ordered_lines(@downs))
-                    sections = @lines.inject({}) { |r, line| key = line.split(/\s+/).first; r[key] ||= []; r[key] << line; r }
-                    ret = sections.keys.sort.map do |key|
-                      sections[key].map { |j| "  #{j}" } if sections[key]
-                    end.compact.flatten.join("\n") + "\n\n"
-                  end
-                end
 
                 attr_reader :iface
 

@@ -1,0 +1,31 @@
+[Match]
+Name=<%= systemd_network.name %>
+
+[Network]
+<%- systemd_network.interface.address &&
+    systemd_network.interface.address.ips.each do |ip| -%>
+Address=<%= ip.to_string %>
+<%- end -%>
+<%- systemd_network.tunnels.each do |tunnel| -%>
+Tunnel=<%= tunnel.name %>
+<%- end -%>
+<%- systemd_network.vlans.each do |vlan| -%>
+VLAN=<%= vlan.name %>
+<%- end -%>
+<%- systemd_network.bridges.each do |bridge| -%>
+Bridge=<%= bridge.name %>
+<%- end -%>
+
+<%- systemd_network.interface.address &&
+    systemd_network.interface.address.routes.each do |route| -%>
+[Route]
+Destination=<%= route.dst.to_string %>
+Source=<%= route.via.to_s %>
+<%- if route.metric -%>
+Metric=<%= route.metric %>
+<%- end -%>
+<%- if route.via.routing_table -%>
+Table=<%= route.via.routing_table %>
+<%- end -%>
+
+<%- end -%>

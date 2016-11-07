@@ -91,8 +91,8 @@ module Construqt
                 end
 
                 writer = host.result.etc_network_interfaces.get(local_if, iname)
-                writer.lines.up("/usr/sbin/#{cmd} enable #{cname}", 2000)
-                writer.lines.down("/usr/sbin/#{cmd} disable #{cname}", -2000)
+                writer.lines.up("/usr/sbin/#{cmd} enable #{cname}", 2000, :extra)
+                writer.lines.down("/usr/sbin/#{cmd} disable #{cname}", -2000, :extra)
               end
             end
 

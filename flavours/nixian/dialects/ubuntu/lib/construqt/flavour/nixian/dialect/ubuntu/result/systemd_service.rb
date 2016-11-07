@@ -58,7 +58,7 @@ module Construqt
 
               def commit
                 @result.add(SystemdService, as_systemd_file,
-                  Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4),
+                  Construqt::Resources::Rights.root_0644,
                     'etc', 'systemd', 'system', @name)
 
               end

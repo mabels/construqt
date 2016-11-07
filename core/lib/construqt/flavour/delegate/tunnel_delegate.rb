@@ -10,7 +10,11 @@ module Construqt
         COMPONENT = Construqt::Resources::Component::UNREF
         def initialize(vlan)
           self.delegate = vlan
-          self.init_node()
+          self.init_node().parents(self.delegate.interfaces)
+        end
+        
+        def interfaces
+          self.delegate.interfaces
         end
 
         def _ident

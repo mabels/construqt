@@ -8,6 +8,8 @@ require_relative 'result/etc_network_vrrp'
 require_relative 'result/etc_network_interfaces'
 require_relative 'result/etc_network_iptables'
 require_relative 'result/etc_conntrackd_conntrackd'
+require_relative 'result/etc_systemd_netdev'
+require_relative 'result/etc_systemd_network'
 require_relative 'result/systemd_service'
 require_relative 'ipsec/ipsec_secret'
 require_relative 'ipsec/ipsec_cert_store'
@@ -20,8 +22,11 @@ module Construqt
           class Result
             attr_reader :etc_network_interfaces, :etc_network_iptables, :etc_conntrackd_conntrackd
             attr_reader :ipsec_secret, :ipsec_cert_store, :host, :package_builder, :results
+            attr_reader :etc_systemd_netdev, :etc_systemd_network
             def initialize(host)
               @host = host
+              @etc_systemd_netdev = EtcSystemdNetdev.new
+              @etc_systemd_network = EtcSystemdNetwork.new
               @etc_network_interfaces = EtcNetworkInterfaces.new(self)
               @etc_network_iptables = EtcNetworkIptables.new
               @etc_conntrackd_conntrackd = EtcConntrackdConntrackd.new(self)
@@ -117,7 +122,7 @@ module Construqt
                 # @results[path] << [clazz.xprefix(@host)].compact
               end
 
-              throw "clazz missmatch for path:#{path} [#{@results[path].clazz.class.name}] [#{clazz.class.name}]" unless clazz == @results[path].clazz
+              throw "clazz missmatch for path:#{path} [#{@results[path].clazz.class.name}] [#{clazz.class.name}]" unless clazz.class.name == @results[path].clazz.class.name
               @results[path] << block + "\n"
               @results[path]
             end
@@ -143,7 +148,8 @@ module Construqt
             end
 
             def setup_ntp(host)
-              ["cp /usr/share/zoneinfo/#{host.time_zone || host.region.network.ntp.get_timezone} /etc/localtime"]
+              zone = host.time_zone || host.region.network.ntp.get_timezone
+              ["[ -f /usr/share/zoneinfo/#{zone} ] && cp /usr/share/zoneinfo/#{zone} /etc/localtime"]
             end
 
             def sh_is_opt_set
@@ -172,7 +178,7 @@ module Construqt
                   "[ ! -d #{i} ] && mkdir #{i} && chown #{block.right.owner} #{i} && chmod #{directory_mode(block.right.right)} #{i}"
                 end,
                 "import_fname #{fname}",
-                'base64 --decode <<BASE64 | gunzip > $IMPORT_FNAME', Base64.encode64(IO.read(gzip_fname)).chomp, 'BASE64',
+                'base64 -d <<BASE64 | gunzip > $IMPORT_FNAME', Base64.encode64(IO.read(gzip_fname)).chomp, 'BASE64',
                 "git_add #{['/' + fname, block.right.owner, block.right.right, block.skip_git?].map { |i| '"' + Shellwords.escape(i) + '"' }.join(' ')}"
               ]
             end
@@ -282,7 +288,7 @@ module Construqt
                     f.puts Construqt::Util.render(binding, 'packager.header.sh.erb')
                     packages.each do |pkg|
                       f.puts "echo -n ."
-                      f.puts "base64 --decode <<BASE64 > #{File.join(var_cache_path, pkg['name'])}"
+                      f.puts "base64 -d <<BASE64 > #{File.join(var_cache_path, pkg['name'])}"
                       f.puts Base64.encode64(IO.read(pkg['fname']))
                       f.puts "BASE64"
                     end
@@ -307,6 +313,8 @@ module Construqt
               add(EtcNetworkIptables, etc_network_iptables.commitv4, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4), 'etc', 'network', 'iptables.cfg')
               add(EtcNetworkIptables, etc_network_iptables.commitv6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6), 'etc', 'network', 'ip6tables.cfg')
               add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construqt::Resources::Rights.root_0644, 'etc', 'network', 'interfaces')
+              @etc_systemd_netdev.commit(self)
+              @etc_systemd_network.commit(self)
               @etc_network_vrrp.commit(self)
               ipsec_secret.commit
               ipsec_cert_store.commit
@@ -332,7 +340,7 @@ module Construqt
 
               out << 'for i in $(seq 8)'
               out << 'do'
-              out << "  systemctl mask container-getty@\$i.service > /dev/null"
+              out << "  [ -e /bin/systemctl ] && systemctl mask container-getty@\$i.service > /dev/null"
               out << 'done'
 
               out << 'if [ $(is_opt_set skip_mother) != found ]'

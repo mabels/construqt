@@ -1,6 +1,9 @@
 module Scott
   def self.run(region)
-    scott = region.hosts.add("scott", "flavour" => "nixian", "dialect" => "ubuntu") do |host|
+    scott = region.hosts.add("scott", "flavour" => "nixian", "dialect" => "ubuntu",
+                             "vagrant_deploy" => Construqt::Hosts::Vagrant.new
+                                          .box("ubuntu/xenial64").root_passwd("/.")
+                                          .add_cfg('config.vm.network "public_network", bridge: "bridge0"')) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -13,7 +16,7 @@ module Scott
           .add_route("0.0.0.0/0", "192.168.176.4"))
       end
 
-      [24,66,67,68].each do |vlan|
+      [24,66,67,68,202].each do |vlan|
         region.interfaces.add_bridge(host, "br#{vlan}", "mtu" => 1500,
                                      "interfaces" => [
                                        region.interfaces.add_vlan(host, "eth0.#{vlan}",

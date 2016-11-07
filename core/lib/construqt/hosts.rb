@@ -88,7 +88,8 @@ module Construqt
       end
 
       @hosts[name] = host
-      host.region.services.services.values.each do |srv|
+      host.interfaces.values.map{ |i| i.services }.flatten.sort{|a,b| a.name <=> a.name}.uniq.each do |srv|
+      #host.region.services.services.values.each do |srv|
         if srv.respond_to?(:completed_host)
           srv.completed_host(host)
         end

@@ -42,8 +42,8 @@ module Construqt
                 return if inbounds.empty?
                 upstreams = Construqt::Tags.find(@service.upstream_tag).select{ |cqip| cqip.ipv6? }
                 return if upstreams.empty?
-                writer.lines.up(up(ifname, inbounds, upstreams))
-                writer.lines.down(down(ifname, inbounds, upstreams))
+                writer.lines.up(up(ifname, inbounds, upstreams), :extra)
+                writer.lines.down(down(ifname, inbounds, upstreams), :extra)
                 host.result.add_component(Construqt::Resources::Component::DHCPRELAY)
               end
             end

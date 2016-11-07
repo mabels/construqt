@@ -18,6 +18,14 @@ module Construqt
           @interface_graph = Construqt::Graph.new
         end
 
+        def fqdn
+          region.network.fqdn(self.name)
+        end
+
+        def domain
+          region.network.domain
+        end
+
         # def interface_graph
         #   id = interfaces.values.map{|i| i.ident }.sort.join(":")
         #   unless @graphs[id]
@@ -134,7 +142,7 @@ module Construqt
           #  footer_clazzes[iface.class.name] ||= iface if iface.delegate.respond_to? :footer
           #end
 
-          # self.interfaces do 
+          # self.interfaces do
 
           self.flavour.pre_clazzes do |key, clazz|
             self.region.flavour_factory.call_aspects("#{key}.header", self, nil)

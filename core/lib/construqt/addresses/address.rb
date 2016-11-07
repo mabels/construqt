@@ -85,12 +85,21 @@ module Construqt
         end
       end
 
+
       def v6s
         self.ips.select{|ip| ip.ipv6? }
       end
 
       def v4s
         self.ips.select{|ip| ip.ipv4? }
+      end
+
+      def first_by_family(type)
+        if type == Construqt::Addresses::IPV4
+          first_ipv4
+        else
+          first_ipv6
+        end
       end
 
       def first_ipv4

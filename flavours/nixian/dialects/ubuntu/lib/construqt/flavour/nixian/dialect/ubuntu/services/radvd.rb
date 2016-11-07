@@ -31,8 +31,8 @@ module Construqt
               def interfaces(host, ifname, iface, writer, family = nil)
                 #      binding.pry
                 return unless iface.address && iface.address.first_ipv6
-                writer.lines.up(up(ifname))
-                writer.lines.down(down(ifname))
+                writer.lines.up(up(ifname), :extra)
+                writer.lines.down(down(ifname), :extra)
                 host.result.add(self, <<RADV, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::RADVD), "etc", "network", "radvd.#{ifname}.conf")
 interface #{ifname}
 {

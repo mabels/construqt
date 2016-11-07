@@ -11,7 +11,7 @@ module Construqt
             attr_reader :address,:template,:plug_in,:network,:mtu,:clazz,:dh
             attr_reader :listen,:push_routes,:cacert,:name,:hostcert,:hostkey,:host
             attr_reader :description, :firewalls, :protocols, :proto, :flavour
-            attr_reader :services
+            attr_reader :services, :mac_address
             def initialize(cfg)
               @name = cfg['name']
               @host = cfg['host']
@@ -62,10 +62,10 @@ module Construqt
               end
 
               writer = host.result.etc_network_interfaces.get(iface)
-              writer.lines.up("mkdir -p /dev/net")
-              writer.lines.up("mknod /dev/net/tun c 10 200")
-              writer.lines.up("/usr/sbin/openvpn --config /etc/openvpn/#{iface.name}.conf")
-              writer.lines.down("kill $(cat /run/openvpn.#{iface.name}.pid)")
+              writer.lines.up("mkdir -p /dev/net", :extra)
+              writer.lines.up("mknod /dev/net/tun c 10 200", :extra)
+              writer.lines.up("/usr/sbin/openvpn --config /etc/openvpn/#{iface.name}.conf", :extra)
+              writer.lines.down("kill $(cat /run/openvpn.#{iface.name}.pid)", :extra)
 
               host.result.add(self, iface.cacert, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-cacert.pem")
               host.result.add(self, iface.hostcert, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-hostcert.pem")

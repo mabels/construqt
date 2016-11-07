@@ -69,23 +69,22 @@ module Construqt
             end
 
             def create_systemd_startup(host)
+              return # we need not this!
               #binding.pry
               #Graph.dump(host.interface_graph)
               host.interface_graph.flat.each do |iface_string|
                 systemds = []
                 iface_string.each_with_index do |inode, idx|
                   systemd = Result::SystemdService.new(host.result, "#{inode.ident}.service")
-                        .description("up and down of #{inode.ident}")
+                        .description("#{inode.ident}")
                         .type("oneshot")
                         .exec_start("/bin/bash /etc/network/#{inode.ref.name}-up.iface")
                         .exec_stop("/bin/bash /etc/network/#{inode.ref.name}-down.iface")
                   if idx+1 == iface_string.length
                     #last
-                    systemd.before("network.target")
-                  elsif idx == 0
-                    #first
+                    systemd.wanted_by("network.target")
                   else
-                    systemd.after(systemds.last.get_name)
+                    systemd.wanted_by("#{iface_string[idx+1].ref.name}.service")
                   end
                   host.result.add(Result::SystemdService, systemd.as_systemd_file,
                     Construqt::Resources::Rights.root_0644,
@@ -94,8 +93,6 @@ module Construqt
                 end
               end
               #host.result.add(Result::SystemdService, active.join("\n"),
-
-
               #/etc/systemd/system/
             end
 
@@ -106,8 +103,8 @@ module Construqt
                   chain = iface_string.map{|inode| inode.ref.name}.join(",")
                   ups.push("# up chain [#{chain}]")
                   iface_string.each do |inode|
-                      ups.push("#{File.join("/etc", "network", "#{inode.ref.name}-up.iface")}")
-                      downs.unshift("#{File.join("/etc", "network", "#{inode.ref.name}-down.iface")}")
+                      ups.push("#{File.join("/etc", "network", "#{inode.ref.name}-up.sh")}")
+                      downs.unshift("#{File.join("/etc", "network", "#{inode.ref.name}-down.sh")}")
                   end
                   ups.push("/sbin/iptables-restore /etc/network/iptables.cfg")
                   ups.push("/sbin/ip6tables-restore /etc/network/ip6tables.cfg")

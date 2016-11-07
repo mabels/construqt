@@ -10,6 +10,17 @@ module Construqt
               super(cfg)
             end
 
+            def kind
+              if self.tunnel.mode == "ipip6"
+                kind = "ip6tnl"
+              else
+                kind = self.tunnel.mode
+              end
+            end
+            def kind
+              self.tunnel.mode
+            end
+
             def build_config(host, iface, node)
               # binding.pry
 
@@ -23,17 +34,18 @@ module Construqt
               # binding.pry if host.name == "scable-1"
 
               cfg = iface.delegate.tunnel
-              local_iface = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(cfg.remote.ipaddr) }
-              throw "need a interface with address #{host.name}:#{cfg.remote.ipaddr}" unless local_iface
 
               # iname = Util.clean_if(cfg.gt, gre_delegate.name)
               # local_ifaces[local_iface.name] ||= OpenStruct.new(:iface => local_iface, :inames => [])
               # local_ifaces[local_iface.name].inames << iname
-              # binding.pry if iface.host.name == "rt-ab-de"
+              # binding.pry if iface.host.name == "fanout-de"
 
               writer = host.result.etc_network_interfaces.get(iface)
               #writer.skip_interfaces.header.interface_name(iname)
-              writer.lines.up("ip -#{cfg.prefix} tunnel add #{iface.name} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}")
+              local = cfg.my.first_by_family(cfg.transport_family).to_s
+              remote = cfg.other.first_by_family(cfg.transport_family).to_s
+              throw "there must be a local or remote address" if local.nil? or remote.nil?
+              writer.lines.up("ip -#{cfg.prefix} tunnel add #{iface.name} mode #{cfg.mode} local #{local} remote #{remote}")
               #Device.build_config(host, gre, node, iname, cfg.family, cfg.mtu)
               writer.lines.down("ip -#{cfg.prefix} tunnel del #{iface.name}")
 

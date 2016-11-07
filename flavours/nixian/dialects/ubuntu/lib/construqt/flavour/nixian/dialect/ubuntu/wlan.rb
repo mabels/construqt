@@ -17,7 +17,7 @@ module Construqt
 
               mac_address = wlan_delegate.mac_address || Construqt::Util.generate_mac_address_from_name("#{host.name} #{wlan_delegate.name}")
               host.result.etc_network_interfaces.get(wlan_delegate)
-                .lines.add(Construqt::Util.render(binding, "wlan_interfaces.erb"))
+                .lines.add(Construqt::Util.render(binding, "wlan_interfaces.erb"), 0)
               Device.build_config(host, wlan, node)
             end
           end

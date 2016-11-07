@@ -99,8 +99,8 @@ module Construqt
 
                 list.each do |lip|
                   ipv = lip.ipv6? ? "-6 ": ""
-                  lines.up("ip #{ipv}neigh add proxy #{lip.to_s} dev #{ifname}")
-                  lines.down("ip #{ipv}neigh del proxy #{lip.to_s} dev #{ifname}")
+                  lines.up("ip #{ipv}neigh add proxy #{lip.to_s} dev #{ifname}", :extra)
+                  lines.down("ip #{ipv}neigh del proxy #{lip.to_s} dev #{ifname}", :extra)
                 end
               end
             end
@@ -127,8 +127,8 @@ module Construqt
                 "-df /var/lib/dhcp/dhclient6.#{ifname}.leases",
                 "#{ifname}"
               ]
-              writer.lines.up(dhcp_client_opts.join(" "))
-              writer.lines.down("kill `cat /run/dhclient.#{ifname}.pid`")
+              writer.lines.up(dhcp_client_opts.join(" "), :extra)
+              writer.lines.down("kill `cat /run/dhclient.#{ifname}.pid`", :extra)
             end
 
             def self.add_dhcp_server(host, ifname, iface, writer, family)
@@ -151,8 +151,8 @@ module Construqt
                 "--dhcp-leasefile=/var/lib/misc/dnsmasq.#{ifname}.leases",
                 "--dhcp-authoritative"
               ]
-              writer.lines.up(dnsmasq_opts.join(" "))
-              writer.lines.down("kill `cat /run/#{ifname}-dnsmasq.pid`")
+              writer.lines.up(dnsmasq_opts.join(" "), :extra)
+              writer.lines.down("kill `cat /run/#{ifname}-dnsmasq.pid`", :extra)
             end
 
             def self.build_config(host, iface, node, ifname = nil, family = nil, mtu = nil, skip_link = nil)
@@ -184,6 +184,7 @@ module Construqt
               add_dhcp_client(host, ifname, iface, writer, family)
               add_dhcp_server(host, ifname, iface, writer, family)
               add_services(host, ifname, iface.delegate, writer, family)
+
             end
           end
         end

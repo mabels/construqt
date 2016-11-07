@@ -18,13 +18,17 @@ git_add()
   chmod $right $ifname
   if [ ! -f $fname ]
   then
-    mv $ifname $fname
+    cat $ifname  > $fname
+    chmod $(stat -c "%a" $ifname) $fname
+    rm $ifname
     echo created $hostname:$fname to $owner:$right skip_git $skip_git
   else
     diff -rq $ifname $fname
     if [ $? != 0 ]
     then
-      mv $ifname $fname
+      cat $ifname  > $fname
+      chmod $(stat -c "%a" $ifname) $fname
+      rm $ifname
       echo updated $hostname:$fname to $owner:$right skip_git $skip_git
     else
       rm $ifname
