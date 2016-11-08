@@ -13,7 +13,7 @@ module Construqt
             end
 
             def inspect
-              "#<#{self}:#{"%x"%object_id} name=#{name}>"
+              "#<#{self.class.name}:#{"%x"%object_id} name=#{name}>"
             end
 
             def eq(oth)
@@ -149,7 +149,9 @@ module Construqt
 
               #host.result.add(self, skeys.join(), Construqt::Resources::Rights.root_0644, "etc", "shadow.merge")
               host.result.add(self, akeys.join("\n"), Construqt::Resources::Rights.root_0600, "root", ".ssh", "authorized_keys")
-              host.result.add(self, ykeys.join("\n"), Construqt::Resources::Rights.root_0644, "etc", "yubikey_mappings")
+              unless ykeys.empty?
+                host.result.add(self, ykeys.join("\n"), Construqt::Resources::Rights.root_0644, "etc", "yubikey_mappings")
+              end
 
               host.result.add(self, Construqt::Util.render(binding, "host_ssh.erb"),
                 Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::SSH), "etc", "ssh", "sshd_config")
@@ -161,7 +163,7 @@ module Construqt
               end
 
               #puts host.name
-              #binding.pry
+              # binding.pry if host.name == "etcbind-1"
               create_lxc_containers(host)
               create_docker_containers(host)
               create_vagrant_containers(host)

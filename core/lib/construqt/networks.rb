@@ -3,8 +3,9 @@ module Construqt
 
 
     class Network
-      attr_reader :address, :phone, :ntp, :routing_tables, :cert_store
+      attr_reader :address, :phone, :ntp, :routing_tables, :cert_store, :name
       def initialize(name)
+        throw "network needs a name" unless name
         @name = name
         @networks = []
         @domain = "construqt.org"
@@ -14,6 +15,16 @@ module Construqt
         @ntp = Construqt::Ntp.new
         @routing_tables = Construqt::RoutingTables.new(self)
         @cert_store = Construqt::CertStore.new(self)
+      end
+
+      def inspect
+        "@<#{self.class.name}:#{self.object_id} name=#{@name} domain=#{@domain} "+
+        " contact=#{@contact} networks=[#{@networks.map{|i| i.inspect }.join(",")}]"+
+        " addresses=#{@addresses.inspect} "+
+        " dns_resolver=#{@dns_resolver.inspect} "+
+        " ntp=#{@ntp.inspect} "+
+        " routing_tables=#{@routing_tables.inspect} "+
+        " cert_store=#{@cert_store.inspect}>"
       end
 
       def set_address(post_address)

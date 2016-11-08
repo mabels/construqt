@@ -14,13 +14,7 @@ module Construqt
                 lambda{ |h| h.docker_deploy }, Docker,
                     Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DOCKER),
                 lambda{ |h| ["/var", "lib", "docker", "construqt", h.name, "deployer.sh"] }).each do |docker|
-                  host.result.add(Docker, Construqt::Util.render(binding, "docker_dockerfile.erb"),
-                    Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::UNREF),
-                    "/var", "lib", "docker", "construqt", docker.name, "Dockerfile")
-                  host.result.add(Docker, Construqt::Util.render(binding, "docker_run.sh.erb"),
-                    Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::UNREF),
-                    "/var", "lib", "docker", "construqt", docker.name, "docker_run.sh")
-                end
+              end
             end
 
 
@@ -44,8 +38,18 @@ module Construqt
             def self.render(host, docker)
               # binding.pry
               docker.result.add(Docker, Construqt::Util.render(binding, "docker_starter.sh.erb"),
+                Construqt::Resources::Rights.root_0755,
+                "root", "docker-starter.sh")
+
+              # binding.pry if host.name == "etcbind-1"
+              host.result.add(Docker, Construqt::Util.render(binding, "docker_dockerfile.erb"),
+                Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::UNREF),
+                "var", "lib", "docker", "construqt", docker.name, "Dockerfile")
+              host.result.add(Docker, Construqt::Util.render(binding, "docker_run.sh.erb"),
                 Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::UNREF),
-                "/root", "docker-starter.sh")
+                "var", "lib", "docker", "construqt", docker.name, "docker_run.sh")
+
+
               # deployer.sh
               # start interfaces
               # write .dockerignore

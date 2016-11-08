@@ -7,6 +7,9 @@ module Construqt
         @name = name
         @content = content
       end
+      def inspect
+        "@<#{self.class.name}:#{self.object_id} name=#{@name}>"
+      end
     end
     class PrivateKey < Tuple
       def initialize(name, content)
@@ -30,6 +33,14 @@ module Construqt
       @cacerts = {}
       @certs = {}
       @packages = {}
+    end
+
+    def inspect
+      "@<#{self.class.name}:#{self.object_id} region=#{@region.name} "+
+      "private=[#{@private.keys.join(",")}] "+
+      "cacerts=[#{@cacerts.keys.join(",")}] "+
+      "certs=[#{@certs.keys.join(",")}] "+
+      "packages=[#{@packages.values.map{|i| i.inspect}.join(",")}]"
     end
 
     def add_private(name, cfg)
@@ -59,6 +70,10 @@ module Construqt
           throw "cacert is not the right type" unless cacert.instance_of?(CaCert)
         end
         @cacerts = cacerts
+      end
+      def inspect
+        "@<#{self.class.name}:#{self.object_id} name=#{name} key=#{key.inspect} "+
+        "cert=#{cert.inspect} cacerts=#{cacerts.inspect}>"
       end
     end
     def create_package(name, key, cert, cacerts)

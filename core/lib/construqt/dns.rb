@@ -6,6 +6,9 @@ module Construqt
       @search = nil
       @nameservers = nil
     end
+    def inspect
+      "@<#{self.class.name}:#{self.object_id} search=#{@search} nameservers=#{nameservers}>"
+    end
     def search=(a)
       @search = a
     end

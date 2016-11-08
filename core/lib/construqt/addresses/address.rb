@@ -41,7 +41,10 @@ module Construqt
       end
 
       def inspect
-        "@<#{self.class.name}:#{"%x"%object_id} name=#{name!.inspect} service_ip=#{@service_ip} ips=#{ips.inspect} host=#{host.inspect} interface=#{interface.inspect} routes=#{routes.inspect} tags=#{tags.inspect} loopback=#{@loopback}>"
+        "@<#{self.class.name}:#{"%x"%object_id} name=#{name!.inspect} "+
+        "service_ip=#{@service_ip} ips=#{ips.inspect} host=#{host.inspect} "+
+        "interface=#{interface.inspect} routes=#{routes.inspect} "+
+        "tags=#{tags.inspect} loopback=#{@loopback}>"
       end
 
       def add_service_ip(addr)
@@ -291,7 +294,8 @@ module Construqt
       end
 
       def to_s
-        "<Address:Address #{host.name}:#{interface.name}:#{@name}=>[#{self.ips.map{|i| i.to_string}.join(",")}]>"
+        "<Address:Address #{host && host.name}:#{interface && interface.name}:#{@name}=>"+
+        "[#{self.ips.map{|i| i.to_string}.join(",")}]>"
       end
     end
   end

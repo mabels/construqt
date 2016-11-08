@@ -99,13 +99,15 @@ module Construqt
       r[host.region.name] << host
       r
     end.values.each do |hosts|
-      hosts = hosts.sort { |a, b| a.ident <=> b.ident }
-      # binding.pry
-      #   (a.mother ? "" : a.name) <=> (b.mother ? "" : b.name)
-      # end
-      hosts.first.region.hosts.build_config(hosts)
-      hosts.first.region.interfaces.build_config(hosts)
-      hosts.first.region.hosts.commit(hosts)
+
+      ghosts = Graph.build_host_graph_from_hosts(hosts).flat
+      ohosts = []
+      ghosts.each do |fhosts|
+        ohosts += fhosts.reverse.map{|i| i.ref }
+      end
+      hosts.first.region.hosts.build_config(ohosts)
+      hosts.first.region.interfaces.build_config(ohosts)
+      hosts.first.region.hosts.commit(ohosts)
     end
   end
 

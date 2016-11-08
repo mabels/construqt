@@ -18,6 +18,11 @@ module Construqt
           @interface_graph = Construqt::Graph.new
         end
 
+        def inspect
+           "@<#{self.class.name}:#{self.object_id} name=#{name} mother=#{mother&&mother.inspect}>"
+        end
+
+
         def fqdn
           region.network.fqdn(self.name)
         end
@@ -35,9 +40,6 @@ module Construqt
         #   @graphs[id]
         # end
 
-        # def inspect
-        #   "@<#{self.class.name}:#{self.object_id} name=#{name} mother=#{mother.inspect}>"
-        # end
 
         def spanning_tree
           self.delegate.spanning_tree

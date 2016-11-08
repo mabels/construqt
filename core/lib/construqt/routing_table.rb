@@ -50,6 +50,10 @@ module Construqt
       @routing_tables = {}
     end
 
+    def inspect
+      "@<#{self.class.name}:#{self.object_id} network=#{@network.name} routing_tables=#{@routing_tables.keys.join(",")}>"
+    end
+
     def create(name)
       throw "Routing table with name exists #{name}" if @routing_tables[name]
       @routing_tables[name] = RoutingTable.new(self, name)

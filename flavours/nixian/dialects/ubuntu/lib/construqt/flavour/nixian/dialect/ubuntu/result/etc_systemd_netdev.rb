@@ -44,7 +44,7 @@ module Construqt
 
               def commit
                 @interface.host.result.add(self, self.as_string,
-                  Construqt::Resources::Rights.root_0644,
+                  Construqt::Resources::Rights.root_0644(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd),
                   "etc", "systemd", "network", "#{self.name}.netdev")
               end
             end

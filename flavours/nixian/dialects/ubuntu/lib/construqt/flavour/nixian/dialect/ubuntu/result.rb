@@ -46,6 +46,7 @@ module Construqt
                 .add('ifstat').add('mtr-tiny').add('openssl')
               cps.register('Construqt::Flavour::Delegate::DeviceDelegate')
               cps.register('Construqt::Flavour::Nixian::Dialect::Ubuntu::Wlan')
+              cps.register(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd)
               cps.register('Construqt::Flavour::Nixian::Dialect::Ubuntu::Bond').add('ifenslave')
               cps.register('Construqt::Flavour::Delegate::VlanDelegate').add('vlan')
               cps.register('Construqt::Flavour::Delegate::TunnelDelegate')
@@ -114,6 +115,7 @@ module Construqt
             end
 
             def add(clazz, block, right, *path)
+              # binding.pry if path.first == ":unref"
               path = File.join(*path)
               throw "not a right #{path}" unless right.respond_to?('right') && right.respond_to?('owner')
               unless @results[path]
