@@ -47,6 +47,20 @@ module Construqt
                 next unless docker.docker_deploy
                 Docker.render(host, docker)
               end
+              docker_ifaces = {}
+              host.interfaces.values.each do |iface|
+                iface.cable.connections.each do |ciface|
+                  if host.eq(ciface.iface.host.mother)
+                    docker_ifaces[iface.name] = iface
+                  end
+                end
+              end
+              docker_ifaces.values.each do |iface|
+                docker_up = Construqt::Util.render(binding, "docker_up.erb")
+                host.result.add(self.class, docker_up, Construqt::Resources::Rights.root_0755,
+                  'etc', 'network', "#{iface.name}-docker-up.sh")
+              end
+
             end
 
 

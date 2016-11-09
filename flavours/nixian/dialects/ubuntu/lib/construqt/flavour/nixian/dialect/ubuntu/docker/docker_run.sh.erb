@@ -5,6 +5,9 @@ then
   echo "Basedir: $basedir"
   cd $basedir
 fi
+<% docker.interfaces.values.select{|i| i.name != "lo" }.each do |iface| -%>
+/bin/sh /etc/network/<%= iface.cable.connections.first.iface.name %>-docker-up.sh
+<% end -%>
 docker_name=run_<%= docker.name %>
 docker build -t $docker_name .
 exec docker run \

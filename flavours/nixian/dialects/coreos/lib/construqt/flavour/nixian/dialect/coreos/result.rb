@@ -145,21 +145,6 @@ module Construqt
                 .command("restart")
               ccc.add_units(modules_service)
 
-              docker_ifaces = {}
-              host.interfaces.values.each do |iface|
-                iface.cable.connections.each do |ciface|
-                  if ciface.iface.host.mother.name == host.name
-                    docker_ifaces[iface.name] = iface
-                  end
-                end
-              end
-              docker_ifaces.values.each do |iface|
-                docker_up = Construqt::Util.render(binding, "docker_up.erb")
-                # binding.pry
-                add(self.class, docker_up, Construqt::Resources::Rights.root_0755,
-                  'etc', 'network', "#{iface.name}-docker-up.sh")
-              end
-
 
 
 
