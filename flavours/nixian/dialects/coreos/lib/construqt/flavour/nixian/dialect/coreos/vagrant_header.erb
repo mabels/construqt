@@ -1,0 +1,33 @@
+Vagrant.configure(2) do |config|
+  #config.ssh.insert_key = false
+  #config.ssh.forward_agent = true
+  <% if @child.vagrant_deploy.get_box_version -%>
+  config.vm.box_version = "<%= @child.vagrant_deploy.get_box_version %>"
+  <% end -%>
+  config.vm.box_url = "<%= @child.vagrant_deploy.get_box_url %>"
+  config.vm.box = "coreos-%s" % "<%= @child.delegate.update_channel || "beta" %>"
+
+  config.vm.provider :virtualbox do |v|
+    # On VirtualBox, we don't have guest additions or a functional vboxsf
+    # in CoreOS, so tell Vagrant that so it can be smarter.
+    v.check_guest_additions = false
+    v.functional_vboxsf     = false
+    v.name = "Vagrant-<%= @child.name %>"
+  end
+
+  if Vagrant.has_plugin?("vagrant-vbguest") then
+    config.vbguest.auto_update = false
+  end
+
+  config.vm.hostname = "<%= @child.name %>"
+
+  config.vm.provider :virtualbox do |vb|
+    #vb.gui = vm_gui
+    #vb.memory = vm_memory
+    #vb.cpus = vm_cpus
+    #vb.customize ["modifyvm", :id, "--cpuexecutioncap", "#{$vb_cpuexecutioncap}"]
+  end
+
+  <% @child.vagrant_deploy.get_cfgs.each do |cfg| -%>
+  <%= cfg %>
+  <% end -%>
