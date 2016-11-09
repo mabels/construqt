@@ -108,6 +108,27 @@ module Construqt
             end
 
             def commit
+              add(self, <<MODULES, Construqt::Resources::Rights::root_0644, "etc", "modules-local.d", "construqt.conf")
+loop
+libcrc32c
+xt_multiport
+nf_conntrack_ipv4
+nf_defrag_ipv4
+nf_conntrack
+iptable_filter
+ip_tables
+x_tables
+af_key
+gre
+tun
+nf_conntrack_ipv6
+nf_defrag_ipv6
+ip6table_filter
+ip6_tables
+bonding
+8021q
+MODULES
+
 
               # binding.pry
               add(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::EtcNetworkIptables,
