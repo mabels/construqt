@@ -1,9 +1,6 @@
 #!/bin/sh
 docker network rm <%= iface.name %>
 docker network create --driver=bridge \
-<% if iface.address.first_ipv6 -%>
-  --ipv6 \
-<% end -%>
   --ipam-driver=default \
   --opt=com.docker.network.bridge.enable_ip_masquerade=false \
   --opt=com.docker.network.bridge.name=br169 \
