@@ -31,6 +31,7 @@ require_relative 'ubuntu/vlan.rb'
 require_relative 'ubuntu/wlan.rb'
 require_relative 'ubuntu/systemd.rb'
 require_relative 'ubuntu/tunnel.rb'
+require_relative 'ubuntu/vagrant_file.rb'
 
 module Construqt
   module Flavour
@@ -109,6 +110,10 @@ module Construqt
 
             def create_bgp(cfg)
               Bgp.new(cfg)
+            end
+
+            def vagrant_factory(host, ohost)
+              VagrantFile.new(host, ohost)
             end
 
             def create_ipsec(cfg)

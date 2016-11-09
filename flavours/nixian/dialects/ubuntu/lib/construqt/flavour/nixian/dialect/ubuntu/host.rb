@@ -26,7 +26,7 @@ module Construqt
             end
 
             def render_vagrant(host, vagrant)
-                vfile = VagrantFile.new(host, vagrant)
+                vfile = host.flavour.dialect.vagrant_factory(host, vagrant)
                 vagrant.interfaces.values.map do |iface|
                   if iface.cable and !iface.cable.connections.empty?
                     vfile.add_link(iface.cable.connections.first.iface, iface)
@@ -38,6 +38,7 @@ module Construqt
               host.region.hosts.get_hosts.select {|h| host.eq(h.mother) }.each do |vagrant|
                 render_vagrant(host, vagrant)
               end
+              # binding.pry if host.name == "cetcd"
               render_vagrant(host, host)
             end
 

@@ -50,6 +50,25 @@ module Construqt
       def get_ssh_host_port
         @ssh_host_port
       end
+
+      def box_version(version)
+        @box_version = version
+        self
+      end
+
+      def get_box_version
+        @box_version
+      end
+
+      def box_url(url)
+        @box_url = url
+        self
+      end
+
+      def get_box_url
+        @box_url
+      end
+
     end
 
   end

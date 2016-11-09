@@ -5,6 +5,7 @@ require 'construqt/flavour/nixian.rb'
 require 'construqt/flavour/nixian/dialect/ubuntu.rb'
 
 require_relative 'coreos/result.rb'
+require_relative 'coreos/vagrant_file.rb'
 
 module Construqt
   module Flavour
@@ -74,6 +75,10 @@ module Construqt
               host.result = CoreOs::Result.new(host)
               #binding.pry
               host
+            end
+
+            def vagrant_factory(host, ohost)
+              VagrantFile.new(host, ohost)
             end
 
             def create_interface(name, cfg)

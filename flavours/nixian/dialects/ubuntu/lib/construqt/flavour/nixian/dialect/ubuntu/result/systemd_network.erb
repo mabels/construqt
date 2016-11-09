@@ -2,6 +2,19 @@
 Name=<%= systemd_network.name %>
 
 [Network]
+DHCP=<%=  if systemd_network.interface.address.dhcpv4? &&
+             systemd_network.interface.address.dhcpv6?
+           "yes"
+          elsif systemd_network.interface.address.dhcpv4? &&
+               !systemd_network.interface.address.dhcpv6?
+            "ipv4"
+          elsif !systemd_network.interface.address.dhcpv4? &&
+                 systemd_network.interface.address.dhcpv6?
+            "ipv6"
+          else
+            "no"
+          end
+%>
 <%- systemd_network.interface.address &&
     systemd_network.interface.address.ips.each do |ip| -%>
 Address=<%= ip.to_string %>
@@ -20,7 +33,7 @@ Bridge=<%= bridge.name %>
     systemd_network.interface.address.routes.each do |route| -%>
 [Route]
 Destination=<%= route.dst.to_string %>
-Source=<%= route.via.to_s %>
+Gateway=<%= route.via.to_s %>
 <%- if route.metric -%>
 Metric=<%= route.metric %>
 <%- end -%>

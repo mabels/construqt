@@ -39,7 +39,7 @@ module Construqt
                 nil
               end
               def get_name
-                name
+                "#{name}.netdev"
               end
 
               def commit

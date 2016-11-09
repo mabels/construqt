@@ -1,4 +1,3 @@
-
   <% @mother.region.users.get_authorized_keys(@mother).each do |akey| %>
     config.vm.provision 'shell', inline: "echo '<%= akey.strip %>' >> /root/.ssh/authorized_keys"
     config.vm.provision 'shell', inline: "echo '<%= akey.strip %>' >> /home/ubuntu/.ssh/authorized_keys"

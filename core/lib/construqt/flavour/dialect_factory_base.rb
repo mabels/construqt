@@ -17,6 +17,10 @@ module Construqt
         thow "need to implement dialect_factory"
       end
 
+      def vagrant_factory
+        thow "need to implement vagrant_factory"
+      end
+
       def factory(cfg)
         throw 'cfg must have a dialect' unless cfg['dialect']
         throw "dialect not found #{cfg['dialect']}" unless @dialect_factories[cfg['dialect']]

@@ -1,7 +1,17 @@
-#!/bin/bash
+#!/bin/sh
 basedir=/var/lib/docker/construqt/<%= docker.name %>
+if [ -d $basedir ]
+then
+  echo "Basedir: $basedir"
+  cd $basedir
+fi
 docker_name=run_<%= docker.name %>
-echo "Basedir: $basedir"
-cd $basedir
 docker build -t $docker_name .
-exec docker run --privileged -t $docker_name 
+exec docker run \
+<% if docker.docker_deploy.get_privileged -%>
+  --privileged \
+<% end -%>
+<% docker.docker_deploy.get_maps.each do |h, d| -%>
+  -v <%= h %>:<%= d %> \
+<% end -%>
+  -t $docker_name

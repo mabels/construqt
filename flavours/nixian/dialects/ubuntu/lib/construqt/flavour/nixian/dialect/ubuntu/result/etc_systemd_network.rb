@@ -45,7 +45,7 @@ module Construqt
                 nil
               end
               def get_name
-                name
+                "#{name}.network"
               end
 
               def commit

@@ -8,6 +8,25 @@ module Construqt
         chainable_attr :app_start_script, ""
         chainable_attr :pkt_man, :apt
 
+        def map(h, d)
+          @maps ||= {}
+          @maps[h] = d
+          self
+        end
+        def get_maps
+          @maps || {}
+        end
+
+        def privileged
+          @privileged = true
+          self
+        end
+
+
+        def get_privileged
+          @privileged || false
+        end
+
         def is_apt
           get_pkt_man == :apt
         end

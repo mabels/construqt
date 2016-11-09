@@ -8,6 +8,7 @@ module Construqt
           class VagrantFile
             def initialize(mother, child)
               @mother = mother
+              # binding.pry if mother.name == "etcbind-1"
               @mother.delegate.vagrant_deploy ||= Construqt::Hosts::Vagrant.new
               @child = child
               @child.delegate.vagrant_deploy ||= Construqt::Hosts::Vagrant.new

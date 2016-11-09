@@ -253,35 +253,48 @@ module Construqt
       split('_').map{|e| e.capitalize}.join
     end
 
-    def self.get_directory(ns)
+    def self.get_directories(ns)
       if ns.nil? || ns.empty?
         raise "There must be a DIRECTORY const defined!"
       end
       m_name = (ns+["DIRECTORY"]).join("::")
       begin
-        Object.const_get(m_name)
+        ret = Object.const_get(m_name)
+        if ret.kind_of?(Array)
+          ret
+        else
+          [ret]
+        end
       rescue NameError => e
         ns.pop
-        get_directory(ns)
+        get_directories(ns)
       end
     end
 
     TEMPLATE_CACHE = {}
 
-    def self.read_template(context, fname)
+    def self.template_directories(context)
+      name = (context.kind_of?(Module) && context.name) || context.class.name
+      directories = get_directories(name.split("::"))
+    end
+
+    def self.read_template(context, fname, directories)
       # this is very ruby related, not nice but
       # how to do it better?
-      name = (context.kind_of?(Module) && context.name) || context.class.name
-      directory = get_directory(name.split("::"))
-      fnames = Dir.glob(File.join(directory, "**", fname))
-      raise "File not found #{fname} in #{directory}" if fnames.empty?
-      raise "ambiguous files #{fnames.join(" ")}" if fnames.size > 1
-      IO.read(fnames.first)
+      directories.each do |directory|
+        fnames = Dir.glob(File.join(directory, "**", fname))
+        raise "ambiguous files #{fnames.join(" ")}" if fnames.size > 1
+        if fnames.size > 0 && File.exists?(fnames.first)
+          return IO.read(fnames.first)
+        end
+      end
+      raise "File not found #{fname} in #{directories.join(",")}"
     end
 
     def self.render(_binding, fname)
       context = _binding.eval("self")
-      template = TEMPLATE_CACHE[fname] ||= read_template(context, fname)
+      directories = template_directories(context)
+      template = TEMPLATE_CACHE[(directories+[fname]).join(":")] ||= read_template(context, fname, directories)
       ERB.new(template, nil, '-').result(_binding)
     end
   end

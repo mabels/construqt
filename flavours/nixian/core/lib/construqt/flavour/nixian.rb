@@ -23,6 +23,10 @@ module Construqt
           cfg['host'].flavour.flavour.dialect.clazz(cfg['clazz']).new(cfg)
         end
 
+        def vagrant_factory(host)
+          @dialect.vagrant_factory(host)
+        end
+
         def ipsec
           @dialect.ipsec
         end
