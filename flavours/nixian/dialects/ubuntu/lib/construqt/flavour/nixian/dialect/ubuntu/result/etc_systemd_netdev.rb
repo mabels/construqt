@@ -29,7 +29,11 @@ module Construqt
               def is_enable
                 true
               end
-              
+
+              def get_skip_content
+                false
+              end
+
               def as_string
                 systemd_netdev = self
                 iface = @interface

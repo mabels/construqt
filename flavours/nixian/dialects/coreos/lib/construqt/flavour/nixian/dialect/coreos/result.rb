@@ -32,7 +32,9 @@ module Construqt
               tmp = { 'name' => sysrv.get_name }
               sysrv.is_enable && tmp['enable'] = true
               sysrv.get_command && tmp['command'] = sysrv.get_command
-              tmp['content'] = sysrv.as_systemd_file.strip+"\n"
+              unless sysrv.get_skip_content
+                tmp['content'] = sysrv.as_systemd_file.strip+"\n"
+              end
               @yaml['coreos']['units'] << tmp
             end
 
@@ -135,6 +137,13 @@ module Construqt
               @ures.etc_systemd_network.networks(@ures).each do |network|
                 ccc.add_units(network)
               end
+
+
+              modules_service = Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::SystemdService
+                .new(@ures, "systemd-modules-load.service")
+                .skip_content
+                .command("restart")
+              ccc.add_units(modules_service)
 
               # @uref.results.each do |fname, block|
               #   if !block.clazz.respond_to?(:belongs_to_mother?) ||

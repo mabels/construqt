@@ -52,6 +52,10 @@ module Construqt
                 true
               end
 
+              def get_skip_content
+                false
+              end
+
               def commit
                 @interface.host.result.add(self, as_string,
                   Construqt::Resources::Rights.root_0644(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd),

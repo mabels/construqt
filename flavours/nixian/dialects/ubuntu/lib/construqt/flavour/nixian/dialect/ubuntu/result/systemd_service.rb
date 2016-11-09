@@ -10,7 +10,7 @@ module Construqt
               chainable_attr_value :description, "unknown"
               chainable_attr_value :name
               chainable_attr_value :command, "start"
-              chainable_attr_value :type, "oneshot"
+              chainable_attr_value :type, "simple"
               chainable_attr_value :exec_start, ""
               chainable_attr_value :exec_stop, ""
               attr_reader :afters, :befores, :conflicts
@@ -18,6 +18,7 @@ module Construqt
                 # binding.pry
                 @enable = true
                 @command = "start"
+                @skip_content = false
                 @name = name
                 @result = result
                 @entries = {}
@@ -29,6 +30,16 @@ module Construqt
                 #@default_dependencies = ['no']
                 @alsos = []
               end
+
+              def get_skip_content
+                @skip_content
+              end
+
+              def skip_content
+                @skip_content = true
+                self
+              end
+
 
               def enable
                 @enable = true
