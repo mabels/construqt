@@ -48,7 +48,7 @@ module Construqt
 
               systemd = Result::SystemdService.new(host.result, "docker-#{docker.name}.service")
                         .description("docker-#{docker.name}")
-                        .type("oneshot")
+                        .type("simple")
                         .after("docker.service")
                         .after("network-online.target")
                         .requires("docker.service")
