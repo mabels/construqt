@@ -6,6 +6,9 @@ Before=<%= before %>
 <% @afters.each do |after| -%>
 After=<%= after %>
 <% end -%>
+<% @requires.each do |req| -%>
+Requires=<%= req %>
+<% end -%>
 
 [Service]
 Type=<%= @type %>

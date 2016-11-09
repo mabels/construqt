@@ -49,6 +49,10 @@ module Construqt
               systemd = Result::SystemdService.new(host.result, "docker-#{docker.name}.service")
                         .description("docker-#{docker.name}")
                         .type("oneshot")
+                        .after("docker.service")
+                        .after("network-online.target")
+                        .requires("docker.service")
+                        .requires("network-online.target")
                         .exec_start("/bin/sh /var/lib/docker/construqt/#{docker.name}/docker_run.sh")
                         .wanted_by("network-online.target")
               host.result.add(systemd, systemd.as_systemd_file,

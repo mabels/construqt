@@ -48,6 +48,10 @@ module Construqt
                 "#{name}.network"
               end
 
+              def is_enable
+                true
+              end
+
               def commit
                 @interface.host.result.add(self, as_string,
                   Construqt::Resources::Rights.root_0644(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd),

@@ -29,13 +29,11 @@ module Construqt
             end
 
             def add_units(sysrv)
-              @yaml['coreos']['units'] << {
-                'name' => sysrv.get_name,
-                'content' => sysrv.as_systemd_file.strip
-              }
-              if sysrv.get_command
-                @yaml['coreos']['units']['command'] = sysrv.get_command
-              end
+              tmp = { 'name' => sysrv.get_name }
+              sysrv.is_enable && tmp['enable'] = true
+              sysrv.get_command && tmp['command'] = sysrv.get_command
+              tmp['content'] = sysrv.as_systemd_file.strip+"\n"
+              @yaml['coreos']['units'] << tmp
             end
 
             def write
@@ -108,27 +106,7 @@ module Construqt
             end
 
             def commit
-              add(self, <<MODULES, Construqt::Resources::Rights::root_0644, "etc", "modules-local.d", "construqt.conf")
-loop
-libcrc32c
-xt_multiport
-nf_conntrack_ipv4
-nf_defrag_ipv4
-nf_conntrack
-iptable_filter
-ip_tables
-x_tables
-af_key
-gre
-tun
-nf_conntrack_ipv6
-nf_defrag_ipv6
-ip6table_filter
-ip6_tables
-bonding
-8021q
-MODULES
-
+              add(self, Construqt::Util.render(binding, "modules.conf.erb"), Construqt::Resources::Rights::root_0644, "etc", "modules-local.d", "construqt.conf")
 
               # binding.pry
               add(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::EtcNetworkIptables,

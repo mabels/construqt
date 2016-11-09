@@ -26,7 +26,10 @@ module Construqt
                 @interface.delegate.vlan_id(@interface) if @interface.delegate.respond_to?(:vlan_id)
               end
 
-
+              def is_enable
+                true
+              end
+              
               def as_string
                 systemd_netdev = self
                 iface = @interface
