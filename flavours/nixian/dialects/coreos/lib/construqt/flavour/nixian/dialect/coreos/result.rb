@@ -106,7 +106,7 @@ module Construqt
             end
 
             def commit
-              add(self, Construqt::Util.render(binding, "modules.conf.erb"), Construqt::Resources::Rights::root_0644, "etc", "modules-local.d", "construqt.conf")
+              add(self, Construqt::Util.render(binding, "modules.conf.erb"), Construqt::Resources::Rights::root_0644, "etc", "modules-load.d", "construqt.conf")
 
               # binding.pry
               add(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::EtcNetworkIptables,
