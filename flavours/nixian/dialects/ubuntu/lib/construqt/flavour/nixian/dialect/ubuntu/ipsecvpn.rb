@@ -5,6 +5,7 @@ module Construqt
         module Ubuntu
 
           class IpsecVpn < OpenStruct
+            include Construqt::Cables::Plugin::Multiple
             def initialize(cfg)
               super(cfg)
             end

@@ -11,7 +11,7 @@ module Construqt
             attr_reader :address,:template,:plug_in,:network,:mtu,:clazz,:dh
             attr_reader :listen,:push_routes,:cacert,:name,:hostcert,:hostkey,:host
             attr_reader :description, :firewalls, :protocols, :proto, :flavour
-            attr_reader :services, :mac_address
+            attr_reader :services, :mac_address, :proxy_neigh
             def initialize(cfg)
               @name = cfg['name']
               @host = cfg['host']

@@ -12,11 +12,14 @@ Requires=<%= req %>
 
 [Service]
 Type=<%= @type %>
-<% if !@exec_start.nil? && !@exec_start.empty? -%>
-ExecStart=<%= @exec_start %>
+<% @exec_starts.each do |exec_start| -%>
+ExecStart=<%= exec_start %>
 <% end -%>
-<% if !@exec_stop.nil? && !@exec_stop.empty? -%>
-ExecStop=<%= @exec_stop %>
+<% @exec_stops.each do |exec_stop| -%>
+ExecStop=<%= exec_stop %>
+<% end -%>
+<% @exec_stop_posts.each do |exec_stop_post| -%>
+ExecStopPost=<%= exec_stop_post %>
 <% end -%>
 
 [Install]

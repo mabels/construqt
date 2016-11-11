@@ -50,7 +50,7 @@ module Construqt
       #binding.pry if host && host.name == "ct-iar1-ham"
       #    binding.pry
       cfg['clazz'] ||= "device"
-      cfg['address'] ||= nil
+      cfg['address'] ||= region.network.addresses.create
       cfg['plug_in'] ||= nil
       cfg['services'] ||= []
       delegates['firewalls'] = cfg.delete('firewalls')||[]
@@ -90,7 +90,7 @@ module Construqt
       cfg['clazz'] = "opvn"
       throw "deprecated option 'ipv6'" if cfg['ipv6']
       throw "deprecated option 'ipv4'" if cfg['ipv4']
-      throw "listen is missing" unless cfg['listen'] 
+      throw "listen is missing" unless cfg['listen']
       dev = add_device(host, name, cfg)
       dev.address.interface = host.interfaces[name] if dev.address
       dev.network.name = "#{name}-#{host.name}"

@@ -5,6 +5,7 @@ module Construqt
         module Ubuntu
 
           class Gre < OpenStruct
+            include Construqt::Cables::Plugin::Single
             def initialize(cfg)
               super(cfg)
             end

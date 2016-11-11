@@ -48,7 +48,9 @@ module Construqt
 
 
 
-
+              #ExecStart=/usr/bin/docker run --env foo=bar --name redis_server redis
+              #ExecStop=/usr/bin/docker stop -t 2 redis_server
+              #ExecStopPost=/usr/bin/docker rm -f redis_server
               systemd = Result::SystemdService.new(host.result, "docker-#{docker.name}.service")
                         .description("docker-#{docker.name}")
                         .type("simple")
@@ -57,7 +59,9 @@ module Construqt
                         .requires("docker.service")
                         .requires("network-online.target")
                         .exec_start("/bin/sh /var/lib/docker/construqt/#{docker.name}/docker_run.sh")
-                        .wanted_by("network-online.target")
+                        .exec_stop("/usr/bin/docker stop -t 2 run_#{docker.name}")
+                        .exec_stop_post("/usr/bin/docker rm -f run_#{docker.name}")
+                        .wanted_by("multi-user.target")
               host.result.add(systemd, systemd.as_systemd_file,
                 Construqt::Resources::Rights.root_0644(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd),
                 "etc", "systemd", "system", systemd.get_name)

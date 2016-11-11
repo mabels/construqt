@@ -49,6 +49,7 @@ module Construqt
               end
               docker_ifaces = {}
               host.interfaces.values.each do |iface|
+                binding.pry unless iface.cable
                 iface.cable.connections.each do |ciface|
                   if host.eq(ciface.iface.host.mother)
                     docker_ifaces[iface.name] = iface
@@ -56,6 +57,7 @@ module Construqt
                 end
               end
               docker_ifaces.values.each do |iface|
+                next unless iface.address
                 docker_up = Construqt::Util.render(binding, "docker_up.erb")
                 host.result.add(self.class, docker_up, Construqt::Resources::Rights.root_0755,
                   'etc', 'network', "#{iface.name}-docker-up.sh")

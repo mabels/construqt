@@ -10,7 +10,7 @@ fi
 <% end -%>
 docker_name=run_<%= docker.name %>
 docker build -t $docker_name .
-exec docker run \
+exec docker run --name $docker_name \
 <% if docker.docker_deploy.get_privileged -%>
   --privileged \
 <% end -%>

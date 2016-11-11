@@ -11,8 +11,6 @@ module Construqt
               chainable_attr_value :name
               chainable_attr_value :command, "start"
               chainable_attr_value :type, "simple"
-              chainable_attr_value :exec_start, ""
-              chainable_attr_value :exec_stop, ""
               attr_reader :afters, :befores, :conflicts
               def initialize(result, name)
                 # binding.pry
@@ -22,6 +20,9 @@ module Construqt
                 @name = name
                 @result = result
                 @entries = {}
+                @exec_starts = []
+                @exec_stops = []
+                @exec_stop_posts = []
                 @befores = []
                 @afters = []
                 @requires = []
@@ -29,6 +30,30 @@ module Construqt
                 @wanted_bys = []
                 #@default_dependencies = ['no']
                 @alsos = []
+              end
+
+              def exec_start(a)
+                @exec_starts << a
+                self
+              end
+              def get_exec_starts(a)
+                @exec_starts
+              end
+
+              def exec_stop(a)
+                @exec_stops << a
+                self
+              end
+              def get_exec_stops
+                @exec_stops
+              end
+
+              def get_exec_stop_posts
+                @exec_stop_posts
+              end
+              def exec_stop_post(a)
+                @exec_stop_posts << a
+                self
               end
 
               def get_skip_content
