@@ -1,13 +1,14 @@
+require_relative 'base_device'
 module Construqt
   module Flavour
     module Nixian
       module Dialect
         module Ubuntu
 
-          class Vrrp < OpenStruct
+          class Vrrp
             include Construqt::Cables::Plugin::Multiple
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
             end
 
             def self.header(host)

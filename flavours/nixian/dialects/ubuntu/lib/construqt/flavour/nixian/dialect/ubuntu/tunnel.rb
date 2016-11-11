@@ -1,13 +1,18 @@
+require_relative 'base_device'
 module Construqt
   module Flavour
     module Nixian
       module Dialect
         module Ubuntu
 
-          class Tunnel < OpenStruct
+          class Tunnel
+            include BaseDevice
             include Construqt::Cables::Plugin::Single
+            attr_reader :interfaces, :tunnel
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
+              @interfaces = cfg['interfaces']
+              @tunnel = cfg['tunnel']
             end
 
             def kind

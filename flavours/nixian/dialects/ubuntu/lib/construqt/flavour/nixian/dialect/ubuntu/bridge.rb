@@ -1,3 +1,4 @@
+require_relative 'base_device'
 module Construqt
   module Flavour
     module Nixian
@@ -5,10 +6,13 @@ module Construqt
         module Ubuntu
 
 
-          class Bridge < OpenStruct
+          class Bridge
+            include BaseDevice
             include Construqt::Cables::Plugin::Multiple
+            attr_reader :interfaces
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
+              @interfaces = cfg['interfaces']
             end
 
             def up_member(iface)

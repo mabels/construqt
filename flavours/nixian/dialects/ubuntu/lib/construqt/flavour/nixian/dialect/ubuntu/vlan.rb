@@ -1,13 +1,17 @@
+require_relative 'base_device'
 module Construqt
   module Flavour
     module Nixian
       module Dialect
         module Ubuntu
 
-          class Vlan < OpenStruct
+          class Vlan
+            include BaseDevice
             include Construqt::Cables::Plugin::Multiple
+            attr_reader :interfaces
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
+              @interfaces = cfg['interfaces']
             end
 
             def up_member(iface)

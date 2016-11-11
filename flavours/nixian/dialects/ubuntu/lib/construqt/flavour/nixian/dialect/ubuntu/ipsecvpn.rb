@@ -1,13 +1,26 @@
+require_relative 'base_device'
 module Construqt
   module Flavour
     module Nixian
       module Dialect
         module Ubuntu
 
-          class IpsecVpn < OpenStruct
+          class IpsecVpn
+            include BaseDevice
             include Construqt::Cables::Plugin::Multiple
+            attr_reader :left_interface, :right_interface, :ipv6_proxy
+            attr_reader :leftpsk, :users, :right_address, :auth_method
+            attr_reader :leftcert
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
+              @left_interface = cfg['left_interface']
+              @left_cert = cfg['left_cert']
+              @right_interface = cfg['right_interface']
+              @ipv6_proxy = cfg['ipv6_proxy']
+              @leftpsk = cfg['leftpsk']
+              @users = cfg['users']
+              @right_address = cfg['right_address']
+              @auth_method = cfg['auth_method']
             end
 
             def build_config(host, iface, node)

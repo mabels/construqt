@@ -1,13 +1,20 @@
+require_relative 'base_device'
 module Construqt
   module Flavour
     module Nixian
       module Dialect
         module Ubuntu
 
-          class Gre < OpenStruct
+          class Gre
+            include BaseDevice
             include Construqt::Cables::Plugin::Single
+            attr_reader :ipsec, :remote, :local, :other
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
+              @ipsec = cfg['ipsec']
+              @remote = cfg['remote']
+              @local = cfg['local']
+              @other = cfg['other']
             end
 
             def get_prepare(gre_delegate)
