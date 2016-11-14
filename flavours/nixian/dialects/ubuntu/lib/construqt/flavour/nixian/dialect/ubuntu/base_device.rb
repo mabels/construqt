@@ -25,6 +25,11 @@ module Construqt
               @firewalls = cfg['firewalls']
               @network = cfg['network']
             end
+
+            def inspect
+              "#<#{self.class.name}:#{"%x"%object_id} ident=#{self.delegate.ident}>"
+            end
+
           end
         end
       end

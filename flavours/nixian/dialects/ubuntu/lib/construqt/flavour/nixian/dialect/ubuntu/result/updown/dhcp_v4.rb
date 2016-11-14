@@ -6,8 +6,11 @@ module Construqt
       module Dialect
         module Ubuntu
           class Result
-            class UpDown
-              
+            module UpDown
+              class DhcpV4
+                def initialize()
+                end
+              end
             end
           end
         end

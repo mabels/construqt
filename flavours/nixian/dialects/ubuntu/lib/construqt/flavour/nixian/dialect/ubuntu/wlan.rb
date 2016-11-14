@@ -6,18 +6,22 @@ module Construqt
       module Dialect
         module Ubuntu
 
-          class Wlan < OpenStruct
+          class Wlan
+            include BaseDevice
             include Construqt::Cables::Plugin::Single
+            attr_reader :master_if, :ssid, :psk
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
+              @ssid = cfg['ssid']
+              @psk = cfg['psk']
+              @master_if = cfg['master_if']
             end
 
             def build_config(host, wlan, node)
               wlan_delegate = wlan.delegate
 
               mac_address = wlan_delegate.mac_address || Construqt::Util.generate_mac_address_from_name("#{host.name} #{wlan_delegate.name}")
-              host.result.etc_network_interfaces.get(wlan_delegate)
-                .lines.add(Construqt::Util.render(binding, "wlan_interfaces.erb"), 0)
+              host.result.up_downer.add(wlan_delegate, Result::UpDown::Wlan.new(mac_address))
               Device.build_config(host, wlan, node)
             end
           end

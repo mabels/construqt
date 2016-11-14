@@ -91,16 +91,13 @@ module Construqt
 
               # binding.pry if gre.name == "fanout-de"
 
-              writer = host.result.etc_network_interfaces.get(gre, gre.name)
               # iname = local_if.name
               # #if local_if.clazz == "gre"
               # #  iname = Util.clean_if(gt, iname)
               # #end
               # writer = host.result.etc_network_interfaces.get(iface, "fanout-de")
               # binding.pry
-              writer.lines.up("/usr/sbin/ipsec start", :extra) # no down this is also global
-              writer.lines.up("/usr/sbin/ipsec up #{self.host.name}-#{self.other.host.name} &", 1000, :extra)
-              writer.lines.down("/usr/sbin/ipsec down #{self.host.name}-#{self.other.host.name} &", -1000, :extra)
+              host.result.up_downer.add(gre, Result::UpDown::IpSecConnect.new("#{self.host.name}-#{self.other.host.name}"))
 
               #writer.skip_interfaces.header.interface_name(gre.name)
 

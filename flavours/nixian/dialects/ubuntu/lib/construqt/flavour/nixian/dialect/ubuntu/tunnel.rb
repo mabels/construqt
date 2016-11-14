@@ -45,14 +45,12 @@ module Construqt
               # local_ifaces[local_iface.name].inames << iname
               # binding.pry if iface.host.name == "fanout-de"
 
-              writer = host.result.etc_network_interfaces.get(iface)
+              # writer = host.result.etc_network_interfaces.get(iface)
               #writer.skip_interfaces.header.interface_name(iname)
               local = cfg.my.first_by_family(cfg.transport_family).to_s
               remote = cfg.other.first_by_family(cfg.transport_family).to_s
               throw "there must be a local or remote address" if local.nil? or remote.nil?
-              writer.lines.up("ip -#{cfg.prefix} tunnel add #{iface.name} mode #{cfg.mode} local #{local} remote #{remote}")
-              #Device.build_config(host, gre, node, iname, cfg.family, cfg.mtu)
-              writer.lines.down("ip -#{cfg.prefix} tunnel del #{iface.name}")
+              host.result.up_downer.add(iface, Result::UpDown::Tunnel.new(cfg, local, remote))
 
               Device.build_config(host, iface, node)
 

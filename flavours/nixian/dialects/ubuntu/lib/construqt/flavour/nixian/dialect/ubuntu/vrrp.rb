@@ -6,6 +6,7 @@ module Construqt
         module Ubuntu
 
           class Vrrp
+            include BaseDevice
             include Construqt::Cables::Plugin::Multiple
             def initialize(cfg)
               base_device(cfg)

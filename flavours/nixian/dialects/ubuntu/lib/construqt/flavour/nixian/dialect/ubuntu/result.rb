@@ -14,6 +14,10 @@ require_relative 'result/systemd_service'
 require_relative 'ipsec/ipsec_secret'
 require_relative 'ipsec/ipsec_cert_store'
 require_relative 'result/packager_sh'
+require_relative 'result/up_downer'
+require_relative 'result/up_downer_systemd_taste'
+require_relative 'result/up_downer_debian_taste'
+require_relative 'result/up_downer_flat_taste'
 
 module Construqt
   module Flavour
@@ -21,21 +25,24 @@ module Construqt
       module Dialect
         module Ubuntu
           class Result
-            attr_reader :etc_network_interfaces, :etc_network_iptables, :etc_conntrackd_conntrackd
             attr_reader :ipsec_secret, :ipsec_cert_store, :host, :package_builder, :results
-            attr_reader :etc_systemd_netdev, :etc_systemd_network
+            attr_reader :up_downer, :etc_network_iptables
             def initialize(host)
               @host = host
-              @etc_systemd_netdev = EtcSystemdNetdev.new
-              @etc_systemd_network = EtcSystemdNetwork.new
-              @etc_network_interfaces = EtcNetworkInterfaces.new(self)
               @etc_network_iptables = EtcNetworkIptables.new
-              @etc_conntrackd_conntrackd = EtcConntrackdConntrackd.new(self)
-              @etc_network_vrrp = EtcNetworkVrrp.new
               @ipsec_secret = Ipsec::IpsecSecret.new(self)
               @ipsec_cert_store = Ipsec::IpsecCertStore.new(self)
               @package_builder = Result.create_package_builder
+
+              @up_downer = UpDowner.new(self)
+                .taste(Result::UpDownerSystemdTaste.new)
+                .taste(Result::UpDownerDebianTaste.new)
+                .taste(Result::UpDownerFlatTaste.new)
               @results = {}
+            end
+
+            def get_etc_network_vrrp
+              @etc_network_vrrp
             end
 
             def self.create_package_builder
@@ -187,14 +194,16 @@ module Construqt
             end
 
             def commit
-              add(EtcNetworkIptables, etc_network_iptables.commitv4, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4), 'etc', 'network', 'iptables.cfg')
-              add(EtcNetworkIptables, etc_network_iptables.commitv6, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6), 'etc', 'network', 'ip6tables.cfg')
-              add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construqt::Resources::Rights.root_0644, 'etc', 'network', 'interfaces')
-              @etc_systemd_netdev.commit(self)
-              @etc_systemd_network.commit(self)
-              @etc_network_vrrp.commit(self)
-              ipsec_secret.commit
-              ipsec_cert_store.commit
+              add(EtcNetworkIptables, etc_network_iptables.commitv4, 
+                Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4),
+                'etc', 'network', 'iptables.cfg')
+              add(EtcNetworkIptables, etc_network_iptables.commitv6,
+                Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6),
+                'etc', 'network', 'ip6tables.cfg')
+
+              up_downer.commit
+
+
 
               Lxc.write_deployers(@host)
               Docker.write_deployers(@host)

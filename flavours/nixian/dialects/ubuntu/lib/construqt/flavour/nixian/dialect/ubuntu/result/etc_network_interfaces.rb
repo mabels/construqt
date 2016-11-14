@@ -139,6 +139,7 @@ module Construqt
                   end
 
                   def interface_name(name)
+                     binding.pry
                     @interface_name = name
                   end
 
@@ -188,12 +189,12 @@ module Construqt
               end
 
               def get(iface, name = nil)
-                throw "clazz needed #{name || iface.name}" unless iface.clazz
                 ret = @entries[name || iface.name]
                 unless ret
                   entry = Entry.new(@result, iface)
                   ret = @entries[name || iface.name] = entry
                 end
+                throw "entry not found #{name || iface.name}" unless ret
                 ret
               end
 

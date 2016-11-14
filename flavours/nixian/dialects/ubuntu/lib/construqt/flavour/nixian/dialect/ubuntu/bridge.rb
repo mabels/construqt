@@ -1,4 +1,6 @@
 require_relative 'base_device'
+require_relative 'result/updown/bridge'
+
 module Construqt
   module Flavour
     module Nixian
@@ -15,12 +17,8 @@ module Construqt
               @interfaces = cfg['interfaces']
             end
 
-            def up_member(iface)
-              ["brctl addif #{self.name} #{iface.name}"]
-            end
-
-            def down_member(iface)
-              ["brctl delif #{self.name} #{iface.name}"]
+            def up_down_member(iface)
+              [Result::UpDown::BridgeMember.new(self.name, iface.name)]
             end
 
             # def belongs_to
@@ -39,11 +37,7 @@ module Construqt
               #   port_list = iface.interfaces.map { |i| i.name }.join(" ")
               #   host.result.etc_network_interfaces.get(iface).lines.add("bridge_ports #{port_list}")
               # else
-              host.result.etc_network_interfaces.get(iface).lines.add("bridge_ports none", 0)
-              iface.on_iface_up_down do |writer, ifname|
-                writer.lines.up("brctl addbr #{ifname}")
-                writer.lines.down("brctl delbr #{ifname}")
-              end
+              host.result.up_downer.add(iface, Result::UpDown::Bridge.new(iface.name))
               Device.build_config(host, iface, node)
             end
           end
