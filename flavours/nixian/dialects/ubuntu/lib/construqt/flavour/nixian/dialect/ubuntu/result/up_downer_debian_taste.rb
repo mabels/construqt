@@ -25,7 +25,6 @@ module Construqt
                     cp::Bgp.name => lambda {|i, u| render_bgp(i, u) },
                     cp::DhcpV4.name => lambda {|i, u| render_dhcp_v4(i, u) },
                     cp::DnsMasq.name => lambda {|i, u| render_dns_masq(i, u) },
-                    cp::IpRule.name => lambda {|i, u| render_ip_rule(i, u) },
                     cp::OpenVpn.name => lambda {|i, u| render_open_vpn(i, u) },
                     cp::Bridge.name => lambda {|i, u| render_bridge(i, u) },
                     cp::IpAddr.name => lambda {|i, u| render_ip_addr(i, u) },
@@ -39,18 +38,26 @@ module Construqt
                     cp::IpRoute.name => lambda {|i, u| render_ip_route(i, u) },
                     cp::Loopback.name => lambda {|i, u| render_loopback(i, u) },
                     cp::Vlan.name => lambda {|i, u| render_vlan(i, u) },
-                    cp::Wlan.name => lambda {|i, u| render_wlan(i, u) }
+                    cp::Wlan.name => lambda {|i, u| render_wlan(i, u) },
+                    cp::IpTables.name => lambda {|i, u| render_iptables(i, u) }
                 }
                 # binding.pry
               end
 
               def commit
-                result.add(EtcNetworkInterfaces, etc_network_interfaces.commit, Construqt::Resources::Rights.root_0644, 'etc', 'network', 'interfaces')
+                result.add(EtcNetworkInterfaces, etc_network_interfaces.commit,
+                  Construqt::Resources::Rights.root_0644,
+                  'etc', 'network', 'interfaces')
                 @etc_network_vrrp.commit(result)
                 result.ipsec_secret.commit
                 result.ipsec_cert_store.commit
               end
 
+              def render_iptables(iface, u)
+                writer = etc_network_interfaces.get(iface)
+                writer.lines.up("/sbin/iptables-restore /etc/network/iptables.cfg")
+                writer.lines.up("/sbin/ip6tables-restore /etc/network/ip6tables.cfg")
+              end
 
               def render_device(iface, ud)
                 writer = etc_network_interfaces.get(iface, ud.ifname)
@@ -72,10 +79,6 @@ module Construqt
                 writer.header.dhcpv6
               end
 
-              def render_masq(i, u)
-              end
-              def render_ip_rule(i, u)
-              end
               def render_open_vpn(iface, u)
                 writer = etc_network_interfaces.get(iface)
                 writer.lines.up("mkdir -p /dev/net", :extra)

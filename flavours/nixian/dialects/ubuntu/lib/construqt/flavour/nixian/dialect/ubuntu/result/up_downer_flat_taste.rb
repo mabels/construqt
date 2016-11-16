@@ -18,10 +18,8 @@ module Construqt
                     cp::Bgp.name => lambda {|i, u| render_bgp(i, u) },
                     cp::DhcpV4.name => lambda {|i, u| render_dhcp_v4(i, u) },
                     cp::DnsMasq.name => lambda {|i, u| render_dns_masq(i, u) },
-                    cp::IpRule.name => lambda {|i, u| render_ip_rule(i, u) },
                     cp::OpenVpn.name => lambda {|i, u| render_open_vpn(i, u) },
                     cp::Bridge.name => lambda {|i, u| render_bridge(i, u) },
-                    cp::DhcpV4Relay.name => lambda {|i, u| render_dhcp_v4_relay(i, u) },
                     cp::IpAddr.name => lambda {|i, u| render_ip_addr(i, u) },
                     cp::IpSecConnect.name => lambda {|i, u| render_ip_sec_connect(i, u) },
                     cp::BridgeMember.name => lambda {|i, u| render_bridge_member(i, u) },
@@ -30,11 +28,12 @@ module Construqt
                     cp::LinkMtuUpDown.name => lambda {|i, u| render_link_mtu_up_down(i, u) },
                     cp::Tunnel.name => lambda {|i, u| render_tunnel(i, u) },
                     cp::DhcpClient.name => lambda {|i, u| render_dhcp_client(i, u) },
-                    cp::DhcpV6Relay.name => lambda {|i, u| render_dhcp_v6_relay(i, u) },
                     cp::IpRoute.name => lambda {|i, u| render_ip_route(i, u) },
                     cp::Loopback.name => lambda {|i, u| render_loopback(i, u) },
                     cp::Vlan.name => lambda {|i, u| render_vlan(i, u) },
-                    cp::Wlan.name => lambda {|i, u| render_wlan(i, u) }
+                    cp::Wlan.name => lambda {|i, u| render_wlan(i, u) },
+                    cp::IpTables.name => lambda {|i, u| render_iptables(i, u) }
+
                 }
                 # binding.pry
               end
@@ -58,6 +57,12 @@ module Construqt
                 end
               end
 
+              def render_iptables(i, u)
+                up("/sbin/iptables-restore /etc/network/iptables.cfg")
+                up("/sbin/ip6tables-restore /etc/network/ip6tables.cfg")
+              end
+
+
               def render_device(i, u)
               end
 
@@ -78,8 +83,6 @@ module Construqt
               def render_bridge(i, ud)
                 up("brctl addbr #{ud.ifname}")
                 down("brctl delbr #{ud.ifname}")
-              end
-              def render_dhcp_v4_relay(i, u)
               end
               def render_ip_sec_connect(iface, ud)
                 up("/usr/sbin/ipsec start") # no down this is also global

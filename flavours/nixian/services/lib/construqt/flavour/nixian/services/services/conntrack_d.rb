@@ -34,6 +34,8 @@ module Construqt
                 #binding.pry
                 host.result.etc_conntrackd_conntrackd.add(ifname, iface.address.first_ipv4, other_if.address.first_ipv4)
               end
+              Services.add_renderer(Construqt::Services::ConntrackD, ConntrackD)
+
             end
           end
         end

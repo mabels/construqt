@@ -11,7 +11,6 @@ require_relative 'updown/dns_masq'
 require_relative 'updown/ip_addr'
 require_relative 'updown/ip_proxy_neigh'
 require_relative 'updown/ip_route'
-require_relative 'updown/ip_rule'
 require_relative 'updown/link_mtu_up_down'
 require_relative 'updown/loopback'
 require_relative 'updown/openvpn'
@@ -20,6 +19,7 @@ require_relative 'updown/tunnel'
 require_relative 'updown/vlan'
 require_relative 'updown/wlan'
 require_relative 'updown/ip_sec_connect'
+require_relative 'updown/ip_tables'
 
 module Construqt
   module Flavour

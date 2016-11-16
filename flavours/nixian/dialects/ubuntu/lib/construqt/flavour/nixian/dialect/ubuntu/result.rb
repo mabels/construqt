@@ -7,6 +7,7 @@ require 'date'
 require_relative 'result/etc_network_vrrp'
 require_relative 'result/etc_network_interfaces'
 require_relative 'result/etc_network_iptables'
+require_relative 'result/etc_network_neigh'
 require_relative 'result/etc_conntrackd_conntrackd'
 require_relative 'result/etc_systemd_netdev'
 require_relative 'result/etc_systemd_network'
@@ -26,15 +27,17 @@ module Construqt
         module Ubuntu
           class Result
             attr_reader :ipsec_secret, :ipsec_cert_store, :host, :package_builder, :results
-            attr_reader :up_downer, :etc_network_iptables
-            def initialize(host)
+            attr_reader :up_downer, :etc_network_iptables, :etc_network_neigh
+            def initialize(host, up_downer = nil)
               @host = host
               @etc_network_iptables = EtcNetworkIptables.new
+              @etc_network_neigh = EtcNetworkNeigh.new
               @ipsec_secret = Ipsec::IpsecSecret.new(self)
               @ipsec_cert_store = Ipsec::IpsecCertStore.new(self)
-              @package_builder = Result.create_package_builder
+              @package_builder = Result.create_package_builder(self)
+              # @service_factory = ServiceFactory.new
 
-              @up_downer = UpDowner.new(self)
+              @up_downer = up_downer || UpDowner.new(self)
                 .taste(Result::UpDownerSystemdTaste.new)
                 .taste(Result::UpDownerDebianTaste.new)
                 .taste(Result::UpDownerFlatTaste.new)
@@ -45,7 +48,7 @@ module Construqt
               @etc_network_vrrp
             end
 
-            def self.create_package_builder
+            def self.create_package_builder(result)
               cps = Packages::Builder.new
               cp = Construqt::Resources::Component
               cps.register(cp::UNREF).add('language-pack-en').add('language-pack-de')
@@ -88,7 +91,7 @@ module Construqt
               cps.register(cp::DHCPRELAY).add('wide-dhcpv6-relay').add('dhcp-helper')
               cps.register(cp::WIRELESS).both('crda').both('iw').mother('linux-firmware')
                 .add('wireless-regdb').add('wpasupplicant')
-              Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::FACTORY.keys.each do |srv|
+              result.host.flavour.services.each do |srv|
                 srv.respond_to?(:add_component) && srv.add_component(cps)
               end
               cps
@@ -194,16 +197,18 @@ module Construqt
             end
 
             def commit
-              add(EtcNetworkIptables, etc_network_iptables.commitv4, 
+
+              add(EtcNetworkIptables, etc_network_iptables.commitv4,
                 Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4),
                 'etc', 'network', 'iptables.cfg')
               add(EtcNetworkIptables, etc_network_iptables.commitv6,
                 Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6),
                 'etc', 'network', 'ip6tables.cfg')
+              etc_network_neigh.commit(self)
+
+              up_downer.add(host, Result::UpDown::IpTables.new())
 
               up_downer.commit
-
-
 
               Lxc.write_deployers(@host)
               Docker.write_deployers(@host)

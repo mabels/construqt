@@ -14,13 +14,6 @@ module Construqt
               @interfaces = cfg['interfaces']
             end
 
-            def up_member(iface)
-              []
-            end
-            def down_member(iface)
-              []
-            end
-
             def belongs_to
               return [self.host] if self.interfaces.empty? # and self.cable.connections.empty?
               return self.interfaces

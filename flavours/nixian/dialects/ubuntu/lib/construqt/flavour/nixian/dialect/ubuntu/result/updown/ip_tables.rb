@@ -7,11 +7,8 @@ module Construqt
         module Ubuntu
           class Result
             module UpDown
-              class IpRule
-                attr_reader :ip, :ifname
-                def initialize(ip, ifname)
-                  @ip = ip
-                  @ifname = ifname
+              class IpTables
+                def initialize()
                 end
               end
             end

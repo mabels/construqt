@@ -9,16 +9,19 @@ require_relative 'ubuntu/opvn.rb'
 require_relative 'ubuntu/vrrp.rb'
 require_relative 'ubuntu/firewall.rb'
 require_relative 'ubuntu/container.rb'
-require_relative 'ubuntu/lxc.rb'
-require_relative 'ubuntu/docker.rb'
 require_relative 'ubuntu/result.rb'
 
-require_relative 'ubuntu/services/conntrack_d.rb'
-require_relative 'ubuntu/services/dhcp_v4_relay.rb'
-require_relative 'ubuntu/services/dhcp_v6_relay.rb'
-require_relative 'ubuntu/services/null.rb'
-require_relative 'ubuntu/services/radvd.rb'
-require_relative 'ubuntu/services/route_service.rb'
+# require_relative 'ubuntu/services/conntrack_d.rb'
+# require_relative 'ubuntu/services/dns_masq.rb'
+# require_relative 'ubuntu/services/dhcp_client.rb'
+# require_relative 'ubuntu/services/dhcp_v4_relay.rb'
+# require_relative 'ubuntu/services/dhcp_v6_relay.rb'
+# require_relative 'ubuntu/services/null.rb'
+# require_relative 'ubuntu/services/radvd.rb'
+# require_relative 'ubuntu/services/route_service.rb'
+# require_relative 'ubuntu/services/vagrant.rb'
+# require_relative 'ubuntu/services/docker.rb'
+# require_relative 'ubuntu/services/lxc.rb'
 
 require_relative 'ubuntu/bond.rb'
 require_relative 'ubuntu/bridge.rb'
@@ -31,7 +34,6 @@ require_relative 'ubuntu/vlan.rb'
 require_relative 'ubuntu/wlan.rb'
 require_relative 'ubuntu/systemd.rb'
 require_relative 'ubuntu/tunnel.rb'
-require_relative 'ubuntu/vagrant_file.rb'
 
 module Construqt
   module Flavour
@@ -44,22 +46,41 @@ module Construqt
             def name
               "ubuntu"
             end
-            def produce(cfg)
-              Dialect.new
+            def produce(parent, cfg)
+              Dialect.new(parent, cfg)
             end
           end
 
           class Dialect
+            attr_reader :services
+            def initialize(factory, cfg)
+              @factory = factory
+              @cfg = cfg
+              @services = factory.services.shadow()
+            end
+
             def name
               'ubuntu'
             end
 
-            #        def self.flavour_name
-            #          'ubuntu'
-            #        end
+            def add_host_services(srvs)
+              srvs ||= []
+              srvs += [Construqt::Flavour::Nixian::Services::Lxc.new(),
+                      Construqt::Flavour::Nixian::Services::Docker.new(),
+                      Construqt::Flavour::Nixian::Services::Vagrant.new()]
+              throw "unknown services" unless @services.are_registered_by_instance?(srvs)
+              srvs
+            end
 
-            #Construqt::Flavour::Nixian.add(self)
-
+            def add_interface_services(srvs)
+              srvs ||= []
+              srvs += [
+                Construqt::Flavour::Nixian::Services::DnsMasq.new(),
+                Construqt::Flavour::Nixian::Services::DhcpClient.new()
+              ]
+              throw "unknown services" unless @services.are_registered_by_instance?(srvs)
+              srvs
+            end
 
             def ipsec
               Ipsec::StrongSwan
@@ -113,7 +134,7 @@ module Construqt
             end
 
             def vagrant_factory(host, ohost)
-              VagrantFile.new(host, ohost)
+              Services::VagrantFile.new(host, ohost)
             end
 
             def create_ipsec(cfg)

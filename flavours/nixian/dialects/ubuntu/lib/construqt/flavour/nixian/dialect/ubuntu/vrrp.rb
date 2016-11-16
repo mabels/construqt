@@ -18,13 +18,6 @@ module Construqt
                 Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::VRRP), "etc", "keepalived", "keepalived.conf")
             end
 
-            class RouteService
-              attr_accessor :name, :rt
-              def initialize(name, rt)
-                self.name = name
-                self.rt = rt
-              end
-            end
 
             def build_config(host, iface)
               iface = iface.delegate

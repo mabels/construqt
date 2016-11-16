@@ -3,7 +3,7 @@ module Construqt
     module Nixian
       module Dialect
         module CoreOs
-          class VagrantFile < Construqt::Flavour::Nixian::Dialect::Ubuntu::VagrantFile
+          class VagrantFile < Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::VagrantFile
             def initialize(mother, child)
               super(mother, child)
               if mother == child

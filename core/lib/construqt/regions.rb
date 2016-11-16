@@ -4,7 +4,7 @@ module Construqt
     REGIONS = {}
     class Region
       attr_reader :name, :cables, :hosts, :interfaces, :users, :vlans, :network,
-                  :templates, :resources, :services, :registry, :flavour_factory,
+                  :templates, :resources, :registry, :flavour_factory,
                   :aspects, :dns_resolver
       include Construqt::Util::Chainable
       chainable_attr_value :dest_path
@@ -19,7 +19,6 @@ module Construqt
         @templates = Construqt::Templates.new(self)
         @users = Construqt::Users.new(self)
         @cables = Construqt::Cables.new(self)
-        @services = Construqt::Services.new(self)
         @resources = Construqt::Resources.new(self)
         @flavour_factory = Construqt::Flavour::Factory.new(self)
         @dns_resolver = Construqt::Dns.new(self, network)

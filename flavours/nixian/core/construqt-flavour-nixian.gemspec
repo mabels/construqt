@@ -1,11 +1,10 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'construqt/flavour/nixian/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "construqt-flavour-nixian"
-  spec.version       = Construqt::Flavour::Nixian::VERSION
+  spec.version       = "0.1.0"
   spec.authors       = ["Meno Abels"]
   spec.email         = ["meno.abels@construqt.me"]
   spec.summary       = %q{Construqt me}

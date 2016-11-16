@@ -65,6 +65,7 @@ module Construqt
             end
 
             class EtcSystemdNetwork
+              attr_reader :interfaces
               def initialize
                 @interfaces = {}
               end

@@ -2,10 +2,12 @@
 require 'construqt/flavour/nixian.rb'
 
 
-require 'construqt/flavour/nixian/dialect/ubuntu.rb'
+require 'construqt/flavour/nixian/dialect/ubuntu'
+
+require 'construqt/flavour/nixian/services'
 
 require_relative 'coreos/result.rb'
-require_relative 'coreos/vagrant_file.rb'
+# require_relative 'coreos/vagrant_file.rb'
 
 module Construqt
   module Flavour
@@ -18,12 +20,19 @@ module Construqt
             def name
               "coreos"
             end
-            def produce(cfg)
-              Dialect.new
+            def produce(parent, cfg)
+              Dialect.new(parent, cfg)
             end
           end
 
           class Dialect
+            attr_reader :services
+            def initialize(factory, cfg)
+              @factory = factory
+              @cfg = cfg
+              @services = factory.services.shadow()
+            end
+
             def name
               'coreos'
             end
@@ -77,9 +86,9 @@ module Construqt
               host
             end
 
-            def vagrant_factory(host, ohost)
-              VagrantFile.new(host, ohost)
-            end
+            # def vagrant_factory(host, ohost)
+            #   VagrantFile.new(host, ohost)
+            # end
 
             def create_interface(name, cfg)
               cfg['name'] = name

@@ -36,7 +36,7 @@ module Construqt
               host.result.up_downer.add(iface, Result::UpDown::DhcpV6.new()) if iface.address.dhcpv6?
 
               host.result.up_downer.add(iface, Result::UpDown::Loopback.new()) if iface.address.loopback?
-              # lines.add(iface.flavour) if iface.flavour
+              lines.add(iface.flavour) if iface.flavour
               iface.address.ips.each do |ip|
                 if family.nil? ||
                     (!family.nil? && family == Construqt::Addresses::IPV6 && ip.ipv6?) ||
@@ -55,7 +55,6 @@ module Construqt
                     host.result.up_downer.add(iface, Result::UpDown::IpRoute.new(route, ifname))
                 end
               end
-
               proxy_neigh(ifname, iface)
               Firewall.create(host, ifname, iface, family)
             end
@@ -82,6 +81,11 @@ module Construqt
                 end
                 list.each do |lip|
                   iface.host.result.up_downer.add(iface, Result::UpDown::IpProxyNeigh.new(lip, ifname))
+                  iface.host.result.etc_network_neigh.get(ifname) do |writer|
+                    ipv = lip.ipv6? ? "-6 ": "-4 "
+                    writer.up("ip #{ipv}neigh add proxy #{lip.to_s} dev #{ifname}")
+                    writer.down("ip #{ipv}neigh del proxy #{lip.to_s} dev #{ifname}")
+                  end
                 end
               end
             end
@@ -90,23 +94,6 @@ module Construqt
               self.class.build_config(host, iface, node)
             end
 
-            def self.add_services(host, ifname, iface,  family)
-              iface.services && iface.services.each do |service|
-                Services.get_renderer(service).interfaces(host, ifname, iface,  family)
-              end
-            end
-
-            def self.add_dhcp_client(host, ifname, iface,  family)
-              return if iface.address.nil?
-              return if !iface.address.dhcpv4?
-              host.result.up_downer.add(iface, Result::UpDown::DhcpClient.new(ifname))
-            end
-
-            def self.add_dhcp_server(host, ifname, iface,  family)
-              return unless iface.dhcp
-              host.result.add_component(Construqt::Resources::Component::DNSMASQ)
-              host.result.up_downer.add(iface, Result::UpDown::DnsMasq.new(iface, ifname))
-            end
 
             def self.build_config(host, iface, node, ifname = nil, family = nil, mtu = nil, skip_link = nil)
               # binding.pry
@@ -135,9 +122,9 @@ module Construqt
               end
               add_address(host, ifname, iface.delegate, family)
               #binding.pry if ifname == "v202"
-              add_dhcp_client(host, ifname, iface, family)
-              add_dhcp_server(host, ifname, iface,  family)
-              add_services(host, ifname, iface.delegate,  family)
+              iface.services.each do |service|
+                host.flavour.services.find(service).interfaces(host, ifname, iface,  family)
+              end
 
             end
           end

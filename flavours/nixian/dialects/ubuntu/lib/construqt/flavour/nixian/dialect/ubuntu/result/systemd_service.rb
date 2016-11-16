@@ -12,13 +12,12 @@ module Construqt
               chainable_attr_value :command, "start"
               chainable_attr_value :type, "simple"
               attr_reader :afters, :befores, :conflicts
-              def initialize(result, name)
+              def initialize(name)
                 # binding.pry
                 @enable = true
                 @command = "start"
                 @skip_content = false
                 @name = name
-                @result = result
                 @entries = {}
                 @exec_starts = []
                 @exec_stops = []
@@ -113,9 +112,9 @@ module Construqt
                 Construqt::Util.render(binding, "systemd_service.erb")
               end
 
-              def commit
-                @result.add(SystemdService, as_systemd_file,
-                  Construqt::Resources::Rights.root_0644,
+              def commit(result)
+                result.add(SystemdService, as_systemd_file,
+                  Construqt::Resources::Rights.root_0644(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd),
                     'etc', 'systemd', 'system', @name)
 
               end

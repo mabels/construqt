@@ -1,0 +1,7 @@
+#!/bin/sh
+
+to_remove=$(systemctl -q list-unit-files | awk '{print $1} | grep '^construqt' | grep -v -e $1)
+for i in to_remove
+do
+  systemctl disable $i
+done

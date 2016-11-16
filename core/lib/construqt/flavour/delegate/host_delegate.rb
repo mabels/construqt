@@ -45,17 +45,17 @@ module Construqt
           self.delegate.spanning_tree
         end
 
-        def docker_deploy
-          self.delegate.docker_deploy
-        end
+        # def docker_deploy
+        #   self.delegate.docker_deploy
+        # end
 
-        def lxc_deploy
-          self.delegate.lxc_deploy
-        end
-
-        def vagrant_deploy
-          self.delegate.vagrant_deploy
-        end
+        # def lxc_deploy
+        #   self.delegate.lxc_deploy
+        # end
+        #
+        # def vagrant_deploy
+        #   self.delegate.vagrant_deploy
+        # end
 
         def mother
           if self.delegate.respond_to? :mother

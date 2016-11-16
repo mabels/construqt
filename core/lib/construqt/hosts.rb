@@ -1,6 +1,6 @@
-require_relative 'hosts/docker.rb'
-require_relative 'hosts/lxc.rb'
-require_relative 'hosts/vagrant.rb'
+# require_relative 'hosts/docker.rb'
+# require_relative 'hosts/lxc.rb'
+# require_relative 'hosts/vagrant.rb'
 module Construqt
 
   class Hosts
@@ -62,9 +62,10 @@ module Construqt
       cfg['dns_server'] ||= false
       cfg['result'] = nil
       cfg['shadow'] ||= nil
-      cfg['flavour'] = @region.flavour_factory.produce(cfg)
+      flavour = cfg['flavour'] = @region.flavour_factory.produce(cfg)
       #		cfg['clazz'] = cfg['flavour'].clazz("host")
       throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
+      cfg['services'] = flavour.add_host_services(cfg['services'])
       cfg['region'] = @region
       host = cfg['flavour'].create_host(name, cfg)
       block.call(host)
@@ -88,7 +89,10 @@ module Construqt
       end
 
       @hosts[name] = host
-      host.interfaces.values.map{ |i| i.services }.flatten.sort{|a,b| a.name <=> a.name}.uniq.each do |srv|
+      (host.services + host.interfaces.values.map do |i|
+        binding.pry unless i
+        i.services
+      end).flatten.each do |srv|
       #host.region.services.services.values.each do |srv|
         if srv.respond_to?(:completed_host)
           srv.completed_host(host)

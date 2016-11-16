@@ -10,9 +10,13 @@ CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../../'
   "#{CONSTRUQT_PATH}/construqt/flavours/plantuml/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/gojs/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/core/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/coreos/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/ubuntu/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/services/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/mikrotik/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/ciscian/core/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/ciscian/dialects/dlink/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/ciscian/dialects/dell/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/ciscian/dialects/hp/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/unknown/lib"
 ].each{|path| $LOAD_PATH.unshift(path) }
@@ -20,10 +24,13 @@ require 'rubygems'
 require 'construqt'
 require 'construqt/flavour/nixian'
 require 'construqt/flavour/nixian/dialect/ubuntu'
+require 'construqt/flavour/nixian/dialect/coreos'
 require 'construqt/flavour/unknown'
 require 'construqt/flavour/mikrotik'
 require 'construqt/flavour/ciscian'
 require 'construqt/flavour/ciscian/dialect/hp'
+require 'construqt/flavour/ciscian/dialect/dell'
+require 'construqt/flavour/ciscian/dialect/dlink'
 
 require_relative './firewall.rb'
 if ARGV.include?("secure")
@@ -31,24 +38,29 @@ if ARGV.include?("secure")
 else
   require_relative './crashtestdummy.rb'
 end
+require_relative "./postfix.rb"
 
 def setup_region(name, network)
   region = Construqt::Regions.add(name, network)
   nixian = Construqt::Flavour::Nixian::Factory.new
+  nixian.add_service(Postfix::Impl.new)
+  nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::CoreOs::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Ubuntu::Factory.new)
   region.flavour_factory.add(nixian)
   region.flavour_factory.add(Construqt::Flavour::Unknown::Factory.new)
   region.flavour_factory.add(Construqt::Flavour::Mikrotik::Factory.new)
   ciscian = Construqt::Flavour::Ciscian::Factory.new
+  ciscian.add_dialect(Construqt::Flavour::Ciscian::Dialect::Dell::Factory.new)
+  ciscian.add_dialect(Construqt::Flavour::Ciscian::Dialect::Dlink::Factory.new)
   ciscian.add_dialect(Construqt::Flavour::Ciscian::Dialect::Hp::Factory.new)
   region.flavour_factory.add(ciscian)
   if ARGV.include?("plantuml")
     require 'construqt/flavour/plantuml.rb'
     region.add_aspect(Construqt::Flavour::Plantuml.new)
   end
-  region.network.ntp.add_server(region.network.addresses.add_ip("5.9.110.236").add_ip("178.23.124.2")).timezone("MET")
-  region.services.add(Construqt::Services::Radvd.new("RADVD").adv_autonomous)
 
+  region.network.ntp.add_server(region.network.addresses.add_ip("5.9.110.236").add_ip("178.23.124.2")).timezone("MET")
+  #region.services.add(Construqt::Services::Radvd.new("RADVD").adv_autonomous)
 
   region.users.add("menabe", "group" => "admin", "full_name" => "Meno Abels", "public_key" => <<KEY, "email" => "meno.abels@construqt.net")
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDIQpC2scaVXEaNuwtq4n6Vtht2WHYxtDFKe44JNFEsZGyQjyL9c2qkmQQGCF+2g3HrIPDTCCCWQ3GUiXGAlQ0/rf6sLqcm4YMXt+hgHU5VeciUIDEySCKdCPC419wFPBw6oKdcN1pLoIdWoF4LRDcjcrKKAlkdNJ/oLnl716piLdchABO9NXGxBpkLsJGK8qw390O1ZqZMe9wEAL9l/A1/49v8LfzELp0/fhSmiXphTVI/zNVIp/QIytXzRg74xcYpBjHk1TQZHuz/HYYsWwccnu7vYaTDX0CCoAyEt599f9u+JQ4oW0qyLO0ie7YcmR6nGEW4DMsPcfdqqo2VyYy4ix3U5RI2JcObfP0snYwPtAdVeeeReXi3c/E7bGLeCcwdFeFBfHSA9PDGxWVlxh/oCJaE7kP7eBhXNjN05FodVdNczKI5T9etfQ9VHILFrvpEREg1+OTiI58RmwjxS5ThloqXvr/nZzhIwTsED0KNW8wE4pjyotDJ8jaW2d7oVIMdWqE2M9Z1sLqDDdhHdVMFxk6Hl2XfqeqO2Jnst7qzbHAN/S3hvSwysixWJEcLDVG+cg1KRwz4qafCU5oHSp8aNNOk4RZozboFjac17nOmfPfnjC/LLayjSkEBZ+eFi+njZRLDN92k3PvHYFEB3USbHYzICsuDcf+L4cslX03g7w== openpgp:0x5F1BE34D
@@ -130,7 +142,6 @@ Scott.run(region)
 require_relative "./ooble.rb"
 Ooble.run(region)
 
-require_relative "./postfix.rb"
 Postfix.run(region)
 
 require_relative "./clavator.rb"

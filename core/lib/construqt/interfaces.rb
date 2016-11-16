@@ -52,7 +52,7 @@ module Construqt
       cfg['clazz'] ||= "device"
       cfg['address'] ||= region.network.addresses.create
       cfg['plug_in'] ||= nil
-      cfg['services'] ||= []
+      cfg['services'] = host.flavour.add_interface_services(cfg['services'])
       delegates['firewalls'] = cfg.delete('firewalls')||[]
       (dev_name, iface) = Construqt::Tags.add("#{dev_name_tag}##{host.name}-#{dev_name}") do |name|
         host.flavour.create_interface(name, cfg)

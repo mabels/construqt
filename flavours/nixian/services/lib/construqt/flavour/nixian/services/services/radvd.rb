@@ -59,25 +59,9 @@ module Construqt
                 return unless iface.address && iface.address.first_ipv6
                 register_taste(host.delegate)
                 host.result.up_downer.add(iface, Result::UpDown::Radvd.new(ifname))
-                host.result.add(self, <<RADV, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::RADVD), "etc", "network", "radvd.#{ifname}.conf")
-interface #{ifname}
-{
-        AdvManagedFlag on;
-        AdvSendAdvert on;
-        AdvOtherConfigFlag on;
-        #AdvAutonomous on;
-        #AdvLinkMTU 1480;
-        #MinRtrAdvInterval 3;
-        #MaxRtrAdvInterval 60;
-        prefix #{iface.address.first_ipv6.network.to_string}
-        {
-                AdvOnLink on;
-                AdvAutonomous #{@service.adv_autonomous? ? "on" : "off"};
-                AdvRouterAddr on;
-        };
-
-};
-RADV
+                host.result.add(self, Util.render("radvd.conf.erb"),
+                  Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::RADVD),
+                  "etc", "network", "radvd.#{ifname}.conf")
               end
             end
           end
@@ -86,3 +70,11 @@ RADV
     end
   end
 end
+
+self.add_renderer(Construqt::Services::DhcpV4Relay, DhcpV4Relay)
+self.add_renderer(Construqt::Services::DhcpV6Relay, DhcpV6Relay)
+self.add_renderer(Construqt::Services::Radvd, Radvd)
+self.add_renderer(Construqt::Services::ConntrackD, ConntrackD)
+self.add_renderer(Construqt::Services::IpsecStartStop, Null)
+self.add_renderer(Construqt::Services::BgpStartStop, Null)
+self.add_renderer(Construqt::Flavour::Nixian::Dialect::Ubuntu::Vrrp::RouteService, RouteService)

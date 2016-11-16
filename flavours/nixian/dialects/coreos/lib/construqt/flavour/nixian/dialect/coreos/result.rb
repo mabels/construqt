@@ -44,13 +44,20 @@ module Construqt
           end
 
           class Result
-            attr_reader :ures
+            attr_reader :ures, :systemd_taste
             def initialize(host)
-              @ures = Construqt::Flavour::Nixian::Dialect::Ubuntu::Result.new(host)
+              m = Construqt::Flavour::Nixian::Dialect::Ubuntu::Result
+              @systemd_taste = m::UpDownerSystemdTaste.new
+              up_downer = m::UpDowner.new(self).taste(systemd_taste)
+              @ures = m.new(host, up_downer)
             end
 
             def host
               @ures.host
+            end
+
+            def up_downer
+              @ures.up_downer
             end
 
             def add(block, digest, *path)
@@ -63,6 +70,10 @@ module Construqt
 
             def etc_network_iptables
               @ures.etc_network_iptables
+            end
+
+            def etc_network_neigh
+              @ures.etc_network_neigh
             end
 
             def etc_network_interfaces
@@ -119,38 +130,35 @@ module Construqt
                   @ures.etc_network_iptables.commitv6,
                   Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6),
                   'etc', 'network', 'ip6tables.cfg')
-              # add(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::EtcNetworkInterfaces,
-              #     @ures.etc_network_interfaces.commit,
-              #     Construqt::Resources::Rights.root_0644,
-              #     'etc', 'network', 'interfaces')
 
-              # binding.pry
               Construqt::Flavour::Nixian::Dialect::Ubuntu::Docker.write_deployers(host)
 
               ccc = CloudInit.new(host)
-              @ures.etc_systemd_netdev.commit(@ures) # just for debugging
-              @ures.etc_systemd_netdev.netdevs(@ures).each do |netdev|
+              @systemd_taste.etc_systemd_netdev.commit(@ures) # just for debugging
+              @systemd_taste.etc_systemd_netdev.netdevs(@ures).each do |netdev|
                 ccc.add_units(netdev)
               end
 
-              @ures.etc_systemd_network.commit(@ures) # just for debugging
-              @ures.etc_systemd_network.networks(@ures).each do |network|
+              @systemd_taste.etc_systemd_network.commit(@ures) # just for debugging
+              @systemd_taste.etc_systemd_network.networks(@ures).each do |network|
                 ccc.add_units(network)
               end
 
-
               modules_service = Construqt::Flavour::Nixian::Dialect::Ubuntu::Result::SystemdService
-                .new(@ures, "systemd-modules-load.service")
+                .new("systemd-modules-load.service")
                 .skip_content
                 .command("restart")
               ccc.add_units(modules_service)
 
-
-
+              @systemd_taste.etc_systemd_service.commit(@ures) # just for debugging
+              @systemd_taste.etc_systemd_service.services.values.each do |service|
+                ccc.add_units(service)
+              end
 
               @ures.results.each do |fname, block|
                 if block.right.component == Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd
-                  ccc.add_units(block.clazz)
+                  binding.pry
+                  # ccc.add_units(block.clazz)
                 else
                   write_file(ccc, host, fname, block)
                 end

@@ -1,7 +1,5 @@
-module Postfix
-  POSTFIX = :postfix
+class Postfix
 
-  class Smtp
     include Construqt::Util::Chainable
     attr_reader :name
     attr_accessor :services
@@ -9,6 +7,21 @@ module Postfix
     def initialize(name)
       @name = name
     end
+
+  class Impl
+    attr_reader :service_type
+    def initialize
+        @service_type = Postfix
+    end
+
+    def attach_service(service)
+      @service = service
+    end
+  end
+
+
+  POSTFIX = :postfix
+
     def self.add_component(cps)
       cps.register(POSTFIX).add('postfix')
     end
@@ -71,4 +84,4 @@ MAINCF
       end
     end
   end
-end
+#end

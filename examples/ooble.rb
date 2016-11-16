@@ -24,11 +24,11 @@ module Ooble
                                                        .add_ip("fd:a9fe:4c::1/64"))
     end
 
-    # "lxc_deploy" => Construqt::Hosts::Lxc.new.restart.template("ao-template")
+    # "lxc_deploy" => Construqt::Flavour::Nixian::Services::Lxc.new.restart.template("ao-template")
     ooble_border_br0 = region.hosts.add("ooble-border-br0", "flavour" => "nixian",
       "dialect" => "ubuntu", "mother" => ooble_mother,
-      "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined
-                      .release("wily").template("ao-template")) do |host|
+      "services" => [Construqt::Flavour::Nixian::Services::Lxc.new.aa_profile_unconfined
+                      .release("wily").template("ao-template")]) do |host|
         region.interfaces.add_device(host, "lo", "mtu" => "9000",
                      :description=>"#{host.name} lo",
                      "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -50,8 +50,8 @@ module Ooble
 
     ooble_ipsec_gw = region.hosts.add("ooble-ipsec-gw", "flavour" => "nixian", "dialect" => "ubuntu",
         "mother" => ooble_mother,
-        "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined
-                        .release("wily").template("ao-template")) do |host|
+        "services" => [Construqt::Flavour::Nixian::Services::Lxc.new.aa_profile_unconfined
+                        .release("wily").template("ao-template")]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

@@ -18,7 +18,7 @@ module Construqt
       end
 
       def inspect
-        "@<#{self.class.name}:#{self.object_id} name=#{@name} domain=#{@domain} "+
+        "#<#{self.class.name}:#{self.object_id} name=#{@name} domain=#{@domain} "+
         " contact=#{@contact} networks=[#{@networks.map{|i| i.inspect }.join(",")}]"+
         " addresses=#{@addresses.inspect} "+
         " dns_resolver=#{@dns_resolver.inspect} "+
