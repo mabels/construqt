@@ -22,7 +22,7 @@ module Construqt
 
             def build_config(host, iface, node)
                 # ip link add link eth0 name eth0.8 type vlan id 8
-              host.result.up_downer.add(iface, Result::UpDown::Vlan.new())
+              host.result.up_downer.add(iface, Tastes::Entities::Vlan.new())
               Device.build_config(host, iface, node)
             end
           end

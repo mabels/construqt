@@ -81,8 +81,10 @@ module Construqt
               cfg['name'] = name
               cfg['result'] = nil
               host = Construqt::Flavour::Nixian::Dialect::Ubuntu::Host.new(cfg)
-              host.result = CoreOs::Result.new(host)
-              #binding.pry
+              up_downer = UpDowner.new(self)
+                 .taste(Result::UpDownerSystemdTaste.new)
+              host.result = CoreOs::Result.new(host, up_downer)
+              @services.add(VagrantServiceImpl.new)
               host
             end
 

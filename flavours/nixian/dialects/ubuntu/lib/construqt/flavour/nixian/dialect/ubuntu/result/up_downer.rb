@@ -1,25 +1,5 @@
-require_relative 'updown/device'
-require_relative 'updown/bgp'
-require_relative 'updown/bridge'
-require_relative 'updown/bridge_member'
-require_relative 'updown/dhcp_client'
-require_relative 'updown/dhcp_v4_relay'
-require_relative 'updown/dhcp_v6_relay'
-require_relative 'updown/dhcp_v4'
-require_relative 'updown/dhcp_v6'
-require_relative 'updown/dns_masq'
-require_relative 'updown/ip_addr'
-require_relative 'updown/ip_proxy_neigh'
-require_relative 'updown/ip_route'
-require_relative 'updown/link_mtu_up_down'
-require_relative 'updown/loopback'
-require_relative 'updown/openvpn'
-require_relative 'updown/radvd'
-require_relative 'updown/tunnel'
-require_relative 'updown/vlan'
-require_relative 'updown/wlan'
-require_relative 'updown/ip_sec_connect'
-require_relative 'updown/ip_tables'
+
+require 'construqt/flavours/nixian/tastes/entities'
 
 module Construqt
   module Flavour
@@ -37,11 +17,17 @@ module Construqt
               def add(iface, ud)
                 # @updos.push(ud)
                 @tastes.each do |t|
-                  dispatch = t.dispatch[ud.class.name]
+                  dispatch = t.dispatch(ud.class.name)
                   throw "unknown dispatch for #{t.class.name} on #{ud.class.name}" unless dispatch
                   dispatch.call(iface, ud)
                 end
                 self
+              end
+
+              def request_tastes_from(srv)
+                @tastes.each do |taste|
+                  taste.register_srv(srv.entities_for_taste(taste))
+                end
               end
 
               def taste(taste)

@@ -16,9 +16,9 @@ require_relative 'ipsec/ipsec_secret'
 require_relative 'ipsec/ipsec_cert_store'
 require_relative 'result/packager_sh'
 require_relative 'result/up_downer'
-require_relative 'result/up_downer_systemd_taste'
-require_relative 'result/up_downer_debian_taste'
-require_relative 'result/up_downer_flat_taste'
+#require_relative 'result/up_downer_systemd_taste'
+#require_relative 'result/up_downer_debian_taste'
+#require_relative 'result/up_downer_flat_taste'
 
 module Construqt
   module Flavour
@@ -28,7 +28,7 @@ module Construqt
           class Result
             attr_reader :ipsec_secret, :ipsec_cert_store, :host, :package_builder, :results
             attr_reader :up_downer, :etc_network_iptables, :etc_network_neigh
-            def initialize(host, up_downer = nil)
+            def initialize(host, up_downer)
               @host = host
               @etc_network_iptables = EtcNetworkIptables.new
               @etc_network_neigh = EtcNetworkNeigh.new
@@ -36,11 +36,7 @@ module Construqt
               @ipsec_cert_store = Ipsec::IpsecCertStore.new(self)
               @package_builder = Result.create_package_builder(self)
               # @service_factory = ServiceFactory.new
-
-              @up_downer = up_downer || UpDowner.new(self)
-                .taste(Result::UpDownerSystemdTaste.new)
-                .taste(Result::UpDownerDebianTaste.new)
-                .taste(Result::UpDownerFlatTaste.new)
+              @up_downer = up_downer
               @results = {}
             end
 
@@ -206,7 +202,7 @@ module Construqt
                 'etc', 'network', 'ip6tables.cfg')
               etc_network_neigh.commit(self)
 
-              up_downer.add(host, Result::UpDown::IpTables.new())
+              up_downer.add(host, Tastes::Entities::IpTables.new())
 
               up_downer.commit
 

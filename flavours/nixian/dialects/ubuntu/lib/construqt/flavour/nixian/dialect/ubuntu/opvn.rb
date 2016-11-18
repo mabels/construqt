@@ -53,7 +53,7 @@ module Construqt
                 push_routes = iface.push_routes.routes.each{|route| "push \"route #{route.dst.to_string}\"" }.join("\n")
               end
 
-              host.result.up_downer.add(iface, Result::UpDown::OpenVpn.new(iface))
+              host.result.up_downer.add(iface, Tastes::Entities::OpenVpn.new(iface))
 
               host.result.add(self, iface.cacert, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-cacert.pem")
               host.result.add(self, iface.hostcert, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-hostcert.pem")

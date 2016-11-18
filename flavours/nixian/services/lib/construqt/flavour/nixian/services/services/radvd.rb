@@ -13,11 +13,11 @@ module Construqt
               def register_taste(host)
                 host.result.up_downer.tastes.each do |t|
                   if t.kind_of?(Result::UpDownerDebianTaste)
-                    t.dispatch[Result::UpDown::Radvd.name] = lambda {|i, u| render_debian(t, i, u) }
+                    t.dispatch[Tastes::Entities::Radvd.name] = lambda {|i, u| render_debian(t, i, u) }
                   elsif t.kind_of?(Result::UpDownerFlatTaste)
-                    t.dispatch[Result::UpDown::Radvd.name] = lambda {|i, u| render_flat(t, i, u) }
+                    t.dispatch[Tastes::Entities::Radvd.name] = lambda {|i, u| render_flat(t, i, u) }
                   elsif t.kind_of?(Result::UpDownerSystemdTaste)
-                    t.dispatch[Result::UpDown::Radvd.name] = lambda {|i, u| render_systemd(t, i, u) }
+                    t.dispatch[Tastes::Entities::Radvd.name] = lambda {|i, u| render_systemd(t, i, u) }
                   else
                     throw "unknown tast"
                   end
@@ -58,7 +58,7 @@ module Construqt
                 #      binding.pry
                 return unless iface.address && iface.address.first_ipv6
                 register_taste(host.delegate)
-                host.result.up_downer.add(iface, Result::UpDown::Radvd.new(ifname))
+                host.result.up_downer.add(iface, Tastes::Entities::Radvd.new(ifname))
                 host.result.add(self, Util.render("radvd.conf.erb"),
                   Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::RADVD),
                   "etc", "network", "radvd.#{ifname}.conf")

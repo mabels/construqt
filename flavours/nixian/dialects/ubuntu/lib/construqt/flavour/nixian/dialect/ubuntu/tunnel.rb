@@ -50,7 +50,7 @@ module Construqt
               local = cfg.my.first_by_family(cfg.transport_family).to_s
               remote = cfg.other.first_by_family(cfg.transport_family).to_s
               throw "there must be a local or remote address" if local.nil? or remote.nil?
-              host.result.up_downer.add(iface, Result::UpDown::Tunnel.new(cfg, local, remote))
+              host.result.up_downer.add(iface, Tastes::Entities::Tunnel.new(cfg, local, remote))
 
               Device.build_config(host, iface, node)
 

@@ -1,5 +1,4 @@
 require_relative 'base_device'
-require_relative 'result/updown/bridge'
 
 module Construqt
   module Flavour
@@ -18,7 +17,7 @@ module Construqt
             end
 
             def up_down_member(iface)
-              [Result::UpDown::BridgeMember.new(self.name, iface.name)]
+              [Tastes::Entities::BridgeMember.new(self.name, iface.name)]
             end
 
             # def belongs_to
@@ -37,7 +36,7 @@ module Construqt
               #   port_list = iface.interfaces.map { |i| i.name }.join(" ")
               #   host.result.etc_network_interfaces.get(iface).lines.add("bridge_ports #{port_list}")
               # else
-              host.result.up_downer.add(iface, Result::UpDown::Bridge.new(iface.name))
+              host.result.up_downer.add(iface, Tastes::Entities::Bridge.new(iface.name))
               Device.build_config(host, iface, node)
             end
           end

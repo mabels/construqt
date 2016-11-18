@@ -25,7 +25,6 @@ module Construqt
             IpsecStartStopImpl,
             RadvdImpl,
             LxcImpl,
-            VagrantImpl,
             DockerImpl,
             DnsMasqImpl,
           ].each do |clazz|

@@ -97,7 +97,7 @@ module Construqt
               # #end
               # writer = host.result.etc_network_interfaces.get(iface, "fanout-de")
               # binding.pry
-              host.result.up_downer.add(gre, Result::UpDown::IpSecConnect.new("#{self.host.name}-#{self.other.host.name}"))
+              host.result.up_downer.add(gre, Tastes::Entities::IpSecConnect.new("#{self.host.name}-#{self.other.host.name}"))
 
               #writer.skip_interfaces.header.interface_name(gre.name)
 

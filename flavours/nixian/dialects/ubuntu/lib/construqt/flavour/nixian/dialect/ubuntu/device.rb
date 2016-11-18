@@ -32,19 +32,19 @@ module Construqt
                 return
               end
 
-              host.result.up_downer.add(iface, Result::UpDown::DhcpV4.new()) if iface.address.dhcpv4?
-              host.result.up_downer.add(iface, Result::UpDown::DhcpV6.new()) if iface.address.dhcpv6?
+              host.result.up_downer.add(iface, Tastes::Entities::DhcpV4.new()) if iface.address.dhcpv4?
+              host.result.up_downer.add(iface, Tastes::Entities::DhcpV6.new()) if iface.address.dhcpv6?
 
-              host.result.up_downer.add(iface, Result::UpDown::Loopback.new()) if iface.address.loopback?
+              host.result.up_downer.add(iface, Tastes::Entities::Loopback.new()) if iface.address.loopback?
               lines.add(iface.flavour) if iface.flavour
               iface.address.ips.each do |ip|
                 if family.nil? ||
                     (!family.nil? && family == Construqt::Addresses::IPV6 && ip.ipv6?) ||
                     (!family.nil? && family == Construqt::Addresses::IPV4 && ip.ipv4?)
                   prefix = ip.ipv6? ? "-6 " : ""
-                  host.result.up_downer.add(iface, Result::UpDown::IpAddr.new(ip, ifname))
+                  host.result.up_downer.add(iface, Tastes::Entities::IpAddr.new(ip, ifname))
                   if ip.routing_table
-                    host.result.up_downer.add(iface, Result::UpDown::IpRouteTable.new(ip, ifname))
+                    host.result.up_downer.add(iface, Tastes::Entities::IpRouteTable.new(ip, ifname))
                   end
                 end
               end
@@ -52,7 +52,7 @@ module Construqt
                 if family.nil? ||
                     (!family.nil? && family == Construqt::Addresses::IPV6 && route.via.ipv6?) ||
                     (!family.nil? && family == Construqt::Addresses::IPV4 && route.via.ipv4?)
-                    host.result.up_downer.add(iface, Result::UpDown::IpRoute.new(route, ifname))
+                    host.result.up_downer.add(iface, Tastes::Entities::IpRoute.new(route, ifname))
                 end
               end
               proxy_neigh(ifname, iface)
@@ -80,7 +80,7 @@ module Construqt
                   list << ip
                 end
                 list.each do |lip|
-                  iface.host.result.up_downer.add(iface, Result::UpDown::IpProxyNeigh.new(lip, ifname))
+                  iface.host.result.up_downer.add(iface, Tastes::Entities::IpProxyNeigh.new(lip, ifname))
                   iface.host.result.etc_network_neigh.get(ifname) do |writer|
                     ipv = lip.ipv6? ? "-6 ": "-4 "
                     writer.up("ip #{ipv}neigh add proxy #{lip.to_s} dev #{ifname}")
@@ -107,12 +107,12 @@ module Construqt
               host.result.add_component(iface.class.const_get("COMPONENT"))
 
 
-              host.result.up_downer.add(iface, Result::UpDown::Device.new(ifname))
+              host.result.up_downer.add(iface, Tastes::Entities::Device.new(ifname))
               ifname = ifname || iface.name || writer.header.get_interface_name
               # iface.call_on_iface_up_down(writer, ifname)
               unless skip_link
                 # binding.pry
-                host.result.up_downer.add(iface, Result::UpDown::LinkMtuUpDown.new(mtu || iface.delegate.mtu, ifname))
+                host.result.up_downer.add(iface, Tastes::Entities::LinkMtuUpDown.new(mtu || iface.delegate.mtu, ifname))
               end
               iface.node.parents.each do |parent_node|
                 parent = parent_node.link.ref

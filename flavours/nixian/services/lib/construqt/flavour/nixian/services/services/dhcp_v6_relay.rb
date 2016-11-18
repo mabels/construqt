@@ -14,11 +14,11 @@ module Construqt
               def register_taste(host)
                 host.result.up_downer.tastes.each do |t|
                   if t.kind_of?(Result::UpDownerDebianTaste)
-                    t.dispatch[Result::UpDown::DhcpV6Relay.name] = lambda {|i, u| render_debian(t, i, u) }
+                    t.dispatch[Tastes::Entities::DhcpV6Relay.name] = lambda {|i, u| render_debian(t, i, u) }
                   elsif t.kind_of?(Result::UpDownerFlatTaste)
-                    t.dispatch[Result::UpDown::DhcpV6Relay.name] = lambda {|i, u| render_flat(t, i, u) }
+                    t.dispatch[Tastes::Entities::DhcpV6Relay.name] = lambda {|i, u| render_flat(t, i, u) }
                   elsif t.kind_of?(Result::UpDownerSystemdTaste)
-                    t.dispatch[Result::UpDown::DhcpV6Relay.name] = lambda {|i, u| render_systemd(t, i, u) }
+                    t.dispatch[Tastes::Entities::DhcpV6Relay.name] = lambda {|i, u| render_systemd(t, i, u) }
                   else
                     throw "unknown tast"
                   end
@@ -70,7 +70,7 @@ module Construqt
                 return if inbounds.empty?
                 upstreams = Construqt::Tags.find(@service.upstream_tag).select{ |cqip| cqip.ipv6? }
                 return if upstreams.empty?
-                host.result.up_downer.add(iface, Result::UpDown::DhcpV6Relay.new(xxxx))
+                host.result.up_downer.add(iface, Tastes::Entities::DhcpV6Relay.new(xxxx))
                 writer.lines.up(up(ifname, inbounds, upstreams), :extra)
                 writer.lines.down(down(ifname, inbounds, upstreams), :extra)
                 host.result.add_component(Construqt::Resources::Component::DHCPRELAY)

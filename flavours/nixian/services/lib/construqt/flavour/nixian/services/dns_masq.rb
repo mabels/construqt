@@ -21,11 +21,11 @@ module Construqt
           def register_taste(host)
             host.result.up_downer.tastes.each do |t|
               if t.kind_of?(Result::UpDownerDebianTaste)
-                t.dispatch[Result::UpDown::DnsMasq.name] = lambda {|i, u| render_debian(t, i, u) }
+                t.dispatch[Tastes::Entities::DnsMasq.name] = lambda {|i, u| render_debian(t, i, u) }
               elsif t.kind_of?(Result::UpDownerFlatTaste)
-                t.dispatch[Result::UpDown::DnsMasq.name] = lambda {|i, u| render_flat(t, i, u) }
+                t.dispatch[Tastes::Entities::DnsMasq.name] = lambda {|i, u| render_flat(t, i, u) }
               elsif t.kind_of?(Result::UpDownerSystemdTaste)
-                t.dispatch[Result::UpDown::DnsMasq.name] = lambda {|i, u| render_systemd(t, i, u) }
+                t.dispatch[Tastes::Entities::DnsMasq.name] = lambda {|i, u| render_systemd(t, i, u) }
               else
                 throw "unknown tast"
               end
@@ -41,7 +41,7 @@ module Construqt
           def render_debian(t, iface, ud)
             return unless iface.dhcp
             host.result.add_component(Construqt::Resources::Component::DNSMASQ)
-            #host.result.up_downer.add(iface, Result::UpDown::DnsMasq.new(iface, ifname))
+            #host.result.up_downer.add(iface, Tastes::Entities::DnsMasq.new(iface, ifname))
 
             writer = t.etc_network_interfaces.get(iface, ud.ifname)
             writer.lines.up(up(ud.ifname), :extra)

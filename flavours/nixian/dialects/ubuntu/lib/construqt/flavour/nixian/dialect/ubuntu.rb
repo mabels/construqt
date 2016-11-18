@@ -1,6 +1,11 @@
 
 require 'construqt/flavour/nixian.rb'
 
+require 'construqt/flavours/nixian/tastes/entities.rb'
+require 'construqt/flavours/nixian/tastes/systemd.rb'
+require 'construqt/flavours/nixian/tastes/flat.rb'
+require 'construqt/flavours/nixian/tastes/debian.rb'
+
 require_relative 'ubuntu/dns.rb'
 require_relative 'ubuntu/ipsec/racoon.rb'
 require_relative 'ubuntu/ipsec/strongswan.rb'
@@ -9,6 +14,7 @@ require_relative 'ubuntu/opvn.rb'
 require_relative 'ubuntu/vrrp.rb'
 require_relative 'ubuntu/firewall.rb'
 require_relative 'ubuntu/container.rb'
+require_relative 'ubuntu/result/up_downer.rb'
 require_relative 'ubuntu/result.rb'
 
 # require_relative 'ubuntu/services/conntrack_d.rb'
@@ -21,7 +27,7 @@ require_relative 'ubuntu/result.rb'
 # require_relative 'ubuntu/services/route_service.rb'
 # require_relative 'ubuntu/services/vagrant.rb'
 # require_relative 'ubuntu/services/docker.rb'
-# require_relative 'ubuntu/services/lxc.rb'
+require_relative 'ubuntu/services/vagrant_impl.rb'
 
 require_relative 'ubuntu/bond.rb'
 require_relative 'ubuntu/bridge.rb'
@@ -120,7 +126,15 @@ module Construqt
               cfg['name'] = name
               cfg['result'] = nil
               host = Host.new(cfg)
-              host.result = Result.new(host)
+              up_downer = Result::UpDowner.new(self)
+                 .taste(Tastes::Systemd::Factory.new)
+                 .taste(Tastes::Debian::Factory.new)
+                 .taste(Tastes::Flat::Factory.new)
+              host.result = Result.new(host, up_downer)
+              @services.add(Services::VagrantImpl.new)
+              # host.flavour.services.each do |srv|
+              #   up_downer.request_tastes_from(srv)
+              # end
               host
             end
 
@@ -133,9 +147,9 @@ module Construqt
               Bgp.new(cfg)
             end
 
-            def vagrant_factory(host, ohost)
-              Services::VagrantFile.new(host, ohost)
-            end
+            # def vagrant_factory(host, ohost)
+            #   Services::VagrantFile.new(host, ohost)
+            # end
 
             def create_ipsec(cfg)
               Ipsec::StrongSwan.new(cfg)
