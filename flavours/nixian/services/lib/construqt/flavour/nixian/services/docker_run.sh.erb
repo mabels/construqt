@@ -1,0 +1,34 @@
+#!/bin/sh
+basedir=/var/lib/docker/construqt/<%= docker.name %>
+if [ -d $basedir ]
+then
+  echo "Basedir: $basedir"
+  cd $basedir
+fi
+<% docker.interfaces.values.select{|i|
+    i.name != "lo" && i.cable.connections.length > 0
+  }.each do |iface| -%>
+/bin/sh /etc/network/<%= iface.cable.connections.first.iface.name %>-docker-up.sh
+<% end -%>
+docker_name=run_<%= docker.name %>
+docker build -t $docker_name .
+exec docker run --name $docker_name \
+<% if service.get_privileged -%>
+  --privileged \
+<% end -%>
+<% docker.interfaces.values.select{|i|
+    i.name != "lo" && i.cable.connections.length > 0
+  }.each do |iface| -%>
+  --net <%= iface.cable.connections.first.iface.name %> \
+  <% iface.address.ips.each do |ip| -%>
+    <% if ip.ipv4? -%>
+    --ip=<%= ip.to_s %> \
+    <% else -%>
+    --ip6=<%= ip.to_s %> \
+    <% end -%>
+  <% end -%>
+<% end -%>
+<% service.get_maps.each do |h, d| -%>
+  -v <%= h %>:<%= d %> \
+<% end -%>
+  -t $docker_name

@@ -1,0 +1,17 @@
+FROM <%= service.get_image %>
+
+COPY deployer.sh /root/
+<% if service.is_apt %>
+RUN apt update -y
+RUN apt install -y -q iproute2 iptables
+RUN /bin/bash /root/deployer.sh force_hostname skip_packages no_git
+CMD ["/bin/sh", "/root/docker-starter.sh"]
+<% end %>
+<% if service.is_apk %>
+RUN apk update
+RUN apk upgrade
+RUN apk add iptables ip6tables
+RUN /bin/sh /root/deployer.sh force_hostname skip_packages no_git
+
+CMD ["/bin/sh", "/root/docker-starter.sh"]
+<% end %>
