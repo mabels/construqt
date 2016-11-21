@@ -12,7 +12,7 @@ module Construqt
             attr_reader :mother, :users, :region, :name, :interfaces
             attr_reader :flavour, :docker_deploy, :lxc_deploy, :dns_server, :files
             attr_accessor :result, :delegate, :id, :configip, :add_groups
-            attr_accessor :services, :vagrant_deploy
+            attr_accessor :services, :vagrant_deploy, :time_zone
             def initialize(cfg)
               @mother = cfg['mother']
               @services = cfg['services']
@@ -27,6 +27,7 @@ module Construqt
               @dns_server = cfg['dns_server']
               @files = cfg['files']
               @services = cfg['services']
+              @time_zone = cfg['time_zone']
               add_groups = cfg['add_groups']
             end
 
@@ -65,7 +66,7 @@ module Construqt
               ykeys = []
               skeys = []
               host.region.users.all.each do |u|
-                ykeys << "#{u.name}:#{u.yubikey}" if u.yubikey
+                # ykeys << "#{u.name}:#{u.yubikey}" if u.yubikey
                 skeys << "#{u.shadow}" if u.shadow
               end
 
@@ -73,9 +74,6 @@ module Construqt
 
               #host.result.add(self, skeys.join(), Construqt::Resources::Rights.root_0644, "etc", "shadow.merge")
               host.result.add(self, akeys.join("\n"), Construqt::Resources::Rights.root_0600, "root", ".ssh", "authorized_keys")
-              unless ykeys.empty?
-                host.result.add(self, ykeys.join("\n"), Construqt::Resources::Rights.root_0644, "etc", "yubikey_mappings")
-              end
 
               host.result.add(self, Construqt::Util.render(binding, "host_ssh.erb"),
                 Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::SSH), "etc", "ssh", "sshd_config")

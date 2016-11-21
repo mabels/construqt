@@ -65,7 +65,7 @@ module Construqt
       flavour = cfg['flavour'] = @region.flavour_factory.produce(cfg)
       #		cfg['clazz'] = cfg['flavour'].clazz("host")
       throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
-      cfg['services'] = flavour.add_host_services(cfg['services'])
+      cfg['services'] = Services.create(flavour.add_host_services(cfg['services']))
       cfg['region'] = @region
       host = cfg['flavour'].create_host(name, cfg)
       block.call(host)
@@ -89,15 +89,14 @@ module Construqt
       end
 
       @hosts[name] = host
-      (host.services + host.interfaces.values.map do |i|
-        binding.pry unless i
-        i.services
-      end).flatten.each do |srv|
-      #host.region.services.services.values.each do |srv|
-        if srv.respond_to?(:completed_host)
-          srv.completed_host(host)
-        end
-      end
+      #Services.all(host.services, host.interfaces.values.map do |i|
+      #  binding.pry unless i
+      #  i.services
+      #end) do |srv|
+      #  if srv.respond_to?(:completed_host)
+      #    srv.completed_host(host)
+      #  end
+      #end
       host
     end
 

@@ -1,11 +1,51 @@
+
 module Construqt
   module Flavour
     module Nixian
-      module Dialect
-        module Ubuntu
+      module Services
+        class Docker
+          include Construqt::Util::Chainable
+          chainable_attr :image, "ubuntu:16.04"
+          chainable_attr :app_start_script, ""
+          chainable_attr :pkt_man, :apt
 
-          module Services
-            class Docker
+          def map(h, d)
+            @maps ||= {}
+            @maps[h] = d
+            self
+          end
+          def get_maps
+            @maps || {}
+          end
+
+          def privileged
+            @privileged = true
+            self
+          end
+
+
+          def get_privileged
+            @privileged || false
+          end
+
+          def is_apt
+            get_pkt_man == :apt
+          end
+
+          def is_apk
+            get_pkt_man == :apk
+          end
+
+        end
+        class DockerImpl
+          attr_reader :service_type
+          def initialize
+            @service_type = Docker
+          end
+
+          def attach_service(service)
+            @service = service
+          end
 
               def render_systemd
                 #ExecStart=/usr/bin/docker run --env foo=bar --name redis_server redis
@@ -28,7 +68,7 @@ module Construqt
               end
 
 
-              def render(host, docker)
+              def render(host, docker, service)
                 # binding.pry
                 docker.result.add(Docker, Construqt::Util.render(binding, "docker_starter.sh.erb"),
                   Construqt::Resources::Rights.root_0755,
@@ -50,10 +90,11 @@ module Construqt
               end
 
 
-              def build_config_host(host)
+              def build_config_host(host, service)
+                # binding.pry
                 host.region.hosts.get_hosts.select {|h| host.eq(h.mother) }.each do |docker|
-                  next unless docker.docker_deploy
-                  render(host, docker)
+                  next unless docker.services.has_type_of?(Docker)
+                  render(host, docker, service)
                 end
                 docker_ifaces = {}
                 host.interfaces.values.each do |iface|
@@ -72,8 +113,7 @@ module Construqt
                 end
               end
             end
-          end
-        end
+
       end
     end
   end

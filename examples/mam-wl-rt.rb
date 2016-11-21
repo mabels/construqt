@@ -82,17 +82,6 @@ module MamWl
     }
   end
 
-  class Aiccu
-    include Construqt::Util::Chainable
-    attr_reader :name
-    attr_accessor :services
-    chainable_attr :username
-    chainable_attr :password
-    def initialize(name)
-      @name = name
-    end
-  end
-
   def self.setup_vlan_templates(region)
     region.templates.add("kde", "vlans" => [
       region.vlans.clone("kde").untagged
@@ -163,9 +152,6 @@ module MamWl
 
     mam_wl_switches(region)
 
-    region.services.add(
-      Aiccu.new("AICCU").username(AICCU_DE["username"]).password(AICCU_DE["password"])
-    )
     region.resources.add_file(<<MODULES, Construqt::Resources::Rights::root_0644, "odroid.modules", "etc", "modules")
 loop
 lp
@@ -188,6 +174,7 @@ ip6_tables
 bonding
 8021q
 MODULES
+
     mal_wl_printer = region.hosts.add("wl-printer", "flavour" => "unknown") do |printer|
       printer.id = printer.configip = Construqt::HostId.create do |my|
         my.interfaces << eth = region.interfaces.add_device(printer, "eth", "mtu" => 1500,
@@ -278,9 +265,10 @@ MODULES
                                      { :name => "rt-mam-wl-de-6", :fws => ['net-nat', "net-forward"], :services => [], :block => 203, :action => lambda do |aiccu, internal_if|
                                        region.interfaces.add_device(aiccu, "sixxs", "mtu" => "1280",
                                                                     "dynamic" => true,
+                                                                    "services" => [Aiccu.new("AICCU").username(AICCU_DE["username"]).password(AICCU_DE["password"])],
                                                                     "firewalls" => [ "fw-sixxs" ],
                                                                     "address" => region.network.addresses.add_ip("2001:6f8:900:2bf::2/64"))
-                                       internal_if.services.push(region.services.find("RADVD"))
+                                       internal_if.services.push(Construqt::Flavour::Nixian::Services::Radvd.new("RADVD").adv_autonomous)
                                        internal_if.address.ips = internal_if.address.ips.select{|i| i.ipv4? }
                                        internal_if.address.add_ip("2001:6f8:900:82bf:#{internal_if.address.first_ipv4.to_s.split(".").join(":")}/64")
                                      end

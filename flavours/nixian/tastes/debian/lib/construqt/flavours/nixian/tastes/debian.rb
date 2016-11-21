@@ -7,11 +7,23 @@ module Construqt
           def self.add(entity, impl)
             Tastes::Entities.add_taste(TASTES, entity, impl)
           end
+
           class Factory
             attr_accessor :result
-            def dispatch(a)
-              binding.pry
+            def initialize
+              @tastes = {}
             end
+
+            def dispatches(a)
+              tastes = TASTES[a]
+              throw "Debian #{a}" unless tastes
+              @tastes[a] ||= tastes.map{|i| i.new }
+            end
+
+            def inspect
+              "#<#{self.class.name}:#{object_id} @tastes=[#{@tastes.keys.join(",")}] @result=[#{@result.class.name}]>"
+            end
+
           end
         end
       end
@@ -21,7 +33,7 @@ end
 
 
 
-Dir.glob(File.join(File.dirname(__FILE__), "debians", "*.rb")).each do |fname|
+Dir.glob(File.join(File.dirname(__FILE__), "debian", "*.rb")).each do |fname|
   require fname
   # add("hello_world".split('_').collect(&:capitalize).join)
 end

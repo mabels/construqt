@@ -28,6 +28,7 @@ require_relative 'ubuntu/result.rb'
 # require_relative 'ubuntu/services/vagrant.rb'
 # require_relative 'ubuntu/services/docker.rb'
 require_relative 'ubuntu/services/vagrant_impl.rb'
+require_relative 'ubuntu/services/deployer_sh.rb'
 
 require_relative 'ubuntu/bond.rb'
 require_relative 'ubuntu/bridge.rb'
@@ -63,6 +64,7 @@ module Construqt
               @factory = factory
               @cfg = cfg
               @services = factory.services.shadow()
+              @services.add(Ubuntu::Services::DeployerShImpl.new)
             end
 
             def name
@@ -73,7 +75,8 @@ module Construqt
               srvs ||= []
               srvs += [Construqt::Flavour::Nixian::Services::Lxc.new(),
                       Construqt::Flavour::Nixian::Services::Docker.new(),
-                      Construqt::Flavour::Nixian::Services::Vagrant.new()]
+                      Construqt::Flavour::Nixian::Services::Vagrant.new(),
+                      Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::DeployerSh.new]
               throw "unknown services" unless @services.are_registered_by_instance?(srvs)
               srvs
             end

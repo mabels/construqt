@@ -24,11 +24,19 @@ module Construqt
         "mikrotik"
       end
 
+      def add_host_services(srvs)
+        srvs || []
+      end
+
+      def add_interface_services(srvs)
+        srvs || []
+      end
+
       class Factory
         def name
           'mikrotik'
         end
-        def factory(cfg)
+        def factory(parent, cfg)
           Construqt::Flavour::Delegate::FlavourDelegate.new(Mikrotik.new)
         end
       end

@@ -18,19 +18,19 @@ module Construqt
             @service = service
           end
 
-          def register_taste(host)
-            host.result.up_downer.tastes.each do |t|
-              if t.kind_of?(Result::UpDownerDebianTaste)
-                t.dispatch[Tastes::Entities::DnsMasq.name] = lambda {|i, u| render_debian(t, i, u) }
-              elsif t.kind_of?(Result::UpDownerFlatTaste)
-                t.dispatch[Tastes::Entities::DnsMasq.name] = lambda {|i, u| render_flat(t, i, u) }
-              elsif t.kind_of?(Result::UpDownerSystemdTaste)
-                t.dispatch[Tastes::Entities::DnsMasq.name] = lambda {|i, u| render_systemd(t, i, u) }
-              else
-                throw "unknown tast"
-              end
-            end
-          end
+          # def register_taste(host)
+          #   host.result.up_downer.tastes.each do |t|
+          #     if t.kind_of?(Result::UpDownerDebianTaste)
+          #       t.dispatch[Tastes::Entities::DnsMasq.name] = lambda {|i, u| render_debian(t, i, u) }
+          #     elsif t.kind_of?(Result::UpDownerFlatTaste)
+          #       t.dispatch[Tastes::Entities::DnsMasq.name] = lambda {|i, u| render_flat(t, i, u) }
+          #     elsif t.kind_of?(Result::UpDownerSystemdTaste)
+          #       t.dispatch[Tastes::Entities::DnsMasq.name] = lambda {|i, u| render_systemd(t, i, u) }
+          #     else
+          #       throw "unknown tast"
+          #     end
+          #   end
+          # end
 
           def up(ifname, inbounds, upstreams)
           end
@@ -69,8 +69,8 @@ module Construqt
             host.result.add_component(Construqt::Resources::Component::DHCPRELAY)
           end
 
-          def interfaces(host, ifname, iface, writer)
-            register_taste(host.delegate)
+          def build_interface(host, ifname, iface, writer)
+            # register_taste(host.delegate)
           end
         end
       end

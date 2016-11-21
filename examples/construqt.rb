@@ -43,11 +43,13 @@ else
   require_relative './crashtestdummy.rb'
 end
 require_relative "./postfix.rb"
+require_relative "./aiccu.rb"
 
 def setup_region(name, network)
   region = Construqt::Regions.add(name, network)
   nixian = Construqt::Flavour::Nixian::Factory.new
   nixian.add_service(Postfix::Impl.new)
+  nixian.add_service(Aiccu::Impl.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::CoreOs::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Ubuntu::Factory.new)
   region.flavour_factory.add(nixian)

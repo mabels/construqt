@@ -16,10 +16,14 @@ module Construqt
   module Flavour
     module Nixian
       module Services
+
+        DIRECTORY = File.dirname(__FILE__)
+
         def self.register(service)
           [
             BgpStartStopImpl,
             ConntrackDImpl,
+            DhcpClientImpl,
             DhcpV4RelayImpl,
             DhcpV6RelayImpl,
             IpsecStartStopImpl,

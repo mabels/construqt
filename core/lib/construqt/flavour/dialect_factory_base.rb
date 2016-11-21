@@ -4,7 +4,7 @@ module Construqt
       attr_reader :services
       def initialize
         @dialect_factories = {}
-        @services = Construqt::Services.new(self)
+        @services = Construqt::ServicesFactory.new(self)
       end
 
       def add_dialect(dialect_factory)
@@ -16,6 +16,7 @@ module Construqt
       end
 
       def add_service(serviceImpl)
+        @services.add(serviceImpl)
       end
 
       # def dialect_factory

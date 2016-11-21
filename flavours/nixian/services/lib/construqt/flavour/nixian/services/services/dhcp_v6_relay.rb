@@ -65,7 +65,7 @@ module Construqt
                 host.result.add_component(Construqt::Resources::Component::DHCPRELAY)
               end
 
-              def interfaces(host, ifname, iface, writer)
+              def build_interface(host, ifname, iface, writer)
                 inbounds = Construqt::Tags.find(@service.inbound_tag).select{ |cqip| cqip.container.interface.host.eq(host) && cqip.ipv6? }
                 return if inbounds.empty?
                 upstreams = Construqt::Tags.find(@service.upstream_tag).select{ |cqip| cqip.ipv6? }

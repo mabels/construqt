@@ -10,8 +10,17 @@ module Construqt
           end
           class Factory
             attr_accessor :result
-            def dispatch(a)
-              binding.pry
+            def initialize
+              @tastes = {}
+            end
+            def dispatches(a)
+              tastes = TASTES[a]
+              throw "Systemd #{a}" unless tastes
+              @tastes[a] ||= tastes.map{|i| i.new }
+            end
+
+            def inspect
+              "#<#{self.class.name}:#{object_id} @tastes=#{@tastes.keys.join(",")} @result=#{@result.class.name}>"
             end
           end
         end

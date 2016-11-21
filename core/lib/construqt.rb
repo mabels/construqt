@@ -40,7 +40,7 @@ module Construqt
 
   # ugly but i need the logger during initialization
   require_relative 'construqt/util.rb'
-  require_relative 'construqt/services.rb'
+  require_relative 'construqt/services_factory.rb'
   require_relative 'construqt/registry.rb'
   require_relative 'construqt/registries/ripe.rb'
   require_relative 'construqt/networks.rb'
@@ -57,6 +57,7 @@ module Construqt
   require_relative 'construqt/resource.rb'
   require_relative 'construqt/flavour/delegate.rb'
   require_relative 'construqt/hostid.rb'
+  require_relative 'construqt/services.rb'
   require_relative 'construqt/hosts.rb'
   require_relative 'construqt/interfaces.rb'
   require_relative 'construqt/cables.rb'

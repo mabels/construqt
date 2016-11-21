@@ -123,7 +123,8 @@ module Construqt
               add_address(host, ifname, iface.delegate, family)
               #binding.pry if ifname == "v202"
               iface.services.each do |service|
-                host.flavour.services.find(service).interfaces(host, ifname, iface,  family)
+                # binding.pry
+                host.flavour.services.find(service).build_interface(host, ifname, iface,  family)
               end
 
             end

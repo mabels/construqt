@@ -25,7 +25,7 @@ module Construqt
                 host.result.etc_network_vrrp(iface.name).add_master(up(ifname)).add_backup(down(ifname))
               end
 
-              def interfaces(host, ifname, iface, writer)
+              def build_interface(host, ifname, iface, writer)
                 throw "only vrrp ifaces could be used to conntrack: #{ifname}:#{iface.name}" unless iface.vrrp
                 throw "conntrack needs a ipv4 address #{ifname}:#{iface.name}" unless iface.address.first_ipv4
                 throw "conntrack currently a ipv4 address #{iface.host.name}:#{ifname}:#{iface.name}" unless iface.address.first_ipv4

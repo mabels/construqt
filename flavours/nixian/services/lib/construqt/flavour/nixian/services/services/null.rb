@@ -19,7 +19,7 @@ module Construqt
               def vrrp(host, ifname, iface)
               end
 
-              def interfaces(host, ifname, iface, writer, family = nil)
+              def build_interface(host, ifname, iface, writer, family = nil)
               end
             end
           end

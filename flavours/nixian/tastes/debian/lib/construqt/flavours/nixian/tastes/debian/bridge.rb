@@ -8,7 +8,7 @@ module Construqt
               etc_network_interfaces.get(iface).lines.add("bridge_ports none", 0)
             end
           end
-          add(Entities::BridgeMember, Bridge)
+          add(Entities::Bridge, Bridge)
         end
       end
     end

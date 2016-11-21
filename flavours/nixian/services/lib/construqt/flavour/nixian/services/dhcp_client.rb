@@ -68,8 +68,8 @@ module Construqt
             host.result.add_component(Construqt::Resources::Component::DHCPRELAY)
           end
 
-          def interfaces(host, ifname, iface, writer)
-            register_taste(host.delegate)
+          def build_interface(host, ifname, iface, writer)
+            # register_taste(host.delegate)
           end
         end
       end

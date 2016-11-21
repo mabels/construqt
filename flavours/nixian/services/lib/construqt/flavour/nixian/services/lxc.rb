@@ -33,7 +33,7 @@ module Construqt
             # binding.pry
             once_per_host_which_have_lxcs = false
             host.region.hosts.get_hosts.select { |h| host.eq(h.mother) }.each do |lxc|
-              next unless lxc.lxc_deploy
+              next unless lxc.services.has_type_of?(Lxc)
               once_per_host_which_have_lxcs ||= LxcNetwork.create_lxc_network_patcher(host, lxc)
               networks = lxc.interfaces.values.map do |iface|
                 next unless iface.cable && !iface.cable.connections.empty?

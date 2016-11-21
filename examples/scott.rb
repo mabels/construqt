@@ -1,7 +1,7 @@
 module Scott
   def self.run(region)
     scott = region.hosts.add("scott", "flavour" => "nixian", "dialect" => "ubuntu",
-                             "services" => [Construqt::Hosts::Vagrant.new
+                             "services" => [Construqt::Flavour::Nixian::Services::Vagrant.new
                                           .box("ubuntu/xenial64").root_passwd("/.")
                                           .add_cfg('config.vm.network "public_network", bridge: "bridge0"')]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",

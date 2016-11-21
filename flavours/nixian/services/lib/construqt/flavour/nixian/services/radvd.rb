@@ -20,6 +20,10 @@ module Construqt
           def attach_service(service)
             @service = service
           end
+
+          def build_interface(host, ifname, iface, writer)
+          end
+
         end
       end
     end

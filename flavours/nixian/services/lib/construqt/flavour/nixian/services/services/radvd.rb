@@ -54,7 +54,7 @@ module Construqt
                 host.result.etc_network_vrrp(iface.name).add_master(up(ifname)).add_backup(down(ifname))
               end
 
-              def interfaces(host, ifname, iface, writer, family = nil)
+              def build_interface(host, ifname, iface, writer, family = nil)
                 #      binding.pry
                 return unless iface.address && iface.address.first_ipv6
                 register_taste(host.delegate)

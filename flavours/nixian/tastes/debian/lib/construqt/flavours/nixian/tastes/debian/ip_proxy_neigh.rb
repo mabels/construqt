@@ -15,7 +15,7 @@ module Construqt
               writer.lines.down("ip #{ipv}neigh del proxy #{ud.ip.to_s} dev #{ud.ifname}", :extra)
             end
           end
-          add(IpProxyNeigh)
+          add(Entities::IpProxyNeigh, IpProxyNeigh)
         end
       end
     end

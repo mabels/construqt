@@ -34,6 +34,15 @@ module Construqt
         def name
           "ciscian"
         end
+
+        def add_host_services(srvs)
+          srvs || []
+        end
+
+        def add_interface_services(srvs)
+          srvs || []
+        end
+
         # Construqt::Flavour.add(Factory.new)
 
         # def initialize

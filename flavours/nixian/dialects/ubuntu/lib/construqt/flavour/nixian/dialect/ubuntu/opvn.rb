@@ -8,7 +8,7 @@ module Construqt
           class Opvn #< OpenStruct
             include BaseDevice
             include Construqt::Cables::Plugin::Single
-            #attr_reader :address,:template,:plug_in,:network,:mtu,:clazz,:dh
+            #attr_reader :address,:template,:plug_in,:network,:mtu, :clazz, :dh
             #attr_reader :listen,:push_routes,:cacert,:name,:hostcert,:hostkey,:host
             #attr_reader :description, :firewalls, :protocols, :proto, :flavour
             #attr_reader :services, :mac_address, :proxy_neigh
@@ -32,7 +32,6 @@ module Construqt
 
             def self.header(host)
               return unless host.has_interface_with_component?(Construqt::Resources::Component::OPENVPN)
-              host.result.add(self, Construqt::Util.render(binding, "ovpn_pam.erb"), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::OPENVPN), "etc", "pam.d", "openvpn")
             end
 
             def build_config(host, opvn, node)
