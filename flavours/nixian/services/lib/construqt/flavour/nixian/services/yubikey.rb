@@ -11,15 +11,18 @@ module Construqt
           end
         end
 
-        class YubikeyImpl
-          attr_reader :service_type
-          def initialize
-            @service_type = Yubikey
+        class YubikeyFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(Yubikey)
           end
+          def produce(host, srv_inst, ret)
+            YubikeyAction.new
+          end
+        end
 
-          def attach_service(service)
-            @service = service
-          end
+        class YubikeyAction
 
           def build_interface(host, ifname, iface, writer)
           end

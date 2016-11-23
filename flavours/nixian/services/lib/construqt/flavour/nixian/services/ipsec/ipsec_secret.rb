@@ -1,8 +1,7 @@
 module Construqt
   module Flavour
     module Nixian
-      module Dialect
-        module Ubuntu
+      module Services
           module Ipsec
             class IpsecSecret
               def initialize(result)
@@ -10,6 +9,11 @@ module Construqt
                 @users = {}
                 @lines = []
                 @any_lines = []
+              end
+
+              def header
+                @result.add(:ipsec, Construqt::Util.render(binding, "strongswan_header.erb"),
+                  Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
               end
 
               def render_line(left, right, code, password)
@@ -64,4 +68,3 @@ module Construqt
       end
     end
   end
-end

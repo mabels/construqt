@@ -5,6 +5,11 @@ module Construqt
       @parent = parent
       @me = ServicesFactory.new(parent)
     end
+
+    def machine
+      @me.machine
+    end
+
     def flavour
       @parent.flavour
     end
@@ -31,11 +36,42 @@ module Construqt
       self
     end
   end
+  class ServiceMachine
+    attr_reader :service_types, :result_types, :attach_types
+    def initialize(sf)
+      @services_factory = sf
+      @service_types = []
+      @result_types = []
+      @attach_types = []
+    end
+    def inspect
+      "#<#{self.class.name}:#{object_id} "+
+      "service_types=[#{@service_types.map{|i|i.name}.join(",")}] "+
+      "result_types=[#{@result_types.map{|i|i.name}.join(",")}] "+
+      "attach_types=[#{@attach_types.map{|i|i.name}.join(",")}]>"
+    end
+    def attach_type(type)
+      @attach_types.push type
+      self
+    end
+    def service_type(type)
+      @service_types.push type
+      self
+    end
+    def result_type(type)
+      @result_types.push type
+      self
+    end
+  end
   class ServicesFactory
     attr_reader :flavour#, :services
     def initialize(flavour)
       @flavour = flavour
-      @services = { }
+      @services_factories = { }
+    end
+
+    def machine
+      ServiceMachine.new(self)
     end
 
     def shadow
@@ -43,8 +79,10 @@ module Construqt
     end
 
     def find!(name)
-      name = name.class.name unless name.kind_of?(String)
-      found = @services[name]
+      key = name
+      key = name.class.name unless name.kind_of?(String)
+      key = name.name if key == "Class"
+      found = @services_factories[key]
     end
 
     def find(name)
@@ -62,23 +100,21 @@ module Construqt
 
     def are_registered_by_name?(srvs)
       # puts "#{srvs} #{@services.keys}"
-      srvs.empty? || srvs.find{|s| @services[s] }
+      srvs.empty? || srvs.find{|s| @services_factories[s] }
     end
 
     def each(&block)
-      @services.values.each(&block)
+      @services_factories.values.each(&block)
     end
 
-    def add(service_impl)
-      srvs = [
-        service_impl.service_type.name,
-        service_impl.service_type.name.split("::").last
-      ].sort.uniq
+    def add(service_factory)
+      # binding.pry
+      srvs = service_factory.machine.service_types.map { |sf| sf.name }.sort.uniq
       throw "service names are registered #{srvs}" if are_registered_by_name?(srvs)
       # binding.pry if srvs.first == "BgpStartStop"
-      service_impl.attach_service(self)
+      #service_impl.attach_service(self)
       srvs.each do |name|
-        @services[name] = service_impl
+        @services_factories[name] = service_factory
       end
       self
     end

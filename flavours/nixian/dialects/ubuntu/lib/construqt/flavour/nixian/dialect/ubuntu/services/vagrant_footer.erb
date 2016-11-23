@@ -2,8 +2,8 @@
     config.vm.provision 'shell', inline: "echo '<%= akey.strip %>' >> /root/.ssh/authorized_keys"
     config.vm.provision 'shell', inline: "echo '<%= akey.strip %>' >> /home/ubuntu/.ssh/authorized_keys"
   <% end %>
-  <% if @child.vagrant_deploy.get_root_password %>
-  config.vm.provision :shell, :inline => "(echo '<%= @child.vagrant_deploy.get_root_password %>'; echo '<%= @child.vagrant_deploy.get_root_password %>') | passwd root"
+  <% if @child_service.get_root_password %>
+  config.vm.provision :shell, :inline => "(echo '<%= @child_service.get_root_password %>'; echo '<%= @child_service.get_root_password %>') | passwd root"
   <% end %>
   config.vm.provision :shell, :inline => "sudo echo <%= @child.name %> > /etc/hostname"
   ["deployer.sh", "packager.sh"].each do |fname|

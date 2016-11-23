@@ -7,15 +7,17 @@ module Construqt
           end
         end
 
-        class DnsMasqImpl
-
-          attr_reader :service_type
-          def initialize
-            @service_type = DnsMasq
+        class DnsMasqAction
+        end
+        class DnsMasqFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(DnsMasq)
           end
 
-          def attach_service(service)
-            @service = service
+          def produce(host, srv_inst, ret)
+            DnsMasqAction.new
           end
 
           # def register_taste(host)

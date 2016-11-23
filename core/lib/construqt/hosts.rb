@@ -119,21 +119,23 @@ module Construqt
       @graphs[id]
     end
 
-    def build_config(hosts = nil)
+    def build_config(srv_res, hosts = nil)
       #(hosts || @hosts.values).each do |host|
       #  host.build_config(host, nil)
       #end
       host_graph(hosts).flat.flatten.each do |hnode|
         # binding.pry
+        srv_res.fire_host(hnode.ref, :build_config_host)
         hnode.ref.build_config(hnode.ref, hnode.ref, hnode)
       end
     end
 
-    def commit(hosts = nil)
+    def commit(srv_res, hosts = nil)
       regions = {}
       host_graph(hosts || @hosts.values).flat.each do |hnodes|
         hnodes.reverse.each do |hnode|
           next unless hnode.ref.region
+          srv_res.fire_host(hnode.ref, :commit)
           hnode.ref.commit
           regions[hnode.ref.region.object_id] = hnode.ref.region
         end

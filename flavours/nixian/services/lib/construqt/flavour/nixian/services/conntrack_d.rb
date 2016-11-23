@@ -9,14 +9,18 @@ module Construqt
           end
         end
 
-        class ConntrackDImpl
-          attr_reader :service_type
-          def initialize
-            @service_type = ConntrackD
+        class ConntrackDAction
+        end
+
+        class ConntrackDFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(ConntrackD)
           end
 
-          def attach_service(service)
-            @service = service
+          def produce(host, srv_inst, ret)
+            ConntrackDAction.new
           end
         end
       end

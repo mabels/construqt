@@ -1,3 +1,4 @@
+require_relative 'debian/helper/etc_network_interfaces'
 module Construqt
   module Flavour
     module Nixian
@@ -9,9 +10,11 @@ module Construqt
           end
 
           class Factory
-            attr_accessor :result
+            # attr_accessor :result
+            attr_reader :etc_network_interfaces
             def initialize
               @tastes = {}
+              @etc_network_interfaces = Helper::EtcNetworkInterfaces.new(self)
             end
 
             def dispatches(a)
@@ -22,6 +25,11 @@ module Construqt
 
             def inspect
               "#<#{self.class.name}:#{object_id} @tastes=[#{@tastes.keys.join(",")}] @result=[#{@result.class.name}]>"
+            end
+
+            def commit
+              binding.pry
+              @etc_network_interfaces.commit
             end
 
           end

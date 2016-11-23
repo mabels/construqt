@@ -11,15 +11,18 @@ module Construqt
             @upstream_tag = upstream_tag
           end
         end
+        class DhcpV6RelayAction
+        end
 
-        class DhcpV6RelayImpl
-          attr_reader :service_type
-          def initialize
-            @service_type = DhcpV6Relay
+        class DhcpV6RelayFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(DhcpV6Relay)
           end
 
-          def attach_service(service)
-            @service = service
+          def produce(host, srv_inst, ret)
+            DhcpV6RelayAction.new
           end
         end
       end

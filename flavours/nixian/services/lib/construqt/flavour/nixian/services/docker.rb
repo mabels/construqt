@@ -37,15 +37,22 @@ module Construqt
           end
 
         end
-        class DockerImpl
-          attr_reader :service_type
-          def initialize
-            @service_type = Docker
+
+        class DockerAction
+        end
+
+        class DockerFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(Docker)
           end
 
-          def attach_service(service)
-            @service = service
+
+          def produce(host, srv_inst, ret)
+            DockerAction.new
           end
+
 
               def render_systemd
                 #ExecStart=/usr/bin/docker run --env foo=bar --name redis_server redis

@@ -6,7 +6,7 @@ module Construqt
       class HostDelegate
         include Delegate
         COMPONENT = Construqt::Resources::Component::UNREF
-        attr_reader :users, :bgps, :ipsecs, :interface_graph
+        attr_reader :users, :bgps, :ipsecs, :interface_graph, :result_types
         def initialize(host)
           #binding.pry
           #Construqt.logger.debug "HostDelegate.new(#{host.name})"
@@ -16,6 +16,10 @@ module Construqt
           @bgps = []
           @users = host.users || host.region.users
           @interface_graph = Construqt::Graph.new
+        end
+
+        def attach_result_types(result_types)
+          @result_types = result_types
         end
 
         def inspect

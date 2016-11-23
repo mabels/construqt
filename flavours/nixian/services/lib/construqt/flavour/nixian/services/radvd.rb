@@ -11,17 +11,18 @@ module Construqt
           end
         end
 
-        class RadvdImpl
-          attr_reader :service_type
-          def initialize
-            @service_type = Radvd
+        class RadvdAction
+        end
+
+        class RadvdFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(Radvd)
           end
 
-          def attach_service(service)
-            @service = service
-          end
-
-          def build_interface(host, ifname, iface, writer)
+          def produce(host, srv_inst, ret)
+            RadvdAction.new
           end
 
         end

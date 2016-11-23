@@ -9,15 +9,25 @@ module Construqt
             class DeployerSh
             end
 
-            class DeployerShImpl
-              attr_reader :service_type
-              def initialize
-                @service_type = DeployerSh
+            class DeployerShFactory
+              attr_reader :machine
+              def initialize(service_factory)
+                @machine = service_factory.machine.service_type(DeployerSh)
               end
 
-              def attach_service(service)
-                @service = service
+              def produce(host, srv_ins, ret)
+                DeployerShAction.new(host)
               end
+
+            end
+
+            class DeployerShAction
+
+              attr_reader :host
+              def initialize(host)
+                @host = host
+              end
+
 
               def commit
               end
@@ -40,7 +50,7 @@ module Construqt
               end
 
 
-              def build_config_host(host, service)
+              def build_config_host # (host, service)
                 # binding.pry
                 #Lxc.write_deployers(@host)
                 #Docker.write_deployers(@host)

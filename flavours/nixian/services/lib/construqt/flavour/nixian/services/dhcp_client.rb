@@ -7,15 +7,30 @@ module Construqt
           end
         end
 
-        class DhcpClientImpl
+        class DhcpClientAction
+        end
+
+        class DhcpClientFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(DhcpClient)
+          end
+
+          def produce(host, srv_inst, ret)
+            DhcpClientAction.new
+          end
+        end
+
+        class DhcpClientAction
 
           attr_reader :service_type
           def initialize
             @service_type = DhcpClient
           end
 
-          def attach_service(service)
-            @service = service
+          def produce(host, srv_inst, ret)
+            DhcpClientAction.new
           end
 
           def register_taste(host)

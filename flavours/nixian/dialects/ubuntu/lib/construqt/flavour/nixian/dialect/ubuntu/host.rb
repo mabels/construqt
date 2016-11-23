@@ -11,8 +11,8 @@ module Construqt
           class Host #< OpenStruct
             attr_reader :mother, :users, :region, :name, :interfaces
             attr_reader :flavour, :docker_deploy, :lxc_deploy, :dns_server, :files
-            attr_accessor :result, :delegate, :id, :configip, :add_groups
-            attr_accessor :services, :vagrant_deploy, :time_zone
+            attr_accessor :delegate, :id, :configip, :add_groups
+            attr_accessor :services, :vagrant_deploy, :time_zone, :dialect
             def initialize(cfg)
               @mother = cfg['mother']
               @services = cfg['services']
@@ -20,6 +20,7 @@ module Construqt
               @region = cfg['region']
               @name = cfg['name']
               @interfaces = cfg['interfaces']
+              @dialect = cfg['dialect']
               @flavour = cfg['flavour']
               @docker_deploy = cfg['docker_deploy']
               @vagrant_deploy = cfg['vagrant_deploy']
@@ -29,6 +30,20 @@ module Construqt
               @services = cfg['services']
               @time_zone = cfg['time_zone']
               add_groups = cfg['add_groups']
+            end
+
+            def result
+              if @result
+                @result
+              else
+                r = self.delegate.result_types.find_by_service_type(Construqt::Flavour::Nixian::Services::Result)
+                throw "result should be there" unless r
+                rp = r.result_types.find do |i|
+                  i.instance.kind_of?(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result)
+                end
+                throw "result should be there" unless rp
+                @result = rp.instance
+              end
             end
 
             def inspect
@@ -70,13 +85,6 @@ module Construqt
                 skeys << "#{u.shadow}" if u.shadow
               end
 
-              akeys = host.region.users.get_authorized_keys(host)
-
-              #host.result.add(self, skeys.join(), Construqt::Resources::Rights.root_0644, "etc", "shadow.merge")
-              host.result.add(self, akeys.join("\n"), Construqt::Resources::Rights.root_0600, "root", ".ssh", "authorized_keys")
-
-              host.result.add(self, Construqt::Util.render(binding, "host_ssh.erb"),
-                Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::SSH), "etc", "ssh", "sshd_config")
               host.delegate.files && host.delegate.files.each do |file|
                 next if file.kind_of?(Construqt::Resources::SkipFile)
                 if host.result.replace(nil, file.data, file.right, *file.path)
@@ -91,10 +99,10 @@ module Construqt
               #     host.delegate.services.push s.new
               #   end
               # end
-              host.delegate.services.each do |service|
-                # r = Services.get_renderer(service)
-                host.flavour.services.find(service).build_config_host(host, service)
-              end
+              # host.delegate.services.each do |service|
+              #   # r = Services.get_renderer(service)
+              #   host.flavour.services.find(service).build_config_host(host, service)
+              # end
 
               #
               # #puts host.name

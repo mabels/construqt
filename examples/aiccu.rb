@@ -11,18 +11,20 @@
   end
 
 class Aiccu
-  class Impl
-    attr_reader :service_type
-    def initialize
-        @service_type = Aiccu
+  class Factory
+    attr_reader :machine
+    def initialize(services_factory)
+      @machine = services_factory.machine.service_type(Aiccu)
     end
 
-    def attach_service(service)
-      @service = service
+    def produce(host, srv_inst, ret)
+      Action.new
     end
+  end
+
+  class Action
     def build_interface(host, ifname, iface, writer)
     end
-
   end
 
 end

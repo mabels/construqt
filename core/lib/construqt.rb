@@ -72,6 +72,8 @@ module Construqt
   require_relative 'construqt/flavour/dialect_factory_base.rb'
   require_relative 'construqt/flavour/node.rb'
   require_relative 'construqt/spanning_tree.rb'
+
+  require_relative 'construqt/services_result.rb'
 #  [ 'onstruqt/flavour/unknown/unknown.rb',
 #    'construqt/flavour/ciscian/ciscian.rb',
 #    'construqt/flavour/plantuml/plantuml.rb',
@@ -90,6 +92,11 @@ module Construqt
     hosts = region_or_hosts if region_or_hosts.kind_of?(Array)
     hosts = region_or_hosts.hosts.get_hosts if region_or_hosts.kind_of?(Construqt::Regions::Region)
     throw "need a region or hosts list" unless hosts
+
+    service_result = HostsServicesResult.new
+    service_result.attach_from_hosts(hosts)
+    service_result.fire(:start)
+
     Construqt::Ipsecs.build_config(hosts)
     Construqt::Bgps.build_config(hosts)
     hosts.inject({}) do |r, host|
@@ -106,9 +113,9 @@ module Construqt
       ghosts.each do |fhosts|
         ohosts += fhosts.reverse.map{|i| i.ref }
       end
-      hosts.first.region.hosts.build_config(ohosts)
-      hosts.first.region.interfaces.build_config(ohosts)
-      hosts.first.region.hosts.commit(ohosts)
+      hosts.first.region.hosts.build_config(service_result, ohosts)
+      hosts.first.region.interfaces.build_config(service_result, ohosts)
+      hosts.first.region.hosts.commit(service_result, ohosts)
     end
   end
 

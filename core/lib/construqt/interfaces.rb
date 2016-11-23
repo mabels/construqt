@@ -52,7 +52,7 @@ module Construqt
       cfg['clazz'] ||= "device"
       cfg['address'] ||= region.network.addresses.create
       cfg['plug_in'] ||= nil
-      cfg['services'] = host.flavour.add_interface_services(cfg['services'])
+      cfg['services'] = Services.create(host.flavour.add_interface_services(cfg['services']))
       delegates['firewalls'] = cfg.delete('firewalls')||[]
       (dev_name, iface) = Construqt::Tags.add("#{dev_name_tag}##{host.name}-#{dev_name}") do |name|
         host.flavour.create_interface(name, cfg)
@@ -234,7 +234,7 @@ module Construqt
     end
 
 
-    def build_config(hosts = nil)
+    def build_config(srv_res, hosts = nil)
     #   # by_clazz = {}
     #   # (hosts||Hosts.get_hosts).each do |host|
     #   #   #binding.pry if host.name == "kuckpi"
@@ -270,6 +270,7 @@ module Construqt
         hnode_string.each do |hnode|
           hnode.ref.interface_graph.flat.each do |inode_string|
             inode_string.each do |inode|
+              srv_res.fire_host_interface(hnode.ref, inode.ref, :build_config)
               inode.ref.build_config(hnode.ref, inode.ref, inode)
             end
           end

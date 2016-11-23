@@ -12,16 +12,18 @@ class Smtp
 end
 
 module Postfix
-  class Impl
-    attr_reader :service_type
-    def initialize
-        @service_type = Smtp
+  class Factory
+    attr_reader :machine
+    def initialize(service_factory)
+      @machine = service_factory.machine.service_type(Smtp)
     end
 
-    def attach_service(service)
-      @service = service
+    def produce(host, srv_inst, ret)
+      Action.new
     end
+  end
 
+  class Action
     def build_interface(host, ifname, iface, writer)
     end
   end
@@ -73,7 +75,7 @@ module Postfix
                                                           .add_ip("192.168.200.17/24")
                                                           .add_route("0.0.0.0/0", "192.168.200.1")
                                          )
-        extern_if.services.push(Smtp.new.server_iface(extern_if))
+        extern_if.services.add(Smtp.new.server_iface(extern_if))
       end
     end
     5.times do |i|
@@ -87,7 +89,7 @@ module Postfix
                                                             .add_ip("192.168.200.#{100+i}/24")
                                                             .add_route("0.0.0.0/0", "192.168.200.1")
                                            )
-          extern_if.services.push(Smtp.new)
+          extern_if.services.add(Smtp.new)
         end
       end
     end

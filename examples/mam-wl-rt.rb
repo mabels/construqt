@@ -268,7 +268,7 @@ MODULES
                                                                     "services" => [Aiccu.new("AICCU").username(AICCU_DE["username"]).password(AICCU_DE["password"])],
                                                                     "firewalls" => [ "fw-sixxs" ],
                                                                     "address" => region.network.addresses.add_ip("2001:6f8:900:2bf::2/64"))
-                                       internal_if.services.push(Construqt::Flavour::Nixian::Services::Radvd.new("RADVD").adv_autonomous)
+                                       internal_if.services.add(Construqt::Flavour::Nixian::Services::Radvd.new("RADVD").adv_autonomous)
                                        internal_if.address.ips = internal_if.address.ips.select{|i| i.ipv4? }
                                        internal_if.address.add_ip("2001:6f8:900:82bf:#{internal_if.address.first_ipv4.to_s.split(".").join(":")}/64")
                                      end

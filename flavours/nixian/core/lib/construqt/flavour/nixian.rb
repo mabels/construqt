@@ -30,13 +30,13 @@ module Construqt
           @dialect.add_interface_services(srvs)
         end
 
-        def services
-          @dialect.services
+        def services_factory
+          @dialect.services_factory
         end
 
-        def ipsec
-          @dialect.ipsec
-        end
+        #def ipsec
+        #  @dialect.ipsec
+        #end
 
         def bgp
           @dialect.bgp
@@ -59,7 +59,7 @@ module Construqt
       class Factory < Construqt::Flavour::DialectFactoryBase
         def initialize
           super
-          Construqt::Flavour::Nixian::Services.register(services)
+          Construqt::Flavour::Nixian::Services.register(services_factory)
         end
 
         def name

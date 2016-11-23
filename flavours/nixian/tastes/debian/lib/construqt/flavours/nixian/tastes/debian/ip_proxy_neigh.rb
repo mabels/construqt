@@ -4,16 +4,19 @@ module Construqt
       module Tastes
         module Debian
           class IpProxyNeigh
-            attr_reader :taste_type
-            def initialize
-              @taste_type = Entities::IpProxyNeigh
+            #attr_reader :taste_type
+            #def initialize
+            #  @taste_type = Entities::IpProxyNeigh
+            #end
+            def onAdd(ud, taste, iface, me)
+              # binding.pry
+              writer = taste.etc_network_interfaces.get(iface, me.ifname)
+              writer.reference_up_down_sh(IpProxyNeigh)
+              # ipv = me.ip.ipv6? ? "-6 ": "-4 "
+              # writer.lines.up("ip #{ipv}neigh add proxy #{me.ip.to_s} dev #{me.ifname}", :extra)
+              # writer.lines.down("ip #{ipv}neigh del proxy #{me.ip.to_s} dev #{me.ifname}", :extra)
             end
-            def render(iface, taste_type, taste)
-              writer = etc_network_interfaces.get(iface, ud.ifname)
-              ipv = ud.ip.ipv6? ? "-6 ": "-4 "
-              writer.lines.up("ip #{ipv}neigh add proxy #{ud.ip.to_s} dev #{ud.ifname}", :extra)
-              writer.lines.down("ip #{ipv}neigh del proxy #{ud.ip.to_s} dev #{ud.ifname}", :extra)
-            end
+
           end
           add(Entities::IpProxyNeigh, IpProxyNeigh)
         end

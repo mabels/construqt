@@ -13,6 +13,7 @@ module Construqt
             attr_reader :leftcert
             def initialize(cfg)
               base_device(cfg)
+              services.add(Construqt::Flavour::Nixian::Services::IpsecVpnStrongSwan.new(self))
               @left_interface = cfg['left_interface']
               @left_cert = cfg['left_cert']
               @right_interface = cfg['right_interface']
@@ -25,20 +26,24 @@ module Construqt
 
             def build_config(host, iface, node)
               #puts ">>>>>>>>>>>>>>>>>>>>>>#{host.name} #{iface.name}"
-              # binding.pry
+              ipsec = host.result_types.find_by_service_type(Construqt::Flavour::Nixian::Services::IpsecVpnStrongSwan)
+              # binding.pry if host.name == "fanout-de"
+
               Device.build_config(host, iface, node, nil, nil, nil, true)
               render_ipv6_proxy(iface)
               if iface.leftpsk
                 comment = "#{host.name}-#{iface.name}"
                 iface.left_interface.address.ips.each do |ip|
-                  self.host.result.ipsec_secret.add_any_psk(ip.to_s, Util.password(iface.leftpsk), comment)
+                  ipsec.ipsec_secret.add_any_psk(ip.to_s, Util.password(iface.leftpsk), comment)
                   comment = nil
                 end
               end
-              self.host.result.ipsec_secret.add_users_psk(host)
+              ipsec.ipsec_secret.add_users_psk(host)
 
-              self.host.result.add(:ipsec, render_ikev1(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
-              self.host.result.add(:ipsec, render_ikev2(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
+              result = host.result_types.find_by_service_type(Construqt::Flavour::Nixian::Services::Result)
+
+              result.add(:ipsec, render_ikev1(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
+              result.add(:ipsec, render_ikev2(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
             end
 
             def render_ipv6_proxy(iface)

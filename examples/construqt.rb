@@ -17,6 +17,7 @@ CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../../'
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/systemd/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/flat/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/debian/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/file/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/mikrotik/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/ciscian/core/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/ciscian/dialects/dlink/lib",
@@ -48,8 +49,8 @@ require_relative "./aiccu.rb"
 def setup_region(name, network)
   region = Construqt::Regions.add(name, network)
   nixian = Construqt::Flavour::Nixian::Factory.new
-  nixian.add_service(Postfix::Impl.new)
-  nixian.add_service(Aiccu::Impl.new)
+  nixian.services_factory.add(Postfix::Factory.new(nixian.services_factory))
+  nixian.services_factory.add(Aiccu::Factory.new(nixian.services_factory))
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::CoreOs::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Ubuntu::Factory.new)
   region.flavour_factory.add(nixian)

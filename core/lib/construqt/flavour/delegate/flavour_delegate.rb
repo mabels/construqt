@@ -15,8 +15,8 @@ module Construqt
           #end
         end
 
-        def services
-          @flavour.services
+        def services_factory
+          @flavour.services_factory
         end
 
         def dialect

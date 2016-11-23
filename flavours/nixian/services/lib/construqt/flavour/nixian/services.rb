@@ -11,6 +11,11 @@ require_relative 'services/vagrant'
 require_relative 'services/docker'
 require_relative 'services/dns_masq'
 require_relative 'services/dhcp_client'
+require_relative 'services/ssh'
+require_relative 'services/result'
+require_relative 'services/up_downer'
+require_relative 'services/ipsec_strong_swan'
+require_relative 'services/ipsec_vpn_strong_swan'
 
 module Construqt
   module Flavour
@@ -19,20 +24,24 @@ module Construqt
 
         DIRECTORY = File.dirname(__FILE__)
 
-        def self.register(service)
+        def self.register(services_factory)
           [
-            BgpStartStopImpl,
-            ConntrackDImpl,
-            DhcpClientImpl,
-            DhcpV4RelayImpl,
-            DhcpV6RelayImpl,
-            IpsecStartStopImpl,
-            RadvdImpl,
-            LxcImpl,
-            DockerImpl,
-            DnsMasqImpl,
+            BgpStartStopFactory,
+            ConntrackDFactory,
+            DhcpClientFactory,
+            DhcpV4RelayFactory,
+            DhcpV6RelayFactory,
+            IpsecStartStopFactory,
+            RadvdFactory,
+            LxcFactory,
+            SshFactory,
+            UpDowner::Factory,
+            IpsecStrongSwanFactory,
+            IpsecVpnStrongSwanFactory,
+            DockerFactory,
+            DnsMasqFactory,
           ].each do |clazz|
-            service.add(clazz.new)
+            services_factory.add(clazz.new(services_factory))
           end
         end
       end

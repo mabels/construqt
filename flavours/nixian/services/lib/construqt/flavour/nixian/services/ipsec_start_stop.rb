@@ -6,15 +6,20 @@ module Construqt
           attr_reader :name
         end
 
-        class IpsecStartStopImpl
-          attr_reader :service_type
-          def initialize
-            @service_type = IpsecStartStop
+        class IpsecStartStopAction
+        end
+
+        class IpsecStartStopFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(IpsecStartStop)
           end
 
-          def attach_service(service)
-            @service = service
+          def produce(host, srv_inst, ret)
+            IpsecStartStopAction.new
           end
+
         end
       end
     end

@@ -181,7 +181,7 @@ module Construqt
 #puts "host => #{host && host.name} #{self.delegate.class.name}"
         #binding.pry unless host
         host.region.flavour_factory.call_aspects("#{simple_name}.build_config", host, my||self)
-        #binding.pry
+        # binding.pry
         self.delegate.build_config(host, my||self, node)
       end
 

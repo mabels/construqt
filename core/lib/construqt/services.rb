@@ -15,10 +15,18 @@ module Construqt
       @services.each(&block)
     end
 
+    def map(&block)
+      @services.map(&block)
+    end
+
     def has_type_of?(kind)
       @services.find do |s|
         s.kind_of?(kind)
       end
+    end
+
+    def inspect
+      "#<#{self.class.name}:#{object_id} services=[#{self.map{|i| i.class.name}.join(",")}]>"
     end
 
     def self.create(srvs)
@@ -27,6 +35,7 @@ module Construqt
       ret.add(srvs)
       ret
     end
+
 
   end
 end

@@ -13,20 +13,24 @@ module Construqt
         class BgpStartStopFlatTaste
         end
 
-        class BgpStartStopImpl
-          attr_reader :service_type
-          def initialize
-            @service_type = BgpStartStop
-            @taste_registry = {
-              "UpDownerSystemdTaste" => BgpStartStopSystemdTaste.new(),
-              "UpDownerDebianTaste" => BgpStartStopDebianTaste.new(),
-              "UpDownerFlatTaste" => BgpStartStopFlatTaste.new()
-            }
+
+        class BgpStartStopFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(BgpStartStop)
           end
 
-          def attach_service(service)
-            @service = service
+          def produce(host, srv_inst, ret)
+            BgpStartStopAction.new
           end
+        end
+
+        class BgpStartStopAction
+
+        #  def attach_service(service)
+        #    @service = service
+        #  end
 
           def entities_for_taste(taste)
             #{

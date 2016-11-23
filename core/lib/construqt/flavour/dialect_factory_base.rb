@@ -1,10 +1,10 @@
 module Construqt
   module Flavour
     class DialectFactoryBase
-      attr_reader :services
+      attr_reader :services_factory
       def initialize
         @dialect_factories = {}
-        @services = Construqt::ServicesFactory.new(self)
+        @services_factory = Construqt::ServicesFactory.new(self)
       end
 
       def add_dialect(dialect_factory)
@@ -15,8 +15,8 @@ module Construqt
         thow "need to implement name"
       end
 
-      def add_service(serviceImpl)
-        @services.add(serviceImpl)
+      def add_service_factory(service_factory)
+        @services_factory.add(service_factory)
       end
 
       # def dialect_factory

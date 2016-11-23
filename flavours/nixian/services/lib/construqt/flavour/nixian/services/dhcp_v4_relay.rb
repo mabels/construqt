@@ -12,14 +12,18 @@ module Construqt
           end
         end
 
-        class DhcpV4RelayImpl
-          attr_reader :service_type
-          def initialize
-            @service_type = DhcpV4Relay
+        class DhcpV4RelayAction
+        end
+
+        class DhcpV4RelayFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(DhcpV4Relay)
           end
 
-          def attach_service(service)
-            @service = service
+          def produce(host, srv_inst, ret)
+            DhcpClientAction.new
           end
         end
       end

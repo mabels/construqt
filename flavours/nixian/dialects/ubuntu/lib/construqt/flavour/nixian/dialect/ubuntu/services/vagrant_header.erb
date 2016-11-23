@@ -1,11 +1,11 @@
 Vagrant.configure(2) do |config|
   config.ssh.insert_key = false
   config.ssh.forward_agent = true
-  config.vm.box = "<%= @child.vagrant_deploy.get_box %>"
+  config.vm.box = "<%= @child_service.get_box %>"
   config.vm.hostname = "<%= @child.name %>"
   config.vm.provider "virtualbox" do |v|
     v.name = "Vagrant-<%= @child.name %>"
   end
-  <% @mother.vagrant_deploy.get_cfgs.each do |cfg| %>
+  <% @mother_service.get_cfgs.each do |cfg| %>
     <%= cfg %>
   <% end %>

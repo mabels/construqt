@@ -5,16 +5,18 @@ require 'construqt/flavours/nixian/tastes/entities.rb'
 require 'construqt/flavours/nixian/tastes/systemd.rb'
 require 'construqt/flavours/nixian/tastes/flat.rb'
 require 'construqt/flavours/nixian/tastes/debian.rb'
+require 'construqt/flavours/nixian/tastes/file.rb'
 
 require_relative 'ubuntu/dns.rb'
-require_relative 'ubuntu/ipsec/racoon.rb'
-require_relative 'ubuntu/ipsec/strongswan.rb'
+# require_relative 'ubuntu/ipsec/racoon.rb'
+# require_relative 'ubuntu/ipsec/strongswan.rb'
 require_relative 'ubuntu/bgp.rb'
+require_relative 'ubuntu/ipsec.rb'
 require_relative 'ubuntu/opvn.rb'
 require_relative 'ubuntu/vrrp.rb'
 require_relative 'ubuntu/firewall.rb'
 require_relative 'ubuntu/container.rb'
-require_relative 'ubuntu/result/up_downer.rb'
+# require_relative 'ubuntu/result/up_downer.rb'
 require_relative 'ubuntu/result.rb'
 
 # require_relative 'ubuntu/services/conntrack_d.rb'
@@ -29,6 +31,7 @@ require_relative 'ubuntu/result.rb'
 # require_relative 'ubuntu/services/docker.rb'
 require_relative 'ubuntu/services/vagrant_impl.rb'
 require_relative 'ubuntu/services/deployer_sh.rb'
+require_relative 'ubuntu/services/result_factory.rb'
 
 require_relative 'ubuntu/bond.rb'
 require_relative 'ubuntu/bridge.rb'
@@ -59,12 +62,14 @@ module Construqt
           end
 
           class Dialect
-            attr_reader :services
+            attr_reader :services_factory
             def initialize(factory, cfg)
               @factory = factory
               @cfg = cfg
-              @services = factory.services.shadow()
-              @services.add(Ubuntu::Services::DeployerShImpl.new)
+              @services_factory = factory.services_factory.shadow()
+              @services_factory.add(Ubuntu::Services::ResultFactory.new(@services_factory))
+              @services_factory.add(Ubuntu::Services::DeployerShFactory.new(@services_factory))
+              @services_factory.add(Services::VagrantFactory.new(@services_factory))
             end
 
             def name
@@ -73,11 +78,20 @@ module Construqt
 
             def add_host_services(srvs)
               srvs ||= []
-              srvs += [Construqt::Flavour::Nixian::Services::Lxc.new(),
-                      Construqt::Flavour::Nixian::Services::Docker.new(),
-                      Construqt::Flavour::Nixian::Services::Vagrant.new(),
+              up_downer = Construqt::Flavour::Nixian::Services::UpDowner.new
+                  .taste(Tastes::Systemd::Factory.new)
+                  .taste(Tastes::Debian::Factory.new)
+                  .taste(Tastes::Flat::Factory.new)
+                  .taste(Tastes::File::Factory.new)
+
+              srvs += [Construqt::Flavour::Nixian::Services::Result.new,
+                       up_downer,
+                      Construqt::Flavour::Nixian::Services::Lxc.new,
+                      Construqt::Flavour::Nixian::Services::Docker.new,
+                      Construqt::Flavour::Nixian::Services::Vagrant.new,
+                      Construqt::Flavour::Nixian::Services::Ssh.new,
                       Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::DeployerSh.new]
-              throw "unknown services" unless @services.are_registered_by_instance?(srvs)
+              throw "unknown services" unless @services_factory.are_registered_by_instance?(srvs)
               srvs
             end
 
@@ -87,13 +101,13 @@ module Construqt
                 Construqt::Flavour::Nixian::Services::DnsMasq.new(),
                 Construqt::Flavour::Nixian::Services::DhcpClient.new()
               ]
-              throw "unknown services" unless @services.are_registered_by_instance?(srvs)
+              throw "unknown services" unless @services_factory.are_registered_by_instance?(srvs)
               srvs
             end
 
-            def ipsec
-              Ipsec::StrongSwan
-            end
+            # def ipsec
+            #   Ipsec::StrongSwan
+            # end
 
             def bgp
               Bgp
@@ -128,13 +142,9 @@ module Construqt
             def create_host(name, cfg)
               cfg['name'] = name
               cfg['result'] = nil
+              cfg['dialect'] = self
               host = Host.new(cfg)
-              up_downer = Result::UpDowner.new(self)
-                 .taste(Tastes::Systemd::Factory.new)
-                 .taste(Tastes::Debian::Factory.new)
-                 .taste(Tastes::Flat::Factory.new)
-              host.result = Result.new(host, up_downer)
-              @services.add(Services::VagrantImpl.new)
+              #host.result = Result.new(host, up_downer)
               # host.flavour.services.each do |srv|
               #   up_downer.request_tastes_from(srv)
               # end
@@ -155,7 +165,10 @@ module Construqt
             # end
 
             def create_ipsec(cfg)
-              Ipsec::StrongSwan.new(cfg)
+              # Ipsec::StrongSwan.new(cfg)
+              ret = Ipsec.new(cfg)
+              # cfg['host'].services.add(ret)
+              ret
             end
           end
         end

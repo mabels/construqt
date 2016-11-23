@@ -12,10 +12,10 @@ require_relative 'result/etc_conntrackd_conntrackd'
 require_relative 'result/etc_systemd_netdev'
 require_relative 'result/etc_systemd_network'
 require_relative 'result/systemd_service'
-require_relative 'ipsec/ipsec_secret'
-require_relative 'ipsec/ipsec_cert_store'
+# require_relative 'ipsec/ipsec_secret'
+# require_relative 'ipsec/ipsec_cert_store'
 require_relative 'result/packager_sh'
-require_relative 'result/up_downer'
+# require_relative 'result/up_downer'
 #require_relative 'result/up_downer_systemd_taste'
 #require_relative 'result/up_downer_debian_taste'
 #require_relative 'result/up_downer_flat_taste'
@@ -28,17 +28,30 @@ module Construqt
           class Result
             attr_reader :ipsec_secret, :ipsec_cert_store, :host, :package_builder, :results
             attr_reader :up_downer, :etc_network_iptables, :etc_network_neigh
-            def initialize(host, up_downer)
-              @host = host
+            def initialize # (result_types, host)
+              # @result_types = result_types
+              @results = {}
               @etc_network_iptables = EtcNetworkIptables.new
               @etc_network_neigh = EtcNetworkNeigh.new
-              @ipsec_secret = Ipsec::IpsecSecret.new(self)
-              @ipsec_cert_store = Ipsec::IpsecCertStore.new(self)
-              @package_builder = Result.create_package_builder(self)
+              # @ipsec_secret = Ipsec::IpsecSecret.new(self)
+              # @ipsec_cert_store = Ipsec::IpsecCertStore.new(self)
               # @service_factory = ServiceFactory.new
-              @up_downer = up_downer
-              @results = {}
             end
+
+            def attach_host(host)
+              @host = host
+            end
+
+            def start
+              #@up_downer = up_downer.attach_result(self)
+              #@package_builder = Result.create_package_builder(self)
+            end
+
+            # def up_downer
+            #  @up_downer ||= @result_types.find_by_service_type(Construqt::Flavour::Nixian::Services::UpDowner)
+            #  throw "up_downer should be there" unless @up_downer
+            #  @up_downer
+            #end
 
             def get_etc_network_vrrp
               @etc_network_vrrp
@@ -144,6 +157,7 @@ module Construqt
               replaced
             end
 
+
             def directory_mode(mode)
               mode = mode.to_i(8)
               0 != (mode & 0o6) && (mode = (mode | 0o1))
@@ -151,9 +165,6 @@ module Construqt
               0 != (mode & 0o600) && (mode = (mode | 0o100))
               "0#{mode.to_s(8)}"
             end
-
-
-
 
             def write_file(host, fname, block)
               if host.files
@@ -164,8 +175,8 @@ module Construqt
 
               text = block.flatten.select { |i| !(i.nil? || i.strip.empty?) }.join("\n")
               return [] if text.strip.empty?
-              Util.write_str(@host.region, text, @host.name, fname)
-              gzip_fname = Util.write_gzip(@host.region, text, @host.name, fname)
+              Util.write_str(host.region, text, host.name, fname)
+              gzip_fname = Util.write_gzip(host.region, text, host.name, fname)
               [
                 File.dirname("/#{fname}").split('/')[1..-1].inject(['']) do |res, part|
                   res << File.join(res.last, part); res
@@ -186,11 +197,31 @@ module Construqt
               add(EtcNetworkIptables, etc_network_iptables.commitv6,
                 Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6),
                 'etc', 'network', 'ip6tables.cfg')
-              etc_network_neigh.commit(self)
 
               up_downer.add(host, Tastes::Entities::IpTables.new())
 
               up_downer.commit
+
+              etc_network_neigh.commit(self)
+              #ipsec_secret.commit
+              #ipsec_cert_store.commit
+
+              @results.each do |fname, block|
+                if !block.clazz.respond_to?(:belongs_to_mother?) ||
+                    block.clazz.belongs_to_mother?
+                  write_file(host, fname, block)
+                end
+              end
+              @results.each do |fname, block|
+                if block.clazz.respond_to?(:belongs_to_mother?) &&
+                  !block.clazz.belongs_to_mother?
+                  write_file(host, fname, block)
+                end
+              end
+
+
+              #binding.pry if host.name == "fanout-de"
+              #@ipsec_secret.commit
 
             end
           end

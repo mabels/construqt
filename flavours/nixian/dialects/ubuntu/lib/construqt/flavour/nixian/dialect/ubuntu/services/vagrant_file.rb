@@ -7,13 +7,12 @@ module Construqt
 
 
             class VagrantFile
-              def initialize(mother, child)
+              def initialize(mother, service, child)
                 @mother = mother
                 @child = child
-                # binding.pry if mother.name == "etcbind-1"
-                # @mother.delegate.vagrant_deploy ||= Construqt::Hosts::Vagrant.new
-                # @child = child
-                # @child.delegate.vagrant_deploy ||= Construqt::Hosts::Vagrant.new
+                @mother_service = service
+                @child_service = child.services.has_type_of?(Construqt::Flavour::Nixian::Services::Vagrant)
+                @child_service ||= Construqt::Flavour::Nixian::Services::Vagrant.new
                 @links = []
               end
 

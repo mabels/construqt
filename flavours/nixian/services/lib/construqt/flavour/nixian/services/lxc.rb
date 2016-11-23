@@ -19,17 +19,36 @@ module Construqt
           chainable_attr_value :template
         end
 
-        class LxcImpl
-          attr_reader :service_type
-          def initialize
-            @service_type = Lxc
+        class LxcAction
+        end
+
+        class LxcFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(Lxc)
           end
 
-          def attach_service(service)
-            @service = service
+          def produce(host, srv_inst, ret)
+            LxcAction.new(host)
+          end
+        end
+
+        class LxcAction
+          attr_reader :host, :result
+
+          def initialize(host)
+            @host = host
           end
 
-          def build_config_host(host, service)
+          def attach_result(result)
+            if result.kind_of?(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result)
+              # binding.pry
+              @result = result
+            end
+          end
+
+          def build_config_host #(host, service)
             # binding.pry
             once_per_host_which_have_lxcs = false
             host.region.hosts.get_hosts.select { |h| host.eq(h.mother) }.each do |lxc|
