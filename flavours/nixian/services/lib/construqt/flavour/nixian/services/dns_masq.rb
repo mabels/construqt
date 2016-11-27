@@ -8,17 +8,6 @@ module Construqt
         end
 
         class DnsMasqAction
-        end
-        class DnsMasqFactory
-          attr_reader :machine
-          def initialize(service_factory)
-            @machine = service_factory.machine
-              .service_type(DnsMasq)
-          end
-
-          def produce(host, srv_inst, ret)
-            DnsMasqAction.new
-          end
 
           # def register_taste(host)
           #   host.result.up_downer.tastes.each do |t|
@@ -73,6 +62,19 @@ module Construqt
 
           def build_interface(host, ifname, iface, writer)
             # register_taste(host.delegate)
+          end
+
+        end
+        class DnsMasqFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(DnsMasq)
+              .depend(Result)
+          end
+
+          def produce(host, srv_inst, ret)
+            DnsMasqAction.new
           end
         end
       end

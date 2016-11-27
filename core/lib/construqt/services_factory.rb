@@ -37,22 +37,19 @@ module Construqt
     end
   end
   class ServiceMachine
-    attr_reader :service_types, :result_types, :attach_types
+    attr_reader :service_types, :result_types, :depends, :requires
     def initialize(sf)
       @services_factory = sf
       @service_types = []
       @result_types = []
-      @attach_types = []
+      @depends = []
+      @requires = []
     end
     def inspect
       "#<#{self.class.name}:#{object_id} "+
+      "depends=[#{@depends.map{|i|i.name}.join(",")}] "+
       "service_types=[#{@service_types.map{|i|i.name}.join(",")}] "+
-      "result_types=[#{@result_types.map{|i|i.name}.join(",")}] "+
-      "attach_types=[#{@attach_types.map{|i|i.name}.join(",")}]>"
-    end
-    def attach_type(type)
-      @attach_types.push type
-      self
+      "result_types=[#{@result_types.map{|i|i.name}.join(",")}]>"
     end
     def service_type(type)
       @service_types.push type
@@ -60,6 +57,14 @@ module Construqt
     end
     def result_type(type)
       @result_types.push type
+      self
+    end
+    def depend(type)
+      @depends.push type
+      self
+    end
+    def require(type)
+      @requires.push type
       self
     end
   end

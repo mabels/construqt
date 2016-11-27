@@ -9,6 +9,10 @@ module Construqt
               writer.lines.up("ip -#{ud.cfg.prefix} tunnel add #{iface.name} mode #{ud.cfg.mode} local #{ud.local} remote #{ud.remote}")
               writer.lines.down("ip -#{ud.cfg.prefix} tunnel del #{iface.name}")
             end
+            def activate(ctx)
+              @context = ctx
+              self
+            end
           end
           add(Entities::Tunnel, Tunnel)
         end

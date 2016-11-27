@@ -16,7 +16,7 @@ module Construqt
             'name' => Schema.identifier.default('dummy'),
             'default-name' => Schema.identifier.required.key.noset
           }
-          host.result.render_mikrotik_set_by_key(default, {
+          host.delegate.result.render_mikrotik_set_by_key(default, {
                                                    'l2mtu' => iface.mtu + 80, # vlans and mpls need more space
                                                    'mtu' => iface.mtu,
                                                    'name' => iface.name,

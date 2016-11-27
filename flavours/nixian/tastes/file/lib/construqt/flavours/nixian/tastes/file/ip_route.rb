@@ -14,6 +14,10 @@ module Construqt
               writer.lines.up("ip route add #{route.dst.to_string} via #{route.via.to_s} dev #{ud.ifname} #{metric}#{routing_table}")
               writer.lines.down("ip route del #{route.dst.to_string} via #{route.via.to_s} dev #{ud.ifname} #{metric}#{routing_table}")
             end
+            def activate(ctx)
+              @context = ctx
+              self
+            end
           end
           add(Entities::IpRoute, IpRoute)
         end

@@ -36,19 +36,19 @@ module Construqt
             return Construqt::Util.render(binding, "lxc_network_config.erb")
           end
 
-          def self.create_lxc_network_patcher(host, lxc)
-            host.result.add(lxc,
+          def self.create_lxc_network_patcher(result, host, lxc)
+            result.add(lxc,
                             Construqt::Util.render(binding, "lxc_network_update_network_in_config.rb"),
                             Construqt::Resources::Rights.root_0755, "etc", "lxc", "update_network_in_config")
-            host.result.add(lxc,
+            result.add(lxc,
                             Construqt::Util.render(binding, "lxc_network_update_config.rb"),
                             Construqt::Resources::Rights.root_0755, "etc", "lxc", "update_config")
             true
           end
 
-          def self.render(host, lxc, networks)
+          def self.render(result, host, lxc, networks)
             return if networks.empty?
-            host.result.add(lxc, networks.map{|n| n.render}.join("\n"),
+            result.add(lxc, networks.map{|n| n.render}.join("\n"),
                             Construqt::Resources::Rights.root_0644,
                             "var", "lib", "lxc",
                             "#{networks.first.iface.host.name}.network.config")

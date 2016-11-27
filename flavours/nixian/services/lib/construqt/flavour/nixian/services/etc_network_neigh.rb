@@ -1,9 +1,7 @@
 module Construqt
   module Flavour
     module Nixian
-      module Dialect
-        module Ubuntu
-          class Result
+      module Services
 
             class Neigh
               def initialize(name)
@@ -54,5 +52,3 @@ module Construqt
         end
       end
     end
-  end
-end

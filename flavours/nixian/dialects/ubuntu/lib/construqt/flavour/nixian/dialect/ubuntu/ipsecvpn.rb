@@ -26,7 +26,7 @@ module Construqt
 
             def build_config(host, iface, node)
               #puts ">>>>>>>>>>>>>>>>>>>>>>#{host.name} #{iface.name}"
-              ipsec = host.result_types.find_by_service_type(Construqt::Flavour::Nixian::Services::IpsecVpnStrongSwan)
+              ipsec = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::IpsecOncePerHost)
               # binding.pry if host.name == "fanout-de"
 
               Device.build_config(host, iface, node, nil, nil, nil, true)
@@ -40,7 +40,7 @@ module Construqt
               end
               ipsec.ipsec_secret.add_users_psk(host)
 
-              result = host.result_types.find_by_service_type(Construqt::Flavour::Nixian::Services::Result)
+              result = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
 
               result.add(:ipsec, render_ikev1(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
               result.add(:ipsec, render_ikev2(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
@@ -48,8 +48,10 @@ module Construqt
 
             def render_ipv6_proxy(iface)
               return unless iface.ipv6_proxy
-              host.result.add(self, Construqt::Util.render(binding, "ipsecvpn_updown.erb"),
-                Construqt::Resources::Rights.root_0755, "etc", "ipsec.d", "#{iface.left_interface.name}-ipv6_proxy_updown.sh")
+              result = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+              result.add(self, Construqt::Util.render(binding, "ipsecvpn_updown.erb"),
+                Construqt::Resources::Rights.root_0755,
+                "etc", "ipsec.d", "#{iface.left_interface.name}-ipv6_proxy_updown.sh")
             end
 
             def render_ikev1(host, iface)

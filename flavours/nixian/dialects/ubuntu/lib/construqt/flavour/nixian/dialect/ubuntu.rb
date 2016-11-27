@@ -14,10 +14,10 @@ require_relative 'ubuntu/bgp.rb'
 require_relative 'ubuntu/ipsec.rb'
 require_relative 'ubuntu/opvn.rb'
 require_relative 'ubuntu/vrrp.rb'
-require_relative 'ubuntu/firewall.rb'
+#require_relative 'ubuntu/firewall.rb'
 require_relative 'ubuntu/container.rb'
 # require_relative 'ubuntu/result/up_downer.rb'
-require_relative 'ubuntu/result.rb'
+#require_relative 'ubuntu/result.rb'
 
 # require_relative 'ubuntu/services/conntrack_d.rb'
 # require_relative 'ubuntu/services/dns_masq.rb'
@@ -31,7 +31,7 @@ require_relative 'ubuntu/result.rb'
 # require_relative 'ubuntu/services/docker.rb'
 require_relative 'ubuntu/services/vagrant_impl.rb'
 require_relative 'ubuntu/services/deployer_sh.rb'
-require_relative 'ubuntu/services/result_factory.rb'
+#require_relative 'ubuntu/services/result_factory.rb'
 
 require_relative 'ubuntu/bond.rb'
 require_relative 'ubuntu/bridge.rb'
@@ -67,7 +67,7 @@ module Construqt
               @factory = factory
               @cfg = cfg
               @services_factory = factory.services_factory.shadow()
-              @services_factory.add(Ubuntu::Services::ResultFactory.new(@services_factory))
+              #@services_factory.add(Services::ResultFactory.new(@services_factory))
               @services_factory.add(Ubuntu::Services::DeployerShFactory.new(@services_factory))
               @services_factory.add(Services::VagrantFactory.new(@services_factory))
             end
@@ -98,6 +98,8 @@ module Construqt
             def add_interface_services(srvs)
               srvs ||= []
               srvs += [
+                Construqt::Flavour::Nixian::Services::IpTables.new(),
+                Construqt::Flavour::Nixian::Services::IpProxyNeigh.new(),
                 Construqt::Flavour::Nixian::Services::DnsMasq.new(),
                 Construqt::Flavour::Nixian::Services::DhcpClient.new()
               ]

@@ -20,13 +20,41 @@ module Construqt
         end
 
         class LxcAction
+          attr_reader :host, :result
+
+          def initialize(host)
+            @host = host
+          end
+
+          def activate(ctx)
+            @context = ctx
+          end
+
+          def build_config_host #(host, service)
+            # binding.pry
+            result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+            once_per_host_which_have_lxcs = false
+            host.region.hosts.get_hosts.select { |h| host.eq(h.mother) }.each do |lxc|
+              next unless lxc.services.has_type_of?(Lxc)
+              once_per_host_which_have_lxcs ||= LxcNetwork.create_lxc_network_patcher(result, host, lxc)
+              networks = lxc.interfaces.values.map do |iface|
+                next unless iface.cable && !iface.cable.connections.empty?
+                # binding.pry
+                throw 'multiple connection cable are not allowed' if iface.cable.connections.length > 1
+                LxcNetwork.new(iface).link(iface.cable.connections.first.iface.name).name(iface.name)
+              end.compact
+              LxcNetwork.render(result, host, lxc, networks)
+            end
+          end
         end
+
 
         class LxcFactory
           attr_reader :machine
           def initialize(service_factory)
             @machine = service_factory.machine
               .service_type(Lxc)
+              .depend(Result)
           end
 
           def produce(host, srv_inst, ret)
@@ -34,36 +62,6 @@ module Construqt
           end
         end
 
-        class LxcAction
-          attr_reader :host, :result
-
-          def initialize(host)
-            @host = host
-          end
-
-          def attach_result(result)
-            if result.kind_of?(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result)
-              # binding.pry
-              @result = result
-            end
-          end
-
-          def build_config_host #(host, service)
-            # binding.pry
-            once_per_host_which_have_lxcs = false
-            host.region.hosts.get_hosts.select { |h| host.eq(h.mother) }.each do |lxc|
-              next unless lxc.services.has_type_of?(Lxc)
-              once_per_host_which_have_lxcs ||= LxcNetwork.create_lxc_network_patcher(host, lxc)
-              networks = lxc.interfaces.values.map do |iface|
-                next unless iface.cable && !iface.cable.connections.empty?
-                # binding.pry
-                throw 'multiple connection cable are not allowed' if iface.cable.connections.length > 1
-                LxcNetwork.new(iface).link(iface.cable.connections.first.iface.name).name(iface.name)
-              end.compact
-              LxcNetwork.render(host, lxc, networks)
-            end
-          end
-        end
       end
     end
   end

@@ -6,6 +6,7 @@ module Construqt
     module Nixian
       module Services
         class IpsecStrongSwan
+          attr_reader :ipsec
           def initialize(ipsec)
             @ipsec = ipsec
           end
@@ -21,15 +22,8 @@ module Construqt
             @ipsec_cert_store = Ipsec::IpsecCertStore.new(self)
           end
 
-          def attach_service(result)
-            # binding.pry
-          end
-
-          def attach_result(result)
-            if result.kind_of?(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result)
-              # binding.pry
-              @result = result
-            end
+          def activate(result)
+            @result = result.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
           end
 
           def add(*a)
@@ -49,27 +43,18 @@ module Construqt
         end
 
         class IpsecStrongSwanAction
-        end
-
-        class IpsecStrongSwanFactory
-          attr_reader :machine
-          def initialize(service_factory)
-            @machine = service_factory.machine
-              .service_type(IpsecStrongSwan)
-              .result_type(IpsecOncePerHost)
-              .attach_type(Result)
+          attr_reader :host, :service
+          def initialize(host, service)
+            @host = host
+            @service = service.ipsec
           end
 
-          def produce(host, srv_inst, ret)
-            IpsecStrongSwanAction.new
+          def activate(ctx)
+            @context = ctx
           end
-
-        end
-
-        class IpsecStartStopAction
 
           def build_interface(host, ifname, iface, writer)
-            binding.pry
+            #binding.pry
           end
 
           def render_conn(conn, service)
@@ -80,8 +65,8 @@ module Construqt
             out.join("\n")
           end
 
-          def build_config_host(host, service)
-            binding.pry
+          def build_config_host#(host, service)
+            result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
               if service.cfg.transport_family == Construqt::Addresses::IPV6
                 local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(service.remote.first_ipv6) }
                 transport_left=service.remote.first_ipv6.to_s
@@ -111,8 +96,9 @@ module Construqt
               else
                 end
 
-              host.result.ipsec_secret.add_psk(transport_right, service.cfg.password, service.cfg.name)
-              host.result.ipsec_secret.add_psk(service.other.host.name, service.cfg.password)
+            ioph = @context.find_instances_from_type(IpsecOncePerHost)
+            ioph.ipsec_secret.add_psk(transport_right, service.cfg.password, service.cfg.name)
+            ioph.ipsec_secret.add_psk(service.other.host.name, service.cfg.password)
 
               conn = OpenStruct.new
               conn.leftid=service.host.name
@@ -144,16 +130,34 @@ module Construqt
               conn.rekeymargin="3m"
               conn.closeaction="restart"
               conn.auto=service.auto || "start"
-              service.host.result.add(:ipsec, render_conn(conn, service),
+              result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+              result.add(:ipsec, render_conn(conn, service),
                 Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC),
                 "etc", "ipsec.conf")
           end
 
-          def commit(host)
-            binding.pry
+          def commit
+            #binding.pry
           end
 
         end
+
+        class IpsecStrongSwanFactory
+          attr_reader :machine
+          def initialize(service_factory)
+            @machine = service_factory.machine
+              .service_type(IpsecStrongSwan)
+              .result_type(IpsecOncePerHost)
+              .depend(Result)
+          end
+
+          def produce(host, srv_inst, ret)
+            IpsecStrongSwanAction.new(host, srv_inst)
+          end
+
+        end
+
+
       end
     end
   end

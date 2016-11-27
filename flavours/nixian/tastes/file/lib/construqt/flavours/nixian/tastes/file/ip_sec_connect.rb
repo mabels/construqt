@@ -10,6 +10,10 @@ module Construqt
               writer.lines.up("/usr/sbin/ipsec up #{ud.name} &", 1000, :extra)
               writer.lines.down("/usr/sbin/ipsec down #{ud.name} &", -1000, :extra)
             end
+            def activate(ctx)
+              @context = ctx
+              self
+            end
           end
           add(Entities::IpSecConnect, IpSecConnect)
         end

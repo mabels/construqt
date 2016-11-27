@@ -27,6 +27,31 @@ module Construqt
               end
             end
 
+            attr_reader :tastes, :result
+            def initialize
+              @tastes = []
+              @result = nil
+            end
+            # def attach_result(result)
+            #   @result = result
+            #   self
+            # end
+
+
+            # def request_tastes_from(srv)
+            #   @tastes.each do |taste|
+            #     taste.register_srv(srv.entities_for_taste(taste))
+            #   end
+            # end
+
+            def taste(taste)
+              @tastes.push(taste)
+              #taste.result = @result
+              self
+            end
+
+
+
 
             class UpDownerOncePerHost
               # attr_reader :result_types
@@ -34,6 +59,14 @@ module Construqt
                 #@result_types = result_types
                 #@host = host
                 @updos = []
+              end
+
+              def activate(rt)
+                st = rt.find_by_service_type(Construqt::Flavour::Nixian::Services::UpDowner)
+                @updowner = st.service_producers.first.srv_inst
+                @updowner.tastes.each do |t|
+                  t.activate(rt)
+                end
               end
               #def attach_host(host)
               #  @host = host
@@ -45,6 +78,7 @@ module Construqt
               #end
 
               def produce(_, __, ___)
+                binding.pry
               end
               #def attach_service(service)
               #  # binding.pry
@@ -58,7 +92,7 @@ module Construqt
                 # binding.pry
                 # @updos.push(ud)
                 taste_dispatch = []
-                @service.tastes.each do |t|
+                @updowner.tastes.each do |t|
                   dispatches = t.dispatches(ud.class.name)
                   throw "unknown dispatch for #{t.class.name} on #{ud.class.name}" unless dispatches
                   taste_dispatch.push TasteDispatch.new.taste(t).actors(dispatches)
@@ -92,35 +126,13 @@ module Construqt
                 @machine = service_factory.machine
                   .service_type(UpDowner)
                   .result_type(UpDownerOncePerHost)
+                  .depend(Result)
               end
               def produce(host, srv_inst, ret)
                 UpdownAction.new
               end
 
             end
-            attr_reader :tastes, :result
-            def initialize
-              @tastes = []
-              @result = nil
-            end
-            # def attach_result(result)
-            #   @result = result
-            #   self
-            # end
-
-
-            # def request_tastes_from(srv)
-            #   @tastes.each do |taste|
-            #     taste.register_srv(srv.entities_for_taste(taste))
-            #   end
-            # end
-
-            def taste(taste)
-              @tastes.push(taste)
-              #taste.result = @result
-              self
-            end
-
           end
         end
       end

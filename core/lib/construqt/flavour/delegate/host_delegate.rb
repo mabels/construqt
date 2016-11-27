@@ -23,9 +23,13 @@ module Construqt
         end
 
         def inspect
-           "@<#{self.class.name}:#{self.object_id} name=#{name} mother=#{mother&&mother.inspect}>"
+           "#<#{self.class.name}:#{self.object_id} name=#{name} mother=#{mother&&mother.inspect}>"
         end
 
+
+        def files
+          self.delegate.files
+        end
 
         def fqdn
           region.network.fqdn(self.name)
@@ -104,9 +108,9 @@ module Construqt
           self.delegate.region
         end
 
-        def result
-          self.delegate.result
-        end
+        #def result
+        #  self.delegate.result
+        #end
 
         def flavour
           self.delegate.flavour
@@ -156,7 +160,7 @@ module Construqt
           end
 
           self.region.flavour_factory.call_aspects("host.commit", self, nil)
-          self.result.commit
+          #self.result.commit
 
           self.flavour.pre_clazzes do |key, clazz|
             self.region.flavour_factory.call_aspects("#{key}.footer", self, nil)

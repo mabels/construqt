@@ -16,9 +16,9 @@ module Construqt
               [self.host]
             end
 
-            def up_down_member(iface)
-              []
-            end
+            #def up_down_member(iface)
+            #  []
+            #end
             # def up_member(iface)
             #   []
             # end
@@ -26,25 +26,25 @@ module Construqt
             #   []
             # end
 
-            def self.add_address(host, ifname, iface, family)
+            def self.add_address(host, ifname, iface, family, result, up_downer)
               if iface.address.nil?
                 Firewall.create(host, ifname, iface, family)
                 return
               end
 
-              host.result.up_downer.add(iface, Tastes::Entities::DhcpV4.new()) if iface.address.dhcpv4?
-              host.result.up_downer.add(iface, Tastes::Entities::DhcpV6.new()) if iface.address.dhcpv6?
+              up_downer.add(iface, Tastes::Entities::DhcpV4.new()) if iface.address.dhcpv4?
+              up_downer.add(iface, Tastes::Entities::DhcpV6.new()) if iface.address.dhcpv6?
 
-              host.result.up_downer.add(iface, Tastes::Entities::Loopback.new()) if iface.address.loopback?
+              up_downer.add(iface, Tastes::Entities::Loopback.new()) if iface.address.loopback?
               lines.add(iface.flavour) if iface.flavour
               iface.address.ips.each do |ip|
                 if family.nil? ||
                     (!family.nil? && family == Construqt::Addresses::IPV6 && ip.ipv6?) ||
                     (!family.nil? && family == Construqt::Addresses::IPV4 && ip.ipv4?)
                   prefix = ip.ipv6? ? "-6 " : ""
-                  host.result.up_downer.add(iface, Tastes::Entities::IpAddr.new(ip, ifname))
+                  up_downer.add(iface, Tastes::Entities::IpAddr.new(ip, ifname))
                   if ip.routing_table
-                    host.result.up_downer.add(iface, Tastes::Entities::IpRouteTable.new(ip, ifname))
+                    up_downer.add(iface, Tastes::Entities::IpRouteTable.new(ip, ifname))
                   end
                 end
               end
@@ -52,42 +52,12 @@ module Construqt
                 if family.nil? ||
                     (!family.nil? && family == Construqt::Addresses::IPV6 && route.via.ipv6?) ||
                     (!family.nil? && family == Construqt::Addresses::IPV4 && route.via.ipv4?)
-                    host.result.up_downer.add(iface, Tastes::Entities::IpRoute.new(route, ifname))
+                    up_downer.add(iface, Tastes::Entities::IpRoute.new(route, ifname))
                 end
               end
-              proxy_neigh(ifname, iface)
-              Firewall.create(host, ifname, iface, family)
-            end
-
-            def self.proxy_neigh2ips(neigh)
-              if neigh.nil?
-                return []
-              elsif neigh.respond_to?(:resolv)
-                ret = neigh.resolv()
-                #puts "self.proxy_neigh2ips>>>>>#{neigh} #{ret.map{|i| i.class.name}} "
-                return ret
-              end
-              return neigh.ips
-            end
-
-            def self.proxy_neigh(ifname, iface)
-              proxy_neigh2ips(iface.proxy_neigh).each do |ip|
-                #puts "**********#{ip.class.name}"
-                list = []
-                if ip.network.to_string == ip.to_string
-                  ip.each_host{|i| list << i }
-                else
-                  list << ip
-                end
-                list.each do |lip|
-                  iface.host.result.up_downer.add(iface, Tastes::Entities::IpProxyNeigh.new(lip, ifname))
-                  iface.host.result.etc_network_neigh.get(ifname) do |writer|
-                    ipv = lip.ipv6? ? "-6 ": "-4 "
-                    writer.up("ip #{ipv}neigh add proxy #{lip.to_s} dev #{ifname}")
-                    writer.down("ip #{ipv}neigh del proxy #{lip.to_s} dev #{ifname}")
-                  end
-                end
-              end
+              #proxy_neigh(ifname, iface)
+              iptables = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::IpTablesOncePerHost)
+              iptables.create(host, ifname, iface, family)
             end
 
             def build_config(host, iface, node)
@@ -98,34 +68,36 @@ module Construqt
             def self.build_config(host, iface, node, ifname = nil, family = nil, mtu = nil, skip_link = nil)
               # binding.pry
               throw "need node as 3th parameter" unless node.kind_of?(Construqt::Graph::Node)
+              result = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
               #      binding.pry
               #          if iface.dynamic
               #            Firewall.create(host, ifname||iface.name, iface, family)
               #            return
               #          end
               #binding.pry if iface.name == "border" and iface.host.name == "ao-border-wlxc4e9841f0822"
-              host.result.add_component(iface.class.const_get("COMPONENT"))
+              result.add_component(iface.class.const_get("COMPONENT"))
 
-
-              host.result.up_downer.add(iface, Tastes::Entities::Device.new(ifname))
+              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::UpDownerOncePerHost)
+              up_downer.add(iface, Tastes::Entities::Device.new(ifname))
               ifname = ifname || iface.name || writer.header.get_interface_name
               # iface.call_on_iface_up_down(writer, ifname)
               unless skip_link
                 # binding.pry
-                host.result.up_downer.add(iface, Tastes::Entities::LinkMtuUpDown.new(mtu || iface.delegate.mtu, ifname))
+                up_downer.add(iface, Tastes::Entities::LinkMtuUpDown.new(mtu || iface.delegate.mtu, ifname))
               end
-              iface.node.parents.each do |parent_node|
-                parent = parent_node.link.ref
-                parent.delegate.up_down_member(iface).each { |ud| host.result.up_downer.add(iface, ud) }
-                # parent.delegate.up_member(iface).each { |line| writer.lines.up(line) }
-                # parent.delegate.down_member(iface).each { |line| writer.lines.down(line) }
-              end
-              add_address(host, ifname, iface.delegate, family)
-              #binding.pry if ifname == "v202"
-              iface.services.each do |service|
-                # binding.pry
-                host.flavour.services.find(service).build_interface(host, ifname, iface,  family)
-              end
+              #iface.node.parents.each do |parent_node|
+              #  parent = parent_node.link.ref
+              #  #parent.delegate.up_down_member(iface).each { |ud| up_downer.add(iface, ud) }
+              #  # parent.delegate.up_member(iface).each { |line| writer.lines.up(line) }
+              #  # parent.delegate.down_member(iface).each { |line| writer.lines.down(line) }
+              #end
+              add_address(host, ifname, iface.delegate, family, result, up_downer)
+              # binding.pry
+              # #binding.pry if ifname == "v202"
+              # iface.services.each do |service|
+              #   # binding.pry
+              #   host.flavour.services.find(service).build_interface(host, ifname, iface,  family)
+              # end
 
             end
           end

@@ -10,6 +10,10 @@ module Construqt
               writer.lines.up("ip #{prefix}addr add #{ud.ip.to_string} dev #{ud.ifname}")
               writer.lines.down("ip #{prefix}addr del #{ud.ip.to_string} dev #{ud.ifname}")
             end
+            def activate(ctx)
+              @context = ctx
+              self
+            end
           end
           add(Entities::IpAddr, IpAddr)
         end

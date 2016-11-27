@@ -1,8 +1,7 @@
 module Construqt
   module Flavour
     module Nixian
-      module Dialect
-        module Ubuntu
+      module Services
           module Firewall
             class BeginEndMiddle
               attr_reader :begin, :middle, :end
@@ -33,4 +32,3 @@ module Construqt
       end
     end
   end
-end

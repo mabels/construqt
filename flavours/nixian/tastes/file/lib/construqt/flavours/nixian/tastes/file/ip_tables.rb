@@ -9,6 +9,10 @@ module Construqt
               writer.lines.up("/sbin/iptables-restore /etc/network/iptables.cfg")
               writer.lines.up("/sbin/ip6tables-restore /etc/network/ip6tables.cfg")
             end
+            def activate(ctx)
+              @context = ctx
+              self
+            end
           end
           add(Entities::IpTables, IpTables)
         end

@@ -32,19 +32,22 @@ module Construqt
               add_groups = cfg['add_groups']
             end
 
-            def result
-              if @result
-                @result
-              else
-                r = self.delegate.result_types.find_by_service_type(Construqt::Flavour::Nixian::Services::Result)
-                throw "result should be there" unless r
-                rp = r.result_types.find do |i|
-                  i.instance.kind_of?(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result)
-                end
-                throw "result should be there" unless rp
-                @result = rp.instance
-              end
-            end
+            # def result
+            #   if @result
+            #     @result
+            #   else
+            #     @result = self.delegate.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Dialect::Ubuntu::Result)
+            #   end
+            # end
+            #
+            # def up_downer
+            #   if @up_downer
+            #     @up_downer
+            #   else
+            #     @up_downer = self.delegate.result_types.find_instances_from_type(Construqt::Flavour::Nixian::UpDownerOncePerHost)
+            #   end
+            # end
+
 
             def inspect
               "#<#{self.class.name}:#{"%x"%object_id} name=#{name}>"
@@ -61,20 +64,22 @@ module Construqt
 
             def build_config(host, unused, node)
               # binding.pry
-              host.result.add(self, Construqt::Util.render(binding, "host_udev.erb"),
+              result = self.delegate.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+
+              result.add(self, Construqt::Util.render(binding, "host_udev.erb"),
                 Construqt::Resources::Rights.root_0644, "etc", "udev", "rules.d", "23-persistent-vnet.rules")
               # not cool but sysctl.d/...
-              host.result.add(self, Construqt::Util.render(binding, "host_sysctl.erb"),
+              result.add(self, Construqt::Util.render(binding, "host_sysctl.erb"),
                 Construqt::Resources::Rights.root_0644, "etc", "sysctl.conf")
 
-              host.result.add(self, Construqt::Util.render(binding, "host_hosts.erb"),
+              result.add(self, Construqt::Util.render(binding, "host_hosts.erb"),
                 Construqt::Resources::Rights.root_0644, "etc", "hosts")
 
-              host.result.add(self, host.name, Construqt::Resources::Rights.root_0644, "etc", "hostname")
-              host.result.add(self, "# WTF resolvconf", Construqt::Resources::Rights.root_0644, "etc", "resolvconf", "resolv.conf.d", "orignal");
+              result.add(self, host.name, Construqt::Resources::Rights.root_0644, "etc", "hostname")
+              result.add(self, "# WTF resolvconf", Construqt::Resources::Rights.root_0644, "etc", "resolvconf", "resolv.conf.d", "orignal");
               resolv_conf = Construqt::Util.render(binding, "host_resolv_conf.erb")
-              host.result.add(self, resolv_conf, Construqt::Resources::Rights.root_0644, "etc", "resolvconf", "resolv.conf.d", "base");
-              host.result.add(self, resolv_conf, Construqt::Resources::Rights.root_0644, "etc", "resolv.conf")
+              result.add(self, resolv_conf, Construqt::Resources::Rights.root_0644, "etc", "resolvconf", "resolv.conf.d", "base");
+              result.add(self, resolv_conf, Construqt::Resources::Rights.root_0644, "etc", "resolv.conf")
 
               #binding.pry
               Dns.build_config(host) if host.delegate.dns_server
@@ -87,7 +92,7 @@ module Construqt
 
               host.delegate.files && host.delegate.files.each do |file|
                 next if file.kind_of?(Construqt::Resources::SkipFile)
-                if host.result.replace(nil, file.data, file.right, *file.path)
+                if result.replace(nil, file.data, file.right, *file.path)
                   Construqt.logger.warn("the file #{file.path} was overriden!")
                 end
               end

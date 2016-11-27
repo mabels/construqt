@@ -270,7 +270,7 @@ module Construqt
         hnode_string.each do |hnode|
           hnode.ref.interface_graph.flat.each do |inode_string|
             inode_string.each do |inode|
-              srv_res.fire_host_interface(hnode.ref, inode.ref, :build_config)
+              srv_res.fire_host_interface(hnode.ref, inode.ref, :build_config_interface)
               inode.ref.build_config(hnode.ref, inode.ref, inode)
             end
           end

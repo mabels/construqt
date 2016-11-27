@@ -11,24 +11,26 @@ module Construqt
               def initialize(service_factory)
                 @machine = service_factory.machine
                   .service_type(Construqt::Flavour::Nixian::Services::Vagrant)
+                  .depend(Construqt::Flavour::Nixian::Services::Result)
               end
               def produce(host, srv_inst, ret)
-                VagrantAction.new(host)
+                VagrantAction.new(host, srv_inst)
               end
             end
 
             class VagrantAction
               attr_reader :host, :service
-              def initialize(host)
+              def initialize(host, service)
                 @host = host
-              end
-
-              def attach_service(service)
                 @service = service
               end
 
+              def activate(ctx)
+                @context = ctx
+              end
+
               def render_vagrant(host, service, vagrant)
-                vfile = VagrantFile.new(host, service, vagrant)
+                vfile = VagrantFile.new(@context, host, service, vagrant)
                 vagrant.interfaces.values.map do |iface|
                   if iface.cable && !iface.cable.connections.empty?
                     vfile.add_link(iface.cable.connections.first.iface, iface)

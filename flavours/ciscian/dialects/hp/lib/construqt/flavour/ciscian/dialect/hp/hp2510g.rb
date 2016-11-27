@@ -40,7 +40,7 @@ module Construqt
             end
 
             def add_host(host)
-              result = host.result
+              result = host.delegate.result
               result.add('hostname').add(result.host.name).quotes
               result.add('max-vlans').add(64)
               result.add("snmp-server community \"public\"")
@@ -87,9 +87,9 @@ module Construqt
 
             def write_sntp(host)
               if host.region.network.ntp.servers.first_ipv4
-                host.result.add('sntp server ').add(host.region.network.ntp.servers.first_ipv4)
-                host.result.add('timesync sntp')
-                host.result.add('sntp unicast')
+                host.delegate.result.add('sntp server ').add(host.region.network.ntp.servers.first_ipv4)
+                host.delegate.result.add('timesync sntp')
+                host.delegate.result.add('sntp unicast')
               end
             end
 
@@ -102,7 +102,7 @@ module Construqt
             end
 
             def add_vlan(vlan)
-              result = vlan.host.result
+              result = vlan.host.delegate.result
               result.add("vlan #{vlan.delegate.vlan_id}", NestedSection) do |section|
                 next unless vlan.delegate.description && !vlan.delegate.description.empty?
                 throw 'vlan name too long, max 32 chars' if vlan.delegate.description.length > 32

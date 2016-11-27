@@ -16,6 +16,10 @@ require_relative 'services/result'
 require_relative 'services/up_downer'
 require_relative 'services/ipsec_strong_swan'
 require_relative 'services/ipsec_vpn_strong_swan'
+require_relative 'services/ipsec_vpn_strong_swan'
+require_relative 'services/ipsec_vpn_strong_swan'
+require_relative 'services/ip_tables'
+require_relative 'services/ip_proxy_neigh'
 
 module Construqt
   module Flavour
@@ -38,8 +42,11 @@ module Construqt
             UpDowner::Factory,
             IpsecStrongSwanFactory,
             IpsecVpnStrongSwanFactory,
+            IpTablesFactory,
+            IpProxyNeighFactory,
             DockerFactory,
             DnsMasqFactory,
+            ResultFactory
           ].each do |clazz|
             services_factory.add(clazz.new(services_factory))
           end

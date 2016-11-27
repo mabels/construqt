@@ -6,8 +6,7 @@ require_relative 'firewall/to_from.rb'
 module Construqt
   module Flavour
     module Nixian
-      module Dialect
-        module Ubuntu
+        module Services
           module Firewall
             def self.inverse_action(is_not, action)
               unless is_not
@@ -432,4 +431,3 @@ module Construqt
       end
     end
   end
-end

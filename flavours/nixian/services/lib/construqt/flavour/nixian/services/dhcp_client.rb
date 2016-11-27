@@ -15,6 +15,7 @@ module Construqt
           def initialize(service_factory)
             @machine = service_factory.machine
               .service_type(DhcpClient)
+              .depend(Result)
           end
 
           def produce(host, srv_inst, ret)

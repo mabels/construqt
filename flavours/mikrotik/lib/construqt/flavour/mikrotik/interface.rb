@@ -18,7 +18,7 @@ module Construqt
             }
             cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}-CONSTRUQT"
             #puts ">>>>>>>> #{cfg.inspect}"
-            host.result.render_mikrotik(default, cfg, "ipv6", "address")
+            host.delegate.result.render_mikrotik(default, cfg, "ipv6", "address")
           else
             default = {
               "address" => Schema.addrprefix.required,
@@ -26,7 +26,7 @@ module Construqt
               "comment" => Schema.string.required.key
             }
             cfg['comment'] = "#{cfg['interface']}-#{cfg['address']}-CONSTRUQT"
-            host.result.render_mikrotik(default, cfg, "ip", "address")
+            host.delegate.result.render_mikrotik(default, cfg, "ip", "address")
           end
         end
 
@@ -56,9 +56,9 @@ module Construqt
           }
           cfg['comment'] = "#{cfg['dst-address']} via #{cfg['gateway']} CONSTRUQT"
           if rt.dst.ipv6?
-            host.result.render_mikrotik(default, cfg, "ipv6", "route")
+            host.delegate.result.render_mikrotik(default, cfg, "ipv6", "route")
           else
-            host.result.render_mikrotik(default, cfg, "ip", "route")
+            host.delegate.result.render_mikrotik(default, cfg, "ip", "route")
           end
         end
 
@@ -88,7 +88,7 @@ module Construqt
             "comment" => Schema.string.required.key(1),
           }
 
-          host.result.render_mikrotik(default, cfg, "ip", "firewall", "mangle")
+          host.delegate.result.render_mikrotik(default, cfg, "ip", "firewall", "mangle")
         end
 
         def self.render_firewall_mangle_src_address(host, iface, ip)
@@ -113,7 +113,7 @@ module Construqt
           }
 
 
-          host.result.render_mikrotik(default, cfg, "ip", "firewall", "mangle")
+          host.delegate.result.render_mikrotik(default, cfg, "ip", "firewall", "mangle")
         end
 
 

@@ -11,6 +11,10 @@ module Construqt
               writer.lines.up("/usr/sbin/openvpn --config /etc/openvpn/#{iface.name}.conf", :extra)
               writer.lines.down("kill $(cat /run/openvpn.#{iface.name}.pid)", :extra)
             end
+            def activate(ctx)
+              @context = ctx
+              self
+            end
           end
           add(Entities::OpenVpn, OpenVpn)
         end

@@ -9,6 +9,10 @@ module Construqt
               writer.header.protocol(Result::EtcNetworkInterfaces::Entry::Header::PROTO_INET4)
               writer.lines.add(iface.delegate.flavour) if iface.delegate.flavour
             end
+            def activate(ctx)
+              @context = ctx
+              self
+            end
           end
           add(Entities::Device, Device)
         end

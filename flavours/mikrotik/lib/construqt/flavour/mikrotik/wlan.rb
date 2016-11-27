@@ -23,7 +23,7 @@ module Construqt
             'wpa-pre-shared-key' => Schema.string.required,
             'wpa2-pre-shared-key' => Schema.string.required
           }
-          host.result.render_mikrotik(default, {
+          host.delegate.result.render_mikrotik(default, {
                                         'no_auto_disable' => true,
                                         'authentication-types' => iface.authentication_types,
                                         'management-protection' => iface.management_protection,
@@ -45,7 +45,7 @@ module Construqt
             'vlan-id' => Schema.int.required.key,
             'vlan-mode' => Schema.identifier.default('use-tag')
           }
-          host.result.render_mikrotik(default, {
+          host.delegate.result.render_mikrotik(default, {
                                         'mac-address' => iface.mac_address,
                                         'master-interface' => iface.master_if.name,
                                         'name' => iface.name,
@@ -72,7 +72,7 @@ module Construqt
             'security-profile' => Schema.string.required,
             'hide-ssid' => Schema.boolean.default(false)
           }
-          host.result.render_mikrotik_set_by_key(default, {
+          host.delegate.result.render_mikrotik_set_by_key(default, {
                                                    'default-name' => iface.default_name,
                                                    'band' => iface.band,
                                                    'channel-width' => iface.channel_width,

@@ -20,12 +20,14 @@ module Construqt
             def build_config(host, wlan, node)
               wlan_delegate = wlan.delegate
 
-              host.result.add(Wlan, Util.render(binding, "wlan_wpa_supplicant.conf.erb"),
+              result = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+              result.add(Wlan, Util.render(binding, "wlan_wpa_supplicant.conf.erb"),
                 Construqt::Resources::Rights.root_0600,
                 'etc', 'network', "#{@name}-wpa_supplicant.conf")
 
               mac_address = wlan_delegate.mac_address || Construqt::Util.generate_mac_address_from_name("#{host.name} #{wlan_delegate.name}")
-              host.result.up_downer.add(wlan_delegate, Tastes::Entities::Wlan.new(mac_address))
+              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::UpDownerOncePerHost)
+              up_downer.add(wlan_delegate, Tastes::Entities::Wlan.new(mac_address))
               Device.build_config(host, wlan, node)
             end
           end

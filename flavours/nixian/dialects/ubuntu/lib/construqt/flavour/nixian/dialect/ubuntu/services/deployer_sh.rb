@@ -12,7 +12,9 @@ module Construqt
             class DeployerShFactory
               attr_reader :machine
               def initialize(service_factory)
-                @machine = service_factory.machine.service_type(DeployerSh)
+                @machine = service_factory.machine
+                  .service_type(DeployerSh)
+                  .require(Construqt::Flavour::Nixian::Services::Result)
               end
 
               def produce(host, srv_ins, ret)
@@ -26,6 +28,10 @@ module Construqt
               attr_reader :host
               def initialize(host)
                 @host = host
+              end
+
+              def activate(ctx)
+                @context = ctx
               end
 
 
@@ -87,17 +93,19 @@ module Construqt
                 out += setup_ntp(host.delegate)
                 # SERVICES out += Lxc.commands(host)
 
-                host.delegate.result.results.each do |fname, block|
+                result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+
+                result.results.each do |fname, block|
                   if !block.clazz.respond_to?(:belongs_to_mother?) ||
                       block.clazz.belongs_to_mother?
-                    out += host.delegate.result.write_file(host.delegate, fname, block)
+                    out += result.write_file(host.delegate, fname, block)
                   end
                 end
 
                 out << 'fi'
-                host.delegate.result.results.each do |fname, block|
+                result.results.each do |fname, block|
                   if block.clazz.respond_to?(:belongs_to_mother?) && !block.clazz.belongs_to_mother?
-                    out += host.delegate.result.write_file(host.delegate, fname, block)
+                    out += result.write_file(host.delegate, fname, block)
                   end
                 end
 

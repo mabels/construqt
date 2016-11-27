@@ -6,6 +6,10 @@ module Construqt
           class IpTables
             def render(iface, taste_type, taste)
             end
+            def activate(ctx)
+              @context = ctx
+              self
+            end
           end
           add(Entities::IpTables, IpTables)
         end

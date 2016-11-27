@@ -20,6 +20,7 @@ module Construqt
           def initialize(service_factory)
             @machine = service_factory.machine
               .service_type(DhcpV4Relay)
+              .depend(Result)
           end
 
           def produce(host, srv_inst, ret)

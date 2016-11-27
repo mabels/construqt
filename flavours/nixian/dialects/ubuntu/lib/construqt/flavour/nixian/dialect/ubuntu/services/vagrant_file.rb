@@ -7,9 +7,11 @@ module Construqt
 
 
             class VagrantFile
-              def initialize(mother, service, child)
+              def initialize(ctx, mother, service, child)
+                @context = ctx
                 @mother = mother
                 @child = child
+                binding.pry unless service
                 @mother_service = service
                 @child_service = child.services.has_type_of?(Construqt::Flavour::Nixian::Services::Vagrant)
                 @child_service ||= Construqt::Flavour::Nixian::Services::Vagrant.new
@@ -60,7 +62,8 @@ module Construqt
 
               def render
                 return if @links.empty?
-                @mother.result.add(self, vfile_header+vfile_network+vfile_ssh_port+vfile_footer,
+                result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+                result.add(self, vfile_header+vfile_network+vfile_ssh_port+vfile_footer,
                                    Construqt::Resources::Rights.root_0644,
                                    "var", "lib", "vagrant", @child.name, "Vagrantfile")
               end

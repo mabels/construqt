@@ -1,10 +1,7 @@
 module Construqt
   module Flavour
     module Nixian
-      module Dialect
-        module Ubuntu
-          class Result
-
+      module Services
             class EtcNetworkIptables
               def initialize
                 @mangle = Section.new('mangle')
@@ -177,5 +174,3 @@ module Construqt
         end
       end
     end
-  end
-end

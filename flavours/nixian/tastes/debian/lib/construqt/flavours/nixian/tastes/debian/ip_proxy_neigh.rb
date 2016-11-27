@@ -17,6 +17,10 @@ module Construqt
               # writer.lines.down("ip #{ipv}neigh del proxy #{me.ip.to_s} dev #{me.ifname}", :extra)
             end
 
+            def activate(ctx)
+              @context = ctx
+              self
+            end
           end
           add(Entities::IpProxyNeigh, IpProxyNeigh)
         end

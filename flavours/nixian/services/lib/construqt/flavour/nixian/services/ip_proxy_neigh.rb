@@ -1,44 +1,87 @@
-require_relative './ipsec/ipsec_cert_store'
-require_relative './ipsec/ipsec_secret'
 require_relative './result'
+require_relative './etc_network_neigh'
 module Construqt
   module Flavour
     module Nixian
       module Services
-        class IpsecVpnStrongSwan
-          def initialize(ipsec)
-            @ipsec = ipsec
+        class IpProxyNeigh
+        end
+
+        class IpProxyNeighOncePerHost
+        end
+
+        class IpsecProxyNeighAction
+
+          def initialize(host)
+            @host = host
+            @etc_network_neigh = EtcNetworkNeigh.new
           end
+
+          def activate(ctx)
+            @context = ctx
+          end
+
+          def build_config_interface(iface)
+            proxy_neigh(iface.name, iface)
+          end
+
+          def proxy_neigh2ips(neigh)
+             if neigh.nil?
+               return []
+             elsif neigh.respond_to?(:resolv)
+               ret = neigh.resolv()
+               #puts "self.proxy_neigh2ips>>>>>#{neigh} #{ret.map{|i| i.class.name}} "
+               return ret
+             end
+             return neigh.ips
+         end
+
+         def proxy_neigh(ifname, iface)
+           up_downer = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::UpDownerOncePerHost)
+           proxy_neigh2ips(iface.proxy_neigh).each do |ip|
+               #puts "**********#{ip.class.name}"
+               list = []
+               if ip.network.to_string == ip.to_string
+                 ip.each_host{|i| list << i }
+               else
+                 list << ip
+               end
+               list.each do |lip|
+                 up_downer.add(iface, Tastes::Entities::IpProxyNeigh.new(lip, ifname))
+               end
+             end
+           end
+
+
+
+          def activate(context)
+            @context = context
+          end
+
+          def commit
+            result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+
+            @etc_network_neigh.commit(result)
+
+            up_downer = @context.find_instances_from_type(UpDowner::UpDownerOncePerHost)
+            up_downer.add(@host, Tastes::Entities::IpTables.new())
+
+          end
+
         end
 
-        class IpsecVpnStrongSwanAction
-        end
-
-        class IpsecVpnStrongSwanFactory
+        class IpProxyNeighFactory
           attr_reader :machine
           def initialize(service_factory)
             @machine = service_factory.machine
-              .service_type(IpsecVpnStrongSwan)
-              .result_type(IpsecOncePerHost)
+              .service_type(IpProxyNeigh)
+              .result_type(IpProxyNeighOncePerHost)
+              .depend(Result)
+              .depend(UpDowner)
           end
 
           def produce(host, srv_inst, ret)
-            IpsecVpnStrongSwanAction.new
-          end
-        end
-
-        class IpsecVpnStrongSwanAction
-          def build_interface(host, ifname, iface, writer)
-            # binding.pry
-          end
-
-
-          def build_config_host#(host, service)
-            #binding.pry
-          end
-
-          def commit#(host)
-            #binding.pry
+            IpsecProxyNeighAction.new(host)
           end
 
         end

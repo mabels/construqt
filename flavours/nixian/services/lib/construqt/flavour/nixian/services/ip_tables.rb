@@ -1,47 +1,70 @@
 require_relative './ipsec/ipsec_cert_store'
 require_relative './ipsec/ipsec_secret'
 require_relative './result'
+require_relative './etc_network_iptables'
+require_relative './firewall'
 module Construqt
   module Flavour
     module Nixian
       module Services
-        class IpsecVpnStrongSwan
-          def initialize(ipsec)
-            @ipsec = ipsec
+        class IpTables
+          def initialize()
           end
         end
 
-        class IpsecVpnStrongSwanAction
+        class IpTablesOncePerHost
+
+          attr_reader :host
+          def initialize
+            @etc_network_iptables = EtcNetworkIptables.new
+          end
+
+          def attach_host(host)
+            @host = host
+          end
+
+          def activate(context)
+            @context = context
+          end
+
+          def create(host, ifname, iface, family)
+            throw 'interface must set' unless ifname
+            Firewall.create_from_iface(ifname, iface, @etc_network_iptables)
+            Firewall.create_from_iface(ifname, iface.delegate.vrrp.delegate, writer) if iface.delegate.vrrp
+          end
+
+          def commit
+            result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+            result.add(EtcNetworkIptables, @etc_network_iptables.commitv4,
+              Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4),
+              'etc', 'network', 'iptables.cfg')
+            result.add(EtcNetworkIptables, @etc_network_iptables.commitv6,
+              Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW6),
+              'etc', 'network', 'ip6tables.cfg')
+
+            up_downer = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::UpDownerOncePerHost)
+            up_downer.add(host, Tastes::Entities::IpTables.new())
+          end
         end
 
-        class IpsecVpnStrongSwanFactory
+        class IpTablesAction
+        end
+
+        class IpTablesFactory
           attr_reader :machine
           def initialize(service_factory)
             @machine = service_factory.machine
-              .service_type(IpsecVpnStrongSwan)
-              .result_type(IpsecOncePerHost)
+              .service_type(IpTables)
+              .result_type(IpTablesOncePerHost)
+              .depend(Result)
+              .depend(UpDowner)
           end
 
           def produce(host, srv_inst, ret)
-            IpsecVpnStrongSwanAction.new
+            IpTablesAction.new
           end
         end
 
-        class IpsecVpnStrongSwanAction
-          def build_interface(host, ifname, iface, writer)
-            # binding.pry
-          end
-
-
-          def build_config_host#(host, service)
-            #binding.pry
-          end
-
-          def commit#(host)
-            #binding.pry
-          end
-
-        end
       end
     end
   end

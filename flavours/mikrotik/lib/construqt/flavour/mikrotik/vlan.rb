@@ -16,7 +16,7 @@ module Construqt
             'vlan-id' => Schema.int.required
           }
           iface.interfaces.each do |vlan_iface|
-            host.result.render_mikrotik(default, {
+            host.delegate.result.render_mikrotik(default, {
                                           'interface' => vlan_iface.name,
                                           'mtu' => iface.mtu,
                                           'name' => iface.name,

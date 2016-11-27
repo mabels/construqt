@@ -17,10 +17,14 @@ module Construqt
               @etc_network_interfaces = Helper::EtcNetworkInterfaces.new(self)
             end
 
+            def activate(ctx)
+              @context = ctx
+            end
+
             def dispatches(a)
               tastes = TASTES[a]
               throw "Debian #{a}" unless tastes
-              @tastes[a] ||= tastes.map{|i| i.new }
+              @tastes[a] ||= tastes.map{|i| i.new.activate(@context) }
             end
 
             def inspect

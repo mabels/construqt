@@ -26,10 +26,22 @@ module Construqt
   end
 
   class ServiceType
-    attr_reader :result_types, :service_producers
-    def initialize
+    attr_reader :key, :result_types, :service_producers, :in_links, :out_links
+    def initialize(key)
+      @key = key
       @result_types = Set.new
       @service_producers = Set.new
+      @out_links = Set.new
+      @in_links = Set.new
+    end
+    def inspect
+     "#<#{self.class.name}:#{self.object_id} "+
+     "key=#{key} "+
+     "result_types=#{@result_types.map{|i| i.inspect }} "+
+     "service_producers=#{@service_producers.map{|i| i.inspect }} "+
+     "out_links=#{@out_links.map{|i| i.key }} "+
+     "in_links=#{@in_links.map{|i| i.key }} "+
+     ">"
     end
     def add_service_producer(srv_prod)
       @service_producers.add(srv_prod)
@@ -39,6 +51,27 @@ module Construqt
         @result_types.add(rt)
       end
     end
+    def join(other)
+      throw "other has to be service_type" unless other.kind_of?(self.class)
+      # binding.pry if other.in_links.find{|i| i == self}
+      throw "cyclic #{self.inspect} #{other.inspect}" if other.in_links.include?(self)
+      other.out_links.add(self)
+      self.in_links.add(other)
+    end
+    def dependcy_list(visited)
+      ret = []
+      return [] if visited.include?(self.object_id)
+      # puts "Key=#{self.key}#{"%x"%self.object_id} #{visited.to_a.join(":")}"
+      # binding.pry
+      self.in_links.each do |o|
+        ret += o.dependcy_list(visited)
+      end
+      # puts "VisitKey=#{self.key}#{"%x"%self.object_id}"
+      visited.add(self.object_id)
+      ret.push self
+      ret
+    end
+
   end
 
   class ServiceInstanceProducer
@@ -49,15 +82,26 @@ module Construqt
       @factory = factory
       @host = host
       @iface = iface
+      @activated = nil
     end
     def produce
       @instance = factory.produce(host, srv_inst, self)
     end
 
-    def attach_result(res)
-      throw "attach_result failed no instance" unless @instance
-      @instance.respond_to?(:attach_result) and @instance.attach_result(res)
+    def activate(rt)
+      unless @activated
+        throw "activate failed no instance" unless @instance
+        @instance.respond_to?(:activate) and @instance.activate(rt)
+        @activated = rt
+      else
+        throw "rt is not the same" if @activated != rt
+      end
     end
+
+    # def attach_result(res)
+    #   throw "attach_result failed no instance" unless @instance
+    #   @instance.respond_to?(:attach_result) and @instance.attach_result(res)
+    # end
   end
 
   class ResultTypeProducer
@@ -68,21 +112,30 @@ module Construqt
       @host = host
       @iface = iface
       @service_instances = Set.new
+      @activated = nil
     end
     def produce
       # binding.pry
-      @instance = result_type.new
-      @instance.respond_to?(:attach_host) && @instance.attach_host(host)
-      @instance.respond_to?(:attach_interface) && @instance.attach_interface(iface)
+      unless @instance
+        @instance = result_type.new
+        @instance.respond_to?(:attach_host) && @instance.attach_host(host)
+        @instance.respond_to?(:attach_interface) && @instance.attach_interface(iface)
+      end
+      @instance
     end
-    def attach_result(rt)
-      throw "attach_service failed no instance" unless @instance
-      @instance.respond_to?(:attach_result) and @instance.attach_result(rt)
+    def activate(rt)
+      unless @activated
+        throw "activate failed no instance" unless @instance
+        @instance.respond_to?(:activate) and @instance.activate(rt)
+        @activated = rt
+      else
+        throw "rt is not the same" if @activated != rt
+      end
     end
-    def attach_service(si)
-      throw "attach_service failed no instance" unless @instance
-      @instance.respond_to?(:attach_service) and @instance.attach_service(si)
-    end
+    # def attach_service(si)
+    #   throw "attach_service failed no instance" unless @instance
+    #   @instance.respond_to?(:attach_service) and @instance.attach_service(si)
+    # end
     def add_service_producer(srv_ins)
       @service_instances.add(srv_ins)
     end
@@ -121,7 +174,7 @@ module Construqt
    def add(srv_inst, factory, host, iface = nil)
      srv_prod = add_service_instance(srv_inst, factory, host, iface)
      result_types = add_result_type(srv_prod, factory, host, iface)
-     @service_types[srv_inst.class.name] ||= ServiceType.new
+     @service_types[srv_inst.class.name] ||= ServiceType.new(srv_inst.class.name)
      @service_types[srv_inst.class.name].add_result_types(result_types)
      @service_types[srv_inst.class.name].add_service_producer(srv_prod)
    end
@@ -142,10 +195,39 @@ module Construqt
       ret
     end
 
+    def find_instances_from_type(type)
+      ret = @result_types[type]
+      throw "type not found #{type}" unless ret
+      ret.instance
+    end
+
     #def self.attach_service(ref, srv_inst, ret)
     #  return unless impl.respond_to?(:result_type)
     #  ret.add_result_type(impl.result_type, srv_inst)
     #end
+    def create_dependency_graph
+      service_types.map do |key, i|
+        i.service_producers.map do |j|
+          j.factory.machine.depends.each do |k|
+            service_types[k.name].join(i)
+          end
+          j.factory.machine.requires.each do |k|
+            i.join(service_types[k.name])
+          end
+        end
+      end
+    end
+    def service_dependency_order
+      out = []
+      visited = Set.new
+      service_types.map do |key, v|
+        out += v.dependcy_list(visited)
+      end
+      out.reverse!
+      # binding.pry
+      out
+    end
+
 
     def self.produce(host)
       ret = ResultTypes.new(host)
@@ -158,26 +240,29 @@ module Construqt
           ret.add(srv_inst, host.flavour.services_factory.find(srv_inst), host, iface)
         end
       end
+      # sort by dependcy
+      ret.create_dependency_graph
+      sdo = ret.service_dependency_order
       # create all instances onceperhost and action per service type
-      ret.result_types.values.each do |result_type|
-        # binding.pry
-        result_type.produce
+      sdo.each do |service_instance|
+        service_instance.result_types.each do |rt|
+          rt.produce
+        end
       end
-      ret.service_instances.values.each do |service_instance|
-        service_instance.produce
+      sdo.each do |service_instance|
+        service_instance.service_producers.each do |sp|
+          sp.produce
+        end
       end
       # now connect
-      ret.result_types.values.each do |result_type|
-        # binding.pry if result_type.kind_of?(Construqt::Flavour::Nixian::Services::IpsecOncePerHost)
-        result_type.service_instances.each do |si|
-          result_type.attach_service(si)
-          si.attach_result(result_type.instance)
+      sdo.each do |service_instance|
+        service_instance.result_types.each do |rt|
+          rt.activate(ret)
         end
-        result_type.factory.machine.attach_types.each do |at|
-          ret.service_types[at.name].result_types.each do |ins|
-            # binding.pry
-            result_type.attach_result(ins.instance)
-          end
+      end
+      sdo.each do |service_instance|
+        service_instance.service_producers.each do |sp|
+          sp.activate(ret)
         end
       end
       ret
@@ -198,6 +283,17 @@ module Construqt
       ret
     end
     def fire_host_interface(host, iface, action)
+      result_types = @hosts[host]
+      throw "hostname found: #{host.name}" unless result_types
+      # binding.pry
+      # fire to service_instances
+      result_types.service_instances.values.each do |i|
+        i.instance.respond_to?(action) and i.instance.send(action, iface)
+      end
+      # fire to result_type_instances
+      result_types.result_types.values.each do |i|
+        i.instance.respond_to?(action) and i.instance.send(action, iface)
+      end
     end
     def fire_host(host, action)
       result_types = @hosts[host]

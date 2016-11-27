@@ -1,8 +1,7 @@
 module Construqt
   module Flavour
     module Nixian
-      module Dialect
-        module Ubuntu
+      module Services
           module Firewall
             class Direction
               attr_reader :to_from, :family, :protocol  #, :begin, :end, :middle
@@ -103,4 +102,3 @@ module Construqt
       end
     end
   end
-end

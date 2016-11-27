@@ -9,6 +9,10 @@ module Construqt
               writer.lines.up("ip link set mtu #{ud.mtu} dev #{ud.ifname} up")
               writer.lines.down("ip link set dev #{ud.ifname} down")
             end
+            def activate(ctx)
+              @context = ctx
+              self
+            end
           end
           add(Entities::LinkMtuUpDown, LinkMtuUpDown)
         end

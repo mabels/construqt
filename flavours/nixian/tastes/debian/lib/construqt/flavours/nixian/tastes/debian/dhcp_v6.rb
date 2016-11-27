@@ -8,6 +8,10 @@ module Construqt
               writer = etc_network_interfaces.get(iface)
               writer.header.dhcpv6
             end
+            def activate(ctx)
+              @context = ctx
+              self
+            end
           end
           add(Entities::DhcpV6, DhcpV6)
         end
