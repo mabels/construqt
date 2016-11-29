@@ -125,7 +125,7 @@ module Construqt
       #end
       host_graph(hosts).flat.flatten.each do |hnode|
         # binding.pry
-        srv_res.fire_host(hnode.ref, :build_config_host)
+        srv_res.fire_host_construction_order(hnode.ref, :build_config_host)
         hnode.ref.build_config(hnode.ref, hnode.ref, hnode)
       end
     end
@@ -135,7 +135,7 @@ module Construqt
       host_graph(hosts || @hosts.values).flat.each do |hnodes|
         hnodes.reverse.each do |hnode|
           next unless hnode.ref.region
-          srv_res.fire_host(hnode.ref, :commit)
+          srv_res.fire_host_destruction_order(hnode.ref, :commit)
           hnode.ref.commit
           regions[hnode.ref.region.object_id] = hnode.ref.region
         end

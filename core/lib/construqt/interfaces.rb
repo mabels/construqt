@@ -270,7 +270,8 @@ module Construqt
         hnode_string.each do |hnode|
           hnode.ref.interface_graph.flat.each do |inode_string|
             inode_string.each do |inode|
-              srv_res.fire_host_interface(hnode.ref, inode.ref, :build_config_interface)
+              # binding.pry if hnode.ref.name == "fanout-de" and inode.ref.name == "eth0"
+              srv_res.fire_host_interface_construction_order(hnode.ref, inode.ref, :build_config_interface)
               inode.ref.build_config(hnode.ref, inode.ref, inode)
             end
           end

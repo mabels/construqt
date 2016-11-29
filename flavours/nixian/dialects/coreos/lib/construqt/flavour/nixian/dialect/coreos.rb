@@ -6,8 +6,9 @@ require 'construqt/flavour/nixian/dialect/ubuntu'
 
 require 'construqt/flavour/nixian/services'
 
-require_relative 'coreos/result.rb'
-# require_relative 'coreos/vagrant_file.rb'
+require_relative 'coreos/services/cloud_init_impl.rb'
+require_relative 'coreos/services/vagrant_impl.rb'
+require_relative 'coreos/services/modules_conf_impl.rb'
 
 module Construqt
   module Flavour
@@ -20,29 +21,56 @@ module Construqt
             def name
               "coreos"
             end
+
             def produce(parent, cfg)
               Dialect.new(parent, cfg)
             end
           end
 
           class Dialect
-            attr_reader :services
+            attr_reader :services_factory, :update_channel, :image_version
             def initialize(factory, cfg)
               @factory = factory
               @cfg = cfg
-              @services = factory.services.shadow()
+              @update_channel = cfg['update_channel'] || 'stable'
+              @image_version = cfg['image_version'] || 'current'
+              @services_factory = factory.services_factory.shadow()
+              @services_factory.add(Services::ModulesConf::Factory.new(@services_factory))
+              @services_factory.add(Services::CloudInit::Factory.new(@services_factory))
+              @services_factory.add(Services::Vagrant::Factory.new(@services_factory))
             end
 
             def name
               'coreos'
             end
 
-            #        def self.flavour_name
-            #          'ubuntu'
-            #        end
+            def add_host_services(srvs)
+              srvs ||= []
+              up_downer = Construqt::Flavour::Nixian::Services::UpDowner::Service.new
+                .taste(Tastes::Systemd::Factory.new)
 
-            #Construqt::Flavour::Nixian.add(self)
+              srvs += [Construqt::Flavour::Nixian::Services::Result::Service.new,
+                       up_downer,
+                       Construqt::Flavour::Nixian::Services::Docker::Service.new,
+                       Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
+                       Construqt::Flavour::Nixian::Services::Ssh::Service.new,
+                       Construqt::Flavour::Nixian::Dialect::CoreOs::Services::ModulesConf::Service.new,
+                       Construqt::Flavour::Nixian::Dialect::CoreOs::Services::CloudInit::Service.new]
+              throw "unknown services" unless @services_factory.are_registered_by_instance?(srvs)
+              srvs
+            end
 
+            def add_interface_services(srvs)
+              srvs ||= []
+              srvs += [
+                Construqt::Flavour::Nixian::Services::IpTables::Service.new(),
+                Construqt::Flavour::Nixian::Services::IpProxyNeigh::Service.new(),
+                Construqt::Flavour::Nixian::Services::DnsMasq::Service.new(),
+                Construqt::Flavour::Nixian::Services::DhcpClient::Service.new()
+              ]
+              throw "unknown services" unless @services_factory.are_registered_by_instance?(srvs)
+              srvs
+            end
 
             def ipsec
               Ipsec::StrongSwan
@@ -81,10 +109,6 @@ module Construqt
               cfg['name'] = name
               cfg['result'] = nil
               host = Construqt::Flavour::Nixian::Dialect::Ubuntu::Host.new(cfg)
-              up_downer = UpDowner.new(self)
-                 .taste(Result::UpDownerSystemdTaste.new)
-              host.result = CoreOs::Result.new(host, up_downer)
-              @services.add(VagrantServiceImpl.new)
               host
             end
 

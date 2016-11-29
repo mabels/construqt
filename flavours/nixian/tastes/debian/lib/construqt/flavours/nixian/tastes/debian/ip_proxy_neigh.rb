@@ -9,7 +9,7 @@ module Construqt
             #  @taste_type = Entities::IpProxyNeigh
             #end
             def onAdd(ud, taste, iface, me)
-              # binding.pry
+              binding.pry
               writer = taste.etc_network_interfaces.get(iface, me.ifname)
               writer.reference_up_down_sh(IpProxyNeigh)
               # ipv = me.ip.ipv6? ? "-6 ": "-4 "

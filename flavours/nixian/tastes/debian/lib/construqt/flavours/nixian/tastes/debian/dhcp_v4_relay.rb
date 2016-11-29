@@ -4,8 +4,6 @@ module Construqt
       module Tastes
         module Debian
           class DhcpV4Relay
-            def render(iface, taste_type, taste)
-            end
             def activate(ctx)
               @context = ctx
               self

@@ -5,7 +5,7 @@ module MamWl
 
   def self.add_sms2mail(region, mam_wl_rt)
     region.hosts.add('sms2mail', "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mam_wl_rt,
-                     "services" => [Construqt::Flavour::Nixian::Services::Lxc.new.aa_profile_unconfined
+                     "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new.aa_profile_unconfined
       .restart.killstop.release("xenial")]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
@@ -268,7 +268,7 @@ MODULES
                                                                     "services" => [Aiccu.new("AICCU").username(AICCU_DE["username"]).password(AICCU_DE["password"])],
                                                                     "firewalls" => [ "fw-sixxs" ],
                                                                     "address" => region.network.addresses.add_ip("2001:6f8:900:2bf::2/64"))
-                                       internal_if.services.add(Construqt::Flavour::Nixian::Services::Radvd.new("RADVD").adv_autonomous)
+                                       internal_if.services.add(Construqt::Flavour::Nixian::Services::Radvd::Service.new("RADVD").adv_autonomous)
                                        internal_if.address.ips = internal_if.address.ips.select{|i| i.ipv4? }
                                        internal_if.address.add_ip("2001:6f8:900:82bf:#{internal_if.address.first_ipv4.to_s.split(".").join(":")}/64")
                                      end
@@ -298,7 +298,7 @@ MODULES
                                        end
 
                                        rts[net[:name]] = region.hosts.add(net[:name], "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mam_wl_rt,
-                                                                          "services" => [Construqt::Flavour::Nixian::Services::Lxc.new.aa_profile_unconfined
+                                                                          "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new.aa_profile_unconfined
                                          .restart.killstop.release("xenial")]) do |host|
                                          region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                                                       :description=>"#{host.name} lo",

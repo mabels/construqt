@@ -4,8 +4,10 @@ module Construqt
       module Tastes
         module Debian
           class Bridge
-            def render(iface, taste_type, taste)
-              etc_network_interfaces.get(iface).lines.add("bridge_ports none", 0)
+            def on_add(ud, taste, iface, me)
+              eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
+              writer = eni.get(iface, me.ifname)
+              writer.lines.add("bridge_ports none", 0)
             end
             def activate(ctx)
               @context = ctx

@@ -6,10 +6,9 @@ module Construqt
       module Tastes
         module Entities
           class IpProxyNeigh
-            attr_reader :ip, :ifname
-            def initialize(ip, ifname)
-              @ip = ip
-              @ifname = ifname
+            attr_reader :iface #, :ifname
+            def initialize(iface)
+              @iface = iface
             end
           end
           add(IpProxyNeigh)

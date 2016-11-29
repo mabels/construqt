@@ -22,7 +22,7 @@ module Construqt
 
             def build_config(host, iface, node)
                 # ip link add link eth0 name eth0.8 type vlan id 8
-              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::UpDownerOncePerHost)
+              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
               up_downer.add(iface, Tastes::Entities::Vlan.new())
               Device.build_config(host, iface, node)
             end

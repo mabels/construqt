@@ -22,7 +22,7 @@ module FanoutDe
   def self.run(region)
     fanout = self.cfg
     fanout_de = region.hosts.add("fanout-de", "flavour" => "nixian", "dialect" => "ubuntu",
-                                  "services" => [Construqt::Flavour::Nixian::Services::Vagrant.new
+                                  "services" => [Construqt::Flavour::Nixian::Services::Vagrant::Service.new
                                       .box("ubuntu/xenial64").root_passwd("/.")
                                       .add_cfg('config.vm.network "public_network", bridge: "bridge0"')]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
@@ -103,7 +103,7 @@ module FanoutDe
      }.each_with_index do |name_action, idx|
       name, action = name_action
       region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => fanout_de,
-                       "services" => [Construqt::Flavour::Nixian::Services::Lxc.new.aa_profile_unconfined.restart.killstop]) do |host|
+                       "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new.aa_profile_unconfined.restart.killstop]) do |host|
         region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                      :description=>"#{host.name} lo",
                                      "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

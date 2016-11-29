@@ -44,7 +44,7 @@ module Construqt
             #   if @up_downer
             #     @up_downer
             #   else
-            #     @up_downer = self.delegate.result_types.find_instances_from_type(Construqt::Flavour::Nixian::UpDownerOncePerHost)
+            #     @up_downer = self.delegate.result_types.find_instances_from_type(Construqt::Flavour::Nixian::UpDowner::OncePerHost)
             #   end
             # end
 
@@ -64,7 +64,7 @@ module Construqt
 
             def build_config(host, unused, node)
               # binding.pry
-              result = self.delegate.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+              result = self.delegate.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
 
               result.add(self, Construqt::Util.render(binding, "host_udev.erb"),
                 Construqt::Resources::Rights.root_0644, "etc", "udev", "rules.d", "23-persistent-vnet.rules")

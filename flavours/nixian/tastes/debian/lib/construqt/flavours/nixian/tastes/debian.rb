@@ -1,9 +1,11 @@
-require_relative 'debian/helper/etc_network_interfaces'
+# require_relative 'debian/helper/etc_network_interfaces'
 module Construqt
   module Flavour
     module Nixian
       module Tastes
         module Debian
+          DIRECTORY = File.dirname(__FILE__)
+
           TASTES = {}
           def self.add(entity, impl)
             Tastes::Entities.add_taste(TASTES, entity, impl)
@@ -14,7 +16,7 @@ module Construqt
             attr_reader :etc_network_interfaces
             def initialize
               @tastes = {}
-              @etc_network_interfaces = Helper::EtcNetworkInterfaces.new(self)
+              # @etc_network_interfaces = Helper::EtcNetworkInterfaces.new(self)
             end
 
             def activate(ctx)
@@ -31,10 +33,10 @@ module Construqt
               "#<#{self.class.name}:#{object_id} @tastes=[#{@tastes.keys.join(",")}] @result=[#{@result.class.name}]>"
             end
 
-            def commit
-              binding.pry
-              @etc_network_interfaces.commit
-            end
+            # def commit(iface, ud)
+            #   binding.pry
+            #   @etc_network_interfaces.commit
+            # end
 
           end
         end

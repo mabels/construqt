@@ -25,6 +25,10 @@ module Construqt
       end
     end
 
+    def include?(srv)
+      @services.include?(srv)
+    end
+
     def inspect
       "#<#{self.class.name}:#{object_id} services=[#{self.map{|i| i.class.name}.join(",")}]>"
     end

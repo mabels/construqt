@@ -4,9 +4,10 @@ module Construqt
       module Tastes
         module Debian
           class Loopback
-            def render(iface, taste_type, taste)
-              writer = etc_network_interfaces.get(iface, iface.name)
-              writer.header.mode(Result::EtcNetworkInterfaces::Entry::Header::MODE_LOOPBACK) if iface.address.loopback?
+            def on_add(ud, taste, iface, me)
+              eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
+              writer = eni.get(iface)
+              writer.header.mode(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost::Entry::Header::MODE_LOOPBACK) if iface.address.loopback?
             end
             def activate(ctx)
               @context = ctx

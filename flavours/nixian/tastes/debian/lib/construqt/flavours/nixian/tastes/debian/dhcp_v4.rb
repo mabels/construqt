@@ -4,8 +4,10 @@ module Construqt
       module Tastes
         module Debian
           class DhcpV4
-            def render(iface, taste_type, taste)
-              writer = etc_network_interfaces.get(iface)
+            def on_add(ud, taste, iface, me)
+              eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
+              writer = eni.get(iface)
+
               writer.header.dhcpv4
             end
             def activate(ctx)

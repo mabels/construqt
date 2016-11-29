@@ -4,10 +4,11 @@ module Construqt
       module Tastes
         module Debian
           class Tunnel
-            def render(iface, taste_type, taste)
-              writer = etc_network_interfaces.get(iface, iface.name)
-              writer.lines.up("ip -#{ud.cfg.prefix} tunnel add #{iface.name} mode #{ud.cfg.mode} local #{ud.local} remote #{ud.remote}")
-              writer.lines.down("ip -#{ud.cfg.prefix} tunnel del #{iface.name}")
+            def on_add(ud, taste, iface, me)
+              eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
+              writer = eni.get(iface)
+              writer.lines.up("ip -#{me.cfg.prefix} tunnel add #{iface.name} mode #{me.cfg.mode} local #{me.local} remote #{me.remote}")
+              writer.lines.down("ip -#{me.cfg.prefix} tunnel del #{iface.name}")
             end
             def activate(ctx)
               @context = ctx

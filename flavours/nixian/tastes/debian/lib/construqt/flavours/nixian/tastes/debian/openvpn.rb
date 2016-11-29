@@ -4,8 +4,9 @@ module Construqt
       module Tastes
         module Debian
           class OpenVpn
-            def render(iface, taste_type, taste)
-              writer = etc_network_interfaces.get(iface)
+            def on_add(ud, taste, iface, me)
+              eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
+              writer = eni.get(iface)
               writer.lines.up("mkdir -p /dev/net", :extra)
               writer.lines.up("mknod /dev/net/tun c 10 200", :extra)
               writer.lines.up("/usr/sbin/openvpn --config /etc/openvpn/#{iface.name}.conf", :extra)

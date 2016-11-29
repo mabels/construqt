@@ -95,7 +95,7 @@ module Construqt
 
     service_result = HostsServicesResult.new
     service_result.attach_from_hosts(hosts)
-    service_result.fire(:start)
+    service_result.fire_construction_order(:start)
 
     Construqt::Ipsecs.build_config(hosts)
     Construqt::Bgps.build_config(hosts)

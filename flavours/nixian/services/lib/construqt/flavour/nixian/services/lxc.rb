@@ -4,64 +4,64 @@ module Construqt
   module Flavour
     module Nixian
       module Services
-        class Lxc
-          include Construqt::Util::Chainable
+        module Lxc
+          class Service
+            include Construqt::Util::Chainable
 
-          chainable_attr :recreate
-          chainable_attr :restart
-          chainable_attr :upgrade
-          chainable_attr :update
-          # chainable_attr :template
-          chainable_attr :killstop
-          chainable_attr :aa_profile_unconfined
+            chainable_attr :recreate
+            chainable_attr :restart
+            chainable_attr :upgrade
+            chainable_attr :update
+            # chainable_attr :template
+            chainable_attr :killstop
+            chainable_attr :aa_profile_unconfined
 
-          chainable_attr_value :release
-          chainable_attr_value :template
-        end
-
-        class LxcAction
-          attr_reader :host, :result
-
-          def initialize(host)
-            @host = host
+            chainable_attr_value :release
+            chainable_attr_value :template
           end
 
-          def activate(ctx)
-            @context = ctx
+          class Action
+            attr_reader :host, :result
+
+            def initialize(host)
+              @host = host
+            end
+
+            def activate(ctx)
+              @context = ctx
+            end
+
+            def build_config_host #(host, service)
+              # binding.pry
+              result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+              once_per_host_which_have_lxcs = false
+              host.region.hosts.get_hosts.select { |h| host.eq(h.mother) }.each do |lxc|
+                next unless lxc.services.has_type_of?(Lxc)
+                once_per_host_which_have_lxcs ||= LxcNetwork.create_lxc_network_patcher(result, host, lxc)
+                networks = lxc.interfaces.values.map do |iface|
+                  next unless iface.cable && !iface.cable.connections.empty?
+                  # binding.pry
+                  throw 'multiple connection cable are not allowed' if iface.cable.connections.length > 1
+                  LxcNetwork.new(iface).link(iface.cable.connections.first.iface.name).name(iface.name)
+                end.compact
+                LxcNetwork.render(result, host, lxc, networks)
+              end
+            end
           end
 
-          def build_config_host #(host, service)
-            # binding.pry
-            result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
-            once_per_host_which_have_lxcs = false
-            host.region.hosts.get_hosts.select { |h| host.eq(h.mother) }.each do |lxc|
-              next unless lxc.services.has_type_of?(Lxc)
-              once_per_host_which_have_lxcs ||= LxcNetwork.create_lxc_network_patcher(result, host, lxc)
-              networks = lxc.interfaces.values.map do |iface|
-                next unless iface.cable && !iface.cable.connections.empty?
-                # binding.pry
-                throw 'multiple connection cable are not allowed' if iface.cable.connections.length > 1
-                LxcNetwork.new(iface).link(iface.cable.connections.first.iface.name).name(iface.name)
-              end.compact
-              LxcNetwork.render(result, host, lxc, networks)
+          class Factory
+            attr_reader :machine
+            def initialize(service_factory)
+              @machine = service_factory.machine
+                .service_type(Service)
+                .depend(Result::Service)
+            end
+
+            def produce(host, srv_inst, ret)
+              Action.new(host)
             end
           end
         end
-
-
-        class LxcFactory
-          attr_reader :machine
-          def initialize(service_factory)
-            @machine = service_factory.machine
-              .service_type(Lxc)
-              .depend(Result)
-          end
-
-          def produce(host, srv_inst, ret)
-            LxcAction.new(host)
-          end
-        end
-
       end
     end
   end

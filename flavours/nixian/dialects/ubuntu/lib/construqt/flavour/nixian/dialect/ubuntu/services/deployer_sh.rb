@@ -14,7 +14,7 @@ module Construqt
               def initialize(service_factory)
                 @machine = service_factory.machine
                   .service_type(DeployerSh)
-                  .require(Construqt::Flavour::Nixian::Services::Result)
+                  .require(Construqt::Flavour::Nixian::Services::Result::Service)
               end
 
               def produce(host, srv_ins, ret)
@@ -32,10 +32,6 @@ module Construqt
 
               def activate(ctx)
                 @context = ctx
-              end
-
-
-              def commit
               end
 
               def sh_install_packages
@@ -56,7 +52,7 @@ module Construqt
               end
 
 
-              def build_config_host # (host, service)
+              def commit # (host, service)
                 # binding.pry
                 #Lxc.write_deployers(@host)
                 #Docker.write_deployers(@host)
@@ -93,7 +89,7 @@ module Construqt
                 out += setup_ntp(host.delegate)
                 # SERVICES out += Lxc.commands(host)
 
-                result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+                result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
 
                 result.results.each do |fname, block|
                   if !block.clazz.respond_to?(:belongs_to_mother?) ||

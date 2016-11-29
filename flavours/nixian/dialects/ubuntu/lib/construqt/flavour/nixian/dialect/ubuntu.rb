@@ -78,18 +78,19 @@ module Construqt
 
             def add_host_services(srvs)
               srvs ||= []
-              up_downer = Construqt::Flavour::Nixian::Services::UpDowner.new
+              up_downer = Construqt::Flavour::Nixian::Services::UpDowner::Service.new
                   .taste(Tastes::Systemd::Factory.new)
                   .taste(Tastes::Debian::Factory.new)
                   .taste(Tastes::Flat::Factory.new)
                   .taste(Tastes::File::Factory.new)
 
-              srvs += [Construqt::Flavour::Nixian::Services::Result.new,
+              srvs += [Construqt::Flavour::Nixian::Services::Result::Service.new,
                        up_downer,
-                      Construqt::Flavour::Nixian::Services::Lxc.new,
-                      Construqt::Flavour::Nixian::Services::Docker.new,
-                      Construqt::Flavour::Nixian::Services::Vagrant.new,
-                      Construqt::Flavour::Nixian::Services::Ssh.new,
+                      Construqt::Flavour::Nixian::Services::Lxc::Service.new,
+                      Construqt::Flavour::Nixian::Services::Docker::Service.new,
+                      Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
+                      Construqt::Flavour::Nixian::Services::Ssh::Service.new,
+                      Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::Service.new,
                       Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::DeployerSh.new]
               throw "unknown services" unless @services_factory.are_registered_by_instance?(srvs)
               srvs
@@ -98,10 +99,10 @@ module Construqt
             def add_interface_services(srvs)
               srvs ||= []
               srvs += [
-                Construqt::Flavour::Nixian::Services::IpTables.new(),
-                Construqt::Flavour::Nixian::Services::IpProxyNeigh.new(),
-                Construqt::Flavour::Nixian::Services::DnsMasq.new(),
-                Construqt::Flavour::Nixian::Services::DhcpClient.new()
+                Construqt::Flavour::Nixian::Services::IpTables::Service.new(),
+                Construqt::Flavour::Nixian::Services::IpProxyNeigh::Service.new(),
+                Construqt::Flavour::Nixian::Services::DnsMasq::Service.new(),
+                Construqt::Flavour::Nixian::Services::DhcpClient::Service.new()
               ]
               throw "unknown services" unless @services_factory.are_registered_by_instance?(srvs)
               srvs

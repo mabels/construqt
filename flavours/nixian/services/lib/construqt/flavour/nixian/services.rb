@@ -20,6 +20,7 @@ require_relative 'services/ipsec_vpn_strong_swan'
 require_relative 'services/ipsec_vpn_strong_swan'
 require_relative 'services/ip_tables'
 require_relative 'services/ip_proxy_neigh'
+require_relative 'services/etc_network_interfaces'
 
 module Construqt
   module Flavour
@@ -30,23 +31,24 @@ module Construqt
 
         def self.register(services_factory)
           [
-            BgpStartStopFactory,
-            ConntrackDFactory,
-            DhcpClientFactory,
-            DhcpV4RelayFactory,
-            DhcpV6RelayFactory,
-            IpsecStartStopFactory,
-            RadvdFactory,
-            LxcFactory,
-            SshFactory,
+            BgpStartStop::Factory,
+            ConntrackD::Factory,
+            DhcpClient::Factory,
+            DhcpV4Relay::Factory,
+            DhcpV6Relay::Factory,
+            IpsecStartStop::Factory,
+            Radvd::Factory,
+            Lxc::Factory,
+            Ssh::Factory,
             UpDowner::Factory,
-            IpsecStrongSwanFactory,
-            IpsecVpnStrongSwanFactory,
-            IpTablesFactory,
-            IpProxyNeighFactory,
-            DockerFactory,
-            DnsMasqFactory,
-            ResultFactory
+            IpsecStrongSwan::Factory,
+            IpsecVpnStrongSwan::Factory,
+            IpTables::Factory,
+            IpProxyNeigh::Factory,
+            Docker::Factory,
+            DnsMasq::Factory,
+            Result::Factory,
+            EtcNetworkInterfaces::Factory,
           ].each do |clazz|
             services_factory.add(clazz.new(services_factory))
           end

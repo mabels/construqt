@@ -36,7 +36,7 @@ module Construqt
               #   port_list = iface.interfaces.map { |i| i.name }.join(" ")
               #   host.result.etc_network_interfaces.get(iface).lines.add("bridge_ports #{port_list}")
               # else
-              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::UpDownerOncePerHost)
+              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
               up_downer.add(iface, Tastes::Entities::Bridge.new(iface.name))
               Device.build_config(host, iface, node)
             end

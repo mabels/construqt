@@ -4,10 +4,11 @@ module Construqt
       module Tastes
         module Debian
           class Wlan
-            def render(iface, taste_type, taste)
+            def on_add(ud, taste, iface, me)
               wlan = iface
-              etc_network_interfaces.get(iface)
-                .lines.add(Construqt::Util.render(binding, "wlan_interfaces.erb"), 0)
+              eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
+              writer = eni.get(iface)
+              writer.lines.add(Construqt::Util.render(binding, "wlan_interfaces.erb"), 0)
             end
             def activate(ctx)
               @context = ctx

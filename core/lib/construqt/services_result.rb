@@ -164,7 +164,7 @@ module Construqt
 
     def add_result_type(srv_prod, factory, host, iface)
       factory.machine.result_types.map do |rt|
-        binding.pry if rt ==  Construqt::Flavour::Nixian::Services::Result
+        binding.pry if rt ==  Construqt::Flavour::Nixian::Services::Result::Service
         @result_types[rt] ||= ResultTypeProducer.new(rt, factory, host, iface)
         @result_types[rt].add_service_producer(srv_prod)
         @result_types[rt]
@@ -209,15 +209,17 @@ module Construqt
       service_types.map do |key, i|
         i.service_producers.map do |j|
           j.factory.machine.depends.each do |k|
+            binding.pry unless service_types[k.name]
             service_types[k.name].join(i)
           end
           j.factory.machine.requires.each do |k|
+            binding.pry unless service_types[k.name]
             i.join(service_types[k.name])
           end
         end
       end
     end
-    def service_dependency_order
+    def service_construction_order
       out = []
       visited = Set.new
       service_types.map do |key, v|
@@ -226,6 +228,37 @@ module Construqt
       out.reverse!
       # binding.pry
       out
+    end
+
+
+    def run_construction_order(rt_lambda, sp_lambda)
+      sdo = self.service_construction_order
+      # create all instances onceperhost and action per service type
+      sdo.each do |service_instance|
+        service_instance.result_types.each do |rt|
+          rt_lambda.call(rt)
+        end
+      end
+      sdo.each do |service_instance|
+        service_instance.service_producers.each do |sp|
+          sp_lambda.call(sp)
+        end
+      end
+    end
+
+    def run_deconstruction_order(rt_lambda, sp_lambda)
+      sdo = self.service_construction_order.reverse
+      # create all instances onceperhost and action per service type
+      sdo.each do |service_instance|
+        service_instance.service_producers.each do |sp|
+          sp_lambda.call(sp)
+        end
+      end
+      sdo.each do |service_instance|
+        service_instance.result_types.each do |rt|
+          rt_lambda.call(rt)
+        end
+      end
     end
 
 
@@ -242,29 +275,10 @@ module Construqt
       end
       # sort by dependcy
       ret.create_dependency_graph
-      sdo = ret.service_dependency_order
       # create all instances onceperhost and action per service type
-      sdo.each do |service_instance|
-        service_instance.result_types.each do |rt|
-          rt.produce
-        end
-      end
-      sdo.each do |service_instance|
-        service_instance.service_producers.each do |sp|
-          sp.produce
-        end
-      end
+      ret.run_construction_order(lambda{|rt| rt.produce }, lambda{|sp| sp.produce})
       # now connect
-      sdo.each do |service_instance|
-        service_instance.result_types.each do |rt|
-          rt.activate(ret)
-        end
-      end
-      sdo.each do |service_instance|
-        service_instance.service_producers.each do |sp|
-          sp.activate(ret)
-        end
-      end
+      ret.run_construction_order(lambda{|rt| rt.activate(ret) }, lambda{|sp| sp.activate(ret)})
       ret
     end
   end
@@ -282,36 +296,37 @@ module Construqt
       end
       ret
     end
-    def fire_host_interface(host, iface, action)
+    def fire_host_interface_construction_order(host, iface, action)
       result_types = @hosts[host]
       throw "hostname found: #{host.name}" unless result_types
-      # binding.pry
-      # fire to service_instances
-      result_types.service_instances.values.each do |i|
-        i.instance.respond_to?(action) and i.instance.send(action, iface)
+
+      result_actor = lambda { |i| i.instance.respond_to?(action) and i.instance.send(action, iface) }
+      service_actor = lambda do |i|
+        if i.instance.respond_to?(action) and iface == i.iface
+          # binding.pry if host.name == "fanout-de" and iface.name == "eth0"
+          i.instance.send(action, iface)
+        end
       end
-      # fire to result_type_instances
-      result_types.result_types.values.each do |i|
-        i.instance.respond_to?(action) and i.instance.send(action, iface)
-      end
+      result_types.run_construction_order(result_actor, service_actor)
     end
-    def fire_host(host, action)
+    def fire_host_construction_order(host, action)
       result_types = @hosts[host]
       throw "hostname found: #{host.name}" unless result_types
-      # binding.pry
-      # fire to service_instances
-      result_types.service_instances.values.each do |i|
-        i.instance.respond_to?(action) and i.instance.send(action)
-      end
-      # fire to result_type_instances
-      result_types.result_types.values.each do |i|
-        i.instance.respond_to?(action) and i.instance.send(action)
-      end
+      actor = lambda { |i| i.instance.respond_to?(action) and i.instance.send(action) }
+      result_types.run_construction_order(actor, actor)
     end
 
-    def fire(action)
+    def fire_host_destruction_order(host, action)
+      result_types = @hosts[host]
+      throw "hostname found: #{host.name}" unless result_types
+      actor = lambda { |i| i.instance.respond_to?(action) and i.instance.send(action) }
+      result_types.run_deconstruction_order(actor, actor)
+    end
+
+
+    def fire_construction_order(action)
       @hosts.keys.each do |host|
-        fire_host(host, action)
+        fire_host_construction_order(host, action)
       end
     end
   end

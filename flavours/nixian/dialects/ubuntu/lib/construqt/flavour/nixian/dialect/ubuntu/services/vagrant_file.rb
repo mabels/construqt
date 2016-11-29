@@ -11,10 +11,9 @@ module Construqt
                 @context = ctx
                 @mother = mother
                 @child = child
-                binding.pry unless service
                 @mother_service = service
-                @child_service = child.services.has_type_of?(Construqt::Flavour::Nixian::Services::Vagrant)
-                @child_service ||= Construqt::Flavour::Nixian::Services::Vagrant.new
+                @child_service = child.services.has_type_of?(Construqt::Flavour::Nixian::Services::Vagrant::Service)
+                @child_service ||= Construqt::Flavour::Nixian::Services::Vagrant::Service.new
                 @links = []
               end
 
@@ -32,6 +31,7 @@ module Construqt
               end
 
               def vfile_header
+                # binding.pry
                 Construqt::Util.render(binding, "vagrant_header.erb")
               end
 
@@ -62,7 +62,7 @@ module Construqt
 
               def render
                 return if @links.empty?
-                result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+                result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
                 result.add(self, vfile_header+vfile_network+vfile_ssh_port+vfile_footer,
                                    Construqt::Resources::Rights.root_0644,
                                    "var", "lib", "vagrant", @child.name, "Vagrantfile")

@@ -56,7 +56,7 @@ module Construqt
                 end
               end
               #proxy_neigh(ifname, iface)
-              iptables = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::IpTablesOncePerHost)
+              iptables = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::IpTables::OncePerHost)
               iptables.create(host, ifname, iface, family)
             end
 
@@ -68,7 +68,7 @@ module Construqt
             def self.build_config(host, iface, node, ifname = nil, family = nil, mtu = nil, skip_link = nil)
               # binding.pry
               throw "need node as 3th parameter" unless node.kind_of?(Construqt::Graph::Node)
-              result = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::ResultOncePerHost)
+              result = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               #      binding.pry
               #          if iface.dynamic
               #            Firewall.create(host, ifname||iface.name, iface, family)
@@ -77,7 +77,7 @@ module Construqt
               #binding.pry if iface.name == "border" and iface.host.name == "ao-border-wlxc4e9841f0822"
               result.add_component(iface.class.const_get("COMPONENT"))
 
-              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::UpDownerOncePerHost)
+              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
               up_downer.add(iface, Tastes::Entities::Device.new(ifname))
               ifname = ifname || iface.name || writer.header.get_interface_name
               # iface.call_on_iface_up_down(writer, ifname)

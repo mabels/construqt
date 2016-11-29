@@ -12,7 +12,7 @@ module Construqt
             attr_reader :leftsubnet, :sourceip, :auto
             def initialize(cfg)
               @host = cfg["host"]
-              host.services.add(Construqt::Flavour::Nixian::Services::IpsecStrongSwan.new(self))
+              host.services.add(Construqt::Flavour::Nixian::Services::IpsecStrongSwan::Service.new(self))
               @my = cfg["my"]
               @other = cfg["other"]
               @firewalls = cfg["firewalls"]

@@ -4,11 +4,12 @@ module Construqt
       module Tastes
         module Debian
           class IpAddr
-            def render(iface, taste_type, taste)
-              writer = etc_network_interfaces.get(iface, ud.ifname)
-              prefix = ud.ip.ipv6? ? "-6 " : "-4 "
-              writer.lines.up("ip #{prefix}addr add #{ud.ip.to_string} dev #{ud.ifname}")
-              writer.lines.down("ip #{prefix}addr del #{ud.ip.to_string} dev #{ud.ifname}")
+            def on_add(ud, taste, iface, me)
+              eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
+              writer = eni.get(iface, me.ifname)
+              prefix = me.ip.ipv6? ? "-6 " : "-4 "
+              writer.lines.up("ip #{prefix}addr add #{me.ip.to_string} dev #{me.ifname}")
+              writer.lines.down("ip #{prefix}addr del #{me.ip.to_string} dev #{me.ifname}")
             end
             def activate(ctx)
               @context = ctx

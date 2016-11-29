@@ -5,56 +5,42 @@ module Construqt
   module Flavour
     module Nixian
       module Services
-        class IpsecVpnStrongSwan
-          def initialize(ipsec)
-            @ipsec = ipsec
-          end
-        end
-
-        class IpsecVpnStrongSwanAction
-        end
-
-        class IpsecVpnStrongSwanFactory
-          attr_reader :machine
-          def initialize(service_factory)
-            @machine = service_factory.machine
-              .service_type(IpsecVpnStrongSwan)
-              .result_type(IpsecOncePerHost)
+        module IpsecVpnStrongSwan
+          class Service
+            def initialize(ipsec)
+              @ipsec = ipsec
+            end
           end
 
-          def produce(host, srv_inst, ret)
-            IpsecVpnStrongSwanAction.new
-          end
-        end
-
-        class IpsecVpnStrongSwanAction
-          def build_interface(host, ifname, iface, writer)
-            # binding.pry
+          class Action
           end
 
+          class Factory
+            attr_reader :machine
+            def initialize(service_factory)
+              @machine = service_factory.machine
+                .service_type(Service)
+            end
 
-          def build_config_host#(host, service)
-            #binding.pry
+            def produce(host, srv_inst, ret)
+              Action.new
+            end
           end
-
-          def commit#(host)
-            #binding.pry
-          end
-
         end
       end
     end
   end
 end
 
-
 # def initialize(cfg)
 #   super(cfg)
 # end
+
 #
 # def clazz
 #   "strongswan"
 # end
+
 #
 #
 # def build_config(host, iface, node)
@@ -74,11 +60,13 @@ end
 #     rightsubnet = self.other.my.ips.select{|i| i.ipv4? }.map{|i| i.to_s }.first #.join(',')
 #     gt = "gt4"
 #   end
+
 #
 #   if leftsubnet.nil? or leftsubnet.empty? or
 #      rightsubnet.nil? or rightsubnet.empty?
 #     throw "we need a transport_left and transport_right for #{self.host.name}-#{self.other.host.name}"
 #   end
+
 #
 #   if local_if.clazz == "vrrp"
 #     writer = host.result.etc_network_vrrp(local_if.name)
@@ -87,6 +75,7 @@ end
 #     local_if.services << Construqt::Services::IpsecStartStop.new
 #   else
 #     end
+
 #
 #   host.result.ipsec_secret.add_psk(transport_right, cfg.password, cfg.name)
 #   host.result.ipsec_secret.add_psk(self.other.host.name, cfg.password)
@@ -100,11 +89,13 @@ end
 #   if (self.other.sourceip)
 #     conn.leftsourceip="%config"
 #   end
+
 #
 #   conn.rightsubnet=rightsubnet
 #   if (self.sourceip)
 #     conn.rightsourceip=rightsubnet
 #   end
+
 #
 #   conn.esp=self.cfg.cipher || "aes256-sha1-modp1536"
 #   conn.ike=self.cfg.cipher || "aes256-sha1-modp1536"
@@ -124,11 +115,13 @@ end
 #   self.host.result.add(:ipsec, render_conn(conn),
 #     Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
 # end
+
 #
 # def render_conn(conn)
 #   out = ["conn #{self.host.name}-#{self.other.host.name}"]
 #   conn.to_h.each do |k,v|
 #     out << Util.indent("#{k}=#{v}", 3)
 #   end
+
 #   out.join("\n")
 # end

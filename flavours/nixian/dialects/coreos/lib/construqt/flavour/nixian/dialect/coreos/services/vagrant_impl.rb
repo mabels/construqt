@@ -4,9 +4,10 @@ module Construqt
   module Flavour
     module Nixian
       module Dialect
-        module Ubuntu
+        module CoreOs
           module Services
-            class VagrantFactory
+          module Vagrant
+            class Factory
               attr_reader :machine
               def initialize(service_factory)
                 @machine = service_factory.machine
@@ -14,11 +15,11 @@ module Construqt
                   .depend(Construqt::Flavour::Nixian::Services::Result::Service)
               end
               def produce(host, srv_inst, ret)
-                VagrantAction.new(host, srv_inst)
+                Action.new(host, srv_inst)
               end
             end
 
-            class VagrantAction
+            class Action
               attr_reader :host, :service
               def initialize(host, service)
                 @host = host
@@ -45,6 +46,7 @@ module Construqt
                 end
                 render_vagrant(host, service, host)
               end
+            end
             end
           end
         end

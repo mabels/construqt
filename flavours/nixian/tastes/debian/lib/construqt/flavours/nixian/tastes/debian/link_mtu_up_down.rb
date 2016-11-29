@@ -4,10 +4,11 @@ module Construqt
       module Tastes
         module Debian
           class LinkMtuUpDown
-            def render(iface, taste_type, taste)
-              writer = etc_network_interfaces.get(iface, ud.ifname)
-              writer.lines.up("ip link set mtu #{ud.mtu} dev #{ud.ifname} up")
-              writer.lines.down("ip link set dev #{ud.ifname} down")
+            def on_add(ud, taste, iface, me)
+              eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
+              writer = eni.get(iface, me.ifname)
+              writer.lines.up("ip link set mtu #{me.mtu} dev #{me.ifname} up")
+              writer.lines.down("ip link set dev #{me.ifname} down")
             end
             def activate(ctx)
               @context = ctx

@@ -4,8 +4,10 @@ module Construqt
       module Tastes
         module Debian
           class IpTables
-            def render(iface, taste_type, taste)
-              writer = etc_network_interfaces.get(iface)
+            def on_add(ud, taste, iface, me)
+              # binding.pry if iface.name == "fanout-de"
+              eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
+              writer = eni.get(iface)
               writer.lines.up("/sbin/iptables-restore /etc/network/iptables.cfg")
               writer.lines.up("/sbin/ip6tables-restore /etc/network/ip6tables.cfg")
             end

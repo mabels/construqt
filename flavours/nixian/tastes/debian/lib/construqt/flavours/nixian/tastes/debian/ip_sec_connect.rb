@@ -4,11 +4,12 @@ module Construqt
       module Tastes
         module Debian
           class IpSecConnect
-            def render(iface, taste_type, taste)
-              writer = etc_network_interfaces.get(iface, iface.name)
+            def on_add(ud, taste, iface, me)
+              eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
+              writer = eni.get(iface)
               writer.lines.up("/usr/sbin/ipsec start", :extra) # no down this is also global
-              writer.lines.up("/usr/sbin/ipsec up #{ud.name} &", 1000, :extra)
-              writer.lines.down("/usr/sbin/ipsec down #{ud.name} &", -1000, :extra)
+              writer.lines.up("/usr/sbin/ipsec up #{me.name} &", 1000, :extra)
+              writer.lines.down("/usr/sbin/ipsec down #{me.name} &", -1000, :extra)
             end
             def activate(ctx)
               @context = ctx
