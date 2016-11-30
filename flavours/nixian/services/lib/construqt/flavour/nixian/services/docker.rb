@@ -10,6 +10,19 @@ module Construqt
             chainable_attr :app_start_script, ""
             chainable_attr :pkt_man, :apt
 
+            def initialize
+              @packages = []
+            end
+
+            def package(pkg)
+              @packages.push(pkg)
+              self
+            end
+
+            def get_packages
+              @packages
+            end
+
             def map(h, d)
               @maps ||= {}
               @maps[h] = d

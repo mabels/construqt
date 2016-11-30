@@ -10,8 +10,16 @@ fi
   }.each do |iface| -%>
 /bin/sh /etc/network/<%= iface.cable.connections.first.iface.name %>-docker-up.sh
 <% end -%>
+
 docker_name=run_<%= host.name %>
-docker build -t $docker_name .
+docker_tag=$(hostname)-$(date +%Y%m%d%H%M%S)
+for tag in $(docker images -a $docker_name --format '{{.Tag}}' | sort -n -r | tail -n +3)
+do
+  docker rmi $docker_name:$tag
+done
+docker build -t $docker_name:$docker_tag .
+docker rm $docker_name
+
 exec docker run --name $docker_name \
 <% if docker.get_privileged -%>
   --privileged \
@@ -31,4 +39,4 @@ exec docker run --name $docker_name \
 <% docker.get_maps.each do |h, d| -%>
   -v <%= h %>:<%= d %> \
 <% end -%>
-  -t $docker_name
+  -t $docker_name:$docker_tag
