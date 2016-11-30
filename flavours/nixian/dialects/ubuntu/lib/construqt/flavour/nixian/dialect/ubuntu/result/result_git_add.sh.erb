@@ -19,6 +19,7 @@ git_add()
   if [ ! -f $fname ]
   then
     cat $ifname  > $fname
+    chown $owner $fname
     chmod $(stat -c "%a" $ifname) $fname
     rm $ifname
     echo created $hostname:$fname to $owner:$right skip_git $skip_git
@@ -27,6 +28,7 @@ git_add()
     if [ $? != 0 ]
     then
       cat $ifname  > $fname
+      chown $owner $fname
       chmod $(stat -c "%a" $ifname) $fname
       rm $ifname
       echo updated $hostname:$fname to $owner:$right skip_git $skip_git
