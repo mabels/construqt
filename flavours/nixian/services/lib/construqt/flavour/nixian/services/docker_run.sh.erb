@@ -24,18 +24,18 @@ exec docker run --name $docker_name \
 <% if docker.get_privileged -%>
   --privileged \
 <% end -%>
-<% host.interfaces.values.select{|i|
+<% host.interfaces.values.select do |i|
     i.name != "lo" && i.cable.connections.length > 0
-  }.each do |iface| -%>
+  end.each do |iface| -%>
   --net <%= iface.cable.connections.first.iface.name %> \
-  <% iface.address.ips.each do |ip| -%>
-    <% if ip.ipv4? -%>
-    --ip=<%= ip.to_s %> \
-    <% else -%>
-    --ip6=<%= ip.to_s %> \
-    <% end -%>
-  <% end -%>
-<% end -%>
+<% iface.address.ips.each do |ip|
+     if ip.ipv4? -%>
+  --ip=<%= ip.to_s %> \
+<%   else -%>
+  --ip6=<%= ip.to_s %> \
+<%   end
+   end
+end -%>
 <% docker.get_maps.each do |h, d| -%>
   -v <%= h %>:<%= d %> \
 <% end -%>

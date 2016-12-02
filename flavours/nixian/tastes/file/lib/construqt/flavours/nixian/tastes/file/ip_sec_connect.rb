@@ -4,11 +4,13 @@ module Construqt
       module Tastes
         module File
           class IpSecConnect
-            def render(iface, taste_type, taste)
-              writer = etc_network_interfaces.get(iface, iface.name)
-              writer.lines.up("/usr/sbin/ipsec start", :extra) # no down this is also global
-              writer.lines.up("/usr/sbin/ipsec up #{ud.name} &", 1000, :extra)
-              writer.lines.down("/usr/sbin/ipsec down #{ud.name} &", -1000, :extra)
+            def on_add(ud, taste, iface, me)
+              # binding.pry if iface.name == "etcbind-2"
+              fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
+              fsrv.up("/usr/sbin/ipsec start") # no down this is also global
+              fsrv.up("/usr/sbin/ipsec up #{ud.name} &")
+              fsrv.down("/usr/sbin/ipsec down #{ud.name} &")
+              fsrv.down("/usr/sbin/ipsec stop")
             end
             def activate(ctx)
               @context = ctx

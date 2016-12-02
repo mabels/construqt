@@ -3,14 +3,14 @@ FROM <%= docker.get_image %>
 COPY deployer.sh /root/
 <% if docker.is_apt %>
 RUN apt update -y
-RUN apt install -y -q iproute2 iptables <%= docker.docker_deploy.get_packages.join(' ') %>
+RUN apt install -y -q iproute2 iptables <%= docker.get_packages.join(' ') %>
 RUN /bin/bash /root/deployer.sh force_hostname skip_packages no_git
 CMD ["/bin/sh", "/root/docker-starter.sh"]
 <% end %>
 <% if docker.is_apk %>
 RUN apk update
 RUN apk upgrade
-RUN apk add iptables ip6tables <%= docker.docker_deploy.get_packages.join(' ') %>
+RUN apk add iptables ip6tables <%= docker.get_packages.join(' ') %>
 RUN /bin/sh /root/deployer.sh force_hostname skip_packages no_git
 
 CMD ["/bin/sh", "/root/docker-starter.sh"]

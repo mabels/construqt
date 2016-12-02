@@ -9,9 +9,14 @@ module Construqt
           end
 
           class Factory
-            attr_accessor :result
             def initialize
-              @tastes = {}
+              @tastes = TASTES.clone
+              @activated = {}
+              # @etc_network_interfaces = Helper::EtcNetworkInterfaces.new(self)
+            end
+
+            def add(entity, impl)
+              Tastes::Entities.add_taste(@tastes, entity, impl)
             end
 
             def activate(ctx)
@@ -19,10 +24,12 @@ module Construqt
             end
 
             def dispatches(a)
-              # binding.pry
-              tastes = TASTES[a]
-              throw "File #{a}" unless tastes
-              @tastes[a] ||= tastes.map{|i| i.new.activate(@context) }
+              taste = @tastes[a]
+              if taste
+                @activated[a] ||= taste.map{|i| i.new.activate(@context) }
+              else
+                []
+              end
             end
 
             def inspect

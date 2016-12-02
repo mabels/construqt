@@ -130,6 +130,18 @@ module Construqt
       end
     end
 
+    def post_interfaces(srv_res, hosts = nil)
+      #(hosts || @hosts.values).each do |host|
+      #  host.build_config(host, nil)
+      #end
+      host_graph(hosts).flat.flatten.each do |hnode|
+        # binding.pry
+        srv_res.fire_host_construction_order(hnode.ref, :post_interfaces)
+        hnode.ref.respond_to?(:post_interfaces) && hnode.ref.post_interfaces(hnode.ref, hnode.ref, hnode)
+      end
+    end
+
+
     def commit(srv_res, hosts = nil)
       regions = {}
       host_graph(hosts || @hosts.values).flat.each do |hnodes|

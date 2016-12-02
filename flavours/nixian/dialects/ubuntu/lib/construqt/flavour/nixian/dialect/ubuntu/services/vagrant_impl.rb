@@ -8,8 +8,8 @@ module Construqt
           module Services
             class VagrantFactory
               attr_reader :machine
-              def initialize(service_factory)
-                @machine = service_factory.machine
+              def start(service_factory)
+                @machine ||= service_factory.machine
                   .service_type(Construqt::Flavour::Nixian::Services::Vagrant::Service)
                   .depend(Construqt::Flavour::Nixian::Services::Result::Service)
               end

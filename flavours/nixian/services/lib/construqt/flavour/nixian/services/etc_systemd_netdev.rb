@@ -3,7 +3,6 @@ module Construqt
     module Nixian
       module Services
         module EtcSystemdNetdev
-
           class SystemdNetdev
             def initialize(iface)
               @interface = iface
@@ -55,8 +54,8 @@ module Construqt
               "#{name}.netdev"
             end
 
-            def commit
-              @interface.host.result.add(self, self.as_string,
+            def commit(result)
+              result.add(self, self.as_string,
                                          Construqt::Resources::Rights.root_0644(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd),
                                          "etc", "systemd", "network", "#{self.name}.netdev")
             end
@@ -68,23 +67,45 @@ module Construqt
               @interfaces = {}
             end
 
-            def get(iface)
+            def activate(context)
+              @context = context
+            end
+
+            def add(iface)
               @interfaces[iface.name] ||= SystemdNetdev.new(iface)
             end
 
-            def netdevs(result)
-              result.host.interfaces.values.map do |iface|
-                get(iface)
-              end
+            def netdevs
+              @interfaces.values
             end
 
-            def commit(result)
-              netdevs(result).each do |sysdev|
-                sysdev.commit
+            def commit
+              result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+              @interfaces.values.each do |sysdev|
+                sysdev.commit(result)
               end
             end
           end
 
+          class Service
+          end
+
+          class Action
+          end
+
+          class Factory
+            attr_reader :machine
+            def start(service_factory)
+              @machine ||= service_factory.machine
+                .service_type(Service)
+                .result_type(OncePerHost)
+                .depend(Result::Service)
+            end
+
+            def produce(host, srv_inst, ret)
+              Action.new
+            end
+          end
         end
       end
     end

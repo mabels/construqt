@@ -104,7 +104,6 @@ module Construqt
                   end
                 end
               end
-
               @updos.push(Updown.new.iface(iface).ud(ud).taste_dispatch(taste_dispatch))
               self
             end
@@ -128,8 +127,8 @@ module Construqt
 
           class Factory
             attr_reader :machine
-            def initialize(service_factory)
-              @machine = service_factory.machine
+            def start(service_factory)
+              @machine ||= service_factory.machine
                 .service_type(Service)
                 .result_type(OncePerHost)
                 .depend(Result::Service)
@@ -137,6 +136,28 @@ module Construqt
 
             def produce(host, srv_inst, ret)
               Action.new
+            end
+          end
+
+          class Activator
+            include Construqt::Util::Chainable
+            chainable_attr_value :entity
+            def initialize
+              @impls = {}
+            end
+            def add(taste, impl)
+              @impls[taste] = impl
+              self
+            end
+            def actions
+              {
+                Construqt::Flavour::Nixian::Services::UpDowner::Service => lambda do |oph|
+                  oph.tastes.each do |taste|
+                    impl = @impls[taste.class]
+                    impl && taste.add(get_entity, impl)
+                  end
+                end
+              }
             end
           end
         end

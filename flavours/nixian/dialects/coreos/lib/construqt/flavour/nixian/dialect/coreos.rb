@@ -35,9 +35,9 @@ module Construqt
               @update_channel = cfg['update_channel'] || 'stable'
               @image_version = cfg['image_version'] || 'current'
               @services_factory = factory.services_factory.shadow()
-              @services_factory.add(Services::ModulesConf::Factory.new(@services_factory))
-              @services_factory.add(Services::CloudInit::Factory.new(@services_factory))
-              @services_factory.add(Services::Vagrant::Factory.new(@services_factory))
+              @services_factory.add(Services::ModulesConf::Factory.new)
+              @services_factory.add(Services::CloudInit::Factory.new)
+              @services_factory.add(Services::Vagrant::Factory.new)
             end
 
             def name
@@ -45,31 +45,27 @@ module Construqt
             end
 
             def add_host_services(srvs)
-              srvs ||= []
-              up_downer = Construqt::Flavour::Nixian::Services::UpDowner::Service.new
-                .taste(Tastes::Systemd::Factory.new)
-
-              srvs += [Construqt::Flavour::Nixian::Services::Result::Service.new,
-                       up_downer,
+              @services_factory.merge(srvs,
+                      [Construqt::Flavour::Nixian::Services::Result::Service.new,
+                       Construqt::Flavour::Nixian::Services::UpDowner::Service.new
+                         .taste(Tastes::Systemd::Factory.new),
                        Construqt::Flavour::Nixian::Services::Docker::Service.new,
                        Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
                        Construqt::Flavour::Nixian::Services::Ssh::Service.new,
+                       Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
+                       Construqt::Flavour::Nixian::Services::EtcSystemdNetwork::Service.new,
+                       Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
                        Construqt::Flavour::Nixian::Dialect::CoreOs::Services::ModulesConf::Service.new,
-                       Construqt::Flavour::Nixian::Dialect::CoreOs::Services::CloudInit::Service.new]
-              throw "unknown services" unless @services_factory.are_registered_by_instance?(srvs)
-              srvs
+                       Construqt::Flavour::Nixian::Dialect::CoreOs::Services::CloudInit::Service.new])
             end
 
             def add_interface_services(srvs)
-              srvs ||= []
-              srvs += [
+              @services_factory.merge(srvs, [
                 Construqt::Flavour::Nixian::Services::IpTables::Service.new(),
                 Construqt::Flavour::Nixian::Services::IpProxyNeigh::Service.new(),
                 Construqt::Flavour::Nixian::Services::DnsMasq::Service.new(),
                 Construqt::Flavour::Nixian::Services::DhcpClient::Service.new()
-              ]
-              throw "unknown services" unless @services_factory.are_registered_by_instance?(srvs)
-              srvs
+              ])
             end
 
             def ipsec

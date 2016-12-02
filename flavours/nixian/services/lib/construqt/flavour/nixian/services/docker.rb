@@ -84,9 +84,9 @@ module Construqt
 
             def render(result, host, docker)
               # binding.pry
-              result.add(Docker, Construqt::Util.render(binding, "docker_starter.sh.erb"),
-                         Construqt::Resources::Rights.root_0755,
-                         "root", "docker-starter.sh")
+              # result.add(Docker, Construqt::Util.render(binding, "docker_starter.sh.erb"),
+              #            Construqt::Resources::Rights.root_0755,
+              #            "root", "docker-starter.sh")
 
               # binding.pry if host.name == "etcbind-1"
               result.add(Docker, Construqt::Util.render(binding, "docker_dockerfile.erb"),
@@ -104,11 +104,12 @@ module Construqt
             end
 
             def build_config_host #(host, service)
-              # binding.pry
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               host.region.hosts.get_hosts.select {|h| host.eq(h.mother) }.each do |d_host|
-                next unless d_host.services.has_type_of?(Docker)
-                render(result, d_host, docker)
+                # binding.pry
+                d_host.services.by_type_of(Service).each do |d_srv|
+                  render(result, d_host, d_srv)
+                end
               end
 
               docker_ifaces = {}
@@ -126,14 +127,17 @@ module Construqt
                 docker_up = Construqt::Util.render(binding, "docker_up.erb")
                 result.add(self.class, docker_up, Construqt::Resources::Rights.root_0755,
                            'etc', 'network', "#{iface.name}-docker-up.sh")
+                docker_down = Construqt::Util.render(binding, "docker_down.erb")
+                result.add(self.class, docker_down, Construqt::Resources::Rights.root_0755,
+                           'etc', 'network', "#{iface.name}-docker-down.sh")
               end
             end
           end
 
           class Factory
             attr_reader :machine
-            def initialize(service_factory)
-              @machine = service_factory.machine
+            def start(service_factory)
+              @machine ||= service_factory.machine
                 .service_type(Service)
                 .depend(Result::Service)
             end

@@ -115,6 +115,7 @@ module Construqt
       end
       hosts.first.region.hosts.build_config(service_result, ohosts)
       hosts.first.region.interfaces.build_config(service_result, ohosts)
+      hosts.first.region.hosts.post_interfaces(service_result, ohosts)
       hosts.first.region.hosts.commit(service_result, ohosts)
     end
   end

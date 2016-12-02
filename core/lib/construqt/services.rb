@@ -25,6 +25,12 @@ module Construqt
       end
     end
 
+    def by_type_of(kind)
+      @services.select do |s|
+        s.kind_of?(kind)
+      end
+    end
+
     def include?(srv)
       @services.include?(srv)
     end

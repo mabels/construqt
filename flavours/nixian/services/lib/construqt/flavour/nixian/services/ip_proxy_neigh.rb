@@ -36,8 +36,6 @@ module Construqt
 
             def build_config_interface(iface)
               # binding.pry if @host.name == "fanout-de" and iface.name == "eth0"
-              up_downer = @context.find_instances_from_type(UpDowner::OncePerHost)
-              up_downer.add(@host, Tastes::Entities::IpProxyNeigh.new(iface))
               ups = []
               downs = []
               proxy_neigh2ips(iface.proxy_neigh).each do |ip|
@@ -72,8 +70,8 @@ module Construqt
 
           class Factory
             attr_reader :machine
-            def initialize(service_factory)
-              @machine = service_factory.machine
+            def start(service_factory)
+              @machine ||= service_factory.machine
                 .service_type(Service)
                 .result_type(OncePerHost)
                 .depend(Result::Service)

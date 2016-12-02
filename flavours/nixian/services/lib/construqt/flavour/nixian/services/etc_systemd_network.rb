@@ -57,8 +57,8 @@ module Construqt
               false
             end
 
-            def commit
-              @interface.host.result.add(self, as_string,
+            def commit(result)
+              result.add(self, as_string,
                                          Construqt::Resources::Rights.root_0644(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd),
                                          "etc", "systemd", "network", "#{self.name}.network")
             end
@@ -70,20 +70,57 @@ module Construqt
               @interfaces = {}
             end
 
-            def get(iface)
+            def activate(context)
+              @context = context
+            end
+
+            def add(iface)
               @interfaces[iface.name] ||= SystemdNetwork.new(iface)
             end
 
-            def networks(result)
-              result.host.interfaces.values.map do |iface|
-                get(iface)
+            def networks
+              @interfaces.values
+            end
+
+            def commit
+              result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+              @interfaces.values.each do |sysnet|
+                sysnet.commit(result)
               end
             end
 
-            def commit(result)
-              networks(result).each do |network|
-                network.commit
-              end
+
+            # def networks(result)
+            #   result.host.interfaces.values.map do |iface|
+            #     get(iface)
+            #   end
+            # end
+            #
+            # def commit
+            #   result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+            #   networks(result).each do |network|
+            #     network.commit(result)
+            #   end
+            # end
+          end
+
+          class Service
+          end
+
+          class Action
+          end
+
+          class Factory
+            attr_reader :machine
+            def start(service_factory)
+              @machine ||= service_factory.machine
+                .service_type(Service)
+                .result_type(OncePerHost)
+                .depend(Result::Service)
+            end
+
+            def produce(host, srv_inst, ret)
+              Action.new
             end
           end
         end

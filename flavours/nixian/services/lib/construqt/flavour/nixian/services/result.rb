@@ -46,6 +46,10 @@ module Construqt
                 @lines = []
               end
 
+              def empty?
+                @lines.empty?
+              end
+
               def skip_git?
                 !!@skip_git
               end
@@ -157,9 +161,9 @@ module Construqt
 
           class Factory
             attr_reader :machine
-            def initialize(service_factory)
+            def start(service_factory)
               # binding.pry
-              @machine = service_factory.machine
+              @machine ||= service_factory.machine
                 .service_type(Service)
                 .result_type(OncePerHost)
             end

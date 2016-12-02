@@ -277,6 +277,33 @@ module Construqt
       ret.create_dependency_graph
       # create all instances onceperhost and action per service type
       ret.run_construction_order(lambda{|rt| rt.produce }, lambda{|sp| sp.produce})
+      # in our machines there are some activators
+      activators = {}
+      ret.service_types.each do |st_type, st|
+        # binding.pry
+        st.service_producers.each do |sp|
+          sp.factory.machine.activators.each do |key, as|
+            activators[key] ||= []
+            activators[key] += as
+          end
+        end
+      end
+      prog_rt_activators = lambda do |rt|
+        (activators[rt.instance.class]||[]).each do |ac|
+          ac.call(rt.instance)
+        end
+      end
+
+      prog_st_activators = lambda do |st|
+        # binding.pry
+        (activators[st.srv_inst.class]||[]).each do |ac|
+          ac.call(st.srv_inst)
+        end
+      end
+
+      ret.run_construction_order(prog_rt_activators, prog_st_activators)
+      # binding.pry unless activators.empty?
+      #ret.result_type.values.first.service_producers.first.factory.machine
       # now connect
       ret.run_construction_order(lambda{|rt| rt.activate(ret) }, lambda{|sp| sp.activate(ret)})
       ret

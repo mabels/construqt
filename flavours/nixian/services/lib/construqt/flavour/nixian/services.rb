@@ -21,6 +21,10 @@ require_relative 'services/ipsec_vpn_strong_swan'
 require_relative 'services/ip_tables'
 require_relative 'services/ip_proxy_neigh'
 require_relative 'services/etc_network_interfaces'
+require_relative 'services/etc_network_network_ud'
+require_relative 'services/etc_systemd_netdev'
+require_relative 'services/etc_systemd_network'
+require_relative 'services/etc_systemd_service'
 
 module Construqt
   module Flavour
@@ -49,8 +53,12 @@ module Construqt
             DnsMasq::Factory,
             Result::Factory,
             EtcNetworkInterfaces::Factory,
+            EtcNetworkNetworkUd::Factory,
+            EtcSystemdNetdev::Factory,
+            EtcSystemdNetwork::Factory,
+            EtcSystemdService::Factory,
           ].each do |clazz|
-            services_factory.add(clazz.new(services_factory))
+            services_factory.add(clazz.new)
           end
         end
       end

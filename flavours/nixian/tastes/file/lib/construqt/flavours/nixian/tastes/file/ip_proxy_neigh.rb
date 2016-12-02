@@ -16,7 +16,12 @@ module Construqt
             #   @commit = true
             # end
             def on_add(ud, taste, iface, me)
-              end
+              return unless me.iface.proxy_neigh
+              fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
+              fsrv.up("/etc/network/#{me.iface.name}-IpProxyNeigh-up.sh")
+              fsrv.down("/etc/network/#{me.iface.name}-IpProxyNeigh-down.sh")
+              #fsrv.down("ip #{ipv}neigh del proxy #{me.ip.to_s} dev #{me.ifname}")
+            end
             def activate(ctx)
               @context = ctx
               self

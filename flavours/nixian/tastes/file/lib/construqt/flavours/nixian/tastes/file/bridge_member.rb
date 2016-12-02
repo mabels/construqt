@@ -5,8 +5,13 @@ module Construqt
       module Tastes
         module File
           class BridgeMember
-            def render(iface, taste_type, taste)
+            def on_add(ud, taste, iface, me)
+              # binding.pry if iface.name == "etcbind-2"
+              fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
+              fsrv.up "brctl addif #{me.bname} #{me.ifname}"
+              fsrv.down "brctl delif #{me.bname} #{me.ifname}"
             end
+
             def activate(ctx)
               @context = ctx
               self

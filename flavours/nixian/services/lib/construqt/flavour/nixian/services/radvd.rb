@@ -17,8 +17,8 @@ module Construqt
 
           class Factory
             attr_reader :machine
-            def initialize(service_factory)
-              @machine = service_factory.machine
+            def start(service_factory)
+              @machine ||= service_factory.machine
                 .service_type(Service)
             end
 

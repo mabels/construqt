@@ -13,10 +13,15 @@ module Construqt
 
           class Factory
             # attr_accessor :result
-            attr_reader :etc_network_interfaces
+            #attr_reader :etc_network_interfaces
             def initialize
-              @tastes = {}
+              @tastes = TASTES.clone
+              @activated = {}
               # @etc_network_interfaces = Helper::EtcNetworkInterfaces.new(self)
+            end
+
+            def add(entity, impl)
+              Tastes::Entities.add_taste(@tastes, entity, impl)
             end
 
             def activate(ctx)
@@ -24,9 +29,13 @@ module Construqt
             end
 
             def dispatches(a)
-              tastes = TASTES[a]
-              throw "Debian #{a}" unless tastes
-              @tastes[a] ||= tastes.map{|i| i.new.activate(@context) }
+              taste = @tastes[a]
+              #throw "Debian #{a}" unless taste
+              if taste
+                @activated[a] ||= taste.map{|i| i.new.activate(@context) }
+              else
+                []
+              end
             end
 
             def inspect

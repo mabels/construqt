@@ -3,7 +3,7 @@ require 'construqt/flavour/nixian.rb'
 
 require 'construqt/flavours/nixian/tastes/entities.rb'
 require 'construqt/flavours/nixian/tastes/systemd.rb'
-require 'construqt/flavours/nixian/tastes/flat.rb'
+#require 'construqt/flavours/nixian/tastes/flat.rb'
 require 'construqt/flavours/nixian/tastes/debian.rb'
 require 'construqt/flavours/nixian/tastes/file.rb'
 
@@ -68,8 +68,8 @@ module Construqt
               @cfg = cfg
               @services_factory = factory.services_factory.shadow()
               #@services_factory.add(Services::ResultFactory.new(@services_factory))
-              @services_factory.add(Ubuntu::Services::DeployerShFactory.new(@services_factory))
-              @services_factory.add(Services::VagrantFactory.new(@services_factory))
+              @services_factory.add(Ubuntu::Services::DeployerShFactory.new)
+              @services_factory.add(Services::VagrantFactory.new)
             end
 
             def name
@@ -77,35 +77,32 @@ module Construqt
             end
 
             def add_host_services(srvs)
-              srvs ||= []
-              up_downer = Construqt::Flavour::Nixian::Services::UpDowner::Service.new
-                  .taste(Tastes::Systemd::Factory.new)
-                  .taste(Tastes::Debian::Factory.new)
-                  .taste(Tastes::Flat::Factory.new)
-                  .taste(Tastes::File::Factory.new)
-
-              srvs += [Construqt::Flavour::Nixian::Services::Result::Service.new,
-                       up_downer,
+              @services_factory.merge(srvs, [
+                      Construqt::Flavour::Nixian::Services::Result::Service.new,
+                      Construqt::Flavour::Nixian::Services::UpDowner::Service.new
+                        .taste(Tastes::Systemd::Factory.new)
+                        .taste(Tastes::Debian::Factory.new)
+                        .taste(Tastes::File::Factory.new),
                       Construqt::Flavour::Nixian::Services::Lxc::Service.new,
                       Construqt::Flavour::Nixian::Services::Docker::Service.new,
                       Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
                       Construqt::Flavour::Nixian::Services::Ssh::Service.new,
+                      Construqt::Flavour::Nixian::Services::IpTables::Service.new,
+                      Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
+                      Construqt::Flavour::Nixian::Services::EtcSystemdNetwork::Service.new,
+                      Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
                       Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::Service.new,
-                      Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::DeployerSh.new]
-              throw "unknown services" unless @services_factory.are_registered_by_instance?(srvs)
-              srvs
+                      Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::Service.new,
+                      Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::DeployerSh.new
+                    ])
             end
 
             def add_interface_services(srvs)
-              srvs ||= []
-              srvs += [
-                Construqt::Flavour::Nixian::Services::IpTables::Service.new(),
+              @services_factory.merge(srvs, [
                 Construqt::Flavour::Nixian::Services::IpProxyNeigh::Service.new(),
                 Construqt::Flavour::Nixian::Services::DnsMasq::Service.new(),
                 Construqt::Flavour::Nixian::Services::DhcpClient::Service.new()
-              ]
-              throw "unknown services" unless @services_factory.are_registered_by_instance?(srvs)
-              srvs
+              ])
             end
 
             # def ipsec

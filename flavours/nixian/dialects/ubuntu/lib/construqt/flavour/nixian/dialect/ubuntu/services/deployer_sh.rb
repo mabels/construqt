@@ -11,8 +11,8 @@ module Construqt
 
             class DeployerShFactory
               attr_reader :machine
-              def initialize(service_factory)
-                @machine = service_factory.machine
+              def start(service_factory)
+                @machine ||= service_factory.machine
                   .service_type(DeployerSh)
                   .require(Construqt::Flavour::Nixian::Services::Result::Service)
               end

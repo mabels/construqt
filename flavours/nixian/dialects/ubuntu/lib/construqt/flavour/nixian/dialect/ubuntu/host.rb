@@ -62,6 +62,7 @@ module Construqt
               []
             end
 
+
             def build_config(host, unused, node)
               # binding.pry
               result = self.delegate.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)

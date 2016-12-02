@@ -4,7 +4,10 @@ module Construqt
       module Tastes
         module File
           class Wlan
-            def render(iface, taste_type, taste)
+            def on_add(ud, taste, iface, me)
+              fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
+              fsrv.up("# up wlan is not impl")
+              fsrv.down("# down wlan is not impl")
             end
             def activate(ctx)
               @context = ctx
