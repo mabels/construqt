@@ -28,6 +28,7 @@ module Construqt
                 @requires = []
                 @conflicts = []
                 @wanted_bys = []
+		@restart_directives = []
                 #@default_dependencies = ['no']
                 @alsos = []
               end
@@ -42,6 +43,13 @@ module Construqt
 
               def exec_stop(a)
                 @exec_stops << a
+                self
+              end
+              def restart_directives(a)
+                @restart_directive << a
+              end
+              def restart_directive(a)
+                @restart_directives << a
                 self
               end
               def get_exec_stops

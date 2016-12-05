@@ -58,6 +58,7 @@ module Construqt
                         .after("network-online.target")
                         .requires("docker.service")
                         .requires("network-online.target")
+			.restart_directive("always")
                         .exec_start("/bin/sh /var/lib/docker/construqt/#{docker.name}/docker_run.sh")
                         .exec_stop("/usr/bin/docker stop -t 2 run_#{docker.name}")
                         .exec_stop_post("/usr/bin/docker rm -f run_#{docker.name}")
