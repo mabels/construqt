@@ -13,7 +13,7 @@ module Construqt
 
           class OncePerHost
 
-            attr_reader :host
+            attr_reader :host, :etc_network_iptables
             def initialize
               @etc_network_iptables = EtcNetworkIptables.new
             end
@@ -26,13 +26,9 @@ module Construqt
               @context = context
             end
 
-            def create(host, ifname, iface, family)
-              throw 'interface must set' unless ifname
-              Firewall.create_from_iface(ifname, iface, @etc_network_iptables)
-              Firewall.create_from_iface(ifname, iface.delegate.vrrp.delegate, writer) if iface.delegate.vrrp
-            end
-
-            def build_config_host
+            def commit
+              # binding.pry
+              # binding.pry if @host.name == "etcbind-1"
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               result.add(EtcNetworkIptables, @etc_network_iptables.commitv4,
                          Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4),
@@ -51,6 +47,20 @@ module Construqt
           end
 
           class Action
+            def activate(context)
+              @context = context
+            end
+            def build_config_interface(iface)
+              # binding.pry if iface.name == "eth1" && iface.host.name == "etcbind-1"
+              # welcome to hell
+              # return unless iface.delegate.delegate.firewalls
+              # binding.pry
+              eni = @context.find_instances_from_type(OncePerHost)
+              # throw 'interface must set' unless ifname
+              # binding.pry
+              Firewall.create_from_iface(iface.name, iface.delegate, eni.etc_network_iptables)
+              # Firewall.create_from_iface(iface.name, iface.delegate.vrrp.delegate, writer) if iface.delegate.vrrp
+            end
           end
 
           class Factory

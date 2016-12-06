@@ -117,6 +117,7 @@ module Construqt
               return [] if text.strip.empty?
               Util.write_str(host.region, text, host.name, fname)
               gzip_fname = Util.write_gzip(host.region, text, host.name, fname)
+              # puts fname
               [
                 File.dirname("/#{fname}").split('/')[1..-1].inject(['']) do |res, part|
                   res << File.join(res.last, part); res

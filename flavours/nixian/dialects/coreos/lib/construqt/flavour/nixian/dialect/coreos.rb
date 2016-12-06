@@ -7,6 +7,7 @@ require 'construqt/flavour/nixian/dialect/ubuntu'
 require 'construqt/flavour/nixian/services'
 
 require_relative 'coreos/services/cloud_init_impl.rb'
+require_relative 'coreos/services/remote_deploy_sh.rb'
 require_relative 'coreos/services/vagrant_impl.rb'
 require_relative 'coreos/services/modules_conf_impl.rb'
 
@@ -36,6 +37,7 @@ module Construqt
               @image_version = cfg['image_version'] || 'current'
               @services_factory = factory.services_factory.shadow()
               @services_factory.add(Services::ModulesConf::Factory.new)
+              @services_factory.add(Services::RemoteDeploySh::Factory.new)
               @services_factory.add(Services::CloudInit::Factory.new)
               @services_factory.add(Services::Vagrant::Factory.new)
             end
@@ -53,8 +55,10 @@ module Construqt
                        Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
                        Construqt::Flavour::Nixian::Services::Ssh::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
+                       Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdNetwork::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
+                       Construqt::Flavour::Nixian::Dialect::CoreOs::Services::RemoteDeploySh::Service.new,
                        Construqt::Flavour::Nixian::Dialect::CoreOs::Services::ModulesConf::Service.new,
                        Construqt::Flavour::Nixian::Dialect::CoreOs::Services::CloudInit::Service.new])
             end

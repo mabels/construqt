@@ -55,9 +55,9 @@ module Construqt
                     up_downer.add(iface, Tastes::Entities::IpRoute.new(route, ifname))
                 end
               end
-              up_downer.add(@host, Tastes::Entities::IpProxyNeigh.new(iface))
-              iptables = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::IpTables::OncePerHost)
-              iptables.create(host, ifname, iface, family)
+              # up_downer.add(@host, Tastes::Entities::IpProxyNeigh.new(iface))
+              # iptables = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::IpTables::OncePerHost)
+              # iptables.create(host, ifname, iface, family)
             end
 
             def build_config(host, iface, node)

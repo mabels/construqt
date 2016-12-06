@@ -9,6 +9,10 @@ module Construqt
               @interface = iface
             end
 
+            def drop_ins
+              {}
+            end
+
             def name
               @interface.name
             end

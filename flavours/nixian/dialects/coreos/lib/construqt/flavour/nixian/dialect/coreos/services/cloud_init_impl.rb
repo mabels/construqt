@@ -44,11 +44,22 @@ module Construqt
                 end
 
                 def add_units(sysrv)
-                  tmp = { 'name' => sysrv.get_name }
+                  tmp = {
+                    'name' => sysrv.get_name ,
+                  }
                   sysrv.is_enable && tmp['enable'] = true
                   sysrv.get_command && tmp['command'] = sysrv.get_command
                   unless sysrv.get_skip_content
                     tmp['content'] = sysrv.as_systemd_file.strip+"\n"
+                  end
+                  if !sysrv.drop_ins.empty?
+                    tmp['drop-ins'] = []
+                    sysrv.drop_ins.each do |name, drop_in|
+                      tmp['drop-ins'].push({
+                          "name" => name,
+                          "content" => drop_in.as_systemd_file.strip+"\n"
+                      })
+                    end
                   end
 
                   @yaml['coreos']['units'] << tmp

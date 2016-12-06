@@ -6,19 +6,24 @@ module Construqt
 
           class SystemdService
             include Util::Chainable
-            chainable_attr_value :description, "unknown"
+            chainable_attr_value :description
             chainable_attr_value :name
             chainable_attr_value :command, "start"
             chainable_attr_value :type, "simple"
-            attr_reader :afters, :befores, :conflicts
-            def initialize(name)
+            attr_reader :afters, :befores, :conflicts, :drop_ins, :service
+            def initialize(name, service = nil)
               # binding.pry
+              @service = service # dropins
+              @description = ""
               @enable = true
+              @environments = []
               @command = "start"
               @skip_content = false
+              @remain_after_exit = false
               @name = name
               @entries = {}
               @exec_starts = []
+              @exec_start_pres = []
               @exec_stops = []
               @exec_stop_posts = []
               @befores = []
@@ -28,6 +33,26 @@ module Construqt
               @wanted_bys = []
               #@default_dependencies = ['no']
               @alsos = []
+              @wantses = []
+              @drop_ins = {}
+            end
+
+            def disable
+              @enable = false
+              self
+            end
+
+            def is_drop_in?
+              @service != nil
+            end
+
+            def drop_in(name, &block)
+              drop_in = @drop_ins[name]
+              unless drop_in
+                @drop_ins[name] = drop_in = SystemdService.new(name, self)
+                block.call(drop_in)
+              end
+              drop_in
             end
 
             def exec_start(a)
@@ -37,6 +62,33 @@ module Construqt
 
             def get_exec_starts(a)
               @exec_starts
+            end
+
+            def wants(a)
+              @wantses << a
+              self
+            end
+
+            def get_wantses(a)
+              @wantes
+            end
+
+            def environment(a)
+              @environments << a
+              self
+            end
+
+            def get_environments(a)
+              @environments
+            end
+
+            def exec_start_pre(a)
+              @exec_start_pres << a
+              self
+            end
+
+            def get_exec_start_pres(a)
+              @exec_start_pres
             end
 
             def exec_stop(a)
@@ -65,6 +117,16 @@ module Construqt
               @skip_content = true
               self
             end
+
+            def get_remain_after_exit
+              @remain_after_exit
+            end
+
+            def remain_after_exit
+              @remain_after_exit = true
+              self
+            end
+
 
             def enable
               @enable = true
@@ -115,9 +177,18 @@ module Construqt
             end
 
             def commit(result)
+              name = @name
+              if @service
+                name = File.join("#{@service.get_name}.d", name)
+              end
+              unless @skip_content
               result.add(SystemdService, as_systemd_file,
                          Construqt::Resources::Rights.root_0644(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd),
-                         'etc', 'systemd', 'system', @name)
+                         'etc', 'systemd', 'system', name)
+              end
+              @drop_ins.values.each do |srv|
+                srv.commit(result)
+              end
             end
           end
 
@@ -131,6 +202,15 @@ module Construqt
               @context = context
             end
 
+            def get_drop_in(service, name, &block)
+              srv = get(service) do |srv|
+                srv.type("dropin")
+                srv.disable.command(nil).skip_content
+              end
+              srv.drop_in(name) do |drop_in|
+                block.call(drop_in)
+              end
+            end
 
             def get(name, &block)
               service = @services[name]

@@ -35,7 +35,6 @@ module Construqt
             end
 
             def build_config_interface(iface)
-              # binding.pry if @host.name == "fanout-de" and iface.name == "eth0"
               ups = []
               downs = []
               proxy_neigh2ips(iface.proxy_neigh).each do |ip|
@@ -64,6 +63,9 @@ module Construqt
                 result.add(IpProxyNeigh, Construqt::Util.render(binding, "interfaces_sh_envelop.erb"),
                            Construqt::Resources::Rights.root_0755,
                            'etc', 'network', "#{iface.name}-IpProxyNeigh-down.sh")
+                # binding.pry if @host.name == "etcbind-1" and iface.name == "eth1"
+                up_downer = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
+                up_downer.add(@host, Tastes::Entities::IpProxyNeigh.new(iface))
               end
             end
           end

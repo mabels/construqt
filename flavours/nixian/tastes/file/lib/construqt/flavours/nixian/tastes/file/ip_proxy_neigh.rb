@@ -17,6 +17,7 @@ module Construqt
             # end
             def on_add(ud, taste, iface, me)
               return unless me.iface.proxy_neigh
+              # binding.pry
               fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
               fsrv.up("/etc/network/#{me.iface.name}-IpProxyNeigh-up.sh")
               fsrv.down("/etc/network/#{me.iface.name}-IpProxyNeigh-down.sh")

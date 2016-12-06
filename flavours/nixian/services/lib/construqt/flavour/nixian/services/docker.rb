@@ -96,6 +96,9 @@ module Construqt
                          Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::UNREF),
                          "var", "lib", "docker", "construqt", host.name, "docker_run.sh")
 
+              up_downer = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
+              up_downer.add(@host, Taste::Container.new(host))
+
               # deployer.sh
               # start interfaces
               # write .dockerignore
@@ -130,9 +133,81 @@ module Construqt
                 docker_down = Construqt::Util.render(binding, "docker_down.erb")
                 result.add(self.class, docker_down, Construqt::Resources::Rights.root_0755,
                            'etc', 'network', "#{iface.name}-docker-down.sh")
+                up_downer = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
+                up_downer.add(@host, Taste::Interface.new(iface))
               end
             end
           end
+
+
+          module Taste
+            class Interface
+              attr_reader :iface
+              def initialize(iface)
+                @iface = iface
+              end
+
+              class Systemd
+                def on_add(ud, taste, _, me)
+                  ess = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcSystemdService::OncePerHost)
+                  ess.get("construqt-#{me.iface.name}-docker-network.service") do |srv|
+                    # binding.pry
+                    srv.description("added own network #{me.iface.name} to docker")
+                       .type("oneshot")
+                       .remain_after_exit
+                       .after("docker.socket")
+                       .after("sys-devices-virtual-net-#{me.iface.name}.device")
+                       .wants("docker.socket")
+                       .wants("sys-devices-virtual-net-#{me.iface.name}.device")
+                       .exec_start("/bin/sh /etc/network/#{me.iface.name}-docker-up.sh")
+                       .exec_stop("/bin/sh /etc/network/#{me.iface.name}-docker-down.sh")
+                       .wanted_by("multi-user.target")
+                  end
+                end
+                def activate(ctx)
+                  @context = ctx
+                  self
+                end
+              end
+            end
+
+            class Container
+              attr_reader :container
+              def initialize(container)
+                @container = container
+              end
+
+              class Systemd
+                def on_add(ud, taste, _, me)
+                  ess = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcSystemdService::OncePerHost)
+                  ess.get("construqt-#{me.container.name}-docker.service") do |srv|
+                    # binding.pry
+                    srv.description("starts docker container #{me.container.name}")
+                       .type("simple")
+                       .after("docker.socket")
+                       .wants("docker.socket")
+                       .exec_start("/bin/sh /var/lib/docker/construqt/#{me.container.name}/docker_run.sh")
+                       .wanted_by("multi-user.target")
+                    me.container.interfaces.values.select do |i|
+                      i.name != "lo" && i.cable.connections.length > 0
+                    end.each do |iface|
+                      throw "multipe cable" if iface.cable.connections.length > 1
+                      name = iface.cable.connections.first.iface.name
+                      srv.after("construqt-#{name}-docker-network.service")
+                      srv.wants("construqt-#{name}-docker-network.service")
+                    end
+                  end
+                end
+                def activate(ctx)
+                  @context = ctx
+                  self
+                end
+              end
+            end
+
+
+          end
+
 
           class Factory
             attr_reader :machine
@@ -140,6 +215,12 @@ module Construqt
               @machine ||= service_factory.machine
                 .service_type(Service)
                 .depend(Result::Service)
+                .activator(Construqt::Flavour::Nixian::Services::UpDowner::Activator.new
+                  .entity(Taste::Interface)
+                  .add(Construqt::Flavour::Nixian::Tastes::Systemd::Factory, Taste::Interface::Systemd))
+                .activator(Construqt::Flavour::Nixian::Services::UpDowner::Activator.new
+                  .entity(Taste::Container)
+                  .add(Construqt::Flavour::Nixian::Tastes::Systemd::Factory, Taste::Container::Systemd))
             end
 
             def produce(host, srv_inst, ret)
