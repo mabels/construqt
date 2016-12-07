@@ -6,21 +6,20 @@ require 'construqt/flavour/nixian/dialect/ubuntu'
 
 require 'construqt/flavour/nixian/services'
 
-require_relative 'coreos/services/cloud_init_impl.rb'
-require_relative 'coreos/services/remote_deploy_sh.rb'
-require_relative 'coreos/services/vagrant_impl.rb'
-#require_relative 'coreos/services/modules_conf_impl.rb'
+require_relative 'arch/services/cloud_init_impl.rb'
+require_relative 'arch/services/vagrant_impl.rb'
+require_relative 'arch/services/remote_deploy_sh.rb'
 
 module Construqt
   module Flavour
     module Nixian
       module Dialect
-        module CoreOs
+        module Arch
           DIRECTORY = File.dirname(__FILE__)
 
           class Factory
             def name
-              "coreos"
+              "arch"
             end
 
             def produce(parent, cfg)
@@ -36,6 +35,7 @@ module Construqt
               @update_channel = cfg['update_channel'] || 'stable'
               @image_version = cfg['image_version'] || 'current'
               @services_factory = factory.services_factory.shadow()
+              @services_factory.add(Construqt::Flavour::Nixian::Services::ModulesConf::Factory.new)
               @services_factory.add(Services::RemoteDeploySh::Factory.new)
               @services_factory.add(Services::CloudInit::Factory.new)
               @services_factory.add(Services::Vagrant::Factory.new)
@@ -57,9 +57,9 @@ module Construqt
                        Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdNetwork::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
-                       Construqt::Flavour::Nixian::Dialect::CoreOs::Services::RemoteDeploySh::Service.new,
+                       Construqt::Flavour::Nixian::Dialect::Arch::Services::RemoteDeploySh::Service.new,
                        Construqt::Flavour::Nixian::Services::ModulesConf::Service.new,
-                       Construqt::Flavour::Nixian::Dialect::CoreOs::Services::CloudInit::Service.new])
+                       Construqt::Flavour::Nixian::Dialect::Arch::Services::CloudInit::Service.new])
             end
 
             def add_interface_services(srvs)

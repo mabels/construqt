@@ -7,8 +7,8 @@ module Construqt
             def on_add(ud, taste, iface, me)
               # binding.pry if iface.name == "etcbind-2"
               fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
-              fsrv.up("ip -#{ud.cfg.prefix} tunnel add #{iface.name} mode #{ud.cfg.mode} local #{ud.local} remote #{ud.remote}")
-              fsrv.down("ip -#{ud.cfg.prefix} tunnel del #{iface.name}")
+              fsrv.up("ip -#{me.cfg.prefix} tunnel add #{iface.name} mode #{me.cfg.mode} local #{me.local} remote #{me.remote}")
+              fsrv.down("ip -#{me.cfg.prefix} tunnel del #{iface.name}")
             end
             def activate(ctx)
               @context = ctx

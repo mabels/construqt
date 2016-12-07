@@ -49,8 +49,8 @@ require_relative "./aiccu.rb"
 def setup_region(name, network)
   region = Construqt::Regions.add(name, network)
   nixian = Construqt::Flavour::Nixian::Factory.new
-  nixian.services_factory.add(Postfix::Factory.new(nixian.services_factory))
-  nixian.services_factory.add(Aiccu::Factory.new(nixian.services_factory))
+  nixian.services_factory.add(Postfix::Factory.new)
+  nixian.services_factory.add(Aiccu::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::CoreOs::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Ubuntu::Factory.new)
   region.flavour_factory.add(nixian)

@@ -7,7 +7,7 @@ module Construqt
             def on_add(ud, taste, iface, me)
               binding.pry if iface.name == "etcbind-2"
               fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
-              fsrv.up("ip link add link #{me.dev_name(iface)} name #{iface.nae} type vlan id #{me.vlan_id(iface)}")
+              fsrv.up("ip link add link #{me.dev_name(iface)} name #{iface.name} type vlan id #{me.vlan_id(iface)}")
               fsrv.down("ip link rem link #{me.dev_name(iface)} name #{iface.name} type vlan id #{me.vlan_id(iface)}")
             end
             def activate(ctx)

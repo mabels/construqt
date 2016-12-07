@@ -14,7 +14,7 @@ end
 module Postfix
   class Factory
     attr_reader :machine
-    def initialize(service_factory)
+    def start(service_factory)
       @machine = service_factory.machine.service_type(Smtp)
     end
 

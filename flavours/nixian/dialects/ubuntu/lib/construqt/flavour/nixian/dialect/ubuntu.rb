@@ -93,6 +93,7 @@ module Construqt
                       Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
                       Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::Service.new,
                       Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::Service.new,
+                      Construqt::Flavour::Nixian::Services::EtcNetworkApplicationUd::Service.new,
                       Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::DeployerSh.new
                     ])
             end

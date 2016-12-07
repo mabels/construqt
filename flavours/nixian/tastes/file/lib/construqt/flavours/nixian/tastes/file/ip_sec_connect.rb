@@ -8,8 +8,8 @@ module Construqt
               # binding.pry if iface.name == "etcbind-2"
               fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
               fsrv.up("/usr/sbin/ipsec start") # no down this is also global
-              fsrv.up("/usr/sbin/ipsec up #{ud.name} &")
-              fsrv.down("/usr/sbin/ipsec down #{ud.name} &")
+              fsrv.up("/usr/sbin/ipsec up #{me.name} &")
+              fsrv.down("/usr/sbin/ipsec down #{me.name} &")
               fsrv.down("/usr/sbin/ipsec stop")
             end
             def activate(ctx)

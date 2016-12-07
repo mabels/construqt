@@ -1,6 +1,6 @@
 #!/bin/sh
 hostname <%= host.name %>
-echo Starting Network for $(hostname)
-/bin/sh /etc/network/network_up.sh
-echo Starting Application <%= docker.get_image %>
-<%= docker.get_app_start_script %>
+echo Starting Network on $(hostname)
+/bin/sh /etc/network/network-up.sh
+echo Starting Application on $(hostname)
+exec /bin/sh /etc/network/application-up.sh

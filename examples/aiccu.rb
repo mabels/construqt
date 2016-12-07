@@ -13,7 +13,7 @@
 class Aiccu
   class Factory
     attr_reader :machine
-    def initialize(services_factory)
+    def start(services_factory)
       @machine = services_factory.machine.service_type(Aiccu)
     end
 

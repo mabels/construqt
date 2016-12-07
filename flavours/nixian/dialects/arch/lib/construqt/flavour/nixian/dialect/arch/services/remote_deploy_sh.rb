@@ -5,9 +5,9 @@ module Construqt
   module Flavour
     module Nixian
       module Dialect
-        module CoreOs
+        module Arch
           module Services
-            module ModulesConf
+            module RemoteDeploySh
               class Service
               end
               class Action
@@ -19,11 +19,13 @@ module Construqt
                   @context = context
                 end
 
+                def attach_host(host)
+                  @host = host
+                end
+
                 def build_config_host
-                  result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
-                  result.add(self, Construqt::Util.render(binding, "modules.conf.erb"),
-                    Construqt::Resources::Rights::root_0644,
-                    "etc", "modules-load.d", "construqt.conf")
+                  Util.write_str(@host.region, Construqt::Util.render(binding, "remote-deploy.sh.erb"),
+                    @host.name, 'remote-deploy.sh')
                 end
 
                 def commit
@@ -37,7 +39,6 @@ module Construqt
                   @machine ||= service_factory.machine
                     .service_type(Service)
                     .result_type(OncePerHost)
-                    .depend(Construqt::Flavour::Nixian::Services::Result::Service)
                 end
 
                 def produce(host, srv_inst, ret)

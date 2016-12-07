@@ -61,7 +61,7 @@ module Construqt
               end
 
               def render
-                return if @links.empty?
+                # return if @links.empty?
                 result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
                 result.add(self, vfile_header+vfile_network+vfile_ssh_port+vfile_footer,
                                    Construqt::Resources::Rights.root_0644,

@@ -22,9 +22,11 @@ require_relative 'services/ip_tables'
 require_relative 'services/ip_proxy_neigh'
 require_relative 'services/etc_network_interfaces'
 require_relative 'services/etc_network_network_ud'
+require_relative 'services/etc_network_application_ud'
 require_relative 'services/etc_systemd_netdev'
 require_relative 'services/etc_systemd_network'
 require_relative 'services/etc_systemd_service'
+require_relative 'services/modules_conf'
 
 module Construqt
   module Flavour
@@ -54,9 +56,11 @@ module Construqt
             Result::Factory,
             EtcNetworkInterfaces::Factory,
             EtcNetworkNetworkUd::Factory,
+            EtcNetworkApplicationUd::Factory,
             EtcSystemdNetdev::Factory,
             EtcSystemdNetwork::Factory,
             EtcSystemdService::Factory,
+            ModulesConf::Factory,
           ].each do |clazz|
             services_factory.add(clazz.new)
           end
