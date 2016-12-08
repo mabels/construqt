@@ -2,5 +2,5 @@
 base=$(dirname $0)
 <% dest_ip = @host.id.first_ipv4.first_ipv4.to_s -%>
 echo "Deploy to coreos host <%= dest_ip %>"
-scp $base/coreos-cloud-config root@<%= dest_ip %>:
-ssh root@<%= dest_ip %> coreos-cloudinit --from-file /root/coreos-cloud-config
+scp $base/coreos-cloud-config core@<%= dest_ip %>:
+ssh core@<%= dest_ip %> sudo coreos-cloudinit --from-file /home/core/coreos-cloud-config
