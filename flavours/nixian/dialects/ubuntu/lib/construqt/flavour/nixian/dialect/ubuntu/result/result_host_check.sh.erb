@@ -5,17 +5,17 @@ if [ $hostname != "" ]
 then
   hostname=`grep '^\s*[^#]' /etc/hostname`
 fi
-if [ "$hostname" != "<%= @host.name %>" ]
+if [ "$hostname" != "<%= host.name %>" ]
 then
   if [ $(is_opt_set force_hostname) != found ]
   then
-    echo 'You try to run a deploy script on a host which has not the right name $hostname != <%= @host.name %>'
+    echo 'You try to run a deploy script on a host which has not the right name $hostname != <%= host.name %>'
     exit 47
   else
-    echo <%= @host.name %> > /etc/hostname
-    hostname <%= @host.name %>
-    echo Force Hostname to <%= @host.name %>
+    echo <%= host.name %> > /etc/hostname
+    hostname <%= host.name %>
+    echo Force Hostname to <%= host.name %>
   fi
 else
-  echo Configure Host <%= @host.name %>
+  echo Configure Host <%= host.name %>
 fi

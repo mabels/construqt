@@ -1,13 +1,20 @@
+require_relative 'base_device'
 module Construqt
   module Flavour
     module Nixian
       module Dialect
         module Ubuntu
 
-          class Gre < OpenStruct
+          class Gre
+            include BaseDevice
             include Construqt::Cables::Plugin::Single
+            attr_reader :ipsec, :remote, :local, :other
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
+              @ipsec = cfg['ipsec']
+              @remote = cfg['remote']
+              @local = cfg['local']
+              @other = cfg['other']
             end
 
             def get_prepare(gre_delegate)
@@ -84,16 +91,14 @@ module Construqt
 
               # binding.pry if gre.name == "fanout-de"
 
-              writer = host.result.etc_network_interfaces.get(gre, gre.name)
               # iname = local_if.name
               # #if local_if.clazz == "gre"
               # #  iname = Util.clean_if(gt, iname)
               # #end
               # writer = host.result.etc_network_interfaces.get(iface, "fanout-de")
               # binding.pry
-              writer.lines.up("/usr/sbin/ipsec start", :extra) # no down this is also global
-              writer.lines.up("/usr/sbin/ipsec up #{self.host.name}-#{self.other.host.name} &", 1000, :extra)
-              writer.lines.down("/usr/sbin/ipsec down #{self.host.name}-#{self.other.host.name} &", -1000, :extra)
+              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
+              up_downer.add(gre, Tastes::Entities::IpSecConnect.new("#{self.host.name}-#{self.other.host.name}"))
 
               #writer.skip_interfaces.header.interface_name(gre.name)
 

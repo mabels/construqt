@@ -6,7 +6,7 @@ module Construqt
       class HostDelegate
         include Delegate
         COMPONENT = Construqt::Resources::Component::UNREF
-        attr_reader :users, :bgps, :ipsecs, :interface_graph
+        attr_reader :users, :bgps, :ipsecs, :interface_graph, :result_types
         def initialize(host)
           #binding.pry
           #Construqt.logger.debug "HostDelegate.new(#{host.name})"
@@ -18,10 +18,18 @@ module Construqt
           @interface_graph = Construqt::Graph.new
         end
 
-        def inspect
-           "@<#{self.class.name}:#{self.object_id} name=#{name} mother=#{mother&&mother.inspect}>"
+        def attach_result_types(result_types)
+          @result_types = result_types
         end
 
+        def inspect
+           "#<#{self.class.name}:#{self.object_id} name=#{name} mother=#{mother&&mother.inspect}>"
+        end
+
+
+        def files
+          self.delegate.files
+        end
 
         def fqdn
           region.network.fqdn(self.name)
@@ -45,17 +53,17 @@ module Construqt
           self.delegate.spanning_tree
         end
 
-        def docker_deploy
-          self.delegate.docker_deploy
-        end
+        # def docker_deploy
+        #   self.delegate.docker_deploy
+        # end
 
-        def lxc_deploy
-          self.delegate.lxc_deploy
-        end
-
-        def vagrant_deploy
-          self.delegate.vagrant_deploy
-        end
+        # def lxc_deploy
+        #   self.delegate.lxc_deploy
+        # end
+        #
+        # def vagrant_deploy
+        #   self.delegate.vagrant_deploy
+        # end
 
         def mother
           if self.delegate.respond_to? :mother
@@ -100,9 +108,9 @@ module Construqt
           self.delegate.region
         end
 
-        def result
-          self.delegate.result
-        end
+        #def result
+        #  self.delegate.result
+        #end
 
         def flavour
           self.delegate.flavour
@@ -152,7 +160,7 @@ module Construqt
           end
 
           self.region.flavour_factory.call_aspects("host.commit", self, nil)
-          self.result.commit
+          #self.result.commit
 
           self.flavour.pre_clazzes do |key, clazz|
             self.region.flavour_factory.call_aspects("#{key}.footer", self, nil)

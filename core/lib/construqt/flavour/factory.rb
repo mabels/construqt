@@ -13,6 +13,7 @@ module Construqt
 
       def add(flavour)
         Construqt.logger.info "setup flavour for #{flavour.name}"
+        # flavour.attach(region)
         @flavour_factory[flavour.name.downcase] = Delegate::FlavourDelegate.new(flavour)
       end
 
@@ -29,6 +30,7 @@ module Construqt
       end
 
       def parser(flavour, dialect, prefix = nil)
+        binding.pry
         @flavour_factory[flavour].flavour::Result.new(
           OpenStruct.new(dialect: dialect, fname: prefix, interfaces: {}))
       end

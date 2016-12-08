@@ -9,10 +9,14 @@ module Construqt
 
         def factory(cfg)
           #if @flavour.respond_to? :factory
-            @flavour.factory(cfg)
+            @flavour.factory(self, cfg)
           #else
           #  @flavour
           #end
+        end
+
+        def services_factory
+          @flavour.services_factory
         end
 
         def dialect
@@ -29,6 +33,14 @@ module Construqt
 
         def bgp
           @flavour.bgp
+        end
+
+        def add_host_services(services)
+          @flavour.add_host_services(services)
+        end
+
+        def add_interface_services(services)
+          @flavour.add_interface_services(services)
         end
 
         def clazzes

@@ -1,37 +1,57 @@
+require_relative 'base_device'
 module Construqt
   module Flavour
     module Nixian
       module Dialect
         module Ubuntu
 
-          class IpsecVpn < OpenStruct
+          class IpsecVpn
+            include BaseDevice
             include Construqt::Cables::Plugin::Multiple
+            attr_reader :left_interface, :right_interface, :ipv6_proxy
+            attr_reader :leftpsk, :users, :right_address, :auth_method
+            attr_reader :leftcert
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
+              services.add(Construqt::Flavour::Nixian::Services::IpsecVpnStrongSwan::Service.new(self))
+              @left_interface = cfg['left_interface']
+              @left_cert = cfg['left_cert']
+              @right_interface = cfg['right_interface']
+              @ipv6_proxy = cfg['ipv6_proxy']
+              @leftpsk = cfg['leftpsk']
+              @users = cfg['users']
+              @right_address = cfg['right_address']
+              @auth_method = cfg['auth_method']
             end
 
             def build_config(host, iface, node)
               #puts ">>>>>>>>>>>>>>>>>>>>>>#{host.name} #{iface.name}"
-              # binding.pry
+              ipsec = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::IpsecStrongSwan::OncePerHost)
+              # binding.pry if host.name == "fanout-de"
+
               Device.build_config(host, iface, node, nil, nil, nil, true)
               render_ipv6_proxy(iface)
               if iface.leftpsk
                 comment = "#{host.name}-#{iface.name}"
                 iface.left_interface.address.ips.each do |ip|
-                  self.host.result.ipsec_secret.add_any_psk(ip.to_s, Util.password(iface.leftpsk), comment)
+                  ipsec.ipsec_secret.add_any_psk(ip.to_s, Util.password(iface.leftpsk), comment)
                   comment = nil
                 end
               end
-              self.host.result.ipsec_secret.add_users_psk(host)
+              ipsec.ipsec_secret.add_users_psk(host)
 
-              self.host.result.add(:ipsec, render_ikev1(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
-              self.host.result.add(:ipsec, render_ikev2(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
+              result = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+
+              result.add(:ipsec, render_ikev1(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
+              result.add(:ipsec, render_ikev2(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
             end
 
             def render_ipv6_proxy(iface)
               return unless iface.ipv6_proxy
-              host.result.add(self, Construqt::Util.render(binding, "ipsecvpn_updown.erb"),
-                Construqt::Resources::Rights.root_0755, "etc", "ipsec.d", "#{iface.left_interface.name}-ipv6_proxy_updown.sh")
+              result = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+              result.add(self, Construqt::Util.render(binding, "ipsecvpn_updown.erb"),
+                Construqt::Resources::Rights.root_0755,
+                "etc", "ipsec.d", "#{iface.left_interface.name}-ipv6_proxy_updown.sh")
             end
 
             def render_ikev1(host, iface)

@@ -1,0 +1,42 @@
+#!/bin/sh
+basedir=/var/lib/docker/construqt/<%= host.name %>
+if [ -d $basedir ]
+then
+  echo "Basedir: $basedir"
+  cd $basedir
+fi
+<% host.interfaces.values.select{|i|
+    i.name != "lo" && i.cable.connections.length > 0
+  }.each do |iface| -%>
+/bin/sh /etc/network/<%= iface.cable.connections.first.iface.name %>-docker-up.sh
+<% end -%>
+
+docker_name=run_<%= host.name %>
+docker_tag=$(hostname)-$(date +%Y%m%d%H%M%S)
+for tag in $(docker images -a $docker_name --format '{{.Tag}}' | sort -n -r | tail -n +3)
+do
+  docker rmi $docker_name:$tag
+done
+docker build -t $docker_name:$docker_tag .
+docker rm $docker_name
+
+exec docker run --name $docker_name \
+<% if docker.get_privileged -%>
+  --privileged \
+<% end -%>
+<% host.interfaces.values.select do |i|
+    i.name != "lo" && i.cable.connections.length > 0
+  end.each do |iface| -%>
+  --net <%= iface.cable.connections.first.iface.name %> \
+<% iface.address.ips.each do |ip|
+     if ip.ipv4? -%>
+  --ip=<%= ip.to_s %> \
+<%   else -%>
+  --ip6=<%= ip.to_s %> \
+<%   end
+   end
+end -%>
+<% docker.get_maps.each do |h, d| -%>
+  -v <%= h %>:<%= d %> \
+<% end -%>
+  -t $docker_name:$docker_tag

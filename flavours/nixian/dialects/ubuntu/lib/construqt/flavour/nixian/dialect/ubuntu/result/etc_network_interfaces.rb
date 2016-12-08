@@ -139,6 +139,7 @@ module Construqt
                   end
 
                   def interface_name(name)
+                     binding.pry
                     @interface_name = name
                   end
 
@@ -188,12 +189,12 @@ module Construqt
               end
 
               def get(iface, name = nil)
-                throw "clazz needed #{name || iface.name}" unless iface.clazz
                 ret = @entries[name || iface.name]
                 unless ret
                   entry = Entry.new(@result, iface)
                   ret = @entries[name || iface.name] = entry
                 end
+                throw "entry not found #{name || iface.name}" unless ret
                 ret
               end
 
@@ -208,8 +209,8 @@ module Construqt
                       @entries[inode.ref.name].header.auto
                     end
                     if idx + 1 == if_string.length
-                      @entries[inode.ref.name].header.post_up "/sbin/iptables-restore /etc/network/iptables.cfg"
-                      @entries[inode.ref.name].header.post_up "/sbin/ip6tables-restore /etc/network/ip6tables.cfg"
+                      #@entries[inode.ref.name].header.post_up "/sbin/iptables-restore /etc/network/iptables.cfg"
+                      #@entries[inode.ref.name].header.post_up "/sbin/ip6tables-restore /etc/network/ip6tables.cfg"
                     else
                       @entries[inode.ref.name].header.post_up "/sbin/ifup #{if_string[idx+1].ref.name}"
                       @entries[inode.ref.name].header.pre_down "/sbin/ifdown #{if_string[idx+1].ref.name}"

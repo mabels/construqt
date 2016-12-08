@@ -1,9 +1,9 @@
 module Scott
   def self.run(region)
     scott = region.hosts.add("scott", "flavour" => "nixian", "dialect" => "ubuntu",
-                             "vagrant_deploy" => Construqt::Hosts::Vagrant.new
+                             "services" => [Construqt::Flavour::Nixian::Services::Vagrant::Service.new
                                           .box("ubuntu/xenial64").root_passwd("/.")
-                                          .add_cfg('config.vm.network "public_network", bridge: "bridge0"')) do |host|
+                                          .add_cfg('config.vm.network "public_network", bridge: "bridge0"')]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -27,7 +27,7 @@ module Scott
     end
 
     region.hosts.add("aiccu", "flavour" => "nixian", "dialect" => "ubuntu",
-                     "mother" => scott, "lxc_deploy" => Construqt::Hosts::Lxc.new) do |aiccu|
+                     "mother" => scott, "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new]) do |aiccu|
       region.interfaces.add_device(aiccu, "lo", "mtu" => "1500",
                                    :description=>"#{aiccu.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -47,7 +47,7 @@ module Scott
       end
 
       fbsd = region.hosts.add("fbsd", "flavour" => "nixian", "dialect" => "ubuntu",
-                              "mother" => scott, "lxc_deploy" => Construqt::Hosts::Lxc.new) do |host|
+                              "mother" => scott, "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new]) do |host|
         region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                      :description=>"#{host.name} lo",
                                      "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

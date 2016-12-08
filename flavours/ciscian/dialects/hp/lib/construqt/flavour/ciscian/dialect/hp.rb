@@ -11,7 +11,7 @@ module Construqt
             def name
               "hp"
             end
-            def produce(cfg)
+            def produce(parent, cfg)
               factory = {
                 "hp2510g" => Hp2510g,
                 "hp2530g" => Hp2530g

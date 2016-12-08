@@ -84,15 +84,14 @@ module Construqt
                 writer.add_master("/usr/sbin/#{cmd} enable #{cname}", 2000)
                 writer.add_backup("/usr/sbin/#{cmd} disable #{cname}", -2000)
                 local_if.services << Construqt::Services::BgpStartStop.new
+                result.up_downer.add(local_if, Tastes::Entities::Bgp.new(cmd, cname))
               else
                 iname = local_if.name
                 if local_if.clazz == "gre"
                   iname = Util.clean_if(gt, iname)
                 end
-
-                writer = host.result.etc_network_interfaces.get(local_if, iname)
-                writer.lines.up("/usr/sbin/#{cmd} enable #{cname}", 2000, :extra)
-                writer.lines.down("/usr/sbin/#{cmd} disable #{cname}", -2000, :extra)
+                #writer = host.result.etc_network_interfaces.get(local_if, iname)
+                result.up_downer.add(local_if, Tastes::Entities::Bgp.new(cmd, cname))
               end
             end
 

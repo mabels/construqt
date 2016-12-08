@@ -1,0 +1,57 @@
+<% if @description.length > 0 ||
+      @befores.length > 0 || @afters.length > 0 ||
+      @requires.length > 0 || @wantses.length > 0
+-%>
+[Unit]
+<% if @description.length > 0 -%>
+Description=<%= @description %>
+<% end -%>
+<% @befores.each do |before| -%>
+Before=<%= before %>
+<% end -%>
+<% @afters.each do |after| -%>
+After=<%= after %>
+<% end -%>
+<% @requires.each do |req| -%>
+Requires=<%= req %>
+<% end -%>
+<% @wantses.each do |wants| -%>
+Wants=<%= wants %>
+<% end -%>
+<% end -%>
+
+[Service]
+<% if !is_drop_in? -%>
+Type=<%= @type %>
+<% end -%>
+<% @environments.each do |env| -%>
+Environment=<%= env %>
+<% end -%>
+<% if @remain_after_exit -%>
+RemainAfterExit=true
+<% end -%>
+<% @exec_start_pres.each do |exec_start_pre| -%>
+ExecStartPre=<%= exec_start_pre %>
+<% end -%>
+<% @exec_starts.each do |exec_start| -%>
+ExecStart=<%= exec_start %>
+<% end -%>
+<% @exec_stops.each do |exec_stop| -%>
+ExecStop=<%= exec_stop %>
+<% end -%>
+<% @exec_stop_posts.each do |exec_stop_post| -%>
+ExecStopPost=<%= exec_stop_post %>
+<% end -%>
+<% @restart_directives.each do |restart| -%>
+Restart=<%= restart %>
+<% end -%>
+
+<% if @wanted_bys.length > 0 || @alsos.length > 0 -%>
+[Install]
+<% @wanted_bys.each do |wanted_by| -%>
+WantedBy=<%= wanted_by %>
+<% end -%>
+<% @alsos.each do |also| -%>
+Also=<%= also %>
+<% end -%>
+<% end -%>

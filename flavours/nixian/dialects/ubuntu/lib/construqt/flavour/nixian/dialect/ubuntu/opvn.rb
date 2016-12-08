@@ -1,4 +1,4 @@
-
+require_relative 'base_device'
 module Construqt
   module Flavour
     module Nixian
@@ -6,31 +6,23 @@ module Construqt
         module Ubuntu
 
           class Opvn #< OpenStruct
+            include BaseDevice
             include Construqt::Cables::Plugin::Single
-            attr_accessor :delegate
-            attr_reader :address,:template,:plug_in,:network,:mtu,:clazz,:dh
-            attr_reader :listen,:push_routes,:cacert,:name,:hostcert,:hostkey,:host
-            attr_reader :description, :firewalls, :protocols, :proto, :flavour
-            attr_reader :services, :mac_address, :proxy_neigh
+            #attr_reader :address,:template,:plug_in,:network,:mtu, :clazz, :dh
+            #attr_reader :listen,:push_routes,:cacert,:name,:hostcert,:hostkey,:host
+            #attr_reader :description, :firewalls, :protocols, :proto, :flavour
+            #attr_reader :services, :mac_address, :proxy_neigh
+            attr_reader :dh, :listen, :push_routes, :cacert, :hostcert, :hostkey
+            attr_reader :protocols, :proto
             def initialize(cfg)
-              @name = cfg['name']
-              @host = cfg['host']
-              @description = cfg['description']
-              @flavour = cfg['flavour']
-              @services = cfg['services']
-              @firewalls = cfg['firewalls']
-              @address = cfg['address']
-              @template = cfg['template']
-              @plug_in = cfg['plug_in']
-              @network = cfg['network']
+              base_device(cfg)
               @proto = cfg['proto']
-              @mtu = cfg['mtu']
-              @clazz = cfg['clazz']
               @listen = cfg['listen']
               @push_routes = cfg['push_routes']
               @cacert = cfg['cacert']
               @hostcert = cfg['hostcert']
               @hostkey = cfg['hostkey']
+              @proto = cfg['proto']
               @dh = cfg['dh']
             end
 
@@ -40,7 +32,6 @@ module Construqt
 
             def self.header(host)
               return unless host.has_interface_with_component?(Construqt::Resources::Component::OPENVPN)
-              host.result.add(self, Construqt::Util.render(binding, "ovpn_pam.erb"), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::OPENVPN), "etc", "pam.d", "openvpn")
             end
 
             def build_config(host, opvn, node)
@@ -61,17 +52,15 @@ module Construqt
                 push_routes = iface.push_routes.routes.each{|route| "push \"route #{route.dst.to_string}\"" }.join("\n")
               end
 
-              writer = host.result.etc_network_interfaces.get(iface)
-              writer.lines.up("mkdir -p /dev/net", :extra)
-              writer.lines.up("mknod /dev/net/tun c 10 200", :extra)
-              writer.lines.up("/usr/sbin/openvpn --config /etc/openvpn/#{iface.name}.conf", :extra)
-              writer.lines.down("kill $(cat /run/openvpn.#{iface.name}.pid)", :extra)
+              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
+              up_downer.add(iface, Tastes::Entities::OpenVpn.new(iface))
 
-              host.result.add(self, iface.cacert, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-cacert.pem")
-              host.result.add(self, iface.hostcert, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-hostcert.pem")
-              host.result.add(self, iface.hostkey, Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-hostkey.pem")
-              host.result.add(self, iface.dh, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}.dh")
-              host.result.add(self, Construqt::Util.render(binding, "ovpn_config.erb"), Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "#{iface.name}.conf")
+              result = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+              result.add(self, iface.cacert, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-cacert.pem")
+              result.add(self, iface.hostcert, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-hostcert.pem")
+              result.add(self, iface.hostkey, Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}-hostkey.pem")
+              result.add(self, iface.dh, Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "ssl", "#{iface.name}.dh")
+              result.add(self, Construqt::Util.render(binding, "ovpn_config.erb"), Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::OPENVPN), "etc", "openvpn", "#{iface.name}.conf")
             end
           end
         end

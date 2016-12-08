@@ -1,65 +1,51 @@
 module Construqt
+
   class Services
-    class ConntrackD
-      attr_accessor :name, :services
-      def initialize(name)
-        self.name = name
+    def initialize
+      @services = []
+    end
+    def add(srv_s)
+      unless srv_s.kind_of?(Array)
+        srv_s = [srv_s]
+      end
+      @services += srv_s
+    end
+
+    def each(&block)
+      @services.each(&block)
+    end
+
+    def map(&block)
+      @services.map(&block)
+    end
+
+    def has_type_of?(kind)
+      @services.find do |s|
+        s.kind_of?(kind)
       end
     end
 
-    class IpsecStartStop
-      attr_reader :name
-    end
-
-    class BgpStartStop
-      attr_reader :name
-    end
-
-    class DhcpV4Relay
-      attr_reader :name, :inbound_tag, :upstream_tag
-      attr_accessor :services
-      def initialize(name, inbound_tag, upstream_tag)
-        @name = name
-        @inbound_tag = inbound_tag
-        @upstream_tag = upstream_tag
-      end
-    end
-    class DhcpV6Relay
-      attr_reader :name, :inbound_tag, :upstream_tag
-      attr_accessor :services
-      def initialize(name, inbound_tag, upstream_tag)
-        @name = name
-        @inbound_tag = inbound_tag
-        @upstream_tag = upstream_tag
+    def by_type_of(kind)
+      @services.select do |s|
+        s.kind_of?(kind)
       end
     end
 
-    class Radvd
-      include Construqt::Util::Chainable
-      attr_accessor :servers, :name, :services
-      chainable_attr :adv_autonomous
-      def initialize(name)
-        self.name = name
-      end
+    def include?(srv)
+      @services.include?(srv)
     end
 
-    attr_reader :region, :services
-    def initialize(region)
-      @region = region
-      @services = {}
+    def inspect
+      "#<#{self.class.name}:#{object_id} services=[#{self.map{|i| i.class.name}.join(",")}]>"
     end
 
-    def find(name)
-      found = @services[name]
-      throw "service with name #{name} not found" unless found
-      found
+    def self.create(srvs)
+      throw "can only create from array" unless srvs.kind_of?(Array)
+      ret = Services.new
+      ret.add(srvs)
+      ret
     end
 
-    def add(service)
-      @services[service.name] = service
-      service.services = self
-      self
-    end
 
   end
 end

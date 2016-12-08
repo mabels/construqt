@@ -33,15 +33,15 @@ module Construqt
         @delegate = a
       end
 
-      def on_iface_up_down(&block)
-        @on_iface_up_down ||= []
-        @on_iface_up_down << block
-      end
+      # def on_iface_up_down(&block)
+      #   @on_iface_up_down ||= []
+      #   @on_iface_up_down << block
+      # end
 
-      def call_on_iface_up_down(writer, ifname)
-        @on_iface_up_down ||= []
-        @on_iface_up_down.each {|block| block.call(writer, ifname) }
-      end
+      # def call_on_iface_up_down(writer, ifname)
+      #   @on_iface_up_down ||= []
+      #   @on_iface_up_down.each {|block| block.call(writer, ifname) }
+      # end
 
       # i have currently no better idea
       def duck_me_eq
@@ -181,7 +181,7 @@ module Construqt
 #puts "host => #{host && host.name} #{self.delegate.class.name}"
         #binding.pry unless host
         host.region.flavour_factory.call_aspects("#{simple_name}.build_config", host, my||self)
-        #binding.pry
+        # binding.pry
         self.delegate.build_config(host, my||self, node)
       end
 

@@ -2,7 +2,6 @@
 module Construqt
   module Flavour
     module Nixian
-#      @nixian_factory = {}
 
       class DialectFactory
         attr_reader :dialect
@@ -23,13 +22,21 @@ module Construqt
           cfg['host'].flavour.flavour.dialect.clazz(cfg['clazz']).new(cfg)
         end
 
-        def vagrant_factory(host)
-          @dialect.vagrant_factory(host)
+        def add_host_services(srvs)
+          @dialect.add_host_services(srvs)
         end
 
-        def ipsec
-          @dialect.ipsec
+        def add_interface_services(srvs)
+          @dialect.add_interface_services(srvs)
         end
+
+        def services_factory
+          @dialect.services_factory
+        end
+
+        #def ipsec
+        #  @dialect.ipsec
+        #end
 
         def bgp
           @dialect.bgp
@@ -50,6 +57,11 @@ module Construqt
       end
 
       class Factory < Construqt::Flavour::DialectFactoryBase
+        def initialize
+          super
+          Construqt::Flavour::Nixian::Services.register(services_factory)
+        end
+
         def name
           "nixian"
         end

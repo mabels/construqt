@@ -1,13 +1,18 @@
+require_relative 'base_device'
 module Construqt
   module Flavour
     module Nixian
       module Dialect
         module Ubuntu
 
-          class Tunnel < OpenStruct
+          class Tunnel
+            include BaseDevice
             include Construqt::Cables::Plugin::Single
+            attr_reader :interfaces, :tunnel
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
+              @interfaces = cfg['interfaces']
+              @tunnel = cfg['tunnel']
             end
 
             def kind
@@ -40,14 +45,14 @@ module Construqt
               # local_ifaces[local_iface.name].inames << iname
               # binding.pry if iface.host.name == "fanout-de"
 
-              writer = host.result.etc_network_interfaces.get(iface)
+              # writer = host.result.etc_network_interfaces.get(iface)
               #writer.skip_interfaces.header.interface_name(iname)
               local = cfg.my.first_by_family(cfg.transport_family).to_s
               remote = cfg.other.first_by_family(cfg.transport_family).to_s
               throw "there must be a local or remote address" if local.nil? or remote.nil?
-              writer.lines.up("ip -#{cfg.prefix} tunnel add #{iface.name} mode #{cfg.mode} local #{local} remote #{remote}")
-              #Device.build_config(host, gre, node, iname, cfg.family, cfg.mtu)
-              writer.lines.down("ip -#{cfg.prefix} tunnel del #{iface.name}")
+
+              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
+              up_downer.add(iface, Tastes::Entities::Tunnel.new(cfg, local, remote))
 
               Device.build_config(host, iface, node)
 

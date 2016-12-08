@@ -92,9 +92,9 @@ module Construqt
       end
 
       #binding.pry
-      hosts.values.each do |host|
-        host.flavour.ipsec.header(host) if host.flavour.ipsec.respond_to?(:header)
-      end
+      #hosts.values.each do |host|
+      #  host.flavour.ipsec.header(host) if host.flavour.ipsec.respond_to?(:header)
+      #end
 
       IPSECS.each do |name, ipsec|
         ipsec.build_config(hosts_to_process)

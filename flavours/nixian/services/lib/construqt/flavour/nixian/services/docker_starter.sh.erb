@@ -1,0 +1,6 @@
+#!/bin/sh
+hostname <%= host.name %>
+echo Starting Network on $(hostname)
+/bin/sh /etc/network/network-up.sh
+echo Starting Application on $(hostname)
+exec /bin/sh /etc/network/application-up.sh

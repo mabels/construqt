@@ -1,24 +1,37 @@
 
 require 'construqt/flavour/nixian.rb'
 
+require 'construqt/flavours/nixian/tastes/entities.rb'
+require 'construqt/flavours/nixian/tastes/systemd.rb'
+#require 'construqt/flavours/nixian/tastes/flat.rb'
+require 'construqt/flavours/nixian/tastes/debian.rb'
+require 'construqt/flavours/nixian/tastes/file.rb'
+
 require_relative 'ubuntu/dns.rb'
-require_relative 'ubuntu/ipsec/racoon.rb'
-require_relative 'ubuntu/ipsec/strongswan.rb'
+# require_relative 'ubuntu/ipsec/racoon.rb'
+# require_relative 'ubuntu/ipsec/strongswan.rb'
 require_relative 'ubuntu/bgp.rb'
+require_relative 'ubuntu/ipsec.rb'
 require_relative 'ubuntu/opvn.rb'
 require_relative 'ubuntu/vrrp.rb'
-require_relative 'ubuntu/firewall.rb'
+#require_relative 'ubuntu/firewall.rb'
 require_relative 'ubuntu/container.rb'
-require_relative 'ubuntu/lxc.rb'
-require_relative 'ubuntu/docker.rb'
-require_relative 'ubuntu/result.rb'
+# require_relative 'ubuntu/result/up_downer.rb'
+#require_relative 'ubuntu/result.rb'
 
-require_relative 'ubuntu/services/conntrack_d.rb'
-require_relative 'ubuntu/services/dhcp_v4_relay.rb'
-require_relative 'ubuntu/services/dhcp_v6_relay.rb'
-require_relative 'ubuntu/services/null.rb'
-require_relative 'ubuntu/services/radvd.rb'
-require_relative 'ubuntu/services/route_service.rb'
+# require_relative 'ubuntu/services/conntrack_d.rb'
+# require_relative 'ubuntu/services/dns_masq.rb'
+# require_relative 'ubuntu/services/dhcp_client.rb'
+# require_relative 'ubuntu/services/dhcp_v4_relay.rb'
+# require_relative 'ubuntu/services/dhcp_v6_relay.rb'
+# require_relative 'ubuntu/services/null.rb'
+# require_relative 'ubuntu/services/radvd.rb'
+# require_relative 'ubuntu/services/route_service.rb'
+# require_relative 'ubuntu/services/vagrant.rb'
+# require_relative 'ubuntu/services/docker.rb'
+require_relative 'ubuntu/services/vagrant_impl.rb'
+require_relative 'ubuntu/services/deployer_sh.rb'
+#require_relative 'ubuntu/services/result_factory.rb'
 
 require_relative 'ubuntu/bond.rb'
 require_relative 'ubuntu/bridge.rb'
@@ -31,7 +44,6 @@ require_relative 'ubuntu/vlan.rb'
 require_relative 'ubuntu/wlan.rb'
 require_relative 'ubuntu/systemd.rb'
 require_relative 'ubuntu/tunnel.rb'
-require_relative 'ubuntu/vagrant_file.rb'
 
 module Construqt
   module Flavour
@@ -44,26 +56,59 @@ module Construqt
             def name
               "ubuntu"
             end
-            def produce(cfg)
-              Dialect.new
+            def produce(parent, cfg)
+              Dialect.new(parent, cfg)
             end
           end
 
           class Dialect
+            attr_reader :services_factory
+            def initialize(factory, cfg)
+              @factory = factory
+              @cfg = cfg
+              @services_factory = factory.services_factory.shadow()
+              #@services_factory.add(Services::ResultFactory.new(@services_factory))
+              @services_factory.add(Ubuntu::Services::DeployerShFactory.new)
+              @services_factory.add(Services::VagrantFactory.new)
+            end
+
             def name
               'ubuntu'
             end
 
-            #        def self.flavour_name
-            #          'ubuntu'
-            #        end
-
-            #Construqt::Flavour::Nixian.add(self)
-
-
-            def ipsec
-              Ipsec::StrongSwan
+            def add_host_services(srvs)
+              @services_factory.merge(srvs, [
+                      Construqt::Flavour::Nixian::Services::Result::Service.new,
+                      Construqt::Flavour::Nixian::Services::UpDowner::Service.new
+                        .taste(Tastes::Systemd::Factory.new)
+                        .taste(Tastes::Debian::Factory.new)
+                        .taste(Tastes::File::Factory.new),
+                      Construqt::Flavour::Nixian::Services::Lxc::Service.new,
+                      Construqt::Flavour::Nixian::Services::Docker::Service.new,
+                      Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
+                      Construqt::Flavour::Nixian::Services::Ssh::Service.new,
+                      Construqt::Flavour::Nixian::Services::IpTables::Service.new,
+                      Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
+                      Construqt::Flavour::Nixian::Services::EtcSystemdNetwork::Service.new,
+                      Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
+                      Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::Service.new,
+                      Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::Service.new,
+                      Construqt::Flavour::Nixian::Services::EtcNetworkApplicationUd::Service.new,
+                      Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::DeployerSh.new
+                    ])
             end
+
+            def add_interface_services(srvs)
+              @services_factory.merge(srvs, [
+                Construqt::Flavour::Nixian::Services::IpProxyNeigh::Service.new(),
+                Construqt::Flavour::Nixian::Services::DnsMasq::Service.new(),
+                Construqt::Flavour::Nixian::Services::DhcpClient::Service.new()
+              ])
+            end
+
+            # def ipsec
+            #   Ipsec::StrongSwan
+            # end
 
             def bgp
               Bgp
@@ -98,8 +143,12 @@ module Construqt
             def create_host(name, cfg)
               cfg['name'] = name
               cfg['result'] = nil
+              cfg['dialect'] = self
               host = Host.new(cfg)
-              host.result = Result.new(host)
+              #host.result = Result.new(host, up_downer)
+              # host.flavour.services.each do |srv|
+              #   up_downer.request_tastes_from(srv)
+              # end
               host
             end
 
@@ -112,12 +161,15 @@ module Construqt
               Bgp.new(cfg)
             end
 
-            def vagrant_factory(host, ohost)
-              VagrantFile.new(host, ohost)
-            end
+            # def vagrant_factory(host, ohost)
+            #   Services::VagrantFile.new(host, ohost)
+            # end
 
             def create_ipsec(cfg)
-              Ipsec::StrongSwan.new(cfg)
+              # Ipsec::StrongSwan.new(cfg)
+              ret = Ipsec.new(cfg)
+              # cfg['host'].services.add(ret)
+              ret
             end
           end
         end

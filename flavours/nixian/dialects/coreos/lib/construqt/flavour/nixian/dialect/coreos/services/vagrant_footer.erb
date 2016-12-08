@@ -1,0 +1,7 @@
+#coreos footer
+
+  config.vm.provision :file, :source => "../../../../coreos-cloud-config",
+      :destination => "/tmp/coreos-cloud-config"
+  config.vm.provision :shell, :inline => "coreos-cloudinit --from-file /tmp/coreos-cloud-config", :privileged => true
+
+end

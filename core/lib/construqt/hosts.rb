@@ -1,6 +1,6 @@
-require_relative 'hosts/docker.rb'
-require_relative 'hosts/lxc.rb'
-require_relative 'hosts/vagrant.rb'
+# require_relative 'hosts/docker.rb'
+# require_relative 'hosts/lxc.rb'
+# require_relative 'hosts/vagrant.rb'
 module Construqt
 
   class Hosts
@@ -62,9 +62,10 @@ module Construqt
       cfg['dns_server'] ||= false
       cfg['result'] = nil
       cfg['shadow'] ||= nil
-      cfg['flavour'] = @region.flavour_factory.produce(cfg)
+      flavour = cfg['flavour'] = @region.flavour_factory.produce(cfg)
       #		cfg['clazz'] = cfg['flavour'].clazz("host")
       throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
+      cfg['services'] = Services.create(flavour.add_host_services(cfg['services']))
       cfg['region'] = @region
       host = cfg['flavour'].create_host(name, cfg)
       block.call(host)
@@ -88,12 +89,14 @@ module Construqt
       end
 
       @hosts[name] = host
-      host.interfaces.values.map{ |i| i.services }.flatten.sort{|a,b| a.name <=> a.name}.uniq.each do |srv|
-      #host.region.services.services.values.each do |srv|
-        if srv.respond_to?(:completed_host)
-          srv.completed_host(host)
-        end
-      end
+      #Services.all(host.services, host.interfaces.values.map do |i|
+      #  binding.pry unless i
+      #  i.services
+      #end) do |srv|
+      #  if srv.respond_to?(:completed_host)
+      #    srv.completed_host(host)
+      #  end
+      #end
       host
     end
 
@@ -116,21 +119,35 @@ module Construqt
       @graphs[id]
     end
 
-    def build_config(hosts = nil)
+    def build_config(srv_res, hosts = nil)
       #(hosts || @hosts.values).each do |host|
       #  host.build_config(host, nil)
       #end
       host_graph(hosts).flat.flatten.each do |hnode|
         # binding.pry
+        srv_res.fire_host_construction_order(hnode.ref, :build_config_host)
         hnode.ref.build_config(hnode.ref, hnode.ref, hnode)
       end
     end
 
-    def commit(hosts = nil)
+    def post_interfaces(srv_res, hosts = nil)
+      #(hosts || @hosts.values).each do |host|
+      #  host.build_config(host, nil)
+      #end
+      host_graph(hosts).flat.flatten.each do |hnode|
+        # binding.pry
+        srv_res.fire_host_construction_order(hnode.ref, :post_interfaces)
+        hnode.ref.respond_to?(:post_interfaces) && hnode.ref.post_interfaces(hnode.ref, hnode.ref, hnode)
+      end
+    end
+
+
+    def commit(srv_res, hosts = nil)
       regions = {}
       host_graph(hosts || @hosts.values).flat.each do |hnodes|
         hnodes.reverse.each do |hnode|
           next unless hnode.ref.region
+          srv_res.fire_host_destruction_order(hnode.ref, :commit)
           hnode.ref.commit
           regions[hnode.ref.region.object_id] = hnode.ref.region
         end

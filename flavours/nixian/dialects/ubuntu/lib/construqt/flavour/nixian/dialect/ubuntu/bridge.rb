@@ -1,3 +1,5 @@
+require_relative 'base_device'
+
 module Construqt
   module Flavour
     module Nixian
@@ -5,19 +7,18 @@ module Construqt
         module Ubuntu
 
 
-          class Bridge < OpenStruct
+          class Bridge
+            include BaseDevice
             include Construqt::Cables::Plugin::Multiple
+            attr_reader :interfaces
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
+              @interfaces = cfg['interfaces']
             end
 
-            def up_member(iface)
-              ["brctl addif #{self.name} #{iface.name}"]
-            end
-
-            def down_member(iface)
-              ["brctl delif #{self.name} #{iface.name}"]
-            end
+            #def up_down_member(iface)
+            #  [Tastes::Entities::BridgeMember.new(self.name, iface.name)]
+            #end
 
             # def belongs_to
             #   return [self.host] if self.interfaces.empty? # and self.cable.connections.empty?
@@ -35,11 +36,8 @@ module Construqt
               #   port_list = iface.interfaces.map { |i| i.name }.join(" ")
               #   host.result.etc_network_interfaces.get(iface).lines.add("bridge_ports #{port_list}")
               # else
-              host.result.etc_network_interfaces.get(iface).lines.add("bridge_ports none", 0)
-              iface.on_iface_up_down do |writer, ifname|
-                writer.lines.up("brctl addbr #{ifname}")
-                writer.lines.down("brctl delbr #{ifname}")
-              end
+              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
+              up_downer.add(iface, Tastes::Entities::Bridge.new(iface.name))
               Device.build_config(host, iface, node)
             end
           end

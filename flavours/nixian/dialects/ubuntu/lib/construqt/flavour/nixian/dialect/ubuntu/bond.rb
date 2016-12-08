@@ -1,13 +1,15 @@
+require_relative 'base_device'
 module Construqt
   module Flavour
     module Nixian
       module Dialect
         module Ubuntu
 
-          class Bond < OpenStruct
+          class Bond #< OpenStruct
+            include BaseDevice
             include Construqt::Cables::Plugin::Single
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
             end
 
             def build_config(host, bond)

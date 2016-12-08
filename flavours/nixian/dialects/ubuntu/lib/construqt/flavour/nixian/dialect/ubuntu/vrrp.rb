@@ -1,13 +1,15 @@
+require_relative 'base_device'
 module Construqt
   module Flavour
     module Nixian
       module Dialect
         module Ubuntu
 
-          class Vrrp < OpenStruct
+          class Vrrp
+            include BaseDevice
             include Construqt::Cables::Plugin::Multiple
             def initialize(cfg)
-              super(cfg)
+              base_device(cfg)
             end
 
             def self.header(host)
@@ -16,13 +18,6 @@ module Construqt
                 Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::VRRP), "etc", "keepalived", "keepalived.conf")
             end
 
-            class RouteService
-              attr_accessor :name, :rt
-              def initialize(name, rt)
-                self.name = name
-                self.rt = rt
-              end
-            end
 
             def build_config(host, iface)
               iface = iface.delegate

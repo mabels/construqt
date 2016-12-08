@@ -5,8 +5,8 @@ module MamWl
 
   def self.add_sms2mail(region, mam_wl_rt)
     region.hosts.add('sms2mail', "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mam_wl_rt,
-                                       "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined
-      .restart.killstop.release("xenial")) do |host|
+                     "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new.aa_profile_unconfined
+      .restart.killstop.release("xenial")]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -16,13 +16,13 @@ module MamWl
                                                       'address' => region.network.addresses.add_ip("192.168.0.57/24")
           .add_route("0.0.0.0/0", "192.168.0.1"))
       end
+
       region.interfaces.add_device(host, "lte", "mtu" => 1500,
-                                                 "plug_in" => Construqt::Cables::Plugin.new.iface(mam_wl_rt.interfaces.find_by_name("brlte")),
-                                                 'address' => region.network.addresses
+                                   "plug_in" => Construqt::Cables::Plugin.new.iface(mam_wl_rt.interfaces.find_by_name("brlte")),
+                                   'address' => region.network.addresses
         .add_ip("192.168.8.57/24"))
     end
   end
-
 
   def self.mam_ipsec_connection(region, left, right, fw_suffix, vlan, fws = [])
     Construqt::Ipsecs.connection("#{left.name}<=>#{right.name}",
@@ -80,17 +80,6 @@ module MamWl
       end
 
     }
-  end
-
-  class Aiccu
-    include Construqt::Util::Chainable
-    attr_reader :name
-    attr_accessor :services
-    chainable_attr :username
-    chainable_attr :password
-    def initialize(name)
-      @name = name
-    end
   end
 
   def self.setup_vlan_templates(region)
@@ -163,9 +152,6 @@ module MamWl
 
     mam_wl_switches(region)
 
-    region.services.add(
-      Aiccu.new("AICCU").username(AICCU_DE["username"]).password(AICCU_DE["password"])
-    )
     region.resources.add_file(<<MODULES, Construqt::Resources::Rights::root_0644, "odroid.modules", "etc", "modules")
 loop
 lp
@@ -188,6 +174,7 @@ ip6_tables
 bonding
 8021q
 MODULES
+
     mal_wl_printer = region.hosts.add("wl-printer", "flavour" => "unknown") do |printer|
       printer.id = printer.configip = Construqt::HostId.create do |my|
         my.interfaces << eth = region.interfaces.add_device(printer, "eth", "mtu" => 1500,
@@ -278,9 +265,10 @@ MODULES
                                      { :name => "rt-mam-wl-de-6", :fws => ['net-nat', "net-forward"], :services => [], :block => 203, :action => lambda do |aiccu, internal_if|
                                        region.interfaces.add_device(aiccu, "sixxs", "mtu" => "1280",
                                                                     "dynamic" => true,
+                                                                    "services" => [Aiccu.new("AICCU").username(AICCU_DE["username"]).password(AICCU_DE["password"])],
                                                                     "firewalls" => [ "fw-sixxs" ],
                                                                     "address" => region.network.addresses.add_ip("2001:6f8:900:2bf::2/64"))
-                                       internal_if.services.push(region.services.find("RADVD"))
+                                       internal_if.services.add(Construqt::Flavour::Nixian::Services::Radvd::Service.new("RADVD").adv_autonomous)
                                        internal_if.address.ips = internal_if.address.ips.select{|i| i.ipv4? }
                                        internal_if.address.add_ip("2001:6f8:900:82bf:#{internal_if.address.first_ipv4.to_s.split(".").join(":")}/64")
                                      end
@@ -310,8 +298,8 @@ MODULES
                                        end
 
                                        rts[net[:name]] = region.hosts.add(net[:name], "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mam_wl_rt,
-                                                                          "lxc_deploy" => Construqt::Hosts::Lxc.new.aa_profile_unconfined
-                                         .restart.killstop.release("xenial")) do |host|
+                                                                          "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new.aa_profile_unconfined
+                                         .restart.killstop.release("xenial")]) do |host|
                                          region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                                                       :description=>"#{host.name} lo",
                                                                       "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
