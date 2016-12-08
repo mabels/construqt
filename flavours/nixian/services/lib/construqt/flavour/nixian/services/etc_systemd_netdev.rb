@@ -104,6 +104,7 @@ module Construqt
                 .service_type(Service)
                 .result_type(OncePerHost)
                 .depend(Result::Service)
+                .depend(UpDowner::Service)
             end
 
             def produce(host, srv_inst, ret)

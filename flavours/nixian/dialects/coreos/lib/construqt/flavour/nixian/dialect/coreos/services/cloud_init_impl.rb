@@ -73,9 +73,8 @@ module Construqt
                     end
                   end
 
-                  text = block.flatten.select { |i| !(i.nil? || i.strip.empty?) }.join("\n")
-                  unless text.empty?
-                    Util.write_str(host.region, text, host.name, fname)
+                  unless block.text_empty?
+                    Util.write_str(host.region, block.text, host.name, fname)
                   end
 
                   return if block.right.component == Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd
@@ -84,7 +83,7 @@ module Construqt
                     "permissions"=> block.right.right,
                     "owner"=> block.right.owner,
                     "encoding" => "base64",
-                    "content"=> Base64.encode64(text)
+                    "content"=> Base64.encode64(block.text)
                   })
                 end
 

@@ -44,7 +44,9 @@ module Construqt
                 self.right = right
                 self.clazz = clazz
                 @lines = []
+                @cache = nil
               end
+
 
               def empty?
                 @lines.empty?
@@ -59,11 +61,16 @@ module Construqt
               end
 
               def add(str)
+                @cache = nil
                 @lines.push(str)
               end
 
-              def flatten
-                @lines.flatten
+              def text
+                @cache ||= @lines.flatten.select { |i| !(i.nil? || i.strip.empty?) }.join("\n")
+              end
+
+              def text_empty?
+                text.strip.empty?
               end
             end
 
@@ -98,36 +105,27 @@ module Construqt
               replaced
             end
 
-            def directory_mode(mode)
-              mode = mode.to_i(8)
-              0 != (mode & 0o6) && (mode = (mode | 0o1))
-              0 != (mode & 0o60) && (mode = (mode | 0o10))
-              0 != (mode & 0o600) && (mode = (mode | 0o100))
-              "0#{mode.to_s(8)}"
-            end
 
-            def write_file(host, fname, block)
+            def write_file(pw, host, fname, block)
               if host.files
                 return [] if host.files.find do |file|
                   file.path == fname && file.is_a?(Construqt::Resources::SkipFile)
                 end
               end
-
-              text = block.flatten.select { |i| !(i.nil? || i.strip.empty?) }.join("\n")
-              return [] if text.strip.empty?
-              Util.write_str(host.region, text, host.name, fname)
-              gzip_fname = Util.write_gzip(host.region, text, host.name, fname)
-              # puts fname
-              [
-                File.dirname("/#{fname}").split('/')[1..-1].inject(['']) do |res, part|
-                  res << File.join(res.last, part); res
-                end.select { |i| !i.empty? }.map do |i|
-                  "[ ! -d #{i} ] && mkdir #{i} && chown #{block.right.owner} #{i} && chmod #{directory_mode(block.right.right)} #{i}"
-                end,
-                "import_fname #{fname}",
-                'base64 -d <<BASE64 | gunzip > $IMPORT_FNAME', Base64.encode64(IO.read(gzip_fname)).chomp, 'BASE64',
-                "git_add #{['/' + fname, block.right.owner, block.right.right, block.skip_git?].map { |i| '"' + Shellwords.escape(i) + '"' }.join(' ')}"
-              ]
+              return [] if block.text_empty?
+              pw.write_str(host.region, block.text, host.name, fname)
+              # gzip_fname = Util.write_gzip(host.region, text, host.name, fname)
+                # puts fname
+              # [
+              #   File.dirname("/#{fname}").split('/')[1..-1].inject(['']) do |res, part|
+              #     res << File.join(res.last, part); res
+              #   end.select { |i| !i.empty? }.map do |i|
+              #     "[ ! -d #{i} ] && mkdir #{i} && chown #{block.right.owner} #{i} && chmod #{directory_mode(block.right.right)} #{i}"
+              #   end,
+              #   "import_fname #{fname}",
+              #   'base64 -d <<BASE64 | gunzip > $IMPORT_FNAME', Base64.encode64(IO.read(gzip_fname)).chomp, 'BASE64',
+              #   "git_add #{['/' + fname, block.right.owner, block.right.right, block.skip_git?].map { |i| '"' + Shellwords.escape(i) + '"' }.join(' ')}"
+              # ]
             end
 
             def commit
@@ -136,22 +134,22 @@ module Construqt
               # etc_network_neigh.commit(self)
               #ipsec_secret.commit
               #ipsec_cert_store.commit
-
-              binding.pry if @host.name == "fanout-de"
-              @results.each do |fname, block|
-                if !block.clazz.respond_to?(:belongs_to_mother?) ||
-                    block.clazz.belongs_to_mother?
-                  write_file(host, fname, block)
+              # Util.progress_writer do |pw|
+                #binding.pry if @host.name == "fanout-de"
+                @results.each do |fname, block|
+                  if !block.clazz.respond_to?(:belongs_to_mother?) ||
+                      block.clazz.belongs_to_mother?
+                    write_file(Util, host, fname, block)
+                  end
                 end
-              end
 
-              @results.each do |fname, block|
-                if block.clazz.respond_to?(:belongs_to_mother?) &&
-                    !block.clazz.belongs_to_mother?
-                  write_file(host, fname, block)
+                @results.each do |fname, block|
+                  if block.clazz.respond_to?(:belongs_to_mother?) &&
+                      !block.clazz.belongs_to_mother?
+                    write_file(Util, host, fname, block)
+                  end
                 end
-              end
-
+              # end
               #binding.pry if host.name == "fanout-de"
               #@ipsec_secret.commit
             end

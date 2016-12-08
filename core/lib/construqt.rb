@@ -40,6 +40,7 @@ module Construqt
 
   # ugly but i need the logger during initialization
   require_relative 'construqt/util.rb'
+  require_relative 'construqt/service_machine.rb'
   require_relative 'construqt/services_factory.rb'
   require_relative 'construqt/registry.rb'
   require_relative 'construqt/registries/ripe.rb'

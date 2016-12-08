@@ -23,6 +23,7 @@ module Construqt
 
             end
 
+
             class DeployerShAction
 
               attr_reader :host
@@ -51,9 +52,23 @@ module Construqt
                 ["[ -f /usr/share/zoneinfo/#{zone} ] && cp /usr/share/zoneinfo/#{zone} /etc/localtime"]
               end
 
+              def write(host, fname, block)
+                return [] if block.text_empty?
+                gzip_fname = Util.write_gzip(host.region, block.text, host.name, fname)
+                [
+                  File.dirname("/#{fname}").split('/')[1..-1].inject(['']) do |res, part|
+                    res << File.join(res.last, part); res
+                  end.select { |i| !i.empty? }.map do |i|
+                    "[ ! -d #{i} ] && mkdir #{i} && chown #{block.right.owner} #{i} && chmod #{block.right.directory_mode} #{i}"
+                  end,
+                  "import_fname #{fname}",
+                  'base64 -d <<BASE64 | gunzip > $IMPORT_FNAME', Base64.encode64(IO.read(gzip_fname)).chomp, 'BASE64',
+                  "git_add #{['/' + fname, block.right.owner, block.right.right, block.skip_git?].map { |i| '"' + Shellwords.escape(i) + '"' }.join(' ')}"
+                ]
+              end
 
               def commit # (host, service)
-                # binding.pry
+                #binding.pry if @host.name == "dns-1"
                 #Lxc.write_deployers(@host)
                 #Docker.write_deployers(@host)
                 out = [
@@ -94,14 +109,14 @@ module Construqt
                 result.results.each do |fname, block|
                   if !block.clazz.respond_to?(:belongs_to_mother?) ||
                       block.clazz.belongs_to_mother?
-                    out += result.write_file(host.delegate, fname, block)
+                    out += write(host.delegate, fname, block)
                   end
                 end
 
                 out << 'fi'
                 result.results.each do |fname, block|
                   if block.clazz.respond_to?(:belongs_to_mother?) && !block.clazz.belongs_to_mother?
-                    out += result.write_file(host.delegate, fname, block)
+                    out += write(host.delegate, fname, block)
                   end
                 end
 

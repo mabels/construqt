@@ -28,6 +28,7 @@ module Construqt
               @machine ||= service_factory.machine
                 .service_type(Service)
                 .depend(Result::Service)
+                .depend(UpDowner::Service)
             end
 
             def produce(host, srv_inst, ret)

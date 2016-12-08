@@ -86,11 +86,28 @@ module Construqt
       path
     end
 
+    def self.output(path)
+      @slash_pos ||= 0
+      @last_path_length ||= 0
+      @dots_str ||= "........"
+      @slash_pos = @slash_pos % @dots_str.length
+      dots = "[#{@dots_str[0..@slash_pos]}#{@slash_pos%2 == 0 ? "/" : "\\"}#{@dots_str[@slash_pos..-1]}] => "
+      out = "#{dots}#{path}"
+      ret = ""
+      if @last_path_length > out.length
+        rest = Array.new(@last_path_length-out.length, " ").join("")
+      end
+      print "#{out}#{rest}\r"
+      @slash_pos += 1
+      @last_path_length = out.length
+    end
+
     def self.write_str(region, str, *path)
       path = File.join(dst_path(region), *path)
       FileUtils.mkdir_p(File.dirname(path))
       File.open(path, 'w') {|f| f.write(str) }
-      Construqt.logger.info "Write:#{path}"
+      # Construqt.logger.info "Write:#{path}"
+      output(path)
       return str
     end
 

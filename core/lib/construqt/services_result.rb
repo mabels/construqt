@@ -226,7 +226,7 @@ module Construqt
         out += v.dependcy_list(visited)
       end
       out.reverse!
-      # binding.pry
+      # binding.pry if @host.name == "dns-1"
       out
     end
 
@@ -238,8 +238,6 @@ module Construqt
         service_instance.result_types.each do |rt|
           rt_lambda.call(rt)
         end
-      end
-      sdo.each do |service_instance|
         service_instance.service_producers.each do |sp|
           sp_lambda.call(sp)
         end
@@ -253,8 +251,6 @@ module Construqt
         service_instance.service_producers.each do |sp|
           sp_lambda.call(sp)
         end
-      end
-      sdo.each do |service_instance|
         service_instance.result_types.each do |rt|
           rt_lambda.call(rt)
         end

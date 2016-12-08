@@ -51,6 +51,7 @@ module Construqt
 
           class OncePerHost
             # attr_reader :result_types
+            attr_reader :host
             def initialize # (result_types, host)
               #@result_types = result_types
               #@host = host
@@ -65,9 +66,9 @@ module Construqt
               end
             end
 
-            #def attach_host(host)
-            #  @host = host
-            #end
+            def attach_host(host)
+             @host = host
+            end
 
             #def attach_interface(interface)
             #  @interface = interface

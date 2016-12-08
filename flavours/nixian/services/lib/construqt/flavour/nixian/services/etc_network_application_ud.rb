@@ -14,6 +14,10 @@ module Construqt
               @downs = []
             end
 
+            def attach_host(host)
+              @host = host
+            end
+
             def activate(context)
               @context = context
             end
@@ -29,6 +33,7 @@ module Construqt
             def commit
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               if ups.length > 0
+                #binding.pry if @host.name == "dns-1"
                 blocks = ups
                 result.add(IpProxyNeigh, Construqt::Util.render(binding, "interfaces_sh_envelop.erb"),
                            Construqt::Resources::Rights.root_0755,
@@ -51,6 +56,7 @@ module Construqt
                 .service_type(Service)
                 .result_type(OncePerHost)
                 .depend(Result::Service)
+                .depend(UpDowner::Service)
             end
 
             def produce(host, srv_inst, ret)

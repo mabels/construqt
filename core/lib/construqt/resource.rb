@@ -20,15 +20,35 @@ module Construqt
       DNSMASQ = :dnsmasq
       WIRELESS = :wireless
     end
+    class Right
+      attr_reader :owner, :right, :component
+      def initialize(owner, right, component)
+        @owner = owner
+        @right = right
+        @component = component
+      end
+      def directory_mode
+        mode = @right
+        mode = mode.to_i(8)
+        0 != (mode & 0o6) && (mode = (mode | 0o1))
+        0 != (mode & 0o60) && (mode = (mode | 0o10))
+        0 != (mode & 0o600) && (mode = (mode | 0o100))
+        "0#{mode.to_s(8)}"
+      end
+    end
+
     module Rights
+      def self.create(owner, right, component = Component::UNREF)
+        Right.new(owner, right, component)
+      end
       def self.root_0600(component = Component::UNREF)
-        OpenStruct.new :right => "0600", :owner => 'root', :component => component
+        Right.new('root', '0600', component)
       end
       def self.root_0644(component = Component::UNREF)
-        OpenStruct.new :right => "0644", :owner => 'root', :component => component
+        Right.new('root', '0644', component)
       end
       def self.root_0755(component = Component::UNREF)
-        OpenStruct.new :right => "0755", :owner => 'root', :component => component
+        Right.new('root', '0755', component)
       end
     end
 
