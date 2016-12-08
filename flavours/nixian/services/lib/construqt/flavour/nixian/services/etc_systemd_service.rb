@@ -31,6 +31,7 @@ module Construqt
               @requires = []
               @conflicts = []
               @wanted_bys = []
+              @restarts = []
               #@default_dependencies = ['no']
               @alsos = []
               @wantses = []
@@ -71,6 +72,15 @@ module Construqt
 
             def get_wantses(a)
               @wantes
+            end
+
+            def restart(a)
+              @restarts << a
+              self
+            end
+
+            def get_restarts(a)
+              @restarts
             end
 
             def environment(a)
