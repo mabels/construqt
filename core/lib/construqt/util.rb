@@ -312,7 +312,12 @@ module Construqt
       context = _binding.eval("self")
       directories = template_directories(context)
       template = TEMPLATE_CACHE[(directories+[fname]).join(":")] ||= read_template(context, fname, directories)
-      ERB.new(template, nil, '-').result(_binding)
+      begin
+        ERB.new(template, nil, '-').result(_binding)
+      rescue Exception => e
+        #e.message = "in file #{fname}:[#{e.message}]"
+        raise $!, "in file #{fname}:[#{e.message}]", $!.backtrace
+      end
     end
   end
 end
