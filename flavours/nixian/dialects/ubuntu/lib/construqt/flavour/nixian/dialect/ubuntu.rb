@@ -78,24 +78,25 @@ module Construqt
 
             def add_host_services(srvs)
               @services_factory.merge(srvs, [
-                      Construqt::Flavour::Nixian::Services::Result::Service.new,
-                      Construqt::Flavour::Nixian::Services::UpDowner::Service.new
-                        .taste(Tastes::Systemd::Factory.new)
-                        .taste(Tastes::Debian::Factory.new)
-                        .taste(Tastes::File::Factory.new),
-                      Construqt::Flavour::Nixian::Services::Lxc::Service.new,
-                      Construqt::Flavour::Nixian::Services::Docker::Service.new,
-                      Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
-                      Construqt::Flavour::Nixian::Services::Ssh::Service.new,
-                      Construqt::Flavour::Nixian::Services::IpTables::Service.new,
-                      Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
-                      Construqt::Flavour::Nixian::Services::EtcSystemdNetwork::Service.new,
-                      Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
-                      Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::Service.new,
-                      Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::Service.new,
-                      Construqt::Flavour::Nixian::Services::EtcNetworkApplicationUd::Service.new,
-                      Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::DeployerSh.new
-                    ])
+                Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::PackagerService.create,
+                Construqt::Flavour::Nixian::Services::Result::Service.new,
+                Construqt::Flavour::Nixian::Services::UpDowner::Service.new
+                  .taste(Tastes::Systemd::Factory.new)
+                  .taste(Tastes::Debian::Factory.new)
+                  .taste(Tastes::File::Factory.new),
+                Construqt::Flavour::Nixian::Services::Lxc::Service.new,
+                Construqt::Flavour::Nixian::Services::Docker::Service.new,
+                Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
+                Construqt::Flavour::Nixian::Services::Ssh::Service.new,
+                Construqt::Flavour::Nixian::Services::IpTables::Service.new,
+                Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
+                Construqt::Flavour::Nixian::Services::EtcSystemdNetwork::Service.new,
+                Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
+                Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::Service.new,
+                Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::Service.new,
+                Construqt::Flavour::Nixian::Services::EtcNetworkApplicationUd::Service.new,
+                Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::DeployerSh.new
+              ])
             end
 
             def add_interface_services(srvs)

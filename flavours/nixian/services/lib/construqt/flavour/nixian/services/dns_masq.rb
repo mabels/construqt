@@ -4,6 +4,7 @@ module Construqt
       module Services
         module DnsMasq
           class Service
+
           end
 
           class Action
@@ -19,6 +20,21 @@ module Construqt
               host.result.etc_network_vrrp(vrrp.name).add_master(up(ifname, inbounds, upstreams))
                 .add_backup(down(ifname, inbounds, upstreams))
               host.result.add_component(Construqt::Resources::Component::DHCPRELAY)
+            end
+
+            def activate(context)
+              @context = context
+            end
+
+            def build_config_interface(iface)
+              iface.address.ips && iface.address.ips.each do |ip|
+                if ip.options && ip.options['dhcp']
+                  result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+                  result.add_component(Construqt::Resources::Component::DNSMASQ)
+                  up_downer = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
+                  up_downer.add(@host, Tastes::Entities::DnsMasq.new(iface, ip.options['dhcp']))
+                end
+              end
             end
           end
 

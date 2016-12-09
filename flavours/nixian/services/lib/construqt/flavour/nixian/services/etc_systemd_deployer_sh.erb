@@ -1,0 +1,15 @@
+
+for i in $(systemctl list-unit-files | grep '^construqt-' | awk '{print $1}' | \
+    grep \
+<% services.values.each do |srv| -%>
+     -e <%= srv.get_name %> \
+<% end -%>
+     -v)
+do
+  systemctl stop $i
+  systemctl disable $i
+done
+<% services.values.each do |srv| -%>
+systemctl enable <%= srv.get_name %>
+systemctl start <%= srv.get_name %>
+<% end -%>

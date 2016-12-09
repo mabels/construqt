@@ -9,6 +9,8 @@ require 'construqt/flavour/nixian/services'
 require_relative 'arch/services/cloud_init_impl.rb'
 require_relative 'arch/services/vagrant_impl.rb'
 require_relative 'arch/services/remote_deploy_sh.rb'
+require_relative 'arch/services/packager_service.rb'
+require_relative 'arch/services/deployer_sh_service.rb'
 
 module Construqt
   module Flavour
@@ -37,7 +39,6 @@ module Construqt
               @services_factory = factory.services_factory.shadow()
               @services_factory.add(Construqt::Flavour::Nixian::Services::ModulesConf::Factory.new)
               @services_factory.add(Services::RemoteDeploySh::Factory.new)
-              @services_factory.add(Services::CloudInit::Factory.new)
               @services_factory.add(Services::Vagrant::Factory.new)
             end
 
@@ -59,7 +60,8 @@ module Construqt
                        Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
                        Construqt::Flavour::Nixian::Dialect::Arch::Services::RemoteDeploySh::Service.new,
                        Construqt::Flavour::Nixian::Services::ModulesConf::Service.new,
-                       Construqt::Flavour::Nixian::Dialect::Arch::Services::CloudInit::Service.new])
+                       Construqt::Flavour::Nixian::Dialect::Arch::Services::PackagerService.create,
+                       Construqt::Flavour::Nixian::Dialect::Arch::Services::DeployerShService.create])
             end
 
             def add_interface_services(srvs)

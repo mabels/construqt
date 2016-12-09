@@ -1,7 +1,7 @@
-#coreos footer
+#archlinux footer
 
-  config.vm.provision :file, :source => "../../../../coreos-cloud-config",
-      :destination => "/tmp/coreos-cloud-config"
-  config.vm.provision :shell, :inline => "coreos-cloudinit --from-file /tmp/coreos-cloud-config", :privileged => true
+  config.vm.provision :file, :source => "../../../../deployer.sh",
+      :destination => "/tmp/deployer.sh"
+  config.vm.provision :shell, :inline => "/bin/sh /tmp/deployer.sh", :privileged => true
 
 end

@@ -41,8 +41,10 @@ module Construqt
 
             def post_interfaces
               # binding.pry
-              up_downer = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
-              up_downer.add(@host, Tastes::Entities::IpTables.new())
+              if !(@etc_network_iptables.commitv4.empty? && @etc_network_iptables.commitv6.empty?)
+                up_downer = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
+                up_downer.add(@host, Tastes::Entities::IpTables.new())
+              end
             end
           end
 

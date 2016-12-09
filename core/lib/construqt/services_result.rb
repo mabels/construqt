@@ -118,6 +118,7 @@ module Construqt
       # binding.pry
       unless @instance
         @instance = result_type.new
+        @instance.respond_to?(:attach_producer) && @instance.attach_producer(self)
         @instance.respond_to?(:attach_host) && @instance.attach_host(host)
         @instance.respond_to?(:attach_interface) && @instance.attach_interface(iface)
       end

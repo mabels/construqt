@@ -236,6 +236,13 @@ module Construqt
               services.values.each do |service|
                 service.commit(result)
               end
+              dsrv = @context.find_by_service_type(Construqt::Flavour::Nixian::Services::DeployerSh::Service)
+              action = lambda {
+                Util.render(binding, 'etc_systemd_deployer_sh.erb')
+              }
+              dsrv.service_producers.each do |i|
+                i.srv_inst.on_post_exec(action)
+              end
             end
           end
 
@@ -251,6 +258,7 @@ module Construqt
               @machine ||= service_factory.machine
                 .service_type(Service)
                 .result_type(OncePerHost)
+                .depend(DeployerSh::Service)
                 .depend(Result::Service)
                 .depend(UpDowner::Service)
             end

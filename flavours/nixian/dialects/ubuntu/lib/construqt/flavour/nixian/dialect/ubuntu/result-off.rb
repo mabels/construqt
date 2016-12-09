@@ -55,6 +55,7 @@ module Construqt
             end
 
             def self.create_package_builder(result)
+              binding.pry
               cps = Packages::Builder.new
               cp = Construqt::Resources::Component
               cps.register(cp::UNREF).add('language-pack-en').add('language-pack-de')

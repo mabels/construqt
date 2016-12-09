@@ -27,6 +27,8 @@ require_relative 'services/etc_systemd_netdev'
 require_relative 'services/etc_systemd_network'
 require_relative 'services/etc_systemd_service'
 require_relative 'services/modules_conf'
+require_relative 'services/packager'
+require_relative 'services/deployer_sh'
 
 module Construqt
   module Flavour
@@ -61,6 +63,8 @@ module Construqt
             EtcSystemdNetwork::Factory,
             EtcSystemdService::Factory,
             ModulesConf::Factory,
+            Packager::Factory,
+            DeployerSh::Factory,
           ].each do |clazz|
             services_factory.add(clazz.new)
           end

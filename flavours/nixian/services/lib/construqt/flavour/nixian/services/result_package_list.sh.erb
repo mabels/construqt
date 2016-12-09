@@ -1,0 +1,3 @@
+[ $(is_opt_set package_list) = found ] && \
+  echo <%= Util.sh_escape(packages.join(",")) %> && \
+  exit 0
