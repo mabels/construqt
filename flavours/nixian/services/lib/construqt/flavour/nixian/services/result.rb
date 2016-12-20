@@ -74,9 +74,17 @@ module Construqt
               end
             end
 
-            def add_component(component)
-              @results[component] ||= ArrayWithRightAndClazz.new(Construqt::Resources::Rights.root_0644(component), component.to_sym)
+            def create_array_with_right_and_clazz(right, clazz)
+              throw "not a right" unless right.kind_of?(Construqt::Resources::Right)
+              ret = ArrayWithRightAndClazz.new(right, clazz)
+              pbuilder = @context.find_instances_from_type(Packager::OncePerHost)
+              pbuilder.add_component(right.component)
+              ret
             end
+
+            # def add_component(component)
+            #   create_array_with_right_and_clazz(Construqt::Resources::Rights.root_0644(component), component.to_sym)
+            # end
 
             def empty?(name)
               !(@results[name])
@@ -87,7 +95,7 @@ module Construqt
               path = File.join(*path)
               throw "not a right #{path}" unless right.respond_to?('right') && right.respond_to?('owner')
               unless @results[path]
-                @results[path] = ArrayWithRightAndClazz.new(right, clazz)
+                @results[path] = create_array_with_right_and_clazz(right, clazz)
                 # binding.pry
                 # @results[path] << [clazz.xprefix(@host)].compact
               end
@@ -118,7 +126,7 @@ module Construqt
                 # puts fname
               # [
               #   File.dirname("/#{fname}").split('/')[1..-1].inject(['']) do |res, part|
-              #     res << File.join(res.last, part); res
+              #     res << file.join(res.last, part); res
               #   end.select { |i| !i.empty? }.map do |i|
               #     "[ ! -d #{i} ] && mkdir #{i} && chown #{block.right.owner} #{i} && chmod #{directory_mode(block.right.right)} #{i}"
               #   end,
@@ -165,6 +173,7 @@ module Construqt
               @machine ||= service_factory.machine
                 .service_type(Service)
                 .result_type(OncePerHost)
+                .require(Packages::Builder)
             end
 
             def produce(host, srv_inst, ret)

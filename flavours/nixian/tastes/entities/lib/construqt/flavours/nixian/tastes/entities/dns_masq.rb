@@ -12,13 +12,12 @@ module Construqt
               @cfg = cfg
             end
 
-            def start_cmd
-              [
+            def start_cmd(block = true)
+              ret = [
                  "dnsmasq",
                  "-u dnsmasq",
                  "--strict-order",
                  "--pid-file=/run/#{iface.name}-dnsmasq.pid",
-                 "--no-daemon",
                  "--conf-file=",
                  "--listen-address #{iface.address.first_ipv4}",
                  "--domain=#{cfg.get_domain}",
@@ -31,6 +30,10 @@ module Construqt
                  "--dhcp-leasefile=/var/lib/misc/dnsmasq.#{iface.name}.leases",
                  "--dhcp-authoritative"
                ]
+               if block
+                 ret.push "--no-daemon"
+               end
+               ret
              end
           end
           add(DnsMasq)

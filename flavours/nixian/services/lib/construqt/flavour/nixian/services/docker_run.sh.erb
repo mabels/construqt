@@ -13,7 +13,7 @@ fi
 
 docker_name=run_<%= host.name %>
 
-docker_tag=<%= host.name %>-<%= version %>
+docker_tag=<%= host.name %>-<%= docker.get_version %>
 for tag in $(docker images -a $docker_name --format '{{.Tag}}' | sort -n -r | tail -n +3)
 do
   docker rmi $docker_name:$tag

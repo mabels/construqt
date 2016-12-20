@@ -16,7 +16,34 @@ module Construqt
           end
 
           class OncePerHost
+            attr_reader :packages
             def initialize
+              @packages = Packages::Builder.new
+              @components = Set.new
+            end
+
+            def merge_builder_has(cname)
+              return true if @packages.has(cname)
+              @producer.service_instances.each do |si|
+                return true if si.srv_inst.has(cname)
+              end
+              return false
+            end
+
+            def register(component_name)
+              @packages.register(component_name)
+            end
+
+            def add_component(component_name)
+              name = component_name
+              name = component_name.name unless name.kind_of?(String) or name.kind_of?(Symbol)
+              # @packages.register(a)
+              unless merge_builder_has(name.to_sym)
+                binding.pry
+                throw "component not registered [#{name}]" unless merge_builder_has(name.to_sym)
+              end
+              # check if component is registered
+              @components.add(name.to_sym)
             end
 
             def activate(context)
@@ -29,39 +56,59 @@ module Construqt
               @producer = producer
             end
 
-            def result_package_list(result, builders, match, result_package_list)
-              builders.each do |srv|
-                srv.list(result.results.values.map{|i| i.right.component }).each do |artefact|
-                  artefact.packages.values.each do |p|
-                    next unless match.include?(p.target)
-                    result_package_list[p.name] = artefact
-                  end
+            def post_interfaces
+              # binding.pry
+            end
+
+
+            # def result_package_list(result, builders, match, result_package_list)
+            #   binding.pry
+            #   builders.each do |srv|
+            #     srv.list(result.results.values.map{|i| i.right.component }).each do |artefact|
+            #       artefact.packages.values.each do |p|
+            #         next unless match.include?(p.target)
+            #         result_package_list[p.name] = artefact
+            #       end
+            #     end
+            #   end
+            # end
+
+            def result_package_list(match, plist)
+              @components.each do |c|
+                ret = []
+                ([@packages]+
+                  @producer.service_instances.map{|i| i.srv_inst}).map do |si|
+                    next unless si.artefacts[c]
+                    si.artefacts[c].packages.values.each do |p|
+                      next unless match.include?(p.target)
+                      plist[p.name] ||= []
+                      plist[p.name].push si.artefacts[c]
+                    end
                 end
               end
             end
 
-            def package_list(host, result, builders)
-              artefact_set = {}
-              result_package_list = {}
-              match = [Packages::Package::ME, Packages::Package::BOTH]
-              match << Packages::Package::MOTHER if Container.i_ma_the_mother?(host)
-              result_package_list(result, builders, match, result_package_list)
+            def package_list(host, plist)
               if Container.i_ma_the_mother?(host)
                 host.region.hosts.get_hosts.select do |h|
                   host.eq(h.mother)
                 end.each do |h|
-                  binding.pry
-                  result_package_list(result, builders, [Packages::Package::MOTHER, Packages::Package::BOTH], result_package_list)
+                  h_my = h.result_types.find_instances_from_type Construqt::Flavour::Nixian::Services::Packager::OncePerHost
+                  h_my.result_package_list([Packages::Package::MOTHER,
+                    Packages::Package::BOTH], plist)
                 end
               end
-              result_package_list
+              plist
             end
 
             def get_packages
-              builders = @producer.service_instances.map{|i| i.srv_inst}
-              result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
-              package_list(@host, result, builders).keys
+              match = [Packages::Package::ME, Packages::Package::BOTH]
+              match << Packages::Package::MOTHER if Container.i_ma_the_mother?(@host)
+              plist = {}
+              result_package_list(match, plist)
+              package_list(@host, plist).keys
             end
+
           end
 
           class Action
@@ -70,10 +117,11 @@ module Construqt
           class Factory
             attr_reader :machine
             def start(service_factory)
+              # binding.pry
               @machine ||= service_factory.machine
-                .service_type(Packages::Builder)
+                .service_type(Construqt::Packages::Builder)
                 .result_type(OncePerHost)
-                .require(Result::Service)
+                .depend(Result::Service)
             end
 
             def produce(host, srv_inst, ret)
@@ -96,7 +144,7 @@ end
 #                 .add('ifstat').add('mtr-tiny').add('openssl')
 #               cps.register('Construqt::Flavour::Delegate::DeviceDelegate')
 #               cps.register('Construqt::Flavour::Nixian::Dialect::Ubuntu::Wlan')
-#               cps.register(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd)
+#               cps.register(Construqt::Resources::Component::SYSTEMD)
 #               cps.register('Construqt::Flavour::Nixian::Dialect::Ubuntu::Bond').add('ifenslave')
 #               cps.register('Construqt::Flavour::Delegate::VlanDelegate').add('vlan')
 #               cps.register('Construqt::Flavour::Delegate::TunnelDelegate')

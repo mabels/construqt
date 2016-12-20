@@ -60,7 +60,7 @@ module Construqt
 
             def commit(result)
               result.add(self, self.as_string,
-                                         Construqt::Resources::Rights.root_0644(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd),
+                                         Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::SYSTEMD),
                                          "etc", "systemd", "network", "#{self.name}.netdev")
             end
           end
@@ -73,6 +73,8 @@ module Construqt
 
             def activate(context)
               @context = context
+              pbuilder = @context.find_instances_from_type Construqt::Flavour::Nixian::Services::Packager::OncePerHost
+              pbuilder.packages.register(Construqt::Resources::Component::SYSTEMD)
             end
 
             def add(iface)

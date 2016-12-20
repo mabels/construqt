@@ -31,6 +31,7 @@ require_relative 'ubuntu/container.rb'
 # require_relative 'ubuntu/services/docker.rb'
 require_relative 'ubuntu/services/vagrant_impl.rb'
 require_relative 'ubuntu/services/deployer_sh.rb'
+require_relative 'ubuntu/services/packager_service.rb'
 #require_relative 'ubuntu/services/result_factory.rb'
 
 require_relative 'ubuntu/bond.rb'
@@ -68,7 +69,6 @@ module Construqt
               @cfg = cfg
               @services_factory = factory.services_factory.shadow()
               #@services_factory.add(Services::ResultFactory.new(@services_factory))
-              @services_factory.add(Ubuntu::Services::DeployerShFactory.new)
               @services_factory.add(Services::VagrantFactory.new)
             end
 
@@ -95,7 +95,7 @@ module Construqt
                 Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::Service.new,
                 Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::Service.new,
                 Construqt::Flavour::Nixian::Services::EtcNetworkApplicationUd::Service.new,
-                Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::DeployerSh.new
+                Construqt::Flavour::Nixian::Services::DeployerSh::Service.new
               ])
             end
 

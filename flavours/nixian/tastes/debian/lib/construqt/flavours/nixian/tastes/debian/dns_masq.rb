@@ -10,12 +10,13 @@ module Construqt
             end
 
             def on_add(ud, taste, iface, me)
-              return unless iface.dhcp
-              host.result.add_component(Construqt::Resources::Component::DNSMASQ)
+              return unless me.iface.dhcp
+              pbuilder = @context.find_instances_from_type Construqt::Flavour::Nixian::Services::Packager::OncePerHost
+              pbuilder.add_component(Construqt::Resources::Component::DNSMASQ)
+
               eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
-              writer = eni.get(iface, ud.ifname)
-              writer.lines.up(up(ud.ifname), :extra)
-              writer.lines.down(down(ud.ifname), :extra)
+              writer = eni.get(me.iface, me.iface.name)
+              writer.lines.up me.start_cmd(false).join(" ")
             end
           end
           add(Entities::DnsMasq, DnsMasq)

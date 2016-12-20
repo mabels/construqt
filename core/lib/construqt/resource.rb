@@ -19,6 +19,7 @@ module Construqt
       DHCPRELAY = :dhcprelay
       DNSMASQ = :dnsmasq
       WIRELESS = :wireless
+      SYSTEMD = :systemd
     end
     class Right
       attr_reader :owner, :right, :component

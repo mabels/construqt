@@ -9,6 +9,7 @@ module Construqt
             chainable_attr :image, "ubuntu:16.04"
             chainable_attr :app_start_script, ""
             chainable_attr :pkt_man, :apt
+            chainable_attr :version, ""
 
             def initialize
               @packages = []
@@ -61,7 +62,7 @@ module Construqt
             def activate(ctx)
               @context = ctx
             end
-            
+
             def i_ma_the_mother?(host)
               host.region.hosts.get_hosts.find { |h| host.eq(h.mother) }
             end
@@ -310,6 +311,6 @@ end
 #     .exec_stop_post("/usr/bin/docker rm -f run_#{docker.name}")
 #     .wanted_by("multi-user.target")
 #   host.result.add(systemd, systemd.as_systemd_file,
-#                   Construqt::Resources::Rights.root_0644(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd),
+#                   Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::SYSTEMD),
 #                   "etc", "systemd", "system", systemd.get_name)
 # end

@@ -75,7 +75,7 @@ module Construqt
               #            return
               #          end
               #binding.pry if iface.name == "border" and iface.host.name == "ao-border-wlxc4e9841f0822"
-              result.add_component(iface.class.const_get("COMPONENT"))
+              #result.add_component(iface.class.const_get("COMPONENT"))
 
               up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
               up_downer.add(iface, Tastes::Entities::Device.new(ifname))

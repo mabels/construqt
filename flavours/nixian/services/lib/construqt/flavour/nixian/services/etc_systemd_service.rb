@@ -193,7 +193,7 @@ module Construqt
               end
               unless @skip_content
               result.add(SystemdService, as_systemd_file,
-                         Construqt::Resources::Rights.root_0644(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd),
+                         Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::SYSTEMD),
                          'etc', 'systemd', 'system', name)
               end
               @drop_ins.values.each do |srv|
@@ -210,6 +210,8 @@ module Construqt
 
             def activate(context)
               @context = context
+              pbuilder = @context.find_instances_from_type Construqt::Flavour::Nixian::Services::Packager::OncePerHost
+              pbuilder.packages.register(Construqt::Resources::Component::SYSTEMD)
             end
 
             def get_drop_in(service, name, &block)

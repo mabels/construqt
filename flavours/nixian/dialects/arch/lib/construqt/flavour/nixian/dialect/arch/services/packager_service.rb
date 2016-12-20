@@ -14,7 +14,7 @@ module Construqt
                   .add('mtr').add('openssl')
                 cps.register(Construqt::Flavour::Delegate::DeviceDelegate)
                 cps.register(Construqt::Flavour::Nixian::Dialect::Ubuntu::Wlan)
-                cps.register(Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd)
+                cps.register(Construqt::Resources::Component::SYSTEMD)
                 cps.register(Construqt::Flavour::Nixian::Dialect::Ubuntu::Bond).add('ifenslave')
                 cps.register(Construqt::Flavour::Delegate::VlanDelegate).add('vlan')
                 cps.register(Construqt::Flavour::Delegate::TunnelDelegate)

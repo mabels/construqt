@@ -9,6 +9,10 @@ module Construqt
 
           class Action
 
+            def initialize(host)
+              @host = host
+            end
+
             def vrrp(host, ifname, vrrp)
               inbounds = Construqt::Tags.find(@service.inbound_tag).select{ |cqip| cqip.container.interface.host.eq(host) && cqip.ipv6? }
               return if inbounds.empty?
@@ -29,7 +33,7 @@ module Construqt
             def build_config_interface(iface)
               iface.address.ips && iface.address.ips.each do |ip|
                 if ip.options && ip.options['dhcp']
-                  result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+                  result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Packager::OncePerHost)
                   result.add_component(Construqt::Resources::Component::DNSMASQ)
                   up_downer = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
                   up_downer.add(@host, Tastes::Entities::DnsMasq.new(iface, ip.options['dhcp']))
@@ -48,7 +52,7 @@ module Construqt
             end
 
             def produce(host, srv_inst, ret)
-              Action.new
+              Action.new(host)
             end
           end
         end

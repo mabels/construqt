@@ -74,7 +74,7 @@ module Construqt
                     Util.write_str(host.region, text, host.name, fname)
                   end
 
-                  #return if block.right.component == Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd
+                  #return if block.right.component == Construqt::Resources::Component::SYSTEMD
                   ccc.add_file({
                     "path"=> File.join("", fname),
                     "permissions"=> block.right.right,

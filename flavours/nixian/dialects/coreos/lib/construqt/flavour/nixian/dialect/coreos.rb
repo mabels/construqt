@@ -39,6 +39,7 @@ module Construqt
               @services_factory.add(Services::RemoteDeploySh::Factory.new)
               @services_factory.add(Services::CloudInit::Factory.new)
               @services_factory.add(Services::Vagrant::Factory.new)
+              # binding.pry
             end
 
             def name
@@ -46,8 +47,10 @@ module Construqt
             end
 
             def add_host_services(srvs)
-              @services_factory.merge(srvs,
-                      [Construqt::Flavour::Nixian::Services::Result::Service.new,
+              @services_factory.merge(srvs, [
+                      Construqt::Packages::Builder.new,
+                      Construqt::Flavour::Nixian::Services::DeployerSh::Service.new,
+                       Construqt::Flavour::Nixian::Services::Result::Service.new,
                        Construqt::Flavour::Nixian::Services::UpDowner::Service.new
                          .taste(Tastes::Systemd::Factory.new),
                        Construqt::Flavour::Nixian::Services::Docker::Service.new,
@@ -59,7 +62,8 @@ module Construqt
                        Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
                        Construqt::Flavour::Nixian::Dialect::CoreOs::Services::RemoteDeploySh::Service.new,
                        Construqt::Flavour::Nixian::Services::ModulesConf::Service.new,
-                       Construqt::Flavour::Nixian::Dialect::CoreOs::Services::CloudInit::Service.new])
+                       Construqt::Flavour::Nixian::Dialect::CoreOs::Services::CloudInit::Service.new
+             ])
             end
 
             def add_interface_services(srvs)
