@@ -29,6 +29,7 @@ module Construqt
                 attr_reader :host
                 def attach_host(host)
                   @host = host
+                  @yaml['hostname'] = host.name
                 end
 
                 def activate(ctx)
@@ -44,9 +45,8 @@ module Construqt
                 end
 
                 def add_units(sysrv)
-                  tmp = {
-                    'name' => sysrv.get_name ,
-                  }
+                  tmp = { 'name' => sysrv.get_name }
+
                   sysrv.is_enable && tmp['enable'] = true
                   sysrv.get_command && tmp['command'] = sysrv.get_command
                   unless sysrv.get_skip_content
@@ -73,11 +73,13 @@ module Construqt
                     end
                   end
 
-                  unless block.text_empty?
+                  #text = block.flatten.select { |i| !(i.nil? || i.strip.empty?) }.join("\n")
+                  unless block.empty?
+                    #binding.pry
                     Util.write_str(host.region, block.text, host.name, fname)
                   end
 
-                  return if block.right.component == Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd
+                  return if block.right.component == Construqt::Resources::Component::SYSTEMD
                   ccc.add_file({
                     "path"=> File.join("", fname),
                     "permissions"=> block.right.right,
@@ -120,7 +122,7 @@ module Construqt
                   end
 
                   result.results.each do |fname, block|
-                    if block.right.component == Construqt::Flavour::Nixian::Dialect::Ubuntu::Systemd
+                    if block.right.component == Construqt::Resources::Component::SYSTEMD
                       # binding.pry
                       # add_units(block.clazz)
                     else

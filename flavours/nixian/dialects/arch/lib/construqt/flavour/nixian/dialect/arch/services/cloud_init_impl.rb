@@ -69,9 +69,9 @@ module Construqt
                     end
                   end
 
-                  text = block.flatten.select { |i| !(i.nil? || i.strip.empty?) }.join("\n")
-                  unless text.empty?
-                    Util.write_str(host.region, text, host.name, fname)
+                  # text = block.flatten.select { |i| !(i.nil? || i.strip.empty?) }.join("\n")
+                  unless block.empty?
+                    Util.write_str(host.region, block.text, host.name, fname)
                   end
 
                   #return if block.right.component == Construqt::Resources::Component::SYSTEMD
