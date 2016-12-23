@@ -165,8 +165,8 @@ module Construqt
                        .remain_after_exit
                        .after("docker.socket")
                        .after("sys-devices-virtual-net-#{me.iface.name}.device")
-                       .wants("docker.socket")
-                       .wants("sys-devices-virtual-net-#{me.iface.name}.device")
+                       .requires("docker.socket")
+                       .requires("sys-devices-virtual-net-#{me.iface.name}.device")
                        .exec_start("/bin/sh /etc/network/#{me.iface.name}-docker-up.sh")
                        .exec_stop("/bin/sh /etc/network/#{me.iface.name}-docker-down.sh")
                        .wanted_by("multi-user.target")
@@ -193,8 +193,9 @@ module Construqt
                     srv.description("starts docker container #{me.container.name}")
                        .type("simple")
                        .after("docker.socket")
-                       .wants("docker.socket")
+                       .requires("docker.socket")
                        .exec_start("/bin/sh /var/lib/docker/construqt/#{me.container.name}/docker_run.sh")
+                       .exec_stop("/usr/bin/docker kill run_#{me.container.name}")
                        .wanted_by("multi-user.target")
                     me.container.interfaces.values.select do |i|
                       i.name != "lo" && i.cable.connections.length > 0
@@ -202,7 +203,7 @@ module Construqt
                       throw "multipe cable" if iface.cable.connections.length > 1
                       name = iface.cable.connections.first.iface.name
                       srv.after("construqt-#{name}-docker-network.service")
-                      srv.wants("construqt-#{name}-docker-network.service")
+                      srv.requires("sys-subsystem-net-devices-#{name}.device")
                     end
                   end
                 end

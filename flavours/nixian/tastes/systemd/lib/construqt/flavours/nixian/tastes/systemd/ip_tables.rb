@@ -17,6 +17,7 @@ module Construqt
                    .exec_start("/usr/sbin/iptables-restore /etc/network/iptables.cfg")
                    .exec_start("/usr/sbin/ip6tables-restore /etc/network/ip6tables.cfg")
                    .wanted_by("multi-user.target")
+                   .command("restart")
                end
                ess.get_drop_in("docker.service", "42-iptables-false.conf") do |dropin|
                   dropin.environment("DOCKER_OPTS=--iptables=false")

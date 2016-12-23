@@ -70,9 +70,9 @@ module Construqt
               result.add(self, Construqt::Util.render(binding, "host_udev.erb"),
                 Construqt::Resources::Rights.root_0644, "etc", "udev", "rules.d", "23-persistent-vnet.rules")
               # not cool but sysctl.d/...
-              result.add(self, Construqt::Util.render(binding, "host_sysctl.erb"),
-                Construqt::Resources::Rights.root_0644, "etc", "sysctl.conf")
-
+              # result.add(self, Construqt::Util.render(binding, "host_sysctl.erb"),
+              #   Construqt::Resources::Rights.root_0644, "etc", "sysctl.conf")
+              #
               result.add(self, Construqt::Util.render(binding, "host_hosts.erb"),
                 Construqt::Resources::Rights.root_0644, "etc", "hosts")
 

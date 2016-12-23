@@ -57,6 +57,25 @@ module Construqt
               result.add(self, @service.modules.to_a.join("\n")+"\n",
                 Construqt::Resources::Rights::root_0644,
                 @service.get_path)
+              up_downer = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
+              up_downer.add(@host, Taste::ModulesConf.new)
+            end
+          end
+
+          module Taste
+            class ModulesConf
+              class Systemd
+                def on_add(ud, taste, _, me)
+                  ess = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcSystemdService::OncePerHost)
+                  ess.get("systemd-modules-load.service") do |srv|
+                    srv.skip_content.command("restart")
+                  end
+                end
+                def activate(ctx)
+                  @context = ctx
+                  self
+                end
+              end
             end
           end
 
@@ -66,6 +85,9 @@ module Construqt
               @machine ||= service_factory.machine
                 .service_type(Service)
                 .depend(Construqt::Flavour::Nixian::Services::Result::Service)
+                .activator(Construqt::Flavour::Nixian::Services::UpDowner::Activator.new
+                  .entity(Taste::ModulesConf)
+                  .add(Construqt::Flavour::Nixian::Tastes::Systemd::Factory, Taste::ModulesConf::Systemd))
             end
 
             def produce(host, srv_inst, ret)

@@ -36,6 +36,12 @@ module Construqt
               @alsos = []
               @wantses = []
               @drop_ins = {}
+              @default_dependencies = nil
+            end
+
+            def default_dependencies(v)
+              @default_dependencies = v
+              self
             end
 
             def disable
@@ -233,13 +239,32 @@ module Construqt
               service
             end
 
+            def sanitary(result)
+              get("construqt-sanitary.service") do |srv|
+                do_start_stop = false
+                result.add(self, Util.render(binding, 'etc_systemd_deployer_sh.erb'),
+                  Construqt::Resources::Rights.root_0755,
+                  "etc", "systemd", "system", "construqt-sanitary.sh")
+                srv.description("construqt sanitary")
+                  .default_dependencies(false)
+                  .after("sysinit.target")
+                  .after("local-fs.target")
+                  .before("basic.target")
+                  .type("oneshot")
+                  .exec_start("/bin/sh /etc/systemd/system/construqt-sanitary.sh")
+                  .wanted_by("basic.target")
+              end
+            end
+
             def commit
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+              sanitary(result)
               services.values.each do |service|
                 service.commit(result)
               end
               dsrv = @context.find_by_service_type(Construqt::Flavour::Nixian::Services::DeployerSh::Service)
               action = lambda {
+                do_start_stop = true
                 Util.render(binding, 'etc_systemd_deployer_sh.erb')
               }
               dsrv.service_producers.each do |i|

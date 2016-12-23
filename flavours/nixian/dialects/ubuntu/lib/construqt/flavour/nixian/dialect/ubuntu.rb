@@ -84,6 +84,7 @@ module Construqt
                   .taste(Tastes::Systemd::Factory.new)
                   .taste(Tastes::Debian::Factory.new)
                   .taste(Tastes::File::Factory.new),
+                Construqt::Flavour::Nixian::Services::SysCtlConf::Service.new,
                 Construqt::Flavour::Nixian::Services::Lxc::Service.new,
                 Construqt::Flavour::Nixian::Services::Docker::Service.new,
                 Construqt::Flavour::Nixian::Services::Vagrant::Service.new,

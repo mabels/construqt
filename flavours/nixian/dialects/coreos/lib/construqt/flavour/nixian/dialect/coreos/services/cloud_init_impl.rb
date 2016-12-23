@@ -110,11 +110,6 @@ module Construqt
                     add_units(network)
                   end
 
-                  modules_service = Construqt::Flavour::Nixian::Services::EtcSystemdService::SystemdService
-                    .new("systemd-modules-load.service")
-                    .skip_content
-                    .command("restart")
-                  add_units(modules_service)
 
                   etc_systemd_service = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcSystemdService::OncePerHost)
                   etc_systemd_service.services.values.each do |service|

@@ -1,6 +1,7 @@
 
 if [ -e  $(/usr/bin/which systemctl) ]
 then
+  systemctl daemon-reload
   for i in $(systemctl list-unit-files | grep '^construqt-' | awk '{print $1}' | \
       grep \
 <% services.values.each do |srv| -%>
@@ -8,11 +9,15 @@ then
 <% end -%>
        -v)
   do
+<% if do_start_stop -%>
     systemctl stop $i
+<% end -%>
     systemctl disable $i
   done
 <% services.values.each do |srv| -%>
   systemctl enable <%= srv.get_name %>
+<% if do_start_stop -%>
   systemctl start <%= srv.get_name %>
 <% end -%>
-end
+<% end -%>
+fi

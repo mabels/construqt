@@ -19,7 +19,7 @@ do
   docker rmi $docker_name:$tag
 done
 docker build -t $docker_name:$docker_tag .
-docker rm $docker_name
+docker rm -f $docker_name
 
 exec docker run --name $docker_name \
 <% if docker.get_privileged -%>

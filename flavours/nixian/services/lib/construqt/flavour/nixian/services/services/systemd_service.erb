@@ -6,17 +6,20 @@
 <% if @description.length > 0 -%>
 Description=<%= @description %>
 <% end -%>
+<% unless @default_dependencies.nil? -%>
+DefaultDependencies=<%= @default_dependencies ? "yes" : "no" %>
+<% end -%>
 <% @befores.each do |before| -%>
 Before=<%= before %>
 <% end -%>
-<% @afters.each do |after| -%>
-After=<%= after %>
+<% unless @afters.empty? -%>
+After=<%= @afters.join(" ") %>
 <% end -%>
-<% @requires.each do |req| -%>
-Requires=<%= req %>
+<% unless @requires.empty? -%>
+Requires=<%= @requires.join(" ") %>
 <% end -%>
-<% @wantses.each do |wants| -%>
-Wants=<%= wants %>
+<% unless @wantses.empty? -%>
+Wants=<%= @wantses.join(" ") %>
 <% end -%>
 <% end -%>
 

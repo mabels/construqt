@@ -4,6 +4,9 @@ module Construqt
     def initialize
       @services = []
     end
+    def get_services
+      @services
+    end
     def add(srv_s)
       unless srv_s.kind_of?(Array)
         srv_s = [srv_s]

@@ -53,6 +53,7 @@ module Construqt
                        Construqt::Flavour::Nixian::Services::Result::Service.new,
                        Construqt::Flavour::Nixian::Services::UpDowner::Service.new
                          .taste(Tastes::Systemd::Factory.new),
+                       Construqt::Flavour::Nixian::Services::SysCtlConf::Service.new.fname("/etc/sysctl.d/construqt.conf"),
                        Construqt::Flavour::Nixian::Services::Docker::Service.new,
                        Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
                        Construqt::Flavour::Nixian::Services::Ssh::Service.new,
