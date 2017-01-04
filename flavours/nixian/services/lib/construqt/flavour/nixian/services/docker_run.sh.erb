@@ -18,7 +18,7 @@ for tag in $(docker images -a $docker_name --format '{{.Tag}}' | sort -n -r | ta
 do
   docker rmi $docker_name:$tag
 done
-docker build -t $docker_name:$docker_tag .
+docker build --no-cache -t $docker_name:$docker_tag .
 docker rm -f $docker_name
 
 exec docker run --name $docker_name \
