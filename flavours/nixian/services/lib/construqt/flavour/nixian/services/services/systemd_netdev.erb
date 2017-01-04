@@ -1,7 +1,9 @@
 
 [NetDev]
 Name=<%= systemd_netdev.name %>
+<%- if systemd_netdev.kind != "device" -%>
 Kind=<%= systemd_netdev.kind %>
+<%- end -%>
 <%- if iface.delegate.mtu -%>
 MTUBytes=<%= iface.delegate.mtu %>
 <%- end -%>
