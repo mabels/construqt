@@ -246,6 +246,9 @@ module Construqt
       end
 
       def build_route(dst, via, options = {})
+        if dst == Construqt::Addresses::RAV6
+          return RaRoute.new
+        end
         #puts "DST => "+dst.class.name+":"+dst.to_s
         via_parsed = Construqt::Tags.parse(via)
         throw "only one routing_table per ip allowed" if via_parsed['!'] and via_parsed['!'].length > 1

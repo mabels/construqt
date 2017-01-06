@@ -20,6 +20,13 @@ module Construqt
           class OncePerHost
             def activate(ctx)
               @context = ctx
+              @values = {}
+            end
+
+            def build_config_interface(iface)
+              if iface.address.routes.routes.find{ |rt| rt.kind_of?(Construqt::Addresses::RaRoute) }
+                  @values["net.ipv6.conf.#{iface.name}.accept_ra"] = 2
+              end
             end
 
             def commit # (host, service)
@@ -32,6 +39,7 @@ module Construqt
               values["net.ipv6.conf.all.accept_ra"] = 0
               values["net.ipv6.conf.all.forwarding"] = 1
               values["net.ipv6.conf.all.proxy_ndp"] = 1
+              @values.each { |k,v| values[k] = v }
               # read all service_types and merge
               fname = nil
               @context.find_by_service_type(Service).service_producers.each do |si|

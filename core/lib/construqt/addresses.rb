@@ -13,6 +13,7 @@ module Construqt
     LOOOPBACK = :looopback
     DHCPV4 = :dhcpv4
     DHCPV6 = :dhcpv6
+    RAV6 = :rav6
     IPV4 = :ipv4
     IPV6 = :ipv6
 

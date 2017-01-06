@@ -11,7 +11,7 @@ module Construqt
       end
 
       def add(route)
-        unless route.kind_of?(Route) or route.kind_of?(TagRoute) or route.kind_of?(NearstRoute)
+        unless route.kind_of?(Route) or route.kind_of?(TagRoute) or route.kind_of?(NearstRoute) or route.kind_of?(RaRoute)
           throw "route has to be a Route or TagRoute is #{route.class.name}"
         end
         @routes << route

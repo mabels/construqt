@@ -1,5 +1,11 @@
 module Construqt
   class Addresses
+    class RaRoute
+      def resolv
+        []
+      end
+    end
+
     class Route
       def initialize(dst_ips, via_ips, options)
         @dst_ips = dst_ips
