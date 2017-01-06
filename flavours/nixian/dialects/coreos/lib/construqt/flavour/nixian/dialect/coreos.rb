@@ -9,6 +9,7 @@ require 'construqt/flavour/nixian/services'
 require_relative 'coreos/services/cloud_init_impl.rb'
 require_relative 'coreos/services/remote_deploy_sh.rb'
 require_relative 'coreos/services/vagrant_impl.rb'
+require_relative 'coreos/services/ssh_authorized_keys_d.rb'
 #require_relative 'coreos/services/modules_conf_impl.rb'
 
 module Construqt
@@ -39,6 +40,7 @@ module Construqt
               @services_factory.add(Services::RemoteDeploySh::Factory.new)
               @services_factory.add(Services::CloudInit::Factory.new)
               @services_factory.add(Services::Vagrant::Factory.new)
+              @services_factory.add(Services::SshAuthorizedKeysD::Factory.new)
               # binding.pry
             end
 
@@ -56,6 +58,7 @@ module Construqt
                        Construqt::Flavour::Nixian::Services::SysCtlConf::Service.new.fname("/etc/sysctl.d/construqt.conf"),
                        Construqt::Flavour::Nixian::Services::Docker::Service.new,
                        Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
+                       Construqt::Flavour::Nixian::Dialect::CoreOs::Services::SshAuthorizedKeysD::Service.new,
                        Construqt::Flavour::Nixian::Services::Ssh::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
