@@ -93,12 +93,24 @@ module Construqt
                   Util.write_str(@host.region, "#cloud-config\n\n" + YAML.dump(@yaml), @host.name, 'coreos-cloud-config')
                 end
 
+                def add_usr_share_oem_cloud_init(result)
+                  usr_share_oem_cloud_init = {
+                    "hostname" => @yaml['hostname'],
+                    "ssh_authorized_keys" => @yaml['ssh_authorized_keys']
+                  }
+                  result.add(self, "#cloud-config\n\n" + YAML.dump(@yaml),
+                             Construqt::Resources::Rights.root_0644,
+                             "/usr/share/oem/cloud-config.yml")
+                end
+
                 def commit
                   host.region.users.get_authorized_keys(host).each do |pk|
                     add_ssh_pubkey(pk)
                   end
 
                   result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+
+                  add_usr_share_oem_cloud_init(result)
 
                   etc_systemd_netdev = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::OncePerHost)
                   etc_systemd_netdev.netdevs.each do |netdev|
@@ -125,12 +137,6 @@ module Construqt
                     end
                   end
 
-                  # @ures.each do |fname, block|
-                  #     if block.clazz.respond_to?(:belongs_to_mother?) && !block.clazz.belongs_to_mother?
-                  #         write_file(ccc, host, fname, block)
-                  #     end
-
-                  # end
 
                   write
                 end
