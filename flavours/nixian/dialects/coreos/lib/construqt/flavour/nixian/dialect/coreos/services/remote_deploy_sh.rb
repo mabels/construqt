@@ -23,9 +23,19 @@ module Construqt
                   @host = host
                 end
 
+                def i_ma_the_mother?(host)
+                  host.region.hosts.get_hosts.find { |h| host.eq(h.mother) }
+                end
+
                 def build_config_host
                   Util.write_str(@host.region, Construqt::Util.render(binding, "remote-deploy.sh.erb"),
                     @host.name, 'remote-deploy.sh')
+                  self.i_ma_the_mother?(@host) && @host.region.hosts.get_hosts.select do |h|
+                    @host.eq(h.mother)
+                  end.each do |docker|
+                    Util.write_str(@host.region, Construqt::Util.render(binding, "restart-docker.sh.erb"),
+                        @host.name, "restart-#{docker.name}.sh")
+                  end
                 end
 
                 def commit

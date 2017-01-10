@@ -171,6 +171,7 @@ module Construqt
                        .exec_stop("/bin/sh /etc/network/#{me.iface.name}-docker-down.sh")
                        .wanted_by("multi-user.target")
                   end
+
                 end
                 def activate(ctx)
                   @context = ctx

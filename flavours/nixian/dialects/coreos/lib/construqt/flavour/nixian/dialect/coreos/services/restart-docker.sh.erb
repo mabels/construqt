@@ -1,0 +1,8 @@
+#!/bin/sh
+base=$(dirname $0)
+name=$(basename $0)
+<% dest_ip = @host.id.first_ipv4.first_ipv4.to_s -%>
+echo "Restart $name on host <%= dest_ip %>"
+ssh root@<%= dest_ip %> systemctl stop construqt-<%= docker.name %>-docker.service
+ssh root@<%= dest_ip %> systemctl start construqt-<%= docker.name %>-docker.service
+ssh root@<%= dest_ip %> systemctl status construqt-<%= docker.name %>-docker.service
