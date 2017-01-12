@@ -19,7 +19,7 @@ module Construqt
         @fname = fname
         @ssl = OpenSSL::X509::Certificate.new(content)
         now = Time.now
-        throw "cert is not valid" unless @ssl.not_before <= now && now <= @ssl.not_after
+        throw "cert #{fname} is not valid" unless @ssl.not_before <= now && now <= @ssl.not_after
         @finger_print = OpenSSL::Digest::SHA256.new(@ssl.to_der).hexdigest
         @is_a = nil
       end
