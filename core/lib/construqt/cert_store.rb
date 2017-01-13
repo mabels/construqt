@@ -95,7 +95,7 @@ module Construqt
     def add_private(cfg)
       fname, cfg = get_fname(cfg)
       split_mime(cfg) do |type, pem|
-        throw "unknown type" unless type == "PRIVATE KEY"
+        throw "unknown type" unless ["PRIVATE KEY", "RSA PRIVATE KEY"].include?(type)
         pk = PrivateKey.new(cfg, fname)
         # throw "private exists #{pk.finger_print}" if @private[pk.finger_print]
         @private[pk.finger_print] ||= pk
