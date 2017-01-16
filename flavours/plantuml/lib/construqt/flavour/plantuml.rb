@@ -176,8 +176,11 @@ module Construqt
           out << "tag(#{idx}) = \"#{tag}\""
         end
 
-        iface.services && (iface.services).sort.uniq.each_with_index do |service, idx|
-          out << "service(#{idx}) = \"#{service.name}\""
+        #iface.services && binding.pry
+        iface.services && iface.services.get_services.map do |i|
+          i.class.name
+        end.sort.uniq.each_with_index do |service, idx|
+          out << "service(#{idx}) = \"#{service}\""
         end
 
         out.join("\n")

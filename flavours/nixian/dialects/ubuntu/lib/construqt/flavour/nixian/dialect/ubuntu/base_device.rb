@@ -8,10 +8,11 @@ module Construqt
             attr_reader :host, :name, :address, :template, :plug_in
             attr_reader :services, :clazz, :mtu, :flavour, :proxy_neigh
             attr_reader :mac_address, :vagrant, :firewalls, :network
-            attr_reader :services
+            attr_reader :services, :description
             def base_device(cfg)
               @cfg = cfg
               @name = cfg['name']
+              @description = cfg['description']
               @host = cfg['host']
               @services = cfg['services']
               @address = cfg['address']
