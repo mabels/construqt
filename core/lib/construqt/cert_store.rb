@@ -19,7 +19,7 @@ module Construqt
         @fname = fname
         @ssl = OpenSSL::X509::Certificate.new(content)
         now = Time.now
-        throw "cert #{fname} is not valid" unless @ssl.not_before <= now && now <= @ssl.not_after
+        #throw "cert #{fname} is not valid" unless @ssl.not_before <= now && now <= @ssl.not_after
         @finger_print = OpenSSL::Digest::SHA256.new(@ssl.to_der).hexdigest
         @is_a = nil
       end
@@ -83,27 +83,31 @@ module Construqt
       ret
     end
 
-    def get_fname(cfg)
-      fname = nil
-      if File.exists?(cfg)
-        fname = cfg
-        cfg = IO.read(fname)
+    def get_fname(cfg, content)
+      if content.nil?
+        fname = nil
+        if File.exists?(cfg)
+          fname = cfg
+          cfg = IO.read(fname)
+        end
+        [fname, cfg]
+      else
+        [cfg, content]
       end
-      [fname, cfg]
     end
 
-    def add_private(cfg)
-      fname, cfg = get_fname(cfg)
+    def add_private(cfg, content = nil)
+      fname, cfg = get_fname(cfg, content)
       split_mime(cfg) do |type, pem|
-        throw "unknown type" unless ["PRIVATE KEY", "RSA PRIVATE KEY"].include?(type)
+        throw "unknown type #{type}" unless ["PRIVATE KEY", "RSA PRIVATE KEY"].include?(type)
         pk = PrivateKey.new(cfg, fname)
         # throw "private exists #{pk.finger_print}" if @private[pk.finger_print]
         @private[pk.finger_print] ||= pk
       end
     end
 
-    def add_cacert(cfg)
-      fname, cfg = get_fname(cfg)
+    def add_cacert(cfg_or_fname, content = nil)
+      fname, cfg = get_fname(cfg_or_fname, content)
       split_mime(cfg) do |type, pem|
         throw "unknown type" unless type == "CERTIFICATE"
         ca = Cert.new(cfg, fname).set_ca_cert
@@ -112,8 +116,8 @@ module Construqt
       end
     end
 
-    def add_cert(cfg)
-      fname, cfg = get_fname(cfg)
+    def add_cert(cfg, content = nil)
+      fname, cfg = get_fname(cfg, content)
       split_mime(cfg) do |type, pem|
         throw "unknown type" unless type == "CERTIFICATE"
         cert = Cert.new(cfg, fname)
@@ -136,8 +140,8 @@ module Construqt
           throw "cert is not the right type" unless cert.instance_of?(Cert)
           throw "needs to be a cert" unless cert.is_cert?
         end
-        @cacerts = Set.new(cacerts).select{|i| i.is_ca_cert? }
         # binding.pry
+        @cacerts = Set.new(cacerts).select{|i| i.is_ca_cert? }
         @cacerts.each do |cacert|
           throw "cacert is not the right type #{cacert}" unless cacert.instance_of?(Cert)
           throw "needs to be a ca_cert" unless cacert.is_ca_cert?
