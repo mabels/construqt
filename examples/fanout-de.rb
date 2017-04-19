@@ -38,6 +38,7 @@ module FanoutDe
           .add_ip(fanout[:ip])
           .add_service_ip("#{fanout[:ipe]}#FANOUT-DE")
           .add_route("0.0.0.0/0#INTERNET", fanout[:gw])
+          .add_reject_route("#PRIVATE", { :metric => 2 })
           .add_ip(fanout[:ip6])
           .add_route("2000::/3#INTERNET", fanout[:gw6]),
         "firewalls" => ["fix-mss", "host-outbound", "icmp-ping" , "http-srv", "ssh-srv", "ipsec-srv",

@@ -2,6 +2,9 @@ module Construqt
   class Addresses
     class DirectRoute
       attr_reader :dst, :via, :type, :metric, :options
+      def is_global?
+        false
+      end
       def initialize(dst, via, type, metric, options)
         @dst = dst
         @via = via

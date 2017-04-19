@@ -91,6 +91,12 @@ firewall(region)
 
 region.network.addresses.add_ip("2000::/3#DEFAULT")
 
+region.network.addresses.add_ip("10.0.0.0/8#PRIVATE")
+region.network.addresses.add_ip("169.254.0.0/16#PRIVATE")
+region.network.addresses.add_ip("172.16.0.0/12#PRIVATE")
+region.network.addresses.add_ip("192.168.0.0/16#PRIVATE")
+region.network.addresses.add_ip("fd00::/8#PRIVATE")
+
 
 # [
 #   {:name => 'ad-de', :address => "169.254.12.10/24", :gw => "#FANOUT-DE-BR12", "mother" => fanout_de, "plug" => "br12" },

@@ -66,7 +66,8 @@ module Construqt
                        Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
                        Construqt::Flavour::Nixian::Dialect::CoreOs::Services::RemoteDeploySh::Service.new,
                        Construqt::Flavour::Nixian::Services::ModulesConf::Service.new,
-                       Construqt::Flavour::Nixian::Dialect::CoreOs::Services::CloudInit::Service.new
+                       Construqt::Flavour::Nixian::Dialect::CoreOs::Services::CloudInit::Service.new,
+                       Construqt::Flavour::Nixian::Services::RejectRoutes::Service.new
              ])
             end
 

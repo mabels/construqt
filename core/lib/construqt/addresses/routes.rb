@@ -11,7 +11,11 @@ module Construqt
       end
 
       def add(route)
-        unless route.kind_of?(Route) or route.kind_of?(TagRoute) or route.kind_of?(NearstRoute) or route.kind_of?(RaRoute)
+        unless route.kind_of?(Route) or
+               route.kind_of?(TagRoute) or
+               route.kind_of?(NearstRoute) or
+               route.kind_of?(RaRoute) or
+               route.kind_of?(RejectRoute)
           throw "route has to be a Route or TagRoute is #{route.class.name}"
         end
         @routes << route
@@ -24,6 +28,13 @@ module Construqt
         end
 
         ret
+      end
+
+      def find(&block)
+        each_with_index do |rt, len|
+          return true if block.call(rt, len)
+        end
+        return false
       end
 
       def each(&block)

@@ -4,6 +4,9 @@ module Construqt
       def resolv
         []
       end
+      def is_global?
+        false
+      end
     end
 
     class Route
@@ -11,6 +14,10 @@ module Construqt
         @dst_ips = dst_ips
         @via_ips = via_ips
         @options = options
+      end
+
+      def is_global?
+        false
       end
 
       def resolv
@@ -27,7 +34,6 @@ module Construqt
             ret << DirectRoute.new(dst, via, type, @options['metric'], @options)
           end
         end
-
         ret
       end
     end

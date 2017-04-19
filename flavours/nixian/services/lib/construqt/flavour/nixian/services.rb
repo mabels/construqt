@@ -28,6 +28,7 @@ require_relative 'services/etc_systemd_network'
 require_relative 'services/etc_systemd_service'
 require_relative 'services/modules_conf'
 require_relative 'services/packager'
+require_relative 'services/reject_routes'
 require_relative 'services/deployer_sh'
 require_relative 'services/sysctl_conf'
 
@@ -64,6 +65,7 @@ module Construqt
             EtcSystemdNetwork::Factory,
             EtcSystemdService::Factory,
             ModulesConf::Factory,
+            RejectRoutes::Factory,
             Packager::Factory,
             DeployerSh::Factory,
             SysCtlConf::Factory,

@@ -228,6 +228,12 @@ module Construqt
         self
       end
 
+      def add_reject_route(addr_or_tag, options = {}, routing_table = nil)
+        throw "add_reject_route needs set" if addr_or_tag.nil?
+        @routes.add RejectRoute.new(addr_or_tag, options, self, routing_table)
+        self
+      end
+
       def add_routes(addr_s, via, options = {})
         addrs = addr_s.kind_of?(Array) ? addr_s : [addr_s]
         addrs.each do |addr|

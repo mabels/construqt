@@ -20,13 +20,16 @@ module Construqt
         ret
       end
 
+      def is_global?
+        false
+      end
+
       def resolv
         #binding.pry
         ret = []
         dst_parse = Construqt::Tags.parse(self.dst_tag)
         throw "routing tag not allowed in dst #{self.dst_tag}" if dst_parse['!']
         routing_table = self.routing_table || ""
-
 
         ips_v4 = Construqt::Tags.ips_adr(self.dst_tag, Construqt::Addresses::IPV4)
         ips_v4_per_host = per_host(ips_v4)

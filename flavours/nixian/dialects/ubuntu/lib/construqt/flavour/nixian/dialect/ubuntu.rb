@@ -96,7 +96,8 @@ module Construqt
                 Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::Service.new,
                 Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::Service.new,
                 Construqt::Flavour::Nixian::Services::EtcNetworkApplicationUd::Service.new,
-                Construqt::Flavour::Nixian::Services::DeployerSh::Service.new
+                Construqt::Flavour::Nixian::Services::DeployerSh::Service.new,
+                Construqt::Flavour::Nixian::Services::RejectRoutes::Service.new
               ])
             end
 

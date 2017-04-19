@@ -58,6 +58,7 @@ module Construqt
                        Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdNetwork::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
+                       Construqt::Flavour::Nixian::Services::RejectRoutes::Service.new,
                        Construqt::Flavour::Nixian::Dialect::Arch::Services::RemoteDeploySh::Service.new,
                        Construqt::Flavour::Nixian::Services::ModulesConf::Service.new,
                        Construqt::Flavour::Nixian::Dialect::Arch::Services::PackagerService.create,

@@ -12,6 +12,11 @@ module Construqt
         @routing_table = routing_table
       end
 
+      def is_global?
+        false
+      end
+
+
       def resolv
         #binding.pry if self.dst_tag == "#FANOUT-DE"
         ret = []

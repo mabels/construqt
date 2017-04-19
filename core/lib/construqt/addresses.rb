@@ -5,6 +5,7 @@ require_relative 'addresses/route.rb'
 require_relative 'addresses/direct_route.rb'
 require_relative 'addresses/tag_route.rb'
 require_relative 'addresses/nearst_route.rb'
+require_relative 'addresses/reject_route.rb'
 require_relative 'addresses/address.rb'
 module Construqt
   class Addresses

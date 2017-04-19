@@ -30,7 +30,9 @@ Bridge=<%= bridge.name %>
 <%- end -%>
 
 <%- systemd_network.interface.address &&
-    systemd_network.interface.address.routes.each do |route| -%>
+    systemd_network.interface.address.routes.each do |route| 
+  next if route.is_global?
+-%>
 [Route]
 Destination=<%= route.dst.to_string %>
 Gateway=<%= route.via.to_s %>

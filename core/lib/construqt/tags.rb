@@ -154,8 +154,6 @@ module Construqt
       IPAddress.summarize(ips_adr(tag, family).map{|i| i.network })
     end
 
-
-
     def self.parse(str, tags = ['#' ,'@' , '!'])
       return {} if str.nil?
       if str.kind_of?(Symbol)
