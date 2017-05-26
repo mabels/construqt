@@ -45,6 +45,10 @@ module Construqt
           self.delegate.any
         end
 
+        def auto
+          self.delegate.auto
+        end
+
         def sourceip
           self.delegate.sourceip
         end

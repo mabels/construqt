@@ -23,6 +23,7 @@ module Construqt
 
       def build_config(hosts_to_process)
         (self.rights+self.lefts).each do |iface|
+          # binding.pry
           iface.build_config(iface.host, iface, nil) if hosts_to_process.find{|host| iface.host.object_id == host.object_id }
         end
       end

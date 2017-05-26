@@ -6,6 +6,12 @@ IPSEC_PASSWORDS = lambda do |left, right|
       "scable-1" => "weg",
       "scable-2" => "weg"
     },
+    "iscaac" => {
+      "fanout-us" => "weg",
+      "service-de-hgw" => "weg",
+      "scable-1" => "weg",
+      "scable-2" => "weg"
+    },
     "rt-ab-us" => {
       "fanout-us" => "weg"
     },
@@ -13,10 +19,12 @@ IPSEC_PASSWORDS = lambda do |left, right|
       "fanout-us" => "weg"
     },
     "rt-wl-mgt" => {
-      "fanout-de" => "weg"
+      "fanout-de" => "weg",
+      "iscaac" => "weg"
     },
     "rt-ab-de" => {
-      "fanout-de" => "weg"
+      "fanout-de" => "weg",
+      "iscaac" => "weg"
     }
   }
   tmp = psk[left]
@@ -66,8 +74,8 @@ def ipsec_users()
   ]
 end
 
-FANOUT_US_ADVISER_COM = "1.1.1.1"
-FANOUT_DE_ADVISER_COM = "2.2.2.2"
+#FANOUT_US_ADVISER_COM = "1.1.1.1"
+IPSEC_DE = "2.2.2.2"
 
 def ipsec_certificate(network)
 c1 = network.cert_store.add_cacert("COMODORSADomainValidationSecureServerCA.crt", <<CERT)

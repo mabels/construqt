@@ -15,6 +15,7 @@ module Construqt
 
             attr_reader :host, :etc_network_iptables
             def initialize
+              # binding.pry
               @etc_network_iptables = EtcNetworkIptables.new
             end
 
@@ -27,8 +28,6 @@ module Construqt
             end
 
             def commit
-              # binding.pry
-              # binding.pry if @host.name == "etcbind-1"
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               result.add(EtcNetworkIptables, @etc_network_iptables.commitv4,
                          Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::FW4),
@@ -49,10 +48,14 @@ module Construqt
           end
 
           class Action
+            def initialize(host)
+              @host = host
+            end
             def activate(context)
               @context = context
             end
             def build_config_interface(iface)
+              #binding.pry if @host.name == "bdog"
               # binding.pry if iface.name == "eth1" && iface.host.name == "etcbind-1"
               # welcome to hell
               # return unless iface.delegate.delegate.firewalls
@@ -76,7 +79,8 @@ module Construqt
             end
 
             def produce(host, srv_inst, ret)
-              Action.new()
+              #binding.pry if host.name == "bdog"
+              Action.new(host)
             end
           end
         end

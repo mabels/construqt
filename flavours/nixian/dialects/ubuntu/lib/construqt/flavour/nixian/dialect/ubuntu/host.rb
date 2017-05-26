@@ -27,7 +27,6 @@ module Construqt
               @lxc_deploy = cfg['lxc_deploy']
               @dns_server = cfg['dns_server']
               @files = cfg['files']
-              @services = cfg['services']
               @time_zone = cfg['time_zone']
               add_groups = cfg['add_groups']
             end

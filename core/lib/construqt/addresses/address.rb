@@ -97,6 +97,14 @@ module Construqt
         self.ips.select{|ip| ip.ipv4? }
       end
 
+      def by_family(type)
+        if type == Construqt::Addresses::IPV4
+          v4s
+        else
+          v6s
+        end
+      end
+
       def first_by_family(type)
         if type == Construqt::Addresses::IPV4
           first_ipv4

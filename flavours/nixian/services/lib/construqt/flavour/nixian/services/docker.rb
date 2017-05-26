@@ -10,9 +10,49 @@ module Construqt
             chainable_attr :app_start_script, ""
             chainable_attr :pkt_man, :apt
             chainable_attr :version, ""
+            chainable_attr_value :docker_pkg
+
+            chainable_attr_value :tlscacert
+            chainable_attr_value :tlscert
+            chainable_attr_value :tlskey
+            chainable_attr_value :tlsverify
+            chainable_attr_value :ip_masq
+            chainable_attr_value :storage_driver
+            chainable_attr_value :fixed_cidr_v6
+            chainable_attr_value :ipv6
 
             def initialize
               @packages = []
+              @hosts = []
+              docker_pkg("docker.io")
+              # binding.pry
+            end
+
+            def daemon_json
+              ret = {}
+              if @hosts.empty?
+                ret['hosts'] = ["fd://"]
+              else
+                ret['hosts'] = @hosts
+              end
+              ret["tlscacert"] = get_tlscacert if get_tlscacert
+              ret["tlscert"] = get_tlscert if get_tlscert
+              ret["tlskey"] = get_tlskey if get_tlskey
+              ret["tlsverify"] = get_tlsverify if defined?(get_tlsverify)
+              ret["ip-masq"] = get_ip_masq if defined?(get_ip_masq)
+              ret["storage-driver"] = get_storage_driver if get_storage_driver
+              ret["fixed-cidr-v6"] = get_fixed_cidr_v6 if get_fixed_cidr_v6
+              ret["ipv6"] = get_ipv6 if defined?(get_ipv6)
+              ret
+            end
+
+            def hosts(a)
+              @hosts << a
+              self
+            end
+
+            def get_hosts()
+              @hosts
             end
 
             def package(pkg)
@@ -69,6 +109,7 @@ module Construqt
 
 
             def render(result, host, docker)
+
               # binding.pry
               # result.add(Docker, Construqt::Util.render(binding, "docker_starter.sh.erb"),
               #            Construqt::Resources::Rights.root_0755,
@@ -99,6 +140,10 @@ module Construqt
             end
 
             def build_config_host #(host, service)
+              packager = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Packager::OncePerHost)
+              # binding.pry if @host.name == "bdog"
+              packager.register(Construqt::Resources::Component::DOCKER).add(docker.get_docker_pkg)
+
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               host.region.hosts.get_hosts.select {|h| host.eq(h.mother) }.each do |d_host|
                 # binding.pry
@@ -137,9 +182,13 @@ module Construqt
               end
             end
             def commit
+              return unless self.i_ma_the_mother?(@host)
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+              result.add(self, JSON.pretty_generate(docker.daemon_json),
+                Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DOCKER),
+                "/etc", "docker", "daemon.json")
               # def self.write_deployers(host, forme, clazz, rights, path_action)
-              self.i_ma_the_mother?(@host) && host.region.hosts.get_hosts.select {|h| @host.eq(h.mother) }.each do |lxc|
+              host.region.hosts.get_hosts.select {|h| @host.eq(h.mother) }.each do |lxc|
                 result.add(self, Util.read_str(host.region, lxc.name, "deployer.sh"),
                   Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DOCKER),
                   "/var", "lib", "docker", "construqt", lxc.name, "deployer.sh").skip_git
@@ -222,6 +271,7 @@ module Construqt
           class Factory
             attr_reader :machine
             def start(service_factory)
+              # binding.pry
               @machine ||= service_factory.machine
                 .service_type(Service)
                 .depend(Result::Service)

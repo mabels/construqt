@@ -54,6 +54,14 @@ def firewall(region)
       nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(53).to_dest("HOST-bind-de").from_is_outside
       nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv4.from_net("#INTERNET").to_me.tcp.dport(443).to_dest("HOST-sniproxy", 4711).from_is_outside
       nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).ipv6.from_net("#INTERNET").to_host("#HOST-sniproxy").tcp.dport(443).to_dest("HOST-sniproxy", 4711).from_is_outside
+      nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.tcp.dport(8448).dport(3478).to_dest("HOST-matrix").from_is_outside
+      nat.add.prerouting.action(Construqt::Firewalls::Actions::DNAT).from_net("#INTERNET").to_me.udp.dport("isakmp").dport("ipsec-nat-t").to_dest("HOST-iscaac").from_is_outside
+    end
+  end
+
+  Construqt::Firewalls.add("ipsec-nat") do |fw|
+    fw.nat do |nat|
+      nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).from_net("#FANOUT-DE-BACKEND#SERVICE-NET-DE#SERVICE-TRANSIT-DE#IPSECVPN-DE").to_source.from_is_inside
     end
   end
 
@@ -114,6 +122,18 @@ def firewall(region)
     end
   end
 
+  Construqt::Firewalls.add("service-archlinux") do |fw|
+    fw.forward do |fwd|
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-archlinux").tcp.dport(443).ipv6.from_is_outside
+    end
+  end
+
+  Construqt::Firewalls.add("service-matrix") do |fw|
+    fw.forward do |fwd|
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-matrix").tcp.dport(8448).dport(3478).from_is_outside
+    end
+  end
+
   Construqt::Firewalls.add("service-imap") do |fw|
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-imap-de").tcp.dport(993).from_is_outside
@@ -129,6 +149,13 @@ def firewall(region)
   Construqt::Firewalls.add("service-sniproxy") do |fw|
     fw.forward do |fwd|
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-sniproxy").tcp.dport(4711).from_is_outside
+    end
+  end
+
+  Construqt::Firewalls.add("service-ipsec") do |fw|
+    fw.forward do |fwd|
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_net("#INTERNET").to_host("HOST-iscaac").udp.dport("isakmp").dport("ipsec-nat-t").from_is_outside
+     fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#INTERNET").to_host("HOST-iscaac").esp.from_is_outside
     end
   end
 
@@ -223,13 +250,13 @@ def firewall(region)
     end
   end
 
-  Construqt::Firewalls.add("ipsec-srv") do |fw|
-    fw.host do |host|
-      host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#INTERNET").to_my_net.udp.dport("isakmp")
-        .dport("ipsec-nat-t").from_is_outside
-      host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#INTERNET").to_my_net.esp.from_is_outside
-    end
-  end
+#  Construqt::Firewalls.add("ipsec-srv") do |fw|
+#    fw.host do |host|
+#      host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#INTERNET").to_my_net.udp.dport("isakmp")
+#        .dport("ipsec-nat-t").from_is_outside
+#      host.add.action(Construqt::Firewalls::Actions::ACCEPT).from_net("#INTERNET").to_my_net.esp.from_is_outside
+#    end
+#  end
   Construqt::Firewalls.add("host-outbound-simple") do |fw|
     fw.host do |host|
       host.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_my_net.to_net("#INTERNET").from_is_inside

@@ -29,7 +29,7 @@ module Construqt
               ipsec = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::IpsecStrongSwan::OncePerHost)
               # binding.pry if host.name == "fanout-de"
 
-              Device.build_config(host, iface, node, nil, nil, nil, true)
+              # Device.build_config(host, iface, node, nil, nil, nil, true)
               render_ipv6_proxy(iface)
               if iface.leftpsk
                 comment = "#{host.name}-#{iface.name}"

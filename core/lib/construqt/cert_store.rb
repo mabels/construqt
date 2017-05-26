@@ -140,7 +140,6 @@ module Construqt
           throw "cert is not the right type" unless cert.instance_of?(Cert)
           throw "needs to be a cert" unless cert.is_cert?
         end
-        # binding.pry
         @cacerts = Set.new(cacerts).select{|i| i.is_ca_cert? }
         @cacerts.each do |cacert|
           throw "cacert is not the right type #{cacert}" unless cacert.instance_of?(Cert)

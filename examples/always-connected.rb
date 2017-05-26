@@ -46,8 +46,8 @@ module AlwaysConnected
                                          "hide_ssid" => true)
       [
         { :name => "ao-ac-mam-otr",    :fws => ["net-forward"], :ssid => "MAM-OTR",    :block => 123 }, # homenet
-        { :name => "ao-ac-mam-otr-de", :fws => ["net-forward"], :ssid => "MAM-OTR-DE", :ipsec => FANOUT_DE_ADVISER_COM, :block => 124 },
-        #{ :name => "ao-ac-mam-otr-us", :fws => ["net-forward"], :ssid => "MAM-OTR-US", :ipsec => FANOUT_US_ADVISER_COM, :block => 125 }
+        { :name => "ao-ac-mam-otr-de", :fws => ["net-forward"], :ssid => "MAM-OTR-DE", :ipsec => IPSEC_DE, :block => 124 },
+        #{ :name => "ao-ac-mam-otr-us", :fws => ["net-forward"], :ssid => "MAM-OTR-US", :ipsec => IPSEC_DE, :block => 125 }
       ].each do |net|
         wifi_ifs = []
         if WIFI_PSKS[net[:name]]

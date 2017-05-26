@@ -32,11 +32,11 @@ module Construqt
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               if ups.length > 0
                 blocks = ups
-                result.add(IpProxyNeigh, Construqt::Util.render(binding, "interfaces_sh_envelop.erb"),
+                result.add(EtcNetworkNetworkUd, Construqt::Util.render(binding, "interfaces_sh_envelop.erb"),
                            Construqt::Resources::Rights.root_0755,
                            'etc', 'network', "network-up.sh")
                 blocks = downs.reverse
-                result.add(IpProxyNeigh, Construqt::Util.render(binding, "interfaces_sh_envelop.erb"),
+                result.add(EtcNetworkNetworkUd, Construqt::Util.render(binding, "interfaces_sh_envelop.erb"),
                            Construqt::Resources::Rights.root_0755,
                            'etc', 'network', "network-down.sh")
               end

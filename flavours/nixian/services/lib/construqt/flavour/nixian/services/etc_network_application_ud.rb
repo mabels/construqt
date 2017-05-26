@@ -35,11 +35,11 @@ module Construqt
               if ups.length > 0
                 #binding.pry if @host.name == "dns-1"
                 blocks = ups
-                result.add(IpProxyNeigh, Construqt::Util.render(binding, "interfaces_sh_envelop.erb"),
+                result.add(EtcNetworkApplicationUd, Construqt::Util.render(binding, "interfaces_sh_envelop.erb"),
                            Construqt::Resources::Rights.root_0755,
                            'etc', 'network', "application-up.sh")
                 blocks = downs.reverse
-                result.add(IpProxyNeigh, Construqt::Util.render(binding, "interfaces_sh_envelop.erb"),
+                result.add(EtcNetworkApplicationUd, Construqt::Util.render(binding, "interfaces_sh_envelop.erb"),
                            Construqt::Resources::Rights.root_0755,
                            'etc', 'network', "application-down.sh")
               end

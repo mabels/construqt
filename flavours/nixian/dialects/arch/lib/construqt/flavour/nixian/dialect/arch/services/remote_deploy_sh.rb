@@ -24,8 +24,11 @@ module Construqt
                 end
 
                 def build_config_host
-                  Util.write_str(@host.region, Construqt::Util.render(binding, "remote-deploy.sh.erb"),
-                    @host.name, 'remote-deploy.sh')
+                  if @host.id.first_ipv4!
+                    Util.write_str(@host.region, Construqt::Util.render(binding,
+                                   "remote-deploy.sh.erb"),
+                                   @host.name, 'remote-deploy.sh')
+                  end
                 end
 
                 def commit

@@ -198,7 +198,10 @@ module Construqt
 
     def find_instances_from_type(type)
       ret = @result_types[type]
-      throw "type not found #{type}" unless ret
+      unless ret
+        binding.pry
+        throw "type not found #{type}"
+      end
       ret.instance
     end
 
@@ -327,7 +330,7 @@ module Construqt
       result_actor = lambda { |i| i.instance.respond_to?(action) and i.instance.send(action, iface) }
       service_actor = lambda do |i|
         if i.instance.respond_to?(action) and iface == i.iface
-          # binding.pry if host.name == "fanout-de" and iface.name == "eth0"
+          #binding.pry if host.name == "bdog" and iface.name == "eth0"
           i.instance.send(action, iface)
         end
       end

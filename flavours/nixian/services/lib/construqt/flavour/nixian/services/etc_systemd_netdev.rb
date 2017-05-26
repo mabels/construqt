@@ -17,8 +17,9 @@ module Construqt
             end
 
             def kind
-              if @interface.delegate.respond_to?(:tunnel_kind)
-                @interface.delegate.tunnel_kind
+              # binding.pry if @interface.name == "gt6rtwlmgt"
+              if @interface.delegate.respond_to?(:kind)
+                @interface.delegate.kind
               else
                 @interface.delegate.clazz
               end

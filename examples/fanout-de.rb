@@ -17,7 +17,15 @@ module FanoutDe
         gw6: "fe80::1",
         net6: "2a01:4f8:c17:186"
       },
-    }[:cx]
+      nx: {
+        ipe: "5.9.87.41",
+        ip: "5.9.87.41/27",
+        gw: "5.9.87.33",
+        ip6: "2a01:4f8:162:116a::2/64",
+        gw6: "fe80::1",
+        net6: "2a01:4f8:162:116a"
+      },
+    }[:nx]
   end
   def self.run(region)
     fanout = self.cfg

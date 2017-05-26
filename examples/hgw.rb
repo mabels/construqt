@@ -1,5 +1,5 @@
 module Hgw
-  def self.run(region, fanout_de)
+  def self.run(region, fanout_de, cfg)
     kuckpi = region.hosts.add("kuckpi", "flavour" => "nixian", "dialect" => "ubuntu") do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
@@ -36,14 +36,14 @@ module Hgw
                                                               'firewalls' => ['host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit', "vpn-server-net", 'block'],
                                                               'address' => region.network.addresses
           .add_ip("192.168.178.15/24")
-          .add_route_from_tags("#FANOUT-DE", "#KDE-HGW"))
+          .add_route(IPSEC_DE||"0.0.0.0/0", "192.168.178.1"))
         region.cables.add(iface, region.interfaces.find(kuckpi, 'br0'))
       end
 
       region.cables.add(region.interfaces.add_device(host, "br70", "mtu" => 1500,
                                                      'address' => region.network.addresses
         .add_ip("192.168.70.1/24#SERVICE-NET-DE-HGW#SERVICE-NET-DE")
-        .add_ip("#{FanoutDe.cfg[:net6]}:192:168:70:1/123#SERVICE-NET-DE-HGW#SERVICE-NET-DE")),
+        .add_ip("#{cfg[:net6]}:192:168:70:1/123#SERVICE-NET-DE-HGW#SERVICE-NET-DE")),
       region.interfaces.find(kuckpi, 'br70'))
     end
 
@@ -56,7 +56,7 @@ module Hgw
                                  "left" => {
                                    "my" => region.network.addresses.add_ip("169.254.70.1/30#SERVICE-IPSEC")
                                      .add_ip("169.254.70.5/30#SERVICE-TRANSIT-DE#FANOUT-DE-HGW-GW")
-                                     .add_ip("#{FanoutDe.cfg[:net6]}::9/126#SERVICE-TRANSIT-DE#FANOUT-DE-HGW-GW")
+                                     .add_ip("#{cfg[:net6]}::9/126#SERVICE-TRANSIT-DE#FANOUT-DE-HGW-GW")
                                      .add_route_from_tags("#SERVICE-NET-DE-HGW", "#SERVICE-DE-HGW"),
                                    "host" => fanout_de,
                                    "remote" => region.interfaces.find(fanout_de, "eth0").address,
@@ -66,7 +66,7 @@ module Hgw
                                  "right" => {
                                    "my" => region.network.addresses.add_ip("169.254.70.2/30")
                                      .add_ip("169.254.70.6/30#SERVICE-DE-HGW#SERVICE-NET-DE")
-                                     .add_ip("#{FanoutDe.cfg[:net6]}::a/126#SERVICE-TRANSIT-DE#SERVICE-DE-HGW#SERVICE-NET-DE")
+                                     .add_ip("#{cfg[:net6]}::a/126#SERVICE-TRANSIT-DE#SERVICE-DE-HGW#SERVICE-NET-DE")
                                      .add_route_from_tags("#INTERNET", "#FANOUT-DE-HGW-GW"),
                                    'firewalls' => ['host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit', 'block'],
                                    "host" => service_de_hgw,

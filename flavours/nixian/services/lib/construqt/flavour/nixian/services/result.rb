@@ -16,8 +16,6 @@ module Construqt
             def initialize # (result_types, host)
               # @result_types = result_types
               @results = {}
-              # @ipsec_secret = Ipsec::IpsecSecret.new(self)
-              # @ipsec_cert_store = Ipsec::IpsecCertStore.new(self)
               # @service_factory = ServiceFactory.new
             end
 

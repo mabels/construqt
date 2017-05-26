@@ -91,6 +91,7 @@ module Construqt
               # Lxc.write_deployers(@host)
               # Docker.write_deployers(@host)
               packager = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Packager::OncePerHost)
+              # binding.pry if @host.name == 'bdog'
               packages = packager.get_packages
 
               out = [
@@ -104,7 +105,8 @@ module Construqt
 
               out << sh_is_opt_set
               out << sh_function_git_add
-              out << @service.sh_install_packages || sh_install_packages
+              #binding.pry if host.name == "bdog"
+              out.push(@service.sh_install_packages || sh_install_packages)
 
               out << Construqt::Util.render(binding, 'result_package_list.sh.erb')
 

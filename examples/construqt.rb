@@ -13,6 +13,7 @@ CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../../'
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/entities/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/coreos/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/ubuntu/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/docker/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/services/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/systemd/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/flat/lib",
@@ -30,6 +31,7 @@ require 'construqt'
 require 'construqt/flavour/nixian'
 require 'construqt/flavour/nixian/dialect/ubuntu'
 require 'construqt/flavour/nixian/dialect/coreos'
+require 'construqt/flavour/nixian/dialect/docker'
 require 'construqt/flavour/unknown'
 require 'construqt/flavour/mikrotik'
 require 'construqt/flavour/ciscian'
@@ -53,6 +55,7 @@ def setup_region(name, network)
   nixian.services_factory.add(Aiccu::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::CoreOs::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Ubuntu::Factory.new)
+  nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Docker::Factory.new)
   region.flavour_factory.add(nixian)
   region.flavour_factory.add(Construqt::Flavour::Unknown::Factory.new)
   region.flavour_factory.add(Construqt::Flavour::Mikrotik::Factory.new)
@@ -129,25 +132,29 @@ region.network.addresses.add_ip("fd00::/8#PRIVATE")
 # end
 
 
-require_relative "./fanout-de.rb"
-fanout_de = FanoutDe.run(region)
+#require_relative "./fanout-de.rb"
+#fanout_de = FanoutDe.run(region)
 
-require_relative "./fanout-us.rb"
-fanout_us = FanoutUs.run(region)
+require_relative "./bdog.rb"
+bdog = Bdog.run(region)
 
-require_relative 'scable'
-Scable.run(network, fanout_de)
 
-require_relative "./fanout-connect.rb"
-FanoutConnect.run(region, fanout_de, fanout_us)
+#require_relative "./fanout-us.rb"
+#fanout_us = FanoutUs.run(region)
+
+#require_relative 'scable'
+#Scable.run(network, fanout_de)
+
+#require_relative "./fanout-connect.rb"
+#FanoutConnect.run(region, fanout_de, fanout_us)
 
 
 require_relative "./hgw.rb"
-Hgw.run(region, fanout_de)
+Hgw.run(region, region.hosts.find("iscaac"), Bdog.cfg)
 
 
 require_relative "./mam-wl-rt.rb"
-MamWl.run(region, {:de => fanout_de, :us => fanout_us})
+MamWl.run(region, {:de => region.hosts.find("iscaac") }, Bdog.cfg) # :us => fanout_us})
 
 require_relative "./scott.rb"
 Scott.run(region)

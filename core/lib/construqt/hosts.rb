@@ -33,7 +33,7 @@ module Construqt
     end
 
     def add(host_name, cfg, &block)
-      (host_name, host) = Construqt::Tags.add("#{host_name}##{host_name}") { |name| add_internal(name, cfg) { |h| block.call(h) } }
+      (host_name, host) = Construqt::Tags.add("#{host_name}##{host_name}") { |name| add_internal(name, cfg) { |h| block and block.call(h) } }
       host
     end
 
@@ -65,27 +65,30 @@ module Construqt
       flavour = cfg['flavour'] = @region.flavour_factory.produce(cfg)
       #		cfg['clazz'] = cfg['flavour'].clazz("host")
       throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
+      # binding.pry if name == "bdog"
       cfg['services'] = Services.create(flavour.add_host_services(cfg['services']))
       cfg['region'] = @region
       host = cfg['flavour'].create_host(name, cfg)
       block.call(host)
       host.interfaces.bind_host(host)
-      throw "host attribute id is required" unless host.id.kind_of? HostId
-      throw "host attribute configip is required" unless host.configip.kind_of? HostId
+      #throw "host attribute id is required" unless host.id.kind_of? HostId
+      #throw "host attribute configip is required" unless host.configip.kind_of? HostId
 
-      if (host.id.first_ipv4! && !host.id.first_ipv4!.dhcpv4?) ||
-          (host.id.first_ipv6! && !host.id.first_ipv6!.dhcpv6?)
-        adr = nil
-        if host.id.first_ipv4!
-          adr = (adr || region.network.addresses.create).add_ip(host.id.first_ipv4.first_ipv4.to_s).set_name(host.name)
+      if host.id.kind_of? HostId
+        if (host.id.first_ipv4! && !host.id.first_ipv4!.dhcpv4?) ||
+           (host.id.first_ipv6! && !host.id.first_ipv6!.dhcpv6?)
+          adr = nil
+          if host.id.first_ipv4!
+            adr = (adr || region.network.addresses.create).add_ip(host.id.first_ipv4.first_ipv4.to_s).set_name(host.name)
+          end
+
+          if host.id.first_ipv6!
+            adr = (adr || region.network.addresses.create).add_ip(host.id.first_ipv6.first_ipv6.to_s).set_name(host.name)
+          end
+
+          adr = region.network.addresses.create unless adr
+          adr.host = host if adr
         end
-
-        if host.id.first_ipv6!
-          adr = (adr || region.network.addresses.create).add_ip(host.id.first_ipv6.first_ipv6.to_s).set_name(host.name)
-        end
-
-        adr = region.network.addresses.create unless adr
-        adr.host = host if adr
       end
 
       @hosts[name] = host

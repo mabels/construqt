@@ -63,14 +63,27 @@ module Construqt
                 iname = Util.clean_if(cfg.gt, gre_delegate.name)
                 local_iface = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(cfg.remote.ipaddr) }
                 throw "need a interface with address #{host.name}:#{cfg.remote.ipaddr}" unless local_iface
+                # binding.pry if iname == "gt4rtwlmgt"
+                #binding.pry
+                addrs = host.region.network.addresses.create
+                cfg.my.by_family(cfg.family).map do |adr|
+                  addrs.add_ip(adr.to_string)
+                end
+                cfg.my.routes.each do |rt|
+                  if cfg.family == Construqt::Addresses::IPV4 && rt.dst.ipv4? ||
+                     cfg.family == Construqt::Addresses::IPV6 && rt.dst.ipv6?
+                    addrs.add_route(rt.dst.to_string, rt.via.to_s, rt.options)
+                  end
+                end
                 gt = host.region.interfaces.add_device(host, iname,
-                  "address" => cfg.my,
+                  "address" => addrs,
                   "interfaces" => [local_iface],
                   "firewalls" => gre_delegate.firewalls.map{|i| i.name},
-                  "tunnel" => cfg, "clazz" => "tunnel")
+                  "tunnel" => cfg,
+                  "clazz" => "tunnel")
                 # binding.pry
-                local_iface.add_child gt
-                gt.add_child gre_delegate
+                local_iface.add_child(gt)
+                gt.add_child(gre_delegate)
                 # binding.pry
 
                 # local_ifaces[local_iface.name] ||= OpenStruct.new(:iface => local_iface, :inames => [])
@@ -87,7 +100,7 @@ module Construqt
 
             def build_config(host, gre, node)
               gre_delegate = gre.delegate
-              prepare = get_prepare(gre_delegate)
+              # prepare = get_prepare(gre_delegate)
 
               # binding.pry if gre.name == "fanout-de"
 
