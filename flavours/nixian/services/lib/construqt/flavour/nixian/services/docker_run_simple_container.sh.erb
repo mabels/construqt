@@ -1,0 +1,31 @@
+#!/bin/sh
+
+docker rm -f run_<%= container.host.name %>
+
+exec docker run  \
+<% if container.get_privileged -%>
+  --privileged \
+<% end -%>
+<% container.host.interfaces.values.select do |i|
+    i.name != "lo" && i.cable.connections.length > 0
+  end.each do |iface| -%>
+  --net <%= iface.name %> \
+<% iface.address.ips.each do |ip|
+     if ip.ipv4? -%>
+  --ip=<%= ip.to_s %> \
+<%   else -%>
+  --ip6=<%= ip.to_s %> \
+<%   end
+   end
+end -%>
+<% container.get_publishes.each do |ph, pc| -%>
+  -p <%= ph %>:<%= pc %> \
+<% end -%>
+<% container.get_maps.each do |h, d| -%>
+  -v <%= h %>:<%= d %> \
+<% end -%>
+  --name run_<%= container.host.name %> \
+  -t <%= container.get_container_name %> \
+<% if container.get_start_args -%>
+  <%= container.get_start_args %>
+<% end -%>

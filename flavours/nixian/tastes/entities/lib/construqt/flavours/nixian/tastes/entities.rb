@@ -9,8 +9,9 @@ module Construqt
           def self.add_taste(taste, entity, impl)
             taste[entity.name] ||= []
             if taste[entity.name].find{|i| i == impl}
-              binding.pry
-              throw "taste #{entity.name} #{impl}"
+              return
+              # binding.pry
+              # throw "taste #{entity.name} #{impl}"
             end
             taste[entity.name].push impl
           end

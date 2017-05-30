@@ -15,6 +15,7 @@ then
     systemctl disable $i
   done
 <% services.values.each do |srv| -%>
+  echo "systemctl start <%= srv.get_name %>"
   systemctl enable <%= srv.get_name %>
 <% if do_start_stop -%>
   systemctl start <%= srv.get_name %>

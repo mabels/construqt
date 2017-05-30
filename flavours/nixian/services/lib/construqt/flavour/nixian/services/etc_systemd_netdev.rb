@@ -4,6 +4,7 @@ module Construqt
       module Services
         module EtcSystemdNetdev
           class SystemdNetdev
+            attr_reader :interface
             def initialize(iface)
               @interface = iface
             end
@@ -61,8 +62,8 @@ module Construqt
 
             def commit(result)
               result.add(self, self.as_string,
-                                         Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::SYSTEMD),
-                                         "etc", "systemd", "network", "#{self.name}.netdev")
+                Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::SYSTEMD),
+                "etc", "systemd", "network", "#{self.name}.netdev")
             end
           end
 
@@ -89,6 +90,8 @@ module Construqt
             def commit
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               @interfaces.values.each do |sysdev|
+                # binding.pry if sysdev.interface.name == "docker0"
+                next unless sysdev.interface.startup?
                 sysdev.commit(result)
               end
             end

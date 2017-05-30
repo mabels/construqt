@@ -198,7 +198,7 @@ module Construqt
                 name = File.join("#{@service.get_name}.d", name)
               end
               unless @skip_content
-              result.add(SystemdService, as_systemd_file,
+                result.add(SystemdService, as_systemd_file,
                          Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::SYSTEMD),
                          'etc', 'systemd', 'system', name)
               end
@@ -244,14 +244,14 @@ module Construqt
                 do_start_stop = false
                 result.add(self, Util.render(binding, 'etc_systemd_deployer_sh.erb'),
                   Construqt::Resources::Rights.root_0755,
-                  "etc", "systemd", "system", "construqt-sanitary.sh")
+                  "etc", "construqt", "construqt-sanitary.sh")
                 srv.description("construqt sanitary")
                   .default_dependencies(false)
                   .after("sysinit.target")
                   .after("local-fs.target")
                   .before("basic.target")
                   .type("oneshot")
-                  .exec_start("/bin/sh /etc/systemd/system/construqt-sanitary.sh")
+                  .exec_start("/bin/sh /etc/construqt/construqt-sanitary.sh")
                   .wanted_by("basic.target")
               end
             end

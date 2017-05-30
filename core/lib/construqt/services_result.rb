@@ -238,12 +238,16 @@ module Construqt
     def run_construction_order(rt_lambda, sp_lambda)
       sdo = self.service_construction_order
       # create all instances onceperhost and action per service type
+      rts = Set.new
+      sps = Set.new
       sdo.each do |service_instance|
         service_instance.result_types.each do |rt|
-          rt_lambda.call(rt)
+          rts.include?(rt) or rt_lambda.call(rt)
+          rts.add(rt)
         end
         service_instance.service_producers.each do |sp|
-          sp_lambda.call(sp)
+          sps.include?(sp) or sp_lambda.call(sp)
+          sps.add(sp)
         end
       end
     end
@@ -251,12 +255,16 @@ module Construqt
     def run_deconstruction_order(rt_lambda, sp_lambda)
       sdo = self.service_construction_order.reverse
       # create all instances onceperhost and action per service type
+      rts = Set.new
+      sps = Set.new
       sdo.each do |service_instance|
         service_instance.service_producers.each do |sp|
-          sp_lambda.call(sp)
+          sps.include?(sp) or sp_lambda.call(sp)
+          sps.add(sp)
         end
         service_instance.result_types.each do |rt|
-          rt_lambda.call(rt)
+          rts.include?(rt) or rt_lambda.call(rt)
+          rts.add(rt)
         end
       end
     end

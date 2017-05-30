@@ -2,6 +2,14 @@ module Construqt
   module Flavour
     module Delegate
       module InterfaceNode
+        def startup?
+          if self.delegate.respond_to?(:startup?)
+            self.delegate.startup?
+          else
+            true
+          end
+        end
+
         def init_node()
           @node = self.host.interface_graph.node_from_ref(self)
           self

@@ -31,6 +31,7 @@ require_relative 'services/packager'
 require_relative 'services/reject_routes'
 require_relative 'services/deployer_sh'
 require_relative 'services/sysctl_conf'
+require_relative 'services/invocation'
 
 module Construqt
   module Flavour
@@ -69,6 +70,7 @@ module Construqt
             Packager::Factory,
             DeployerSh::Factory,
             SysCtlConf::Factory,
+            Invocation::Factory,
           ].each do |clazz|
             services_factory.add(clazz.new)
           end

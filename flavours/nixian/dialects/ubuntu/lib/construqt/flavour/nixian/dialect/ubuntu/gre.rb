@@ -81,9 +81,12 @@ module Construqt
                   "firewalls" => gre_delegate.firewalls.map{|i| i.name},
                   "tunnel" => cfg,
                   "clazz" => "tunnel")
-                # binding.pry
-                local_iface.add_child(gt)
+                # binding.pry if host.name == "iscaac"
+                # local_iface.add_child(gt)
+                # gt.add_child(local_iface)
+                gre_delegate.add_child(gt)
                 gt.add_child(gre_delegate)
+                # gt.add_child(gre_delegate)
                 # binding.pry
 
                 # local_ifaces[local_iface.name] ||= OpenStruct.new(:iface => local_iface, :inames => [])
@@ -95,6 +98,7 @@ module Construqt
                 #Device.build_config(host, gre, node, iname, cfg.family, cfg.mtu)
                 #writer.lines.down("ip -#{cfg.prefix} tunnel del #{iname}")
               end
+
               # binding.pry if host.name == "rt-ab-de"
             end
 

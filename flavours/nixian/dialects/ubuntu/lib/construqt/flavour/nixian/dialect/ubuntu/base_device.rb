@@ -27,6 +27,11 @@ module Construqt
               # @vagrant = cfg['vagrant']
               @firewalls = cfg['firewalls']
               @network = cfg['network']
+              @startup = cfg['startup']
+            end
+
+            def startup?
+              @startup
             end
 
             def inspect

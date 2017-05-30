@@ -24,9 +24,9 @@ module Construqt
                   srv.exec_start("/usr/bin/env ip6tables-restore /etc/network/ip6tables.cfg")
                 end
                end
-               ess.get_drop_in("docker.service", "42-iptables-false.conf") do |dropin|
-                  dropin.environment("DOCKER_OPTS=--iptables=false")
-               end
+              #  ess.get_drop_in("docker.service", "42-iptables-false.conf") do |dropin|
+                  # dropin.environment("DOCKER_OPTS=--iptables=false")
+              #  end
             end
             def activate(ctx)
               @context = ctx

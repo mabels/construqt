@@ -51,13 +51,16 @@ module Construqt
                       [Construqt::Flavour::Nixian::Services::Result::Service.new,
                        Construqt::Flavour::Nixian::Services::UpDowner::Service.new
                          .taste(Tastes::Systemd::Factory.new),
-                       Construqt::Flavour::Nixian::Services::Docker::Service.new,
+                       Construqt::Flavour::Nixian::Services::Docker::Service.new
+                         .docker_pkg("docker"),
+                       Construqt::Flavour::Nixian::Services::Invocation::Service.new,
                        Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
                        Construqt::Flavour::Nixian::Services::Ssh::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
-                       Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdNetwork::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
+                       Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::Service.new,
+                       Construqt::Flavour::Nixian::Services::EtcNetworkApplicationUd::Service.new,
                        Construqt::Flavour::Nixian::Services::RejectRoutes::Service.new,
                        Construqt::Flavour::Nixian::Dialect::Arch::Services::RemoteDeploySh::Service.new,
                        Construqt::Flavour::Nixian::Services::ModulesConf::Service.new,

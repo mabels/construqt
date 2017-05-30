@@ -91,6 +91,7 @@ module Construqt
             def commit
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               @interfaces.values.each do |sysnet|
+                next unless sysnet.interface.startup?
                 sysnet.commit(result)
               end
             end

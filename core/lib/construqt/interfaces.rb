@@ -45,6 +45,11 @@ module Construqt
         cfg['number'] ||= match[1].to_i
       end
 
+      if cfg.has_key?('startup')
+        cfg['startup'] = cfg['startup']
+      else
+        cfg['startup'] = true
+      end
       cfg['host'] = host
       cfg['mtu'] ||= 1500
       #binding.pry if host && host.name == "ct-iar1-ham"

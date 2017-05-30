@@ -77,6 +77,11 @@ module Construqt
       IO.read(path)
     end
 
+    def self.read_str!(region, *path)
+      path = File.join(dst_path(region), *path)
+      File.exists?(path) && IO.read(path)
+    end
+
     def self.write_gzip(region, str, *path)
       path = File.join(dst_path(region), '.zipped', *path)+".gz"
       FileUtils.mkdir_p(File.dirname(path))

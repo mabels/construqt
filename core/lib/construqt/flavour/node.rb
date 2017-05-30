@@ -66,7 +66,10 @@ module Construqt
       end
 
       def connect(node)
-        throw "node not set" unless node
+        unless node
+          binding.pry
+          throw "node not set"
+        end
         unless self.in_links?(node)
           @out_links[node.object_id] = node
           node.in_links = self
