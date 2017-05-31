@@ -10,7 +10,8 @@ install_packages()
       updates="$updates $i"
     fi
   done
-  [ -f /etc/resolv.conf ] && mv /etc/resolv.conf /etc/resolv.conf.temp
+  [ -e /etc/resolv.conf ] && mv /etc/resolv.conf /etc/resolv.conf.temp
+  rm -f /etc/resolv.conf
   touch /etc/resolv.conf
   echo "nameserver 8.8.4.4" >> /etc/resolv.conf
   echo "nameserver 8.8.8.8" >> /etc/resolv.conf
@@ -18,5 +19,5 @@ install_packages()
   echo "nameserver 2001:4860:4860::8844" >> /etc/resolv.conf
   echo "install packages $updates"
   pacman -Syyu --noconfirm $updates
-  [ -f /etc/resolv.conf.temp ] && mv /etc/resolv.conf.temp /etc/resolv.conf
+  [ -e /etc/resolv.conf.temp ] && mv /etc/resolv.conf.temp /etc/resolv.conf
 }
