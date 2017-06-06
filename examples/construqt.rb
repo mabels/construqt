@@ -159,6 +159,9 @@ MamWl.run(region, {:de => region.hosts.find("iscaac") }, Bdog.cfg) # :us => fano
 require_relative "./scott.rb"
 Scott.run(region)
 
+require_relative "./thieso.rb"
+Thieso.run(region)
+
 require_relative "./ooble.rb"
 Ooble.run(region)
 

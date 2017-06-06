@@ -4,9 +4,12 @@ module AlwaysConnected
   ACCESS_ROUTER = {}
 
   def self.ac_router(region, name, block, fws, mother)
-    ACCESS_ROUTER[name] = region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother,
-                                           "services" =>
-                  [Construqt::Flavour::Nixian::Services::Lxc::Service.new.aa_profile_unconfined.release("xenial")]) do |host|
+    ACCESS_ROUTER[name] = region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu",
+                                           "mother" => mother,
+                                           "services" => [
+       Construqt::Flavour::Nixian::Services::Invocation::Service.new(
+          Construqt::Flavour::Nixian::Services::Lxc::Container.new.aa_profile_unconfined.release("xenial")
+       )]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -130,7 +133,7 @@ module AlwaysConnected
     AlwaysConnected.border_access(mother, "wlx485d60a394cb", "ssid" => "espiritudelviento", "psk" => "0000000000")
     AlwaysConnected.border_access(mother, "wlxc4e9841f0822", "ssid" => "espiritudelviento", "psk" => "0000000000")
     AlwaysConnected.border_access(mother, "br0")
-    AlwaysConnected.router(mother, "ao-router", 8, Construqt::Flavour::Nixian::Services::Lxc::Service.new.restart.template("ao-template"))
+    AlwaysConnected.router(mother, "ao-router", 8, Construqt::Flavour::Nixian::Services::Lxc::Container.new.restart.template("ao-template"))
     Construqt.produce(region)
   end
 
@@ -141,7 +144,12 @@ module AlwaysConnected
     # "lxc_deploy" => Construqt::Flavour::Nixian::Services::Lxc::Service.new.restart.template("ao-template")
     BORDER_ACCESS["ao-border-#{ifname}"] = region.hosts.add("ao-border-#{ifname}", "flavour" => "nixian",
                                       "dialect" => "ubuntu", "mother" => mother,
-                                      "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new.aa_profile_unconfined.release("xenial")]) do |host|
+                                      "services" => [
+                  Construqt::Flavour::Nixian::Services::Invocation::Service.new(
+                    Construqt::Flavour::Nixian::Services::Lxc::Container.new
+                    .aa_profile_unconfined
+                    .release("xenial")
+                  )]) do |host|
                                         region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                                                      :description=>"#{host.name} lo",
                                                                      "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -189,7 +197,10 @@ module AlwaysConnected
     region = mother.region
     # "lxc_deploy" => lxc_deploy
     region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother,
-                     "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new]) do |host|
+                     "services" => [
+                      Construqt::Flavour::Nixian::Services::Invocation::Service.new(
+                       Construqt::Flavour::Nixian::Services::Lxc::Container.new)
+                     ]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -205,7 +216,10 @@ module AlwaysConnected
   def self.access_controller(mother)
     region = mother.region
     region.hosts.add("ao-access-ctl", "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mother,
-                     "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new.restart.template("ao-template")]) do |host|
+                     "services" => [Construqt::Flavour::Nixian::Services::Invocation::Service.new(
+                       Construqt::Flavour::Nixian::Services::Lxc::Container.new
+                        .restart.template("ao-template")
+                     )]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -222,7 +236,9 @@ module AlwaysConnected
     region = mother.region
     # "lxc_deploy" => Construqt::Flavour::Nixian::Services::Lxc.new.restart.template("ao-template")
     region.hosts.add("ao-tunnel-#{rname}", "flavour" => "nixian", "dialect" => "ubuntu",
-                     "mother" => mother, "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new]) do |host|
+                     "mother" => mother, "services" => [
+                       Construqt::Flavour::Nixian::Services::Invocation::Service.new(
+                       Construqt::Flavour::Nixian::Services::Lxc::Container.new)]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -238,7 +254,7 @@ module AlwaysConnected
     region = mother.region
     # "lxc_deploy" => Construqt::Flavour::Nixian::Services::Lxc.new.restart.template("ao-template")
     region.hosts.add("ao-ap-#{rname}-#{ifname}", "flavour" => "nixian", "dialect" => "ubuntu",
-                     "mother" => mother, "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new]) do |host|
+                     "mother" => mother, "services" => [Construqt::Flavour::Nixian::Services::Invocation::Service.new(Construqt::Flavour::Nixian::Services::Lxc::Container.new)]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

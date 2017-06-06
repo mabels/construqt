@@ -352,6 +352,12 @@ module Construqt
 
               # def self.write_deployers(host, forme, clazz, rights, path_action)
               host.region.hosts.get_hosts.select {|h| @host.eq(h.mother) }.each do |lxc|
+                next unless lxc.services.by_type_of(Construqt::Flavour::Nixian::Services::Invocation::Service)
+                  .find do |i|
+                    i.implementation.kind_of?(SimpleContainer) ||
+                    i.implementation.kind_of?(ComposedContainer)
+                  end
+                # next if lxc.
                 fcont = Util.read_str!(host.region, lxc.name, "deployer.sh")
                 next unless fcont
                 result.add(self, fcont,

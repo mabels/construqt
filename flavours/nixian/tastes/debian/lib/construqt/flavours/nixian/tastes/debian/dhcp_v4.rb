@@ -7,7 +7,7 @@ module Construqt
             def on_add(ud, taste, iface, me)
               eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
               writer = eni.get(iface)
-
+              # binding.pry if iface.name == "br0" and iface.host.name == "thieso"
               writer.header.dhcpv4
             end
             def activate(ctx)

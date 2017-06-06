@@ -8,6 +8,10 @@ module Construqt
               # binding.pry if iface.name == "etcbind-2"
               fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
               fsrv.up("brctl addbr #{iface.name}")
+              iface.interfaces.each do |brif|
+                fsrv.up("brctl addif #{iface.name} #{brif.name}")
+                fsrv.down("brctl delif #{iface.name} #{brif.name}")
+              end
               fsrv.down("brctl delbr #{iface.name}")
             end
             def activate(ctx)

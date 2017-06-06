@@ -98,8 +98,9 @@ module Construqt
                 end
 
                 if leftsubnet.nil? or leftsubnet.empty? or
-                    rightsubnet.nil? or rightsubnet.empty?
-                  throw "we need a transport_left and transport_right for #{service.host.name}-#{service.other.host.name}"
+                   rightsubnet.nil? or rightsubnet.empty?
+                  next
+                  #throw "we need a transport_left and transport_right for #{service.host.name}-#{service.other.host.name}"
                 end
 
                 if local_if.clazz == "vrrp"

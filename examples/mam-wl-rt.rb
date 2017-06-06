@@ -5,8 +5,10 @@ module MamWl
 
   def self.add_sms2mail(region, mam_wl_rt)
     region.hosts.add('sms2mail', "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mam_wl_rt,
-                     "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new.aa_profile_unconfined
-      .restart.killstop.release("xenial")]) do |host|
+                     "services" => [
+                       Construqt::Flavour::Nixian::Services::Invocation::Service.new(
+                       Construqt::Flavour::Nixian::Services::Lxc::Container.new.aa_profile_unconfined
+      .restart.killstop.release("xenial"))]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
@@ -24,7 +26,24 @@ module MamWl
     end
   end
 
-  def self.mam_ipsec_connection(region, left, right, fw_suffix, vlan, fws = [])
+  def self.mam_ipsec_connection(region, left, right, fw_suffix, vlan, fws = [], families=[
+    Construqt::Addresses::IPV4, Construqt::Addresses::IPV6])
+    left_addr = region.network.addresses.create
+    right_addr = region.network.addresses.create
+    left_addr.add_route_from_tags("#NET-#{left.name}", "#GW-#{left.name}")
+    right_addr.add_route_from_tags("#INTERNET", "#FANOUT-#{fw_suffix}-GW")
+
+    if families.include?(Construqt::Addresses::IPV4)
+      left_addr.add_ip("169.254.#{vlan}.1/30#SERVICE-IPSEC-#{fw_suffix}")
+               .add_ip("169.254.#{vlan}.5/30#SERVICE-TRANSIT-#{fw_suffix}#FANOUT-#{fw_suffix}-GW")
+      right_addr.add_ip("169.254.#{vlan}.2/30#SERVICE-TRANSIT-#{fw_suffix}")
+                .add_ip("169.254.#{vlan}.6/30#GW-#{left.name}#SERVICE-TRANSIT-#{fw_suffix}")
+    end
+    if families.include?(Construqt::Addresses::IPV6)
+      left_addr.add_ip("2602:ffea:1:7dd:#{vlan}::5/126#SERVICE-TRANSIT-#{fw_suffix}#FANOUT-#{fw_suffix}")
+      right_addr.add_ip("2602:ffea:1:7dd:#{vlan}::6/126#SERVICE-TRANSIT-#{fw_suffix}#GW-#{left.name}")
+    end
+    puts "#{left.name}<=>#{right.name} #{fws}"
     Construqt::Ipsecs.connection("#{left.name}<=>#{right.name}",
                                  "password" => IPSEC_PASSWORDS.call(left.name,right.name),
                                  "transport_family" => Construqt::Addresses::IPV4,
@@ -32,20 +51,14 @@ module MamWl
                                  "mtu_v6" => 1360,
                                  "keyexchange" => "ikev2",
                                  "left" => {
-                                   "my" => region.network.addresses.add_ip("169.254.#{vlan}.1/30#SERVICE-IPSEC-#{fw_suffix}")
-                                     .add_ip("169.254.#{vlan}.5/30#SERVICE-TRANSIT-#{fw_suffix}#FANOUT-#{fw_suffix}-GW")
-                                     .add_ip("2602:ffea:1:7dd:#{vlan}::5/126#SERVICE-TRANSIT-#{fw_suffix}#FANOUT-#{fw_suffix}")
-                                     .add_route_from_tags("#NET-#{left.name}", "#GW-#{left.name}"),
+                                   "my" => left_addr,
                                    "host" => right,
                                    "remote" => region.interfaces.find(right, "eth0").address,
                                    "auto" => "add",
                                    "sourceip" => true
                                  },
                                  "right" => {
-                                   "my" => region.network.addresses.add_ip("169.254.#{vlan}.2/30#SERVICE-TRANSIT-#{fw_suffix}")
-                                     .add_ip("169.254.#{vlan}.6/30#GW-#{left.name}#SERVICE-TRANSIT-#{fw_suffix}")
-                                     .add_ip("2602:ffea:1:7dd:#{vlan}::6/126#SERVICE-TRANSIT-#{fw_suffix}#GW-#{left.name}")
-                                     .add_route_from_tags("#INTERNET", "#FANOUT-#{fw_suffix}-GW"),
+                                   "my" => right_addr,
                                    'firewalls' => fws+['net-forward', 'ssh-srv', 'icmp-ping', 'block'],
                                    "host" => left,
                                    "remote" => region.interfaces.find(left, "v24").address,
@@ -56,6 +69,10 @@ module MamWl
 
   def self.mam_actions(region)
     {
+      "rt-mam-wl-de-6" => lambda do |my, net, peers|
+        #binding.pry
+        mam_ipsec_connection(region, my, peers[:de], "DE", net[:block], [], [Construqt::Addresses::IPV6])
+      end,
       "rt-ab-de" => lambda do |my, net, peers|
         mam_ipsec_connection(region, my, peers[:de], "DE", net[:block])
       end,
@@ -263,14 +280,14 @@ MODULES
                                    [
                                      { :name => "rt-mam-wl-de",   :fws => ['net-nat', "net-forward"], :ssid => "MAM-WL", :block => 202 }, # homenet
                                      { :name => "rt-mam-wl-de-6", :fws => ['net-nat', "net-forward"], :services => [], :block => 203, :action => lambda do |aiccu, internal_if|
-                                       region.interfaces.add_device(aiccu, "sixxs", "mtu" => "1280",
-                                                                    "dynamic" => true,
-                                                                    "services" => [Aiccu.new("AICCU").username(AICCU_DE["username"]).password(AICCU_DE["password"])],
-                                                                    "firewalls" => [ "fw-sixxs" ],
-                                                                    "address" => region.network.addresses.add_ip("2001:6f8:900:2bf::2/64"))
-                                       internal_if.services.add(Construqt::Flavour::Nixian::Services::Radvd::Service.new("RADVD").adv_autonomous)
+#                                       region.interfaces.add_device(aiccu, "sixxs", "mtu" => "1280",
+#                                                                    "dynamic" => true,
+#                                                                    "services" => [Aiccu.new("AICCU").username(AICCU_DE["username"]).password(AICCU_DE["password"])],
+#                                                                    "firewalls" => [ "fw-sixxs" ],
+#                                                                    "address" => region.network.addresses.add_ip("2001:6f8:900:2bf::2/64"))
+#                                       internal_if.services.add(Construqt::Flavour::Nixian::Services::Radvd::Service.new("RADVD").adv_autonomous)
                                        internal_if.address.ips = internal_if.address.ips.select{|i| i.ipv4? }
-                                       internal_if.address.add_ip("2001:6f8:900:82bf:#{internal_if.address.first_ipv4.to_s.split(".").join(":")}/64")
+                                       internal_if.address.add_ip("fd00:203::#{internal_if.address.first_ipv4.to_s.split(".").join(":")}/64")
                                      end
 
                                      }, # aiccu
@@ -298,8 +315,10 @@ MODULES
                                        end
 
                                        rts[net[:name]] = region.hosts.add(net[:name], "flavour" => "nixian", "dialect" => "ubuntu", "mother" => mam_wl_rt,
-                                                                          "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new.aa_profile_unconfined
-                                         .restart.killstop.release("xenial")]) do |host|
+                                                                          "services" => [
+                       Construqt::Flavour::Nixian::Services::Invocation::Service.new(
+                        Construqt::Flavour::Nixian::Services::Lxc::Container.new.aa_profile_unconfined
+                                         .restart.killstop.release("xenial"))]) do |host|
                                          region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                                                       :description=>"#{host.name} lo",
                                                                       "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))

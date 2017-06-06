@@ -6,6 +6,7 @@ module Construqt
         module Debian
           class BridgeMember
             def on_add(ud, taste, iface, me)
+              # binding.pry if iface.host.name == "thieso"
               eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
               writer = eni.get(iface, ud.ifname)
               writer.lines.up "brctl addif #{ud.bname} #{ud.ifname}"

@@ -38,6 +38,7 @@ module Construqt
               # else
               up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
               up_downer.add(iface, Tastes::Entities::Bridge.new(iface.name))
+
               Device.build_config(host, iface, node)
             end
           end

@@ -66,7 +66,7 @@ module Construqt
 
 
             def self.build_config(host, iface, node, ifname = nil, family = nil, mtu = nil, skip_link = nil)
-              # binding.pry
+              # binding.pry if host.name == "thieso" and iface.name == "enp0s8"
               throw "need node as 3th parameter" unless node.kind_of?(Construqt::Graph::Node)
               result = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               #      binding.pry

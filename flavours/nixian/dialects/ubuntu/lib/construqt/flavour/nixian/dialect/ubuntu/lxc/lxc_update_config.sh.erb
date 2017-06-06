@@ -1,7 +1,0 @@
-/etc/lxc/update_config <%= base_dir %>/config \
-  <%= base_dir %>/update.config.list \
-  <%= key %> <%=value %>
-for i in $(cat <%= base_dir %>/update.config.list)
-do
-  git_add /$i <%= right.owner%> <%= right.right %> false
-done

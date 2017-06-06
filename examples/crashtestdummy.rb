@@ -10,7 +10,11 @@ IPSEC_PASSWORDS = lambda do |left, right|
       "fanout-us" => "weg",
       "service-de-hgw" => "weg",
       "scable-1" => "weg",
-      "scable-2" => "weg"
+      "scable-2" => "weg",
+      "rt-mam-wl-de-6" => "weg"
+    },
+    "rt-mam-wl-de-6" => {
+      "iscaac" => "weg"
     },
     "rt-ab-us" => {
       "fanout-us" => "weg"

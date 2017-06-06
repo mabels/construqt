@@ -2,7 +2,7 @@
 <% if @auto -%>
 auto <%= get_interface_name %>
 <% end -%>
-iface <%= get_interface_name %> <%= @protocol %> manual
+iface <%= get_interface_name %> <%= @protocol %> <%= @mode %>
   up   /bin/bash /etc/network/<%= get_interface_name %>-up.iface
 <% Lines.ordered_lines(@post_ups).each do |post_up| -%>
   post-up <%= post_up %>
