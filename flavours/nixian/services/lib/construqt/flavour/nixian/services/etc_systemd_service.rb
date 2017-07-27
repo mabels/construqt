@@ -10,6 +10,7 @@ module Construqt
             chainable_attr_value :name
             chainable_attr_value :command, "start"
             chainable_attr_value :type, "simple"
+            chainable_attr_value :restart_sec
             attr_reader :afters, :befores, :conflicts, :drop_ins, :service
             def initialize(name, service = nil)
               # binding.pry
@@ -21,6 +22,7 @@ module Construqt
               @skip_content = false
               @remain_after_exit = false
               @name = name
+              @restart_sec = nil
               @entries = {}
               @exec_starts = []
               @exec_start_pres = []
@@ -81,11 +83,13 @@ module Construqt
             end
 
             def restart(a)
+              #binding.pry
               @restarts << a
               self
             end
 
             def get_restarts(a)
+              #binding.pry
               @restarts
             end
 
@@ -189,6 +193,7 @@ module Construqt
             end
 
             def as_systemd_file
+              #binding.pry unless @restarts.empty?
               Construqt::Util.render(binding, "systemd_service.erb")
             end
 

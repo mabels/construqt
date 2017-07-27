@@ -10,12 +10,14 @@ module Construqt
               ess = @context.find_instances_from_type Construqt::Flavour::Nixian::Services::EtcSystemdService::OncePerHost
               ess.get("construqt-#{me.iface.name}-dnsmasq.service") do |srv|
                 # binding.pry
+                #.exec_start_pre("/usr/lib/systemd/systemd-networkd-wait-online --interface=#{me.iface.name}")
                 srv.description("dnsmasq for #{me.iface.name} with range #{me.cfg.get_start}-#{me.cfg.get_end}")
                    .type("simple")
-                   .after("systemd-networkd.socket")
-                   .requires("systemd-networkd.socket")
-                   .exec_start_pre("/usr/lib/systemd/systemd-networkd-wait-online --interface=#{me.iface.name}")
+                   .after("network.target")
                    .exec_start("/usr/bin/env #{cmd.join(' ')}")
+                   .exec_stop("/bin/kill -HUP $MAINPID")
+                   .restart("on-failure")
+                   .restart_sec(5)
                    .wanted_by("multi-user.target")
               end
             end

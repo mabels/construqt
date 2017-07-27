@@ -48,6 +48,9 @@ ExecStopPost=<%= exec_stop_post %>
 <% @restarts.each do |restart| -%>
 Restart=<%= restart %>
 <% end -%>
+<% unless @restart_sec.nil? -%>
+RestartSec=<%= @restart_sec %>
+<% end -%>
 
 <% if @wanted_bys.length > 0 || @alsos.length > 0 -%>
 [Install]
