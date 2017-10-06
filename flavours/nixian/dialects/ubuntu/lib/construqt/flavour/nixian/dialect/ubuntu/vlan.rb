@@ -12,13 +12,18 @@ module Construqt
             def initialize(cfg)
               base_device(cfg)
               @interfaces = cfg['interfaces']
+              @vlan_id = cfg['vlan_id']
+            end
+
+
+            def vlan_id(_)
+              @vlan_id
             end
 
             def belongs_to
               return [self.host] if self.interfaces.empty? # and self.cable.connections.empty?
               return self.interfaces
             end
-
 
             def build_config(host, iface, node)
                 # ip link add link eth0 name eth0.8 type vlan id 8
