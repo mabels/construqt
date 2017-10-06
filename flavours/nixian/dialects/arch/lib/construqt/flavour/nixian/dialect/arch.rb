@@ -53,6 +53,7 @@ module Construqt
                          .taste(Tastes::Systemd::Factory.new),
                        Construqt::Flavour::Nixian::Services::Docker::Service.new
                          .docker_pkg("docker"),
+                       Construqt::Flavour::Nixian::Services::SysCtlConf::Service.new,
                        Construqt::Flavour::Nixian::Services::Invocation::Service.new,
                        Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
                        Construqt::Flavour::Nixian::Services::Ssh::Service.new,
