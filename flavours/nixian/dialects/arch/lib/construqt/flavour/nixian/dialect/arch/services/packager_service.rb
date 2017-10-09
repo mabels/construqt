@@ -10,8 +10,8 @@ module Construqt
                 cps = Packages::Builder.new
                 cp = Construqt::Resources::Component
                 cps.register(cp::UNREF).add('git').add('traceroute')
-                  .add('tcpdump').add('strace').add('lsof')
-                  .add('mtr').add('openssl')
+                   .add('tcpdump').add('strace').add('lsof')
+                   .add('mtr').add('openssl')
                 cps.register(Construqt::Flavour::Delegate::DeviceDelegate)
                 cps.register(Construqt::Flavour::Nixian::Dialect::Ubuntu::Wlan)
                 cps.register(Construqt::Resources::Component::SYSTEMD)
@@ -27,14 +27,14 @@ module Construqt
                 cps.register(cp::VRRP).add('keepalived')
                 cps.register(cp::FW4).add('iptables').add('ulogd')
                 cps.register(cp::FW6).add('iptables').add('ulogd')
-                #[
+                # [
                 #  cps.register(Construqt::Flavour::Delegate::IpsecVpnDelegate),
                 #  cps.register(Construqt::Flavour::Delegate::IpsecDelegate),
                 #  cps.register(cp::IPSEC)].each do |reg|
-                #reg.add('strongswan')
+                # reg.add('strongswan')
                 #  .add('strongswan-plugin-eap-mschapv2')
                 #  .add('strongswan-plugin-xauth-eap')
-                #end
+                # end
 
                 cps.register(cp::SSH).add('openssh')
                 cps.register(cp::BGP).add('bird').add('bird6')
@@ -46,8 +46,8 @@ module Construqt
                 cps.register(cp::LXC).add('lxc').add('ruby')
                   .cmd('[ "$(gem list -i linux-lxc)" = "true" ] || gem install linux-lxc --no-ri --no-rdoc')
                 cps.register(cp::DOCKER) #.add('docker')
-                #cps.register(cp::DHCPRELAY).add('wide-dhcpv6-relay').add('dhcp-helper')
-                #cps.register(cp::WIRELESS).both('crda').both('iw').mother('linux-firmware')
+                # cps.register(cp::DHCPRELAY).add('wide-dhcpv6-relay').add('dhcp-helper')
+                # cps.register(cp::WIRELESS).both('crda').both('iw').mother('linux-firmware')
                 #  .add('wireless-regdb').add('wpasupplicant')
                 cps
               end

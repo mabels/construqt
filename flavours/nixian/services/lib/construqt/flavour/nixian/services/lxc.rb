@@ -72,11 +72,11 @@ module Construqt
               @maps || {}
             end
 
-            def self.write_deployers(host)
-              Container.write_deployers(host, ->(h) { h.lxc_deploy }, Lxc,
-                                        Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::LXC),
-                                        ->(h) { ['/var', 'lib', 'lxc', "#{h.name}.deployer.sh"] })
-            end
+            # def self.write_deployers(host)
+            #   Container.write_deployers(host, ->(h) { h.lxc_deploy }, Lxc,
+            #                             Construqt::Resources::Rights.root_0600(Construqt::Resources::Component::LXC),
+            #                             ->(h) { ['/var', 'lib', 'lxc', "#{h.name}.deployer.sh"] })
+            # end
 
             def self.package_list(host)
               _package_list(host).keys
@@ -124,17 +124,17 @@ module Construqt
               false
             end
 
-            def self.update_config(base_dir, key, value)
+            def update_config(base_dir, key, value)
               right = Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::LXC)
               Construqt::Util.render(binding, 'lxc_update_config.sh.erb')
             end
 
-            def self.reference_net_config(base_dir)
+            def reference_net_config(base_dir)
               right = Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::LXC)
               Construqt::Util.render(binding, 'lxc_update_network_config.sh.erb')
             end
 
-            def self.templates(host)
+            def templates(host)
               out = host.region.hosts.get_hosts.inject({}) do |ret, lxc|
                 if lxc.mother == host.delegate &&
                    lxc.lxc_deploy && lxc.lxc_deploy.get_template
@@ -203,8 +203,8 @@ module Construqt
               [Construqt::Util.render(binding, 'lxc/lxc_create_template.sh.erb')]
             end
 
-            def self.stop_lxc_container(host)
-              quick_stop = host.lxc_deploy.killstop? ? ' -k' : ''
+            def stop_lxc_container(host)
+              quick_stop = killstop? ? ' -k' : ''
               # lxc stop works sometimes so we test it
               <<-EOF
                           while $(lxc-ls --running -1 | grep -q '^#{host.name}\s*$')
@@ -222,15 +222,15 @@ module Construqt
               end.join("\n")
             end
 
-            def self.deploy(host)
+            def deploy(host)
               # if this a mother
-              return [] unless Container.i_ma_the_mother?(host)
+              # return [] unless Container.i_ma_the_mother?(host)
               [
                 Construqt::Util.render(binding, 'lxc/lxc_deploy.sh.erb')
               ]
             end
 
-            def self.find_lxc_used_interfaces(host)
+            def find_lxc_used_interfaces(host)
               ret = host.region.hosts.get_hosts.select { |h| host.eq(h.mother) }.map do |lxc|
                 lxc.interfaces.values.map do |iface|
                   # puts iface.name
@@ -255,17 +255,17 @@ module Construqt
             end
 
             def invocation_build_config_host(ship, context)
-              return
               result = context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
 
-              binding.pry
-              # result.add(Docker, Construqt::Util.render(binding, "docker_dockerfile.erb"),
-              #            Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DOCKER),
-              #            "var", "lib", "docker", "construqt", @host.name, "Dockerfile")
+              #binding.pry
               container = self
               attach_ship(ship)
 
-              deploy_standalone(host)
+
+              result.add(Docker, deploy_standalone(host),
+                         Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DOCKER),
+                         "var", "lib", "lxc", "construqt", host.name, "lxc-launch.sh")
+
               # binding.pry
               # result.add(Docker, Construqt::Util.render(binding, "docker_run_simple_container.sh.erb"),
               #            Construqt::Resources::Rights.root_0755(Construqt::Resources::Component::DOCKER),
@@ -273,6 +273,18 @@ module Construqt
 
               # up_downer = context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
               # up_downer.add(host, Taste::Container.new(container))
+            end
+
+            def invocation_commit(ship, context)
+              dsrv = context.find_by_service_type(Construqt::Flavour::Nixian::Services::DeployerSh::Service)
+              action = lambda {
+                [
+                  deploy(host)
+                ].flatten.join("\n")
+              }
+              dsrv.service_producers.each do |i|
+                i.srv_inst.on_post_exec(action)
+              end
             end
           end
 
@@ -376,10 +388,11 @@ module Construqt
                             end
                 # next if lxc.
                 fcont = Util.read_str!(host.region, lxc.name, 'deployer.sh')
-                next unless fcont
+                throw "the should be a #{lxc.name}.deployer.sh" unless fcont
                 result.add(self, fcont,
                            Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::DOCKER),
-                           '/var', 'lib', 'lxc', 'construqt', lxc.name, 'deployer.sh').skip_git
+                           '/var', 'lib', 'lxc', "#{lxc.name}.deployer.sh").skip_git
+
               end
             end
           end

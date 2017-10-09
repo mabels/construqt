@@ -41,6 +41,21 @@ module Construqt
               end
             end
 
+            def commit
+              host.region.hosts.get_hosts.select {|h| host.eq(h.mother) }.each do |d_host|
+                # binding.pry
+                invocation = d_host.result_types.result_types[Construqt::Flavour::Nixian::Services::Invocation::OncePerHost]
+                next unless invocation
+                next unless invocation.instance.service
+                next unless invocation.instance.service.implementation
+                next unless invocation.instance.service.implementation.respond_to?(:invocation_commit)
+                invocation.instance.service.implementation.invocation_commit(host, @context)
+                # d_host.services.by_type_of(Service).each do |d_srv|
+                #   render(result, d_host, d_srv)
+                # end
+              end
+            end
+
           end
 
           class Action

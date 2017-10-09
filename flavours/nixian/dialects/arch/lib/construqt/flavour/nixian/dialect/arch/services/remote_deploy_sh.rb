@@ -1,6 +1,4 @@
 
-
-
 module Construqt
   module Flavour
     module Nixian
@@ -44,7 +42,7 @@ module Construqt
                     .result_type(OncePerHost)
                 end
 
-                def produce(host, srv_inst, ret)
+                def produce(_host, _srv_inst, _ret)
                   Action.new
                 end
 
