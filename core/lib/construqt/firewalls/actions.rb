@@ -4,6 +4,7 @@ module Construqt
       NOTRACK = :NOTRACK
       SNAT = :SNAT
       DNAT = :DNAT
+      NETMAP = :NETMAP
       ACCEPT = :ACCEPT
       DROP = :DROP
       TCPMSS = :TCPMSS

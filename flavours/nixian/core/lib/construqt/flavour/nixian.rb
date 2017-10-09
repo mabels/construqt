@@ -1,3 +1,4 @@
+require 'construqt/flavour/nixian/services.rb'
 
 module Construqt
   module Flavour

@@ -34,6 +34,9 @@ module Construqt
 
       def _to_dest_to_source(family, val)
         addr = nil
+        if val.nil?
+          return []
+        end
         if defined?(val) && val.ip == :my_first
           ip = if family == Construqt::Addresses::IPV4
             self.attached_interface.address.v4s.first

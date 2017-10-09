@@ -10,17 +10,23 @@ require 'ruby-prof'
 #$LOAD_PATH.unshift(File.dirname(__FILE__))
 #$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
-CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'./'
+CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../'
 [
   "#{CONSTRUQT_PATH}/construqt/core/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/core/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/services/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/ubuntu/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/entities/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/systemd/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/debian/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/file/lib",
 #  "#{CONSTRUQT_PATH}/construqt/flavours/ubuntu/lib",
   "#{CONSTRUQT_PATH}/ipaddress/ruby/lib"
 ].each {|path| $LOAD_PATH.unshift(path) }
 require 'construqt'
 require 'construqt/flavour/nixian'
 require 'construqt/flavour/nixian/dialect/ubuntu'
+require 'construqt/flavour/nixian/services/firewall.rb'
 
 network = Construqt::Networks.add('Construqt-Test-Network')
 REGION = Construqt::Regions.add("Construqt-Test-Region", network)
@@ -43,6 +49,14 @@ REGION.network.addresses.tag("TEST")
 REGION.network.addresses
   .add_ip("4.4.4.1/24#TEST_TO_FILTER")
   .add_ip("5.5.5.1/24#TEST_FROM_FILTER")
+
+REGION.network.addresses
+  .add_ip("4.4.4.0/24#SRCNET-NETMAP")
+  .add_ip("5.5.5.0/24#SRCNET-NETMAP")
+  .add_ip("6.6.6.0/24#DSTNET-NETMAP")
+  .add_ip("4::4:4:0/120#SRCNET-NETMAP")
+  .add_ip("5::5:5:0/120#SRCNET-NETMAP")
+  .add_ip("6::6:6:0/120#DSTNET-NETMAP")
 
 Construqt::Firewalls.add("l-outbound") do |fw|
   fw.forward do |forward|
@@ -135,9 +149,11 @@ end
 
 TEST_VRRP_IF = REGION.interfaces.add_vrrp("vrrp-test",
                                           "vrid" => 19,
-                                          "address" => REGION.network.addresses.add_ip("29.29.29.1/32").add_ip("29::29:29:1/128")
-  .add_route("2.0.0.0/0#INDERNET", "29.29.29.29")
-  .add_route("2000::/3#INDERNET", "29::29:29:29"),
+                                          "address" => REGION.network.addresses
+                .add_ip("29.29.29.1/32")
+                .add_ip("29::29:29:1/128")
+                .add_route("2.0.0.0/0#INDERNET", "29.29.29.29")
+                .add_route("2000::/3#INDERNET", "29::29:29:29"),
 "firewalls" => ["l-nat"],
 "interfaces" => [ TEST_IF_ONE_IPV4_AND_IPV6_1, TEST_IF_ONE_IPV4_AND_IPV6_2 ])
 
@@ -211,6 +227,7 @@ class FirewallTest < Test::Unit::TestCase
       end
 
       def row(line)
+        # puts ">>>>#{line}<<<<<<"
         @row = line
         self
       end
@@ -262,7 +279,7 @@ class FirewallTest < Test::Unit::TestCase
   end
 
   def create_to_from(rule)
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall::ToFrom.new("testifname", rule, TestSection.new, TestToFromFactory.new)
+    Construqt::Flavour::Nixian::Services::Firewall::ToFrom.new("testifname", rule, TestSection.new, TestToFromFactory.new)
   end
 
   def test_from_list_nil
@@ -279,7 +296,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF_NOADDR)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{FORWARD} -i testif -p tcp -s 0.0.0.0/0 -m multiport --dports 80,443 -j DNAT",
       "{FORWARD} -o testif -p tcp -d 0.0.0.0/0 -m multiport --sports 80,443 -j DNAT"
@@ -298,7 +315,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF_NOADDR)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
      "{FORWARD} -i testif -p tcp -s 8.8.8.8/32 -d 9.9.9.0/24 -j DNAT",
      "{FORWARD} -o testif -p tcp -s 9.9.9.0/24 -d 8.8.8.8/32 -j DNAT",
@@ -321,7 +338,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF_NOADDR)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
   end
@@ -333,7 +350,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF_IPV4)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{FORWARD} -i testif -p tcp -d 1.2.2.3/32 -m multiport --dports 80,443 -j DNAT",
       "{FORWARD} -o testif -p tcp -s 1.2.2.3/32 -m multiport --sports 80,443 -j DNAT"
@@ -815,7 +832,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{FORWARD} -i testif -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
       "{FORWARD} -i testif -p icmp -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
@@ -834,7 +851,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{FORWARD} -i testif -p tcp -s 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
       "{FORWARD} -i testif -p tcp -s 2.2.2.2/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
@@ -857,7 +874,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{FORWARD} -i testif -p tcp -d 7.7.7.7/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
       "{FORWARD} -i testif -p tcp -d 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
@@ -880,7 +897,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{iPeobZ7IG2kKI0CfwQ} -s 1.1.1.1/32 -j ACCEPT",
       "{iPeobZ7IG2kKI0CfwQ} -s 2.2.2.2/32 -j ACCEPT",
@@ -912,7 +929,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{gT2VAWpbC806nBxD1zTVg} -d 7.7.7.7/32 -j ACCEPT",
       "{gT2VAWpbC806nBxD1zTVg} -d 8.8.8.8/32 -j ACCEPT",
@@ -944,7 +961,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{FORWARD} -i testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
       "{FORWARD} -i testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
@@ -963,7 +980,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{FORWARD} -i testif -p tcp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
       "{FORWARD} -i testif -p icmp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
@@ -981,7 +998,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [
       "{INPUT} -i testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
       "{INPUT} -i testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
@@ -998,7 +1015,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{FORWARD} -i testif -p tcp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
       "{FORWARD} -i testif -p icmp -s 8.8.8.8/32 -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
@@ -1016,7 +1033,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [
       "{INPUT} -i testif -p tcp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m multiport --dports 22 -j ACCEPT",
       "{INPUT} -i testif -p icmp -s 1.1.1.1/32 -d 8.8.8.8/32 -m conntrack --ctstate NEW,ESTABLISHED -m icmp --icmp-type 8/0 -j ACCEPT",
@@ -1035,7 +1052,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [
       "{INPUT} -i testif -j NFLOG --nflog-prefix TEST-LOG:i:testif",
       "{INPUT} -i testif -j DROP",
@@ -1058,7 +1075,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [
       "{INPUT} -i testif -j NFLOG --nflog-prefix TEST-LOG:i:testif",
       "{INPUT} -i testif -j DROP",
@@ -1080,7 +1097,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [], writer.ipv4.rows
     assert_equal [
       "{uOrdBa2drtysoTwlgKnSwA} -s 5::5:5:0/124 -j ACCEPT",
@@ -1105,7 +1122,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [], writer.ipv4.rows
     assert_equal [
       "{uOrdBa2drtysoTwlgKnSwA} -s 5::5:5:0/124 -j ACCEPT",
@@ -1145,7 +1162,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
     assert_equal [
       "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.1.1.1/32 -m multiport --dports 80,443 -j DNAT --to-dest 8.8.8.8",
       "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.1.1.2/32 -m multiport --dports 80,443 -j DNAT --to-dest 8.8.4.4",
@@ -1173,7 +1190,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{FORWARD} -i testif -p tcp -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
       "{FORWARD} -i testif -p icmp -s 8.8.8.8/32 ! -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m icmp --icmp-type 0/0 -j ACCEPT",
@@ -1199,7 +1216,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{FORWARD} -i testif -p tcp ! -d 1.1.1.1/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
       "{FORWARD} -i testif -p tcp ! -d 2.2.2.2/32 -m conntrack --ctstate RELATED,ESTABLISHED -m multiport --sports 22 -j ACCEPT",
@@ -1229,7 +1246,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{sIwP8wZDziROx9HKelprw} -s 7.7.7.7/32 -j ACCEPT",
       "{sIwP8wZDziROx9HKelprw} -s 8.8.8.8/32 -j ACCEPT",
@@ -1271,7 +1288,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{JX0nORdnJqC8u2FGJriOsQ} -s 7.7.7.7/32 -j RETURN",
       "{JX0nORdnJqC8u2FGJriOsQ} -s 8.8.8.8/32 -j RETURN",
@@ -1313,7 +1330,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{JX0nORdnJqC8u2FGJriOsQ} -s 7.7.7.7/32 -j RETURN",
       "{JX0nORdnJqC8u2FGJriOsQ} -s 8.8.8.8/32 -j RETURN",
@@ -1355,7 +1372,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{q5qOileEfiWcsSA2VF1RqQ} -s 7.7.7.7/32 -j ACCEPT",
       "{q5qOileEfiWcsSA2VF1RqQ} -s 8.8.8.8/32 -j ACCEPT",
@@ -1389,7 +1406,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [
       "{XuMvsQ1X8uDScAdbGFTug} -d 5.5.5.0/24 -j ACCEPT",
       "{XuMvsQ1X8uDScAdbGFTug} -d 5.5.6.0/24 -j ACCEPT",
@@ -1411,7 +1428,7 @@ class FirewallTest < Test::Unit::TestCase
   def test_forward_1_1
     fw = Construqt::Firewalls.find('l-outbound').attach_iface(TEST_VRRP_IF.first)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{FORWARD} -i testif -s 29::29:29:1/128 -d 2000::/3 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT",
       "{FORWARD} -o testif -s 2000::/3 -d 29::29:29:1/128 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
@@ -1429,7 +1446,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
      "{FORWARD} -i testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu",
      "{FORWARD} -o testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu"
@@ -1447,7 +1464,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
      "{FORWARD} -i testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1220",
      "{FORWARD} -o testif -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1220"
@@ -1468,7 +1485,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
     assert_equal [
       "{POSTROUTING} -o testif -s 5.5.5.0/24 -j SNAT --to-source 5.5.5.5"
     ], writer.ipv4.rows
@@ -1484,7 +1501,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
     assert_equal [
       "{DVzkPxLgpwnzc369xausJQ} -s 1.1.1.0/24 -j SNAT --to-source 5.5.5.5",
       "{DVzkPxLgpwnzc369xausJQ} -s 5.5.5.0/24 -j SNAT --to-source 5.5.5.5",
@@ -1506,7 +1523,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(DHCP_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "dhcpif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "dhcpif", writer)
     assert_equal [
       "{POSTROUTING} -o dhcpif -s 1.1.1.0/24 -j MASQUERADE",
       "{POSTROUTING} -o dhcpif -s 5.5.5.0/24 -j MASQUERADE"
@@ -1520,7 +1537,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(DHCP_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "dhcpif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "dhcpif", writer)
     assert_equal [
       "{POSTROUTING} -o dhcpif -j MASQUERADE"
     ], writer.ipv4.rows
@@ -1531,7 +1548,7 @@ class FirewallTest < Test::Unit::TestCase
   def test_dynamic_ip_and_from_my_net_forward
     fw = Construqt::Firewalls.find('l-outbound').attach_iface(DHCP_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_forward(fw, fw.get_forward, "testif", writer)
     assert_equal [
       "{FORWARD} -i testif -d 0.0.0.0/0 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT",
       "{FORWARD} -o testif -s 0.0.0.0/0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
@@ -1545,7 +1562,7 @@ class FirewallTest < Test::Unit::TestCase
   def test_dynamic_ip_and_from_my_net_host
     fw = Construqt::Firewalls.find('l-outbound-host').attach_iface(DHCP_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_host(fw, fw.get_host, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_host(fw, fw.get_host, "testif", writer)
     assert_equal [
       "{INPUT} -i testif -d 0.0.0.0/0 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT",
       "{OUTPUT} -o testif -s 0.0.0.0/0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
@@ -1565,7 +1582,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
     assert_equal [
       "{RW4jlPKRgfBXDGg6eOChfg} -d 5.5.5.5/32 -j DNAT --to-dest 1.2.2.3:2323",
       "{RW4jlPKRgfBXDGg6eOChfg} -d 5.5.5.6/32 -j DNAT --to-dest 1.2.2.3:2323",
@@ -1586,7 +1603,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF_IPV4_IPV6)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
     assert_equal [], writer.ipv4.rows
     assert_equal [
       "{PREROUTING} -i testif -p tcp -s 2000::/3 -d fd00::1:2:2:3/128 -m multiport --dports 1194,443 -j DNAT --to-dest [fd00::1:2:2:3]:2323"
@@ -1603,7 +1620,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF_IPV4_IPV6)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
     assert_equal [
       "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.2.2.3/32 -m multiport --dports 1194,443 -j DNAT --to-dest 1.2.2.3:2323"
     ], writer.ipv4.rows
@@ -1620,7 +1637,7 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF_IPV4_IPV6)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
     assert_equal [
       "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.2.2.3/32 -m multiport --dports 1194,443 -j DNAT --to-dest 1.2.2.3:2323"
     ], writer.ipv4.rows
@@ -1637,11 +1654,71 @@ class FirewallTest < Test::Unit::TestCase
       end
     end.attach_iface(TEST_IF_IPV4_IPV6)
     writer = TestWriter.new
-    Construqt::Flavour::Nixian::Dialect::Ubuntu::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
     assert_equal [
       "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.2.2.3/32 -m multiport --dports 1194,443 -j DNAT --to-dest 1.2.2.3:2323"
     ], writer.ipv4.rows
     assert_equal [], writer.ipv6.rows
+  end
+
+  def test_netmap_ipv4
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.nat do |nat|
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::NETMAP)
+          .ipv4
+          .to_net("#SRCNET-NETMAP")
+          .map_to("#DSTNET-NETMAP").from_is_outside
+      end
+    end.attach_iface(TEST_IF)
+    writer = TestWriter.new
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    assert_equal [], writer.ipv6.rows
+    assert_equal [
+      "{PREROUTING} -i testif -d 4.4.4.0/24 -j NETMAP --to 6.6.6.0/24",
+      "{PREROUTING} -i testif -d 5.5.5.0/24 -j NETMAP --to 6.6.6.0/24"
+    ], writer.ipv4.rows
+  end
+
+  def test_netmap_ipv6
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.nat do |nat|
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::NETMAP)
+          .ipv6
+          .to_net("#SRCNET-NETMAP")
+          .map_to("DSTNET-NETMAP").from_is_outside
+      end
+    end.attach_iface(TEST_IF_IPV4_IPV6)
+    writer = TestWriter.new
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    assert_equal [], writer.ipv4.rows
+    assert_equal [
+      "{PREROUTING} -i testif -d 4::4:4:0/120 -j NETMAP --to 6::6:6:0/120",
+      "{PREROUTING} -i testif -d 5::5:5:0/120 -j NETMAP --to 6::6:6:0/120"
+      ], writer.ipv6.rows
+  end
+
+  def test_netmap_ipv4_ipv6
+    # puts "*************************"
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.nat do |nat|
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::NETMAP)
+          .ipv6.ipv4
+          .to_net("#SRCNET-NETMAP")
+          .map_to("DSTNET-NETMAP").from_is_outside
+      end
+    end.attach_iface(TEST_IF_IPV4_IPV6)
+    writer = TestWriter.new
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    # puts "+++++++++++++++++++++++++"
+    assert_equal [
+       "{PREROUTING} -i testif -d 4.4.4.0/24 -j NETMAP --to 6.6.6.0/24",
+       "{PREROUTING} -i testif -d 5.5.5.0/24 -j NETMAP --to 6.6.6.0/24"
+    ], writer.ipv4.rows
+    assert_equal [
+      "{PREROUTING} -i testif -d 4::4:4:0/120 -j NETMAP --to 6::6:6:0/120",
+      "{PREROUTING} -i testif -d 5::5:5:0/120 -j NETMAP --to 6::6:6:0/120"
+      ], writer.ipv6.rows
+    # puts ">>>>>>>>>>>>>>>>>>>>>>>>>"
   end
 
 end

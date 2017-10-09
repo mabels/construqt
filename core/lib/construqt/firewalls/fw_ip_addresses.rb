@@ -37,6 +37,10 @@ module Construqt
         _list.map{|i| block.call(i) }
       end
 
+      def find(&block)
+        _list.find{|i| block.call(i) }
+      end
+
       def each_without_missing(&block)
         _list.each{|i| !i.missing? && block.call(i) }
       end

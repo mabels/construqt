@@ -7,6 +7,7 @@ module Construqt
       include Ports
       include Protocols
       include ToDestFromSource
+      include MapTo
       include ActionAndInterface
       include FromIsInOutBound
 
