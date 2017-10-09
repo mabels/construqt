@@ -31,7 +31,7 @@ module Construqt
             end
 
             def vlan_id
-              @interface.delegate.vlan_id(@interface) if @interface.delegate.respond_to?(:vlan_id)
+              @interface.delegate.vlan_id if @interface.delegate.respond_to?(:vlan_id)
             end
 
             def is_enable

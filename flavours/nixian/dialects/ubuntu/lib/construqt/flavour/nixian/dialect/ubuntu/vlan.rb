@@ -16,7 +16,7 @@ module Construqt
             end
 
 
-            def vlan_id(_)
+            def vlan_id
               @vlan_id
             end
 
