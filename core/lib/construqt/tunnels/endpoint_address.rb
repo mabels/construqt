@@ -14,7 +14,7 @@ module Construqt
         self
       end
 
-      def service_address(str_addr)
+      def service_ip(str_addr)
         @service_address = @host.region.network.addresses.create.add_ip(str_addr)
         self
       end
@@ -25,6 +25,10 @@ module Construqt
 
       def get_address
         @address
+      end
+
+      def get_service_ip
+        @service_address
       end
 
       def get_service_address
