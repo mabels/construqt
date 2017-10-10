@@ -1,0 +1,8 @@
+cp <%= base_dir %>/../<%= File.basename(base_dir) %>.network.config \
+   <%= base_dir %>/network.config
+/etc/lxc/update_network_in_config <%= base_dir %>/config \
+  <%= base_dir %>/network.config <%= base_dir %>/update.config.list
+for i in $(cat <%= base_dir %>/update.config.list)
+do
+  git_add /$i <%= right.owner %> <%= right.right %> false
+done

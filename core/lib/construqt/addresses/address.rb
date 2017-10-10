@@ -51,7 +51,7 @@ module Construqt
         parsed = Construqt::Tags.parse(addr)
         throw "add_service_ip needs a addr" unless parsed[:first]
         ip = IPAddress.parse(parsed[:first])
-        Construqt::Tags.join(parsed['#'], ip)
+        Construqt::Tags.join(parsed['#']||[], ip)
         @service_ip << ip
         self
       end

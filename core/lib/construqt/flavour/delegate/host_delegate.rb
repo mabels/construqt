@@ -6,13 +6,13 @@ module Construqt
       class HostDelegate
         include Delegate
         COMPONENT = Construqt::Resources::Component::UNREF
-        attr_reader :users, :bgps, :ipsecs, :interface_graph, :result_types
+        attr_reader :users, :bgps, :tunnels, :interface_graph, :result_types
         def initialize(host)
           #binding.pry
           #Construqt.logger.debug "HostDelegate.new(#{host.name})"
           self.delegate = host
 
-          @ipsecs = []
+          @tunnels = []
           @bgps = []
           @users = host.users || host.region.users
           @interface_graph = Construqt::Graph.new
@@ -47,6 +47,10 @@ module Construqt
         #   end
         #   @graphs[id]
         # end
+
+        def create_endpoint_address
+          Construqt::Tunnels::EndpointAddress.new(self)
+        end
 
 
         def spanning_tree
@@ -136,8 +140,8 @@ module Construqt
           self.delegate.configip
         end
 
-        def add_ipsec(ipsec)
-          @ipsecs << ipsec
+        def add_tunnel(tunnel)
+          @tunnels << tunnel
         end
 
         def add_bgp(bgp)

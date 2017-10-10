@@ -10,9 +10,9 @@ module Construqt
 
           class Host #< OpenStruct
             attr_reader :mother, :users, :region, :name, :interfaces
-            attr_reader :flavour, :docker_deploy, :lxc_deploy, :dns_server, :files
+            attr_reader :flavour, :files
             attr_accessor :delegate, :id, :configip, :add_groups
-            attr_accessor :services, :vagrant_deploy, :time_zone, :dialect
+            attr_accessor :services, :time_zone, :dialect
             def initialize(cfg)
               @mother = cfg['mother']
               @services = cfg['services']
@@ -22,10 +22,10 @@ module Construqt
               @interfaces = cfg['interfaces']
               @dialect = cfg['dialect']
               @flavour = cfg['flavour']
-              @docker_deploy = cfg['docker_deploy']
-              @vagrant_deploy = cfg['vagrant_deploy']
-              @lxc_deploy = cfg['lxc_deploy']
-              @dns_server = cfg['dns_server']
+              # @docker_deploy = cfg['docker_deploy']
+              # @vagrant_deploy = cfg['vagrant_deploy']
+              # @lxc_deploy = cfg['lxc_deploy']
+              # @dns_server = cfg['dns_server']
               @files = cfg['files']
               @time_zone = cfg['time_zone']
               add_groups = cfg['add_groups']
@@ -82,7 +82,7 @@ module Construqt
               result.add(self, resolv_conf, Construqt::Resources::Rights.root_0644, "etc", "resolv.conf")
 
               #binding.pry
-              Dns.build_config(host) if host.delegate.dns_server
+              # Dns.build_config(host) if host.delegate.dns_server
               ykeys = []
               skeys = []
               host.region.users.all.each do |u|

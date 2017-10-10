@@ -98,6 +98,7 @@ module Construqt
                 Construqt::Flavour::Nixian::Services::EtcNetworkApplicationUd::Service.new,
                 Construqt::Flavour::Nixian::Services::DeployerSh::Service.new,
                 Construqt::Flavour::Nixian::Services::RejectRoutes::Service.new,
+                Construqt::Flavour::Nixian::Services::Tunnel::Service.new,
                 Construqt::Flavour::Nixian::Services::IpsecStrongSwan::Service.new
               ])
             end

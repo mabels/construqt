@@ -1,0 +1,26 @@
+if [ $(is_opt_set lxc_container) != found ] || \
+   [ $(is_opt_set lxc_container) = found -a $(is_opt_set '<%= host.name %>') = found ]
+then
+  <% if self.recreate? -%>
+    echo start LXC-RECREATE <%= host.name %>
+    <%= stop_lxc_container(host) %>
+    [ -d <%= lxc_rootfs %>/usr/share] && lxc-destroy -f -n '<%= host.name %>'
+    lxc-create -n '<%= host.name %>' -t <%= "#{host.flavour.name}#{release}" %>
+  <% else -%>
+    echo start LXC-RESTART <%= host.name %>
+    <%= stop_lxc_container(host) %>
+    [ -d <%= lxc_rootfs %>/usr/share ] || \
+      lxc-create -n '<%= host.name %>' -t <%= "#{host.flavour.name}#{release}" %>
+  <% end -%>
+  echo fix config of <%= host.name %> in <%= lxc_rootfs %>
+  <%= reference_net_config(base_dir) %>
+  <% if aa_profile_unconfined? -%>
+    <%= update_config(base_dir, 'lxc.aa_profile', 'unconfined') %>
+  <% end -%>
+
+  lxc-execute -n '<%= host.name %>' --  /bin/bash -c 'echo <%= host.name %> > /etc/hostname'
+  lxc-execute -n '<%= host.name %>' --  \
+    /bin/bash -c 'cat > /root/deployer.sh' < <%= base_dir %>/../<%= host.name %>.deployer.sh
+  lxc-execute -n '<%= host.name %>' --  /bin/bash /root/deployer.sh
+  lxc-start -d -n '<%= host.name %>'
+fi

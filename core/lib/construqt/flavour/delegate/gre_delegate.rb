@@ -12,8 +12,8 @@ module Construqt
           self.init_node()
         end
 
-        def create_interfaces(host, name, cfg)
-          self.delegate.create_interfaces(host, name, cfg)
+        def create_interfaces(endpoint)
+          self.delegate.create_interfaces(endpoint)
         end
 
         def _ident

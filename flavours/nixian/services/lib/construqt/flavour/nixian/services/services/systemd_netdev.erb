@@ -16,8 +16,8 @@ MACAddress=<%= iface.delegate.mac_address %>
 Id=<%= systemd_netdev.vlan_id %>
 <%- end -%>
 <%- if iface.delegate.respond_to?(:tunnel)
-  local = iface.delegate.tunnel.my.first_by_family(iface.delegate.tunnel.transport_family).to_s
-  remote = iface.delegate.tunnel.other.first_by_family(iface.delegate.tunnel.transport_family).to_s
+  local = iface.delegate.tunnel.my.address.first_by_family(iface.delegate.tunnel.transport_family).to_s
+  remote = iface.delegate.tunnel.other.address.first_by_family(iface.delegate.tunnel.transport_family).to_s
   -%>
 [Tunnel]
 Local=<%= local %>

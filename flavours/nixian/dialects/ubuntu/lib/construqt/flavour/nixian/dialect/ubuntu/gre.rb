@@ -8,18 +8,18 @@ module Construqt
           class Gre
             include BaseDevice
             include Construqt::Cables::Plugin::Single
-            attr_reader :ipsec, :remote, :local, :other
+            attr_reader :remote, :local #, :ipsec,  :other
             def initialize(cfg)
               base_device(cfg)
-              @ipsec = cfg['ipsec']
-              @remote = cfg['remote']
-              @local = cfg['local']
-              @other = cfg['other']
+              #@ipsec = cfg['ipsec']
+              #@remote = cfg['remote']
+              #@local = cfg['local']
+              #@other = cfg['other']
             end
 
-            def get_prepare(gre_delegate)
+            def get_prepare(gre_delegate, endpoint)
               prepare = { }
-              if self.ipsec.transport_family.nil? || self.ipsec.transport_family == Construqt::Addresses::IPV6
+              if endpoint.tunnel.transport_family.nil? || self.endpoint.tunnel.transport_family == Construqt::Addresses::IPV6
                 remote = self.remote.first_ipv6
                 mode_v6 = "ip6gre"
                 mode_v4 = "ipip6"
@@ -37,6 +37,7 @@ module Construqt
               if self.local.first_ipv6
                 prepare[6] = OpenStruct.new(:gt => "gt6", :prefix=>prefix, :family => Construqt::Addresses::IPV6,
                                             :my => self.local,
+                                            :gre => self,
                                             :transport_family => transport_family,
                                             :other => self.other.interface.delegate.local,
                                             :remote => remote, :mode => mode_v6,
@@ -45,6 +46,7 @@ module Construqt
               if self.local.first_ipv4
                 prepare[4] = OpenStruct.new(:gt => "gt4", :prefix=>prefix, :family => Construqt::Addresses::IPV4,
                                             :my=>self.local,
+                                            :gre => self,
                                             :transport_family => transport_family,
                                             :other => self.other.interface.delegate.local,
                                             :remote => remote, :mode => mode_v4,
@@ -54,13 +56,14 @@ module Construqt
               prepare
             end
 
-            def create_interfaces(host, name, node)
+            def create_interfaces(endpoint)
               gre_delegate = self.delegate
-              prepare = get_prepare(gre_delegate)
+              prepare = get_prepare(gre_delegate, endpoint)
               #local_ifaces = {}
 
               prepare.values.map do |cfg|
                 iname = Util.clean_if(cfg.gt, gre_delegate.name)
+                binding.pry
                 local_iface = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(cfg.remote.ipaddr) }
                 throw "need a interface with address #{host.name}:#{cfg.remote.ipaddr}" unless local_iface
                 # binding.pry if iname == "gt4rtwlmgt"
@@ -79,7 +82,8 @@ module Construqt
                   "address" => addrs,
                   "interfaces" => [local_iface],
                   "firewalls" => gre_delegate.firewalls.map{|i| i.name},
-                  "tunnel" => cfg,
+                  "endpoint" => self,
+                  "cfg" => cfg,
                   "clazz" => "tunnel")
                 # binding.pry if host.name == "iscaac"
                 # local_iface.add_child(gt)
@@ -114,8 +118,8 @@ module Construqt
               # #end
               # writer = host.result.etc_network_interfaces.get(iface, "fanout-de")
               # binding.pry
-              up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
-              up_downer.add(gre, Tastes::Entities::IpSecConnect.new("#{self.host.name}-#{self.other.host.name}"))
+              #up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
+              #up_downer.add(gre, Tastes::Entities::IpSecConnect.new("#{self.host.name}-#{self.other.host.name}"))
 
               #writer.skip_interfaces.header.interface_name(gre.name)
 
