@@ -14,8 +14,8 @@ module Construqt
                 routing_table = " table #{route.via.routing_table}" if route.via.routing_table
                 fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
                 prefix = route.dst.ipv6? ? "-6" : "-4"
-                fsrv.up("ip #{prefix} route add #{route.dst.to_string} via #{route.via.to_s} dev #{me.ifname} #{metric}#{routing_table}")
-                fsrv.down("ip #{prefix} route del #{route.dst.to_string} via #{route.via.to_s} dev #{me.ifname} #{metric}#{routing_table}")
+                fsrv.up("ip #{prefix} route add #{route.dst.to_string} via #{route.via.to_s} dev #{Util.short_ifname(iface)} #{metric}#{routing_table}")
+                fsrv.down("ip #{prefix} route del #{route.dst.to_string} via #{route.via.to_s} dev #{Util.short_ifname(iface)} #{metric}#{routing_table}")
               end
             end
             def activate(ctx)

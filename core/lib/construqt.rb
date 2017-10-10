@@ -100,6 +100,7 @@ module Construqt
     service_result.fire_construction_order(:start)
 
     Construqt::Ipsecs.build_config(hosts)
+    Construqt::Tunnels.build_config(hosts)
     Construqt::Bgps.build_config(hosts)
     hosts.inject({}) do |r, host|
       if r[host.region.name].nil?

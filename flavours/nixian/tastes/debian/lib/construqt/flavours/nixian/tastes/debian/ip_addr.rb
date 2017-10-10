@@ -8,8 +8,8 @@ module Construqt
               eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
               writer = eni.get(iface, me.ifname)
               prefix = me.ip.ipv6? ? "-6 " : "-4 "
-              writer.lines.up("ip #{prefix}addr add #{me.ip.to_string} dev #{me.ifname}")
-              writer.lines.down("ip #{prefix}addr del #{me.ip.to_string} dev #{me.ifname}")
+              writer.lines.up("ip #{prefix}addr add #{me.ip.to_string} dev #{Util.short_ifname(iface)}")
+              writer.lines.down("ip #{prefix}addr del #{me.ip.to_string} dev #{Util.short_ifname(iface)}")
             end
             def activate(ctx)
               @context = ctx

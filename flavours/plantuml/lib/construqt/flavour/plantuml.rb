@@ -100,6 +100,12 @@ module Construqt
         out = []
         out << "name = \"#{iface.name}\""
 
+        if iface.name != Util.short_ifname(iface)
+          out << "short_ifname = \"#{Util.short_ifname(iface)}\""
+        end
+
+        out << "name = \"#{iface.name}\""
+
         if iface.respond_to?(:mtu) && iface.mtu
           out << "mtu = \"#{iface.mtu}\""
         end
@@ -108,6 +114,14 @@ module Construqt
             out << "proxy_neigh.#{idx} = #{i.to_string}"
           end
         end
+
+        if iface.kind_of? Construqt::Tunnels::Tunnel
+          out << "transport_family = \"#{iface.transport_family}\""
+          out << "mtu_v4 = \"#{iface.mtu_v4}\""
+          out << "mtu_v6 = \"#{iface.mtu_v6}\""
+          return out.join("\n")
+        end
+
 
         if iface.kind_of? Construqt::Ipsecs::Ipsec
           out << "password = #{iface.password}"
@@ -234,8 +248,14 @@ module Construqt
           end,
           "BgpDelegate.build_config" => lambda do |type, host, *args|
             args.first.cfg
+          end,
+          "TunnelDelegate.build_config" => lambda do |type, host, *args|
+            args.first
+          end,
+          "Tunnel.build_config" => lambda do |type, host, *args|
+            # binding.pry
+            args.first
           end
-
         }
 
         method = factory[type]
@@ -245,10 +265,13 @@ module Construqt
           if obj
             ident = obj.ident
             throw "A object needs a ident #{obj.class.name}" unless ident
+            # binding.pry
+            Construqt.logger.debug "Planuml:add_node_factory #{type}:#{ident}"
             @tree[ident] ||= Node.new(obj)
           end
         else
-          Construqt.logger.debug "Planuml:add_node_factory type not found #{type}"
+          Construqt.logger.debug "Planuml:add_node_factory type not found #{type}:#{host.name}:#{args}"
+          # binding.pry
         end
       end
 
@@ -324,6 +347,17 @@ module Construqt
               interface = node.reference.delegate.left_interface
               node.connect @tree[interface.ident]
             end,
+            "Tunnel" => lambda do |node|
+              if node.reference.kind_of?(Construqt::Tunnels::Tunnel)
+              else
+                node.connect @tree[node.reference.endpoint.tunnel.ident]
+                node.reference.interfaces.each do |iface|
+                  if @tree[iface.ident]
+                    node.connect @tree[iface.ident]
+                  end
+                end
+              end
+            end,
             "Ipsec" => lambda do |node|
               [node.reference.lefts.first, node.reference.rights.first].each do |iface|
                 if @tree[iface.interface.ident]
@@ -368,6 +402,7 @@ module Construqt
 
       def call(type, host_or_region, *args)
         add_node_factory(type, host_or_region, *args)
+        # return
         factory = {
           "completed" => lambda do |type, *args|
             build_tree

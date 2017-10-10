@@ -1,9 +1,9 @@
 module Construqt
   module Tunnels
     class Endpoint
-      attr_accessor :remote, :tunnel, :interface
+      attr_accessor :remote, :tunnel
       attr_reader :host, :local, :address, :endpoint_address, :name
-      attr_reader :firewalls
+      attr_reader :firewalls, :interfaces
       def initialize(cfg, iname)
         # binding.pry
         throw "endpoint_address missing" unless cfg['endpoint_address'].valid?
@@ -17,10 +17,15 @@ module Construqt
         @host = cfg['host']
         @local = self
         @firewalls = cfg['firewalls'] || []
+        @interfaces = cfg['interfaces'] || []
         #@tunnel = cfg['tunnel']
         @address = cfg['address']
         @endpoint_address = cfg['endpoint_address']
-        @name = "#{iname}-#{cfg['host'].name}"
+        @name = iname
+      end
+
+      def ident
+        "Endpoint-#{self.host.name}-#{name}"
       end
 
       def get_prepare()
@@ -65,7 +70,8 @@ module Construqt
       def create_interfaces
         prepare = self.get_prepare()
         prepare.values.map do |cfg|
-          iname = Util.clean_if(cfg.gt, self.tunnel.name)
+          iname = "#{cfg.gt}-#{self.local.host.name}--#{self.remote.host.name}"
+          # Util.clean_if(cfg.gt, self.tunnel.name)
           ips = self.local.endpoint_address.get_address.by_family(cfg[:transport_family])
           local_iface = host.interfaces.values.find do |iface|
             iface.address && ips.find{ |i| iface.address.match_network(i) }
@@ -83,17 +89,24 @@ module Construqt
               addrs.add_route(rt.dst.to_string, rt.via.to_s, rt.options)
             end
           end
-          gt = host.region.interfaces.add_device(host, iname,
+          # binding.pry
+          self.interfaces << host.region.interfaces.add_device(host, iname,
             "address" => addrs,
+            # "name_prefix" => cfg.gt,
+            # "connection_name" => "#{self.local.host.name}--#{self.remote.host.name}",
             "interfaces" => [local_iface],
             "firewalls" => self.firewalls.map{|i| i.name},
-            "tunnel" => cfg,
+            "endpoint" => self,
+            "name_prefix" => cfg.gt,
+            "mode" => cfg.mode,
+            "cfg" => cfg,
             "clazz" => "tunnel")
-          # binding.pry if host.name == "iscaac"
+            # binding.pry
+          # binding.pry # if host.name == "iscaac"
           # local_iface.add_child(gt)
           # gt.add_child(local_iface)
-          #gre_delegate.add_child(gt)
-          #gt.add_child(gre_delegate)
+          # local_iface.add_child(gt)
+          # gt.add_child(local_iface)
           # gt.add_child(gre_delegate)
           # binding.pry
 
@@ -105,6 +118,10 @@ module Construqt
           #writer.lines.up("ip -#{cfg.prefix} tunnel add #{iname} mode #{cfg.mode} local #{cfg.my.to_s} remote #{cfg.other.to_s}")
           #Device.build_config(host, gre, node, iname, cfg.family, cfg.mtu)
           #writer.lines.down("ip -#{cfg.prefix} tunnel del #{iname}")
+        end
+
+        def build_config(host, iface, _)
+          # binding.pry
         end
 
       end

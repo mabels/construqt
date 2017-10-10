@@ -170,6 +170,14 @@ module Construqt
         self.delegate.plug_in
       end
 
+      # def name_prefix
+      #   self.delegate.name_prefix
+      # end
+
+      # def connection_name
+      #   self.delegate.connection_name
+      # end
+      #
       def simple_name
         self.class.name[self.class.name.rindex(':')+1..-1]
       end

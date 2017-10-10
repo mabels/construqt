@@ -1,6 +1,6 @@
 
 [NetDev]
-Name=<%= systemd_netdev.name %>
+Name=<%= Util.short_ifname(systemd_netdev.interface) %>
 <%- if systemd_netdev.kind != "device" -%>
 Kind=<%= systemd_netdev.kind %>
 <%- end -%>

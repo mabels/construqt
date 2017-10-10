@@ -1,5 +1,5 @@
 [Match]
-Name=<%= systemd_network.name %>
+Name=<%= Util.short_ifname(systemd_network.interface) %>
 
 [Network]
 DHCP=<%=  if systemd_network.interface.address.dhcpv4? &&
@@ -30,7 +30,7 @@ Bridge=<%= bridge.name %>
 <%- end -%>
 
 <%- systemd_network.interface.address &&
-    systemd_network.interface.address.routes.each do |route| 
+    systemd_network.interface.address.routes.each do |route|
   next if route.is_global?
 -%>
 [Route]

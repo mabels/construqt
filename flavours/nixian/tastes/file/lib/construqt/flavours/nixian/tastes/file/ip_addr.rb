@@ -8,8 +8,8 @@ module Construqt
               # binding.pry if iface.name == "etcbind-2"
               fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
               prefix = me.ip.ipv6? ? "-6" : "-4"
-              fsrv.up("ip #{prefix} addr add #{me.ip.to_string} dev #{me.ifname}")
-              fsrv.down("ip #{prefix} addr del #{me.ip.to_string} dev #{me.ifname}")
+              fsrv.up("ip #{prefix} addr add #{me.ip.to_string} dev #{Util.short_ifname(iface)}")
+              fsrv.down("ip #{prefix} addr del #{me.ip.to_string} dev #{Util.short_ifname(iface)}")
             end
             def activate(ctx)
               @context = ctx

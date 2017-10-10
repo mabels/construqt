@@ -17,6 +17,8 @@ module Construqt
           "Device_#{delegate.host.name}_#{self.name}"
         end
 
+        
+
         # def inspect
         #   "#<#{self.class.name}:#{object_id} ident=#{_ident}>"
         # end

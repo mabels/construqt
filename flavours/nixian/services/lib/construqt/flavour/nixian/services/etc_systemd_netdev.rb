@@ -45,6 +45,7 @@ module Construqt
             def as_string
               systemd_netdev = self
               iface = @interface
+              # binding.pry
               Construqt::Util.render(binding, "systemd_netdev.erb")
             end
 

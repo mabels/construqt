@@ -4,7 +4,8 @@ module Construqt
       module Tastes
         module Systemd
           class Tunnel
-            def render(iface, taste_type, taste)
+            def on_add(ud, taste, _, me)
+              # binding.pry
             end
             def activate(ctx)
               @context = ctx

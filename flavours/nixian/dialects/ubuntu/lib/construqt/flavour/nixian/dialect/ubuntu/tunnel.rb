@@ -8,23 +8,31 @@ module Construqt
           class Tunnel
             include BaseDevice
             include Construqt::Cables::Plugin::Single
-            attr_reader :interfaces, :tunnel
+            attr_reader :interfaces, :endpoint, :cfg, :mode, :name_prefix
             def initialize(cfg)
               base_device(cfg)
               @interfaces = cfg['interfaces']
-              @tunnel = cfg['tunnel']
+              @endpoint = cfg['endpoint']
+              @name_prefix = cfg['name_prefix']
+              throw "name_prefix must set" unless @name_prefix
+              @mode = cfg['mode']
+              @cfg = cfg['cfg']
+            end
+
+            def shortname
+              [name_prefix, self.endpoint.tunnel.ident]
             end
 
             def kind
-              if self.tunnel.mode == "ipip6"
+              if self.mode == "ipip6"
                 kind = "ip6tnl"
               else
-                kind = self.tunnel.mode
+                kind = self.mode
               end
             end
-            def kind
-              self.tunnel.mode
-            end
+            #def kind
+            #  self.endpoint.tunnel.mode
+            #end
 
             def build_config(host, iface, node)
               # binding.pry
@@ -38,7 +46,7 @@ module Construqt
               #ip addr add 169.254.193.2/30 dev gt4naspr01
               # binding.pry if host.name == "scable-1"
 
-              cfg = iface.delegate.tunnel
+              # cfg = iface.delegate.tunnel
 
               # iname = Util.clean_if(cfg.gt, gre_delegate.name)
               # local_ifaces[local_iface.name] ||= OpenStruct.new(:iface => local_iface, :inames => [])
@@ -47,12 +55,14 @@ module Construqt
 
               # writer = host.result.etc_network_interfaces.get(iface)
               #writer.skip_interfaces.header.interface_name(iname)
-              local = cfg.my.endpoint_address.get_address.first_by_family(cfg.transport_family).to_s
-              remote = cfg.other.endpoint_address.get_active_address.first_by_family(cfg.transport_family).to_s
+              local = endpoint.endpoint_address.get_address.first_by_family(endpoint.tunnel.transport_family).to_s
+              remote = endpoint.remote.endpoint_address.get_active_address.first_by_family(endpoint.tunnel.transport_family).to_s
+              # binding.pry
               throw "there must be a local or remote address" if local.nil? or remote.nil?
               up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
               up_downer.add(iface, Tastes::Entities::Tunnel.new(cfg, local, remote))
 
+              # binding.pry
               Device.build_config(host, iface, node)
 
               # local_ifaces.values.each do |val|

@@ -48,8 +48,8 @@ module Construqt
 
                 list.each do |lip|
                   ipv = lip.ipv6? ? "-6 ": "-4 "
-                  ups.push "ip #{ipv}neigh add proxy #{lip.to_s} dev #{iface.name}"
-                  downs.push "ip #{ipv}neigh del proxy #{lip.to_s} dev #{iface.name}"
+                  ups.push "ip #{ipv}neigh add proxy #{lip.to_s} dev #{Util.short_ifname(iface)}"
+                  downs.push "ip #{ipv}neigh del proxy #{lip.to_s} dev #{Util.short_ifname(iface)}"
                 end
               end
 

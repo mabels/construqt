@@ -324,5 +324,13 @@ module Construqt
         raise $!, "in file #{fname}:[#{e.message}]", $!.backtrace
       end
     end
+
+    def self.short_ifname(iface)
+      return iface.name if iface.name.length < 12
+      throw "shortname not buildable #{iface.class.name} #{iface.name}" unless iface.respond_to?(:shortname)
+      prefix, ident = iface.shortname
+      digest = Base64.encode64(OpenSSL::Digest::SHA256.new(ident).to_s)
+      "#{prefix}#{digest[0,12 - prefix.length]}"
+    end
   end
 end

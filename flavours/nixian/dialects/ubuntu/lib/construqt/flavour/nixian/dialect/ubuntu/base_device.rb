@@ -9,6 +9,7 @@ module Construqt
             attr_reader :services, :clazz, :mtu, :flavour, :proxy_neigh
             attr_reader :mac_address, :vagrant, :firewalls, :network
             attr_reader :services, :description, :priority
+            # attr_reader :name_prefix, :connection_name
             def base_device(cfg)
               @cfg = cfg
               @name = cfg['name']
@@ -29,6 +30,8 @@ module Construqt
               @network = cfg['network']
               @startup = cfg['startup']
               @priority = cfg['priority']
+              # @name_prefix = cfg['name_prefix']
+              # @connection_name = cfg['connection_name']
             end
 
             def startup?

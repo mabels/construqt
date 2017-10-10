@@ -69,8 +69,6 @@ module Construqt
             end
 
             def build_config_host
-              # binding.pry
-              # binding.pry
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               host = @host
               # binding.pry

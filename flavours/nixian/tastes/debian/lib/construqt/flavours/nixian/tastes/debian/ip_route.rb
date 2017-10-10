@@ -13,8 +13,8 @@ module Construqt
                 metric = " metric #{route.metric}" if route.metric
                 routing_table = ""
                 routing_table = " table #{route.via.routing_table}" if route.via.routing_table
-                writer.lines.up("ip route add #{route.dst.to_string} via #{route.via.to_s} dev #{me.ifname} #{metric}#{routing_table}")
-                writer.lines.down("ip route del #{route.dst.to_string} via #{route.via.to_s} dev #{me.ifname} #{metric}#{routing_table}")
+                writer.lines.up("ip route add #{route.dst.to_string} via #{route.via.to_s} dev #{Util.short_ifname(iface)} #{metric}#{routing_table}")
+                writer.lines.down("ip route del #{route.dst.to_string} via #{route.via.to_s} dev #{Util.short_ifname(iface)} #{metric}#{routing_table}")
               end
             end
             def activate(ctx)
