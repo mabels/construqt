@@ -104,8 +104,6 @@ module Construqt
           out << "short_ifname = \"#{Util.short_ifname(iface)}\""
         end
 
-        out << "name = \"#{iface.name}\""
-
         if iface.respond_to?(:mtu) && iface.mtu
           out << "mtu = \"#{iface.mtu}\""
         end

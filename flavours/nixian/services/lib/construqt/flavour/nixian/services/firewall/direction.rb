@@ -47,7 +47,7 @@ module Construqt
               end
 
               def ifname
-                "#{@interface_direction} #{Util.short_ifname(to_from.ifname)}"
+                "#{@interface_direction} #{to_from.ifname}"
               end
 
               def set_action(action)
