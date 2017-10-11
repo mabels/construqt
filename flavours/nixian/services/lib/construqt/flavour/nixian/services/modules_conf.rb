@@ -17,6 +17,7 @@ module Construqt
                 "nf_conntrack_ipv4",
                 "nf_defrag_ipv4",
                 "nf_conntrack",
+                "nf_conntrack_proto_gre",
                 "iptable_filter",
                 "ip_tables",
                 "x_tables",
