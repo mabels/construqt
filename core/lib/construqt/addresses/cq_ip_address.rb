@@ -118,6 +118,10 @@ module Construqt
       def subnet(num)
         @ipaddr.subnet(num)
       end
+      
+      def inc
+        @ipaddr.inc
+      end
 
 #      def map(&block)
 #        @ipaddr.map{|i| block.call(i) }
