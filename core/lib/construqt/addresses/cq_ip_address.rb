@@ -115,6 +115,10 @@ module Construqt
         @ipaddr.netmask
       end
 
+      def subnet(num)
+        @ipaddr.subnet(num)
+      end
+
 #      def map(&block)
 #        @ipaddr.map{|i| block.call(i) }
 #      end
