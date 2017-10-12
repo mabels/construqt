@@ -265,6 +265,18 @@ module Construqt
             end
           end
 
+          def self.write_postrouting(ifname, rule, section, written)
+            if rule.postrouting?
+              ipv4_ipv6_section(rule, section, :postrouting) do |p|
+                written = self.write_postrouting_to_source(ifname, rule, section, p, written)
+                written = self.write_postrouting_masq(ifname, rule, section, p, written)
+                written = self.write_postrouting_netmap(ifname, rule, section, p, written)
+              end
+            end
+
+            written
+          end
+
           def self.write_nat(fw, nat, ifname, section)
             # nat only for ipv4
             #return unless fw.ipv4?
@@ -273,11 +285,7 @@ module Construqt
               throw "ACTION must set #{ifname}" unless rule.get_action
               #throw "TO_SOURCE must set #{ifname}" unless rule.to_source?
               written = false
-              if rule.postrouting?
-                written = write_postrouting_to_source(ifname, rule, section, written)
-                written = write_postrouting_masq(ifname, rule, section, written)
-              end
-
+              written = write_postrouting(ifname, rule, section, written)
               written = write_prerouting(ifname, rule, section, written)
               # unless written
               #   Construqt.logger.warn "rule doesn't wrote any thing #{rule.block.firewall.name} "+
@@ -287,49 +295,66 @@ module Construqt
             end
           end
 
-          def self.write_postrouting_masq(ifname, rule, section, written)
+          def self.ipv4_ipv6_section(rule, section, sym_section, &block)
+            ret = false
             [
-              {:section => section.ipv4.postrouting, :family => Construqt::Addresses::IPV4 },
-              {:section => section.ipv6.postrouting, :family => Construqt::Addresses::IPV6 }
+              {:section => section.ipv4.send(sym_section), :family => Construqt::Addresses::IPV4 },
+              {:section => section.ipv6.send(sym_section), :family => Construqt::Addresses::IPV6 }
             ].each do |p|
               if (p[:family] == Construqt::Addresses::IPV4 && rule.ipv4?) ||
                   (p[:family] == Construqt::Addresses::IPV6 && rule.ipv6?)
-                if rule.get_to_source(p[:family]).empty?
-                  to_from = ToFrom.new(ifname||iface.name, rule, section, p[:section])
-                  if rule.from_is_inside?
-                    direction = to_from.request_direction(p[:family]).set_action("MASQUERADE")
-                  else
-                    direction = to_from.respond_direction(p[:family]).set_action("MASQUERADE")
-                  end
-
-                  write_table(direction.interface_direction("-o"))
-                  written = true
-                end
+                ret = block.call(p) || ret
               end
+            end
+            ret
+          end
+
+          def self.write_postrouting_masq(ifname, rule, section, p, written)
+            if rule.get_to_source(p[:family]).empty? and
+                rule.get_map_to(p[:family]).empty?
+              to_from = ToFrom.new(ifname||iface.name, rule, section, p[:section])
+              if rule.from_is_inside?
+                direction = to_from.request_direction(p[:family]).set_action("MASQUERADE")
+              else
+                direction = to_from.respond_direction(p[:family]).set_action("MASQUERADE")
+              end
+
+              write_table(direction.interface_direction("-o"))
+              written = true
             end
 
             written
           end
 
-          def self.write_postrouting_to_source(ifname, rule, section, written)
-            [
-              {:section => section.ipv4.postrouting, :family => Construqt::Addresses::IPV4 },
-              {:section => section.ipv6.postrouting, :family => Construqt::Addresses::IPV6 }
-            ].each do |p|
-              if (p[:family] == Construqt::Addresses::IPV4 && rule.ipv4?) ||
-                  (p[:family] == Construqt::Addresses::IPV6 && rule.ipv6?)
-                rule.get_to_source(p[:family]).each do |src|
-                  to_from = ToFrom.new(ifname||iface.name, rule, section, p[:section])
-                  if rule.from_is_inside?
-                    direction = to_from.request_direction(p[:family]).push_end("--to-source #{src.to_s}")
-                  else
-                    direction = to_from.respond_direction(p[:family]).push_end("--to-source #{src.to_s}")
-                  end
-
-                  write_table(direction.interface_direction("-o"))
-                  written = true
-                end
+          def self.write_postrouting_netmap(ifname, rule, section, p, written)
+            rule.get_map_to(p[:family]).each do |map|
+              to_from = ToFrom.new(ifname||iface.name, rule, section, p[:section])
+              if rule.from_is_inside?
+                direction = to_from.request_direction(p[:family]).push_end("--to #{map.to_string}")
+              else
+                direction = to_from.respond_direction(p[:family]).push_end("--to #{map.to_string}")
               end
+
+              throw "prefix missmatch" if direction.dst_ip_list.find { |i| not i.ip_addr.prefix.eq(map.prefix) }
+
+              write_table(direction.interface_direction("-o"))
+              written = true
+            end
+
+            written
+          end
+
+          def self.write_postrouting_to_source(ifname, rule, section, p, written)
+            rule.get_to_source(p[:family]).each do |src|
+              to_from = ToFrom.new(ifname||iface.name, rule, section, p[:section])
+              if rule.from_is_inside?
+                direction = to_from.request_direction(p[:family]).push_end("--to-source #{src.to_s}")
+              else
+                direction = to_from.respond_direction(p[:family]).push_end("--to-source #{src.to_s}")
+              end
+
+              write_table(direction.interface_direction("-o"))
+              written = true
             end
 
             written
@@ -356,41 +381,42 @@ module Construqt
 
                     ret = "-p #{ps.first}"
                   end
+
                   ret
                 end
+
                 #direction.push_begin("-p WTF")
               end
 
               write_table(direction.interface_direction("-i"))
               written = true
             end
+
             written
           end
 
           def self.write_prerouting_netmap(ifname, rule, section, p, written)
             rule.get_map_to(p[:family]).each do |map|
+              # binding.pry
               to_from = ToFrom.new(ifname||iface.name, rule, section, p[:section])
               if rule.from_is_inside?
                 direction = to_from.respond_direction(p[:family]).push_end("--to #{map.to_string}")
               else
                 direction = to_from.request_direction(p[:family]).push_end("--to #{map.to_string}")
               end
+
               throw "prefix missmatch" if direction.dst_ip_list.find { |i| not i.ip_addr.prefix.eq(map.prefix) }
               # binding.pry
               write_table(direction.interface_direction("-i"))
               written = true
             end
+
             written
           end
 
           def self.write_prerouting(ifname, rule, section, written)
-            rule.prerouting? && [
-              {:section => section.ipv4.prerouting, :family => Construqt::Addresses::IPV4 },
-              {:section => section.ipv6.prerouting, :family => Construqt::Addresses::IPV6 }
-            ].each do |p|
-              if (p[:family] == Construqt::Addresses::IPV4 && rule.ipv4?) ||
-                  (p[:family] == Construqt::Addresses::IPV6 && rule.ipv6?)
-                # puts ">>>>>>>#{p.inspect}"
+            if rule.prerouting?
+              ipv4_ipv6_section(rule, section, :prerouting) do |p|
                 written = self.write_prerouting_dnat(ifname, rule, section, p, written)
                 written = self.write_prerouting_netmap(ifname, rule, section, p, written)
               end

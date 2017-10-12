@@ -1163,6 +1163,7 @@ class FirewallTest < Test::Unit::TestCase
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
     Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    # binding.pry
     assert_equal [
       "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.1.1.1/32 -m multiport --dports 80,443 -j DNAT --to-dest 8.8.8.8",
       "{PREROUTING} -i testif -p tcp -s 0.0.0.0/0 -d 1.1.1.2/32 -m multiport --dports 80,443 -j DNAT --to-dest 8.8.4.4",
@@ -1178,7 +1179,7 @@ class FirewallTest < Test::Unit::TestCase
      "{POSTROUTING} -o testif -s fd00::/64 -d 2000::/4 -j SNAT --to-source fd00::9:9:9:9",
      "{POSTROUTING} -o testif -p tcp -s 2000::/4 -d fd00::8:8:8:8/128 -m multiport --dports 80,443 -j SNAT --to-source fd00::2:2:2:1",
      "{POSTROUTING} -o testif -p tcp -s 2000::/4 -d fd00::8:8:4:4/128 -m multiport --dports 80,443 -j SNAT --to-source fd00::2:2:2:2"
-      ], writer.ipv6.rows
+    ], writer.ipv6.rows
   end
 
   def test_not_1_1
@@ -1668,6 +1669,10 @@ class FirewallTest < Test::Unit::TestCase
           .ipv4
           .to_net("#SRCNET-NETMAP")
           .map_to("#DSTNET-NETMAP").from_is_outside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::NETMAP)
+          .ipv4
+          .from_net("#SRCNET-NETMAP")
+          .map_to("DSTNET-NETMAP").from_is_outside
       end
     end.attach_iface(TEST_IF)
     writer = TestWriter.new
@@ -1675,7 +1680,9 @@ class FirewallTest < Test::Unit::TestCase
     assert_equal [], writer.ipv6.rows
     assert_equal [
       "{PREROUTING} -i testif -d 4.4.4.0/24 -j NETMAP --to 6.6.6.0/24",
-      "{PREROUTING} -i testif -d 5.5.5.0/24 -j NETMAP --to 6.6.6.0/24"
+      "{PREROUTING} -i testif -d 5.5.5.0/24 -j NETMAP --to 6.6.6.0/24",
+      "{POSTROUTING} -o testif -d 4.4.4.0/24 -j NETMAP --to 6.6.6.0/24",
+      "{POSTROUTING} -o testif -d 5.5.5.0/24 -j NETMAP --to 6.6.6.0/24"
     ], writer.ipv4.rows
   end
 
@@ -1686,6 +1693,10 @@ class FirewallTest < Test::Unit::TestCase
           .ipv6
           .to_net("#SRCNET-NETMAP")
           .map_to("DSTNET-NETMAP").from_is_outside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::NETMAP)
+          .ipv6
+          .from_net("#SRCNET-NETMAP")
+          .map_to("DSTNET-NETMAP").from_is_outside
       end
     end.attach_iface(TEST_IF_IPV4_IPV6)
     writer = TestWriter.new
@@ -1693,8 +1704,10 @@ class FirewallTest < Test::Unit::TestCase
     assert_equal [], writer.ipv4.rows
     assert_equal [
       "{PREROUTING} -i testif -d 4::4:4:0/120 -j NETMAP --to 6::6:6:0/120",
-      "{PREROUTING} -i testif -d 5::5:5:0/120 -j NETMAP --to 6::6:6:0/120"
-      ], writer.ipv6.rows
+      "{PREROUTING} -i testif -d 5::5:5:0/120 -j NETMAP --to 6::6:6:0/120",
+      "{POSTROUTING} -o testif -d 4::4:4:0/120 -j NETMAP --to 6::6:6:0/120",
+      "{POSTROUTING} -o testif -d 5::5:5:0/120 -j NETMAP --to 6::6:6:0/120"
+    ], writer.ipv6.rows
   end
 
   def test_netmap_ipv4_ipv6
@@ -1705,6 +1718,10 @@ class FirewallTest < Test::Unit::TestCase
           .ipv6.ipv4
           .to_net("#SRCNET-NETMAP")
           .map_to("DSTNET-NETMAP").from_is_outside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::NETMAP)
+          .ipv6.ipv4
+          .from_net("#SRCNET-NETMAP")
+          .map_to("DSTNET-NETMAP").from_is_outside
       end
     end.attach_iface(TEST_IF_IPV4_IPV6)
     writer = TestWriter.new
@@ -1712,11 +1729,15 @@ class FirewallTest < Test::Unit::TestCase
     # puts "+++++++++++++++++++++++++"
     assert_equal [
        "{PREROUTING} -i testif -d 4.4.4.0/24 -j NETMAP --to 6.6.6.0/24",
-       "{PREROUTING} -i testif -d 5.5.5.0/24 -j NETMAP --to 6.6.6.0/24"
+       "{PREROUTING} -i testif -d 5.5.5.0/24 -j NETMAP --to 6.6.6.0/24",
+       "{POSTROUTING} -o testif -d 4.4.4.0/24 -j NETMAP --to 6.6.6.0/24",
+       "{POSTROUTING} -o testif -d 5.5.5.0/24 -j NETMAP --to 6.6.6.0/24"
     ], writer.ipv4.rows
     assert_equal [
       "{PREROUTING} -i testif -d 4::4:4:0/120 -j NETMAP --to 6::6:6:0/120",
-      "{PREROUTING} -i testif -d 5::5:5:0/120 -j NETMAP --to 6::6:6:0/120"
+      "{PREROUTING} -i testif -d 5::5:5:0/120 -j NETMAP --to 6::6:6:0/120",
+      "{POSTROUTING} -o testif -d 4::4:4:0/120 -j NETMAP --to 6::6:6:0/120",
+      "{POSTROUTING} -o testif -d 5::5:5:0/120 -j NETMAP --to 6::6:6:0/120"
       ], writer.ipv6.rows
     # puts ">>>>>>>>>>>>>>>>>>>>>>>>>"
   end
