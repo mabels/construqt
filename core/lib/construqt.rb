@@ -63,7 +63,6 @@ module Construqt
   require_relative 'construqt/interfaces.rb'
   require_relative 'construqt/cables.rb'
   require_relative 'construqt/tunnels.rb'
-  require_relative 'construqt/ipsecs.rb'
   require_relative 'construqt/firewalls.rb'
   require_relative 'construqt/templates.rb'
   require_relative 'construqt/regions.rb'
@@ -99,7 +98,7 @@ module Construqt
     service_result.attach_from_hosts(hosts)
     service_result.fire_construction_order(:start)
 
-    Construqt::Ipsecs.build_config(hosts)
+    #Construqt::Ipsecs.build_config(hosts)
     Construqt::Tunnels.build_config(hosts)
     Construqt::Bgps.build_config(hosts)
     hosts.inject({}) do |r, host|

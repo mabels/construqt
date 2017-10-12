@@ -3,7 +3,7 @@ module Construqt
     module Nixian
       module Tastes
         module Systemd
-          class Tunnel
+          class Gre
             def on_add(ud, taste, _, me)
               # binding.pry
             end
@@ -12,7 +12,7 @@ module Construqt
               self
             end
           end
-          add(Entities::Tunnel, Tunnel)
+          add(Entities::Gre, Gre)
         end
       end
     end

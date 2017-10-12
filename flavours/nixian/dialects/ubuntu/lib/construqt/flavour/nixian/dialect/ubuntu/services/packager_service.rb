@@ -19,7 +19,7 @@ module Construqt
                 cps.register(Construqt::Resources::Component::SYSTEMD)
                 cps.register(Construqt::Flavour::Nixian::Dialect::Ubuntu::Bond).add('ifenslave')
                 cps.register(Construqt::Flavour::Delegate::VlanDelegate).add('vlan')
-                cps.register(Construqt::Flavour::Delegate::TunnelDelegate)
+                #cps.register(Construqt::Flavour::Delegate::TunnelDelegate)
                 cps.register(Construqt::Flavour::Nixian::Dialect::Ubuntu::Gre)
                 cps.register(Construqt::Flavour::Delegate::GreDelegate)
                 cps.register(Construqt::Flavour::Delegate::OpvnDelegate).add('openvpn')

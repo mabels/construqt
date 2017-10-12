@@ -5,7 +5,7 @@ module Construqt
   module Flavour
     module Nixian
       module Services
-        module Tunnel
+        module Gre
           class Connection
             attr_accessor :delegate, :other, :cfg, :interface
             attr_reader :host, :my, :other, :firewalls, :remote
@@ -72,8 +72,7 @@ module Construqt
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               host = @host
               # binding.pry
-              Set.new(@host.tunnels.map{|i| i.lefts}.flatten+
-                      @host.tunnels.map{|i| i.rights}.flatten).select do
+              Set.new(@host.tunnels.map{|i| i.endpoints }.flatten).select do
                 |i| i.host.ident == @host.ident
               end.each do |service|
                 next if true

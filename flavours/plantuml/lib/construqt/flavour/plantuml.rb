@@ -75,6 +75,11 @@ module Construqt
           color = 192 + (level * 32)
           color = "#{"%02x"%color}#{"%02x"%color}#{"%02x"%color}"
           out << ident(path, "package \"#{node.ident}(#{node.reference.flavour.name})\" <<Node>> ##{color} {")
+        elsif n_kind == 'xxxEndpoint'
+          return false if node.drawed! #ugly
+          color = 128 + (level * 32)
+          color = "#{"%02x"%color}#{"%02x"%color}#{"%02x"%color}"
+          out << ident(path, "package \"#{node.ident}\" <<Endpoint>> ##{color} {")
         else
           return false if node.drawed! #ugly
           out << ident(path, Construqt::Util.render(binding, "object.erb"))
@@ -100,7 +105,7 @@ module Construqt
         out = []
         out << "name = \"#{iface.name}\""
 
-        if iface.name != Util.short_ifname(iface)
+        if iface.respond_to?(:shortname) && iface.name != Util.short_ifname(iface)
           out << "short_ifname = \"#{Util.short_ifname(iface)}\""
         end
 
@@ -117,18 +122,18 @@ module Construqt
           out << "transport_family = \"#{iface.transport_family}\""
           out << "mtu_v4 = \"#{iface.mtu_v4}\""
           out << "mtu_v6 = \"#{iface.mtu_v6}\""
+          out += self.render_services(iface)
           return out.join("\n")
         end
+        #if iface.kind_of? Construqt::Ipsecs::Ipsec
+        #  out << "password = #{iface.password}"
+        #  out << "transport_family = #{iface.transport_family}"
+        #  out << "mtu_v4 = #{iface.mtu_v4}"
+        #  out << "mtu_v6 = #{iface.mtu_v6}"
+        #  out << "keyexchange = #{iface.keyexchange}"
+        #end
 
-
-        if iface.kind_of? Construqt::Ipsecs::Ipsec
-          out << "password = #{iface.password}"
-          out << "transport_family = #{iface.transport_family}"
-          out << "mtu_v4 = #{iface.mtu_v4}"
-          out << "mtu_v6 = #{iface.mtu_v6}"
-          out << "keyexchange = #{iface.keyexchange}"
-        end
-        binding.pry if name == 'ipsec'
+        #binding.pry if name == 'ipsec'
         address = iface.address
         if iface.kind_of? Construqt::Flavour::Delegate::IpsecVpnDelegate
           out << "auth_method = #{iface.auth_method}"
@@ -180,22 +185,33 @@ module Construqt
           end
         end
 
-        iface.delegate && iface.delegate.firewalls && iface.delegate.firewalls.each_with_index do |fw, idx|
+        iface.respond_to?(:delegate) &&
+          iface.delegate &&
+          iface.delegate.firewalls &&
+          iface.delegate.firewalls.each_with_index do |fw, idx|
           out << "fw(#{idx}) = \"#{fw.name}\""
         end
 
-        iface.tags && (iface.tags+tags).sort.uniq.each_with_index do |tag, idx|
+        iface.respond_to?(:tags) &&
+          iface.tags &&
+          (iface.tags+tags).sort.uniq.each_with_index do |tag, idx|
           out << "tag(#{idx}) = \"#{tag}\""
         end
 
-        #iface.services && binding.pry
-        iface.services && iface.services.get_services.map do |i|
-          i.class.name
-        end.sort.uniq.each_with_index do |service, idx|
-          out << "service(#{idx}) = \"#{service}\""
-        end
+        out += self.render_services(iface)
 
         out.join("\n")
+      end
+
+      def self.render_services(iface)
+        out = []
+        iface.services && iface.services.map{|i| i}.each_with_index do |service, idx|
+          out << "service(#{idx}) = \"#{service.class.name}\""
+          if service.respond_to?(:render_plantuml)
+            out << service.render_plantuml
+          end
+        end
+        out
       end
 
       def self.clean_name(name)
@@ -232,9 +248,9 @@ module Construqt
           "WlanDelegate.build_config" => lambda do |type, host, *args|
             args.first
           end,
-          "IpsecDelegate.build_config" => lambda do |type, host, *args|
-            args.first.cfg
-          end,
+          # "IpsecDelegate.build_config" => lambda do |type, host, *args|
+          #   args.first.cfg
+          # end,
           "IpsecVpnDelegate.build_config" => lambda do |type, host, *args|
             args.first
           end,
@@ -247,10 +263,14 @@ module Construqt
           "BgpDelegate.build_config" => lambda do |type, host, *args|
             args.first.cfg
           end,
-          "TunnelDelegate.build_config" => lambda do |type, host, *args|
+          # "TunnelDelegate.build_config" => lambda do |type, host, *args|
+          #   args.first
+          # end,
+          "Tunnel.build_config" => lambda do |type, host, *args|
+            # binding.pry
             args.first
           end,
-          "Tunnel.build_config" => lambda do |type, host, *args|
+          "Endpoint.build_config" => lambda do |type, host, *args|
             # binding.pry
             args.first
           end
@@ -336,8 +356,10 @@ module Construqt
               #                end
             end,
             "Gre" => lambda do |node|
-              interface = node.reference.delegate.remote.interface
-              node.connect @tree[interface.ident]
+              # @tree[node.reference.endpoint.ident].connect node
+              #node.reference.endpoint.remote.interfaces.each do |iface|
+              # node.connect @tree[node.reference.endpoint.tunnel.ident]
+              #end
             end,
             "Opvn" => lambda do |node|
             end,
@@ -346,23 +368,29 @@ module Construqt
               node.connect @tree[interface.ident]
             end,
             "Tunnel" => lambda do |node|
-              if node.reference.kind_of?(Construqt::Tunnels::Tunnel)
-              else
-                node.connect @tree[node.reference.endpoint.tunnel.ident]
+                # node.connect @tree[node.reference.endpoint.tunnel.ident]
+                # node.connect @tree[node.reference.endpoint.tunnel.ident]
+                node.reference.endpoints.each do |ep|
+                    node.connect @tree[ep.ident]
+                end
+            end,
+            "Endpoint" => lambda do |node|
+              #@tree[node.reference.host.ident].connect node
+                #node.connect @tree[node.reference.host.ident]
+                # binding.pry
                 node.reference.interfaces.each do |iface|
-                  if @tree[iface.ident]
+                #  if @tree[iface.ident]
                     node.connect @tree[iface.ident]
-                  end
+                #  end
                 end
-              end
             end,
-            "Ipsec" => lambda do |node|
-              [node.reference.lefts.first, node.reference.rights.first].each do |iface|
-                if @tree[iface.interface.ident]
-                  node.connect @tree[iface.interface.ident]
-                end
-              end
-            end,
+            #"Ipsec" => lambda do |node|
+            #  [node.reference.lefts.first, node.reference.rights.first].each do |iface|
+            #    if @tree[iface.interface.ident]
+            #      node.connect @tree[iface.interface.ident]
+            #    end
+            #  end
+            #end,
             "Bgp" => lambda do |node|
               #binding.pry
               [node.reference.lefts.first, node.reference.rights.first].each do |iface|

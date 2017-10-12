@@ -2,6 +2,7 @@ module Construqt
   module Flavour
     module Delegate
 
+
       class GreDelegate
         include Delegate
         # include Member
@@ -9,19 +10,27 @@ module Construqt
         COMPONENT = Construqt::Resources::Component::UNREF
         def initialize(gre)
           self.delegate = gre
-          self.init_node()
+          self.init_node().parents(self.delegate.interfaces)
         end
 
-        def create_interfaces(endpoint)
-          self.delegate.create_interfaces(endpoint)
+        def interfaces
+          self.delegate.interfaces
+        end
+
+        def endpoint
+          self.delegate.endpoint
+        end
+
+        def mode
+          self.delegate.mode
+        end
+
+        def shortname
+          self.delegate.shortname
         end
 
         def _ident
           "Gre_#{self.host.name}_#{self.name}"
-        end
-
-        def cfg
-          self.delegate.cfg
         end
       end
     end

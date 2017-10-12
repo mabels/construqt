@@ -1,11 +1,13 @@
 module Construqt
   module Tunnels
     class Endpoint
-      attr_accessor :remote, :tunnel
+      attr_accessor :remote
+      attr_reader :tunnel, :description
       attr_reader :host, :local, :address, :endpoint_address, :name
-      attr_reader :firewalls, :interfaces
-      def initialize(cfg, iname)
+      attr_reader :firewalls, :interfaces, :services
+      def initialize(tunnel, cfg, endpoint_service_factory)
         # binding.pry
+        @tunnel = tunnel
         throw "endpoint_address missing" unless cfg['endpoint_address'].valid?
         throw "address missing" unless cfg['address']
         throw "host missing" unless cfg['host']
@@ -21,11 +23,21 @@ module Construqt
         #@tunnel = cfg['tunnel']
         @address = cfg['address']
         @endpoint_address = cfg['endpoint_address']
-        @name = iname
+        @description = cfg['description'] || `endpoint on #{host.name} for tunnel #{@tunnel.name}`
+        if cfg['name'] && !cfg['name'].empty?
+          @name = cfg['name']
+        else
+          @name = "Endpoint-#{host.name}-#{tunnel.name}"
+        end
+        @services = Services.create((cfg['services'] || []) + endpoint_service_factory)
+      end
+
+      def _ident
+        "Endpoint-#{host.name}-#{tunnel.name}"
       end
 
       def ident
-        "Endpoint-#{self.host.name}-#{name}"
+        self._ident.gsub(/[^0-9a-zA-Z_]/, '_')
       end
 
       def get_prepare()
@@ -92,15 +104,18 @@ module Construqt
           # binding.pry
           self.interfaces << host.region.interfaces.add_device(host, iname,
             "address" => addrs,
+            "mtu" => cfg.mtu,
+            "description" => "tunnel endpoint for #{cfg.transport_family}",
             # "name_prefix" => cfg.gt,
             # "connection_name" => "#{self.local.host.name}--#{self.remote.host.name}",
             "interfaces" => [local_iface],
             "firewalls" => self.firewalls.map{|i| i.name},
+            "services" => self.services.map{|i| i},
             "endpoint" => self,
             "name_prefix" => cfg.gt,
             "mode" => cfg.mode,
             "cfg" => cfg,
-            "clazz" => "tunnel")
+            "clazz" => "gre")
             # binding.pry
           # binding.pry # if host.name == "iscaac"
           # local_iface.add_child(gt)
@@ -122,6 +137,7 @@ module Construqt
 
         def build_config(host, iface, _)
           # binding.pry
+          host.region.flavour_factory.call_aspects("Endpoint.build_config", nil, self)
         end
 
       end

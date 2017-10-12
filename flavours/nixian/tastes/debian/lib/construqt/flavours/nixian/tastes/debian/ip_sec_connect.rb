@@ -5,6 +5,7 @@ module Construqt
         module Debian
           class IpSecConnect
             def on_add(ud, taste, iface, me)
+              binding.pry
               eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
               writer = eni.get(iface)
               writer.lines.up("/usr/sbin/ipsec start", :extra) # no down this is also global

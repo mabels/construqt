@@ -3,7 +3,7 @@ module Construqt
     module Nixian
       module Tastes
         module File
-          class Tunnel
+          class Gre
             def on_add(ud, taste, iface, me)
               # binding.pry
               fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
@@ -15,7 +15,7 @@ module Construqt
               self
             end
           end
-          add(Entities::Tunnel, Tunnel)
+          add(Entities::Gre, Gre)
         end
       end
     end

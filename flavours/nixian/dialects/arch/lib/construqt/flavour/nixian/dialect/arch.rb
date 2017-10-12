@@ -97,7 +97,7 @@ module Construqt
                 "bond" => Construqt::Flavour::Nixian::Dialect::Ubuntu::Bond,
                 "wlan" => Construqt::Flavour::Nixian::Dialect::Ubuntu::Wlan,
                 "vlan" => Construqt::Flavour::Nixian::Dialect::Ubuntu::Vlan,
-                "tunnel" => Construqt::Flavour::Nixian::Dialect::Ubuntu::Tunnel,
+                #"tunnel" => Construqt::Flavour::Nixian::Dialect::Ubuntu::Tunnel,
                 "ipsecvpn" => Construqt::Flavour::Nixian::Dialect::Ubuntu::IpsecVpn,
                 #"result" => Result,
                 #"ipsec" => Ipsec,

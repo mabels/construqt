@@ -11,11 +11,6 @@ module Construqt
                 @any_lines = []
               end
 
-              def header
-                @result.add(:ipsec, Construqt::Util.render(binding, "strongswan_header.erb"),
-                  Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
-              end
-
               def render_line(left, right, code, password)
                 [left, right, ":", code, "\"#{Util.password(password)}\""].select{|l| !(l.nil? || l.empty?)}.join(" ")
               end

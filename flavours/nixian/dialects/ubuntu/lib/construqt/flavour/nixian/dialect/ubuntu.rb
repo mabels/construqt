@@ -44,7 +44,6 @@ require_relative 'ubuntu/template.rb'
 require_relative 'ubuntu/vlan.rb'
 require_relative 'ubuntu/wlan.rb'
 require_relative 'ubuntu/systemd.rb'
-require_relative 'ubuntu/tunnel.rb'
 
 module Construqt
   module Flavour
@@ -97,9 +96,9 @@ module Construqt
                 Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::Service.new,
                 Construqt::Flavour::Nixian::Services::EtcNetworkApplicationUd::Service.new,
                 Construqt::Flavour::Nixian::Services::DeployerSh::Service.new,
-                Construqt::Flavour::Nixian::Services::RejectRoutes::Service.new,
-                Construqt::Flavour::Nixian::Services::Tunnel::Service.new,
-                Construqt::Flavour::Nixian::Services::IpsecStrongSwan::Service.new
+                Construqt::Flavour::Nixian::Services::RejectRoutes::Service.new
+                #Construqt::Flavour::Nixian::Services::Tunnel::Service.new,
+                #Construqt::Flavour::Nixian::Services::IpsecStrongSwan::Service.new
               ])
             end
 
@@ -132,7 +131,7 @@ module Construqt
                 "wlan" => Wlan,
                 "vlan" => Vlan,
                 "ipsecvpn" => IpsecVpn,
-                "tunnel" => Tunnel,
+                #"tunnel" => Tunnel,
                 #"result" => Result,
                 #"ipsec" => Ipsec,
                 #"bgp" => Bgp,
@@ -171,16 +170,16 @@ module Construqt
             #   Services::VagrantFile.new(host, ohost)
             # end
 
-            def create_ipsec(cfg)
-              # Ipsec::StrongSwan.new(cfg)
-              connection = Construqt::Flavour::Nixian::Services::IpsecStrongSwan::Connection.new(cfg)
-              # cfg['hosts'].each do |host|
-              #   host.add_
-              #   binding.pry
-              #   #ipsec = @services_factory.find_instances_from_type(Construqt::Flavour::Nixian::Services::IpsecStrongSwan::OncePerHost)
-              #   #ipsec.add_connection()
-              # end
-            end
+            # def create_ipsec(cfg)
+            #   # Ipsec::StrongSwan.new(cfg)
+            #   connection = Construqt::Flavour::Nixian::Services::IpsecStrongSwan::Connection.new(cfg)
+            #   # cfg['hosts'].each do |host|
+            #   #   host.add_
+            #   #   binding.pry
+            #   #   #ipsec = @services_factory.find_instances_from_type(Construqt::Flavour::Nixian::Services::IpsecStrongSwan::OncePerHost)
+            #   #   #ipsec.add_connection()
+            #   # end
+            # end
           end
         end
       end

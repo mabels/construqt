@@ -5,7 +5,7 @@ module Construqt
     module Nixian
       module Tastes
         module Entities
-          class Tunnel
+          class Gre
             attr_reader :cfg, :local, :remote
             def initialize(cfg, local, remote)
               @cfg = cfg
@@ -13,7 +13,7 @@ module Construqt
               @remote = remote
             end
           end
-          add(Tunnel)
+          add(Gre)
         end
       end
     end

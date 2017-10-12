@@ -15,7 +15,7 @@ require_relative 'services/ssh'
 require_relative 'services/result'
 require_relative 'services/up_downer'
 require_relative 'services/ipsec_strong_swan'
-require_relative 'services/tunnel'
+require_relative 'services/gre'
 require_relative 'services/ipsec_vpn_strong_swan'
 require_relative 'services/ip_tables'
 require_relative 'services/ip_proxy_neigh'
@@ -51,10 +51,11 @@ module Construqt
             Lxc::Factory,
             Ssh::Factory,
             UpDowner::Factory,
-            Tunnel::Factory,
+            Gre::Factory,
             IpsecStrongSwan::Factory,
             IpsecVpnStrongSwan::Factory,
             IpTables::Factory,
+            #Ipsec::Factory,
             IpProxyNeigh::Factory,
             Docker::Factory,
             DnsMasq::Factory,

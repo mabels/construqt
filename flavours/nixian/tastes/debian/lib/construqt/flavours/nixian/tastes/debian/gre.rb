@@ -3,7 +3,7 @@ module Construqt
     module Nixian
       module Tastes
         module Debian
-          class Tunnel
+          class Gre
             def on_add(ud, taste, iface, me)
               # binding.pry
               eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
@@ -16,7 +16,7 @@ module Construqt
               self
             end
           end
-          add(Entities::Tunnel, Tunnel)
+          add(Entities::Gre, Gre)
         end
       end
     end
