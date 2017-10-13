@@ -144,7 +144,7 @@ module Construqt
                   transport_right=remote.endpoint_address.get_active_address.first_ipv4.to_s
                   # binding.pry
                   leftsubnet = local.address.v4s.map{|i| i.to_s }.first # join(',')
-                  rightsubnet = remote.address.v6s.map{|i| i.to_s }.first #.join(',')
+                  rightsubnet = remote.address.v4s.map{|i| i.to_s }.first #.join(',')
                   gt = "gt4"
                 end
 
