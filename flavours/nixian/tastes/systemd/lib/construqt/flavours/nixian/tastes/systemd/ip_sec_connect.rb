@@ -9,14 +9,14 @@ module Construqt
               ess.get("construqt-ipsec.service") do |srv|
                 #binding.pry
                 srv.description("loads ipsec")
-                   .type("oneshot")
+                   .type("simple")
                    .remain_after_exit
                    .wants("network-online.target")
                    .after("network-online.target")
                    .wanted_by("multi-user.target")
                    .command("restart")
                   srv.exec_start("/usr/lib/ipsec/starter --nofork")
-                  srv.exec_start("/usr/sbin/ipsec stop")
+                  srv.exec_stop("/usr/sbin/ipsec stop")
               end
             end
             def activate(ctx)
