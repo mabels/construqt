@@ -332,5 +332,9 @@ module Construqt
       digest = Base64.encode64(OpenSSL::Digest::SHA256.new(ident).to_s)
       "#{prefix}#{digest[0,12 - prefix.length]}"
     end
+
+    def self.i_ma_the_mother?(host)
+         host.region.hosts.get_hosts.find { |h| host.eq(h.mother) }
+    end
   end
 end

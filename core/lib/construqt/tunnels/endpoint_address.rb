@@ -32,20 +32,19 @@ module Construqt
       end
 
       def get_service_address
-        @service_address
+        @service_address || get_local_address
       end
 
-
-      def get_active_address
-        get_service_address || get_address || get_interface.address
+      def get_local_address
+        get_address || get_interface.address
       end
 
       def get_address_ipv6
-        get_active_address.first_ipv6
+        get_service_address.first_ipv6
       end
 
       def get_address_ipv4
-        get_active_address.first_ipv4
+        get_service_address.first_ipv4
       end
 
     end

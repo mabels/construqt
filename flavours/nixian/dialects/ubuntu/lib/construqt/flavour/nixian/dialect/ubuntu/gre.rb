@@ -56,7 +56,7 @@ module Construqt
               # writer = host.result.etc_network_interfaces.get(iface)
               #writer.skip_interfaces.header.interface_name(iname)
               local = endpoint.endpoint_address.get_address.first_by_family(endpoint.tunnel.transport_family).to_s
-              remote = endpoint.remote.endpoint_address.get_active_address.first_by_family(endpoint.tunnel.transport_family).to_s
+              remote = endpoint.remote.endpoint_address.get_service_address.first_by_family(endpoint.tunnel.transport_family).to_s
               # binding.pry
               throw "there must be a local or remote address" if local.nil? or remote.nil?
               up_downer = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)

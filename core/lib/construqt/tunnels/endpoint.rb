@@ -23,7 +23,7 @@ module Construqt
         #@tunnel = cfg['tunnel']
         @address = cfg['address']
         @endpoint_address = cfg['endpoint_address']
-        @description = cfg['description'] || `endpoint on #{host.name} for tunnel #{@tunnel.name}`
+        @description = cfg['description'] || "endpoint on #{host.name} for tunnel #{@tunnel.name}"
         if cfg['name'] && !cfg['name'].empty?
           @name = cfg['name']
         else
