@@ -34,6 +34,7 @@ module Construqt
         @commands << cmd
         self
       end
+
     end
 
     class Builder

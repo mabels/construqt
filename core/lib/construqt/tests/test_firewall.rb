@@ -1742,6 +1742,43 @@ class FirewallTest < Test::Unit::TestCase
     # puts ">>>>>>>>>>>>>>>>>>>>>>>>>"
   end
 
+  def test_netmap_at_ipv4_ipv6
+    # puts "*************************"
+    fw = Construqt::Firewalls.add() do |fw|
+      fw.nat do |nat|
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::NETMAP)
+          .ipv6.ipv4
+          .to_net("@1.2.3.0/24")
+          .map_to("@2.3.4.0/24").from_is_outside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::NETMAP)
+          .ipv6.ipv4
+          .to_net("@1.2.3.0/24")
+          .map_to("@2.3.4.0/24").from_is_outside
+        nat.add.prerouting.action(Construqt::Firewalls::Actions::NETMAP)
+          .ipv6.ipv4
+          .from_net("@fd00::1:2:3:0/120")
+          .map_to("@fd00::2:3:4:0/120").from_is_outside
+        nat.add.postrouting.action(Construqt::Firewalls::Actions::NETMAP)
+          .ipv6.ipv4
+          .from_net("@fd00::1:2:3:0/120")
+          .map_to("@fd00::2:3:4:0/120").from_is_outside
+      end
+    end.attach_iface(TEST_IF_IPV4_IPV6)
+    writer = TestWriter.new
+    Construqt::Flavour::Nixian::Services::Firewall.write_nat(fw, fw.get_nat, "testif", writer)
+    # puts "+++++++++++++++++++++++++"
+    assert_equal [
+      "{PREROUTING} -i testif -d 1.2.3.0/24 -j NETMAP --to 2.3.4.0/24",
+      "{POSTROUTING} -o testif -s 1.2.3.0/24 -j NETMAP --to 2.3.4.0/24"
+    ], writer.ipv4.rows
+    assert_equal [
+      "{PREROUTING} -i testif -s fd00::1:2:3:0/120 -j NETMAP --to fd00::2:3:4:0/120",
+      "{POSTROUTING} -o testif -d fd00::1:2:3:0/120 -j NETMAP --to fd00::2:3:4:0/120"
+    ], writer.ipv6.rows
+    # puts ">>>>>>>>>>>>>>>>>>>>>>>>>"
+  end
+
+
 end
 
 #result = RubyProf.stop

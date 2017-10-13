@@ -50,6 +50,7 @@ module Construqt
                 cps.register(cp::DHCPRELAY).add('wide-dhcpv6-relay').add('dhcp-helper')
                 cps.register(cp::WIRELESS).both('crda').both('iw').mother('linux-firmware')
                   .add('wireless-regdb').add('wpasupplicant')
+                # binding.pry
                 cps
               end
             end

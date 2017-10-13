@@ -109,16 +109,6 @@ module Construqt
               result_package_list
             end
 
-            def self.commands(host)
-              cmds = {}
-              _package_list(host).values.each do |artefact|
-                artefact.commands.each do |cmd|
-                  cmds[cmd] = artefact
-                end
-              end
-
-              cmds.keys
-            end
 
             def self.belongs_to_mother?
               false
@@ -300,11 +290,10 @@ module Construqt
             end
 
             def build_config_host # (host, service)
-              # binding.pry
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               once_per_host_which_have_lxcs = false
               host.region.hosts.get_hosts.select { |h| host.eq(h.mother) }.each do |lxc|
-                next unless lxc.services.has_type_of?(Lxc)
+                next unless lxc.services.has_type_of?(Lxc::Service)
                 once_per_host_which_have_lxcs ||= LxcNetwork.create_lxc_network_patcher(result, host, lxc)
                 networks = lxc.interfaces.values.map do |iface|
                   next unless iface.cable && !iface.cable.connections.empty?
@@ -349,26 +338,32 @@ module Construqt
             end
 
             def build_config_host # (host, service)
-              # binding.pry
+              # binding.pry if @host.name == 'rt-reg02-figo-stage-8'
               packager = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Packager::OncePerHost)
               # binding.pry if @host.name == "clavator"
-              packager.register(Construqt::Resources::Component::DOCKER).add(service.get_lxc_pkg)
+              packager.register(Construqt::Resources::Component::LXC).add(service.get_lxc_pkg)
+              host.region.hosts.get_hosts.select { |h| @host.eq(h.mother) }.find do |lxc|
+                lxc.services.by_type_of(Construqt::Flavour::Nixian::Services::Invocation::Service)
+                  .find do |i|
+                      i.implementation.is_a?(Container)
+                  end
+              end && packager.add_component(Construqt::Resources::Component::LXC)
 
-              result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+              # result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
 
-              if i_ma_the_mother?(@host)
-                ess = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcSystemdService::OncePerHost)
-                # binding.pry
-                ess.get_drop_in('docker.service', 'use_daemon_json.conf') do |override|
-                  override.exec_start('')
-                  override.exec_start('/usr/bin/dockerd')
-                end
-              else
-                # binding.pry
-                result.add(Docker, Construqt::Util.render(binding, 'docker_starter.sh.erb'),
-                           Construqt::Resources::Rights.root_0755,
-                           'root', 'docker-starter.sh')
-              end
+              # if i_ma_the_mother?(@host)
+              #   ess = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcSystemdService::OncePerHost)
+              #   # binding.pry
+              #   ess.get_drop_in('docker.service', 'use_daemon_json.conf') do |override|
+              #     override.exec_start('')
+              #     override.exec_start('/usr/bin/dockerd')
+              #   end
+              # else
+              #   # binding.pry
+              #   result.add(Docker, Construqt::Util.render(binding, 'docker_starter.sh.erb'),
+              #              Construqt::Resources::Rights.root_0755,
+              #              'root', 'docker-starter.sh')
+              # end
             end
 
             def commit
@@ -403,6 +398,7 @@ module Construqt
               @machine ||= service_factory.machine
                                           .service_type(Service)
                                           .result_type(OncePerHost)
+                                          .depend(DeployerSh::Service)
                                           .depend(Result::Service)
                                           .depend(UpDowner::Service)
             end

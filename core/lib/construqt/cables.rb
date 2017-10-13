@@ -4,6 +4,10 @@ module Construqt
   class Cables
     class Plugin
 
+      def initialize
+        @type = 'veth'
+      end
+
       def iface(iface)
         @iface = iface
         self
@@ -13,11 +17,16 @@ module Construqt
       end
 
       def get_type
-        @type || "veth"
+        @type
       end
 
-      def type_phys
-        @type = "phys"
+      def phys
+        @type = 'phys'
+        self
+      end
+
+      def veth
+        @type = 'veth'
         self
       end
 
@@ -102,6 +111,7 @@ module Construqt
     def add(iface_left, iface_right)
       #    throw "left should be a iface #{iface_left.class.name}" unless iface_left.kind_of?(Construqt::Flavour::InterfaceDelegate)
       #    throw "right should be a iface #{iface_right.class.name}" unless iface_right.kind_of?(Construqt::Flavour::InterfaceDelegate)
+      # binding.pry
       throw "left has a plugged in cable #{iface_left.cable}:#{iface_left.host.name}:#{iface_left.name}" unless iface_left.cable.is_plugable?
       throw "right has a plugged in cable #{iface_right.cable}:#{iface_right.host.name}:#{iface_right.name}" unless iface_right.cable.is_plugable?
       cable = Cable.new(iface_left, iface_right)

@@ -77,7 +77,7 @@ module Construqt
             def activate(context)
               @context = context
               pbuilder = @context.find_instances_from_type Construqt::Flavour::Nixian::Services::Packager::OncePerHost
-              pbuilder.packages.register(Construqt::Resources::Component::SYSTEMD)
+              pbuilder.register(Construqt::Resources::Component::SYSTEMD)
             end
 
             def add(iface)
@@ -112,6 +112,7 @@ module Construqt
                 .result_type(OncePerHost)
                 .depend(Result::Service)
                 .depend(UpDowner::Service)
+                .depend(Packages::Builder)
             end
 
             def produce(host, srv_inst, ret)

@@ -17,18 +17,20 @@ module Construqt
         @mtu_v4 = @cfg['mtu_v4']
         @mtu_v6 = @cfg['mtu_v6']
         @services = Services.create(cfg['services'])
-        @left_endpoint = Endpoint.new(self, cfg['left'], service_endpoint_factory())
-        @right_endpoint = Endpoint.new(self, cfg['right'], service_endpoint_factory())
+        @left_endpoint = Endpoint.new(self, cfg['left'])
+        service_attach_endpoint('left', @left_endpoint)
+        @right_endpoint = Endpoint.new(self, cfg['right'])
+        service_attach_endpoint('right', @right_endpoint)
       end
 
       def shortname
         ['', self.ident]
       end
 
-      def service_endpoint_factory()
+      def service_attach_endpoint(direction, endpoint)
         @services.map do |srv|
-          if srv.respond_to?(:endpoint_factory) || nil
-            srv.endpoint_factory(srv)
+          if srv.respond_to?(:attach_endpoint) || nil
+            endpoint.services.add(srv.attach_endpoint(direction, endpoint))
           end
         end.compact
       end

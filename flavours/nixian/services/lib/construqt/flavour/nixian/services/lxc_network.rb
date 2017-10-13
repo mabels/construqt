@@ -47,6 +47,7 @@ module Construqt
           end
 
           def self.render(result, host, lxc, networks)
+            #binding.pry
             return if networks.empty?
             result.add(lxc, networks.map{|n| n.render}.join("\n"),
                             Construqt::Resources::Rights.root_0644,

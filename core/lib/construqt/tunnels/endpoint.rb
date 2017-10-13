@@ -5,7 +5,7 @@ module Construqt
       attr_reader :tunnel, :description
       attr_reader :host, :local, :address, :endpoint_address, :name
       attr_reader :firewalls, :interfaces, :services
-      def initialize(tunnel, cfg, endpoint_service_factory)
+      def initialize(tunnel, cfg)
         # binding.pry
         @tunnel = tunnel
         throw "endpoint_address missing" unless cfg['endpoint_address'].valid?
@@ -29,7 +29,7 @@ module Construqt
         else
           @name = "Endpoint-#{host.name}-#{tunnel.name}"
         end
-        @services = Services.create((cfg['services'] || []) + endpoint_service_factory)
+        @services = Services.create(cfg['services'] || [])
       end
 
       def _ident

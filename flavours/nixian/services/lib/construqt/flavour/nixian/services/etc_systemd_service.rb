@@ -222,7 +222,7 @@ module Construqt
             def activate(context)
               @context = context
               pbuilder = @context.find_instances_from_type Construqt::Flavour::Nixian::Services::Packager::OncePerHost
-              pbuilder.packages.register(Construqt::Resources::Component::SYSTEMD)
+              pbuilder.register(Construqt::Resources::Component::SYSTEMD)
             end
 
             def get_drop_in(service, name, &block)
@@ -290,6 +290,7 @@ module Construqt
               @machine ||= service_factory.machine
                 .service_type(Service)
                 .result_type(OncePerHost)
+                .depend(Packages::Builder)
                 .depend(DeployerSh::Service)
                 .depend(Result::Service)
                 .depend(UpDowner::Service)

@@ -13,9 +13,18 @@ module Construqt
             chainable_attr_value :cipher
             chainable_attr_value :auto
 
+            attr_reader :left_endpoint
+            attr_reader :right_endpoint
+
+            attr_reader :endpoint # from Construqt::Tunnel
+
             #chainable_attr_value :keyexchange
             def initialize
-              @endpoints = []
+              @left_endpoint = Endpoint.new(self)
+              @right_endpoint = Endpoint.new(self)
+              @left_endpoint.remote = right_endpoint
+              @right_endpoint.remote = left_endpoint
+              @endpoints = [left_endpoint, right_endpoint]
             end
 
             def render_plantuml
@@ -27,16 +36,18 @@ module Construqt
               out.join("\n")
             end
 
-            def endpoint_factory(_)
-              throw "tunnel only have two endpoints" if @endpoints.length > 2
-              # binding.pry
-              ret = Endpoint.new(self)
-              @endpoints << ret
-              @endpoints.first.remote = @endpoints.last
-              @endpoints.last.remote = @endpoints.first
-              ret
+            def attach_endpoint(direction, endpoint)
+              if (direction == 'left')
+                @left_endpoint.endpoint = endpoint
+                return @left_endpoint
+              else
+                @right_endpoint.endpoint = endpoint
+                return @right_endpoint
+              end
             end
+
           end
+
           class Endpoint
             include Construqt::Util::Chainable
             chainable_attr_value :password
@@ -45,11 +56,49 @@ module Construqt
             chainable_attr :any
             chainable_attr :sourceip
 
-            attr_accessor :remote
+            attr_accessor :remote, :endpoint
             attr_reader :local, :tunnel
             def initialize(tunnel)
               @tunnel = tunnel
               @local = self
+              @service_addresses = []
+              @addresses = []
+              @subnets = []
+            end
+
+            def attach_host(host)
+              @host = host
+            end
+
+            def service_address(str_ip)
+              @service_addresses << str_ip
+              self
+            end
+
+            def subnet(sn)
+              @subnets << sn
+              self
+            end
+
+            def address(sn)
+              @addresses << sn
+              self
+            end
+
+            def get_addresses
+              @addresses
+            end
+
+            def get_subnets
+              @subnets
+            end
+
+            def get_service_addresses
+              if @service_addresses.length
+                @service_addresses
+              else
+                get_addresses
+              end
             end
 
             def render_plantuml
@@ -130,18 +179,25 @@ module Construqt
               tunnel = @service_instance_producer.iface.endpoint.tunnel
               remote = @service_instance_producer.iface.endpoint.remote
               local = @service_instance_producer.iface.endpoint.local
-              # binding.pry
+              ipsec_endpoint = @service_instance_producer.iface.endpoint.services.by_type_of(Construqt::Flavour::Nixian::Services::IpsecStrongSwan::Endpoint).first
+              local_address = ipsec_endpoint.local.get_addresses.inject(
+                  @host.region.network.addresses.create
+              ){|r, i| r.add_ip(i) }
+              remote_service_address = ipsec_endpoint.remote.get_service_addresses.inject(
+                  @host.region.network.addresses.create
+              ){|r, i| r.add_ip(i) }
+              #binding.pry
                 if tunnel.transport_family == Construqt::Addresses::IPV6
                   # local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(service.remote.first_ipv6) }
-                  transport_left=local.endpoint_address.get_local_address.first_ipv6.to_s
-                  transport_right=remote.endpoint_address.get_service_address.first_ipv6.to_s
+                  transport_left=local_address.first_ipv6.to_s #local.endpoint_address.get_local_address.first_ipv6.to_s
+                  transport_right=remote_service_address.first_ipv6.to_s #remote.endpoint_address.get_service_address.first_ipv6.to_s
                   leftsubnet = local.address.v6s.map{|i| i.to_s }.first # join(',')
                   rightsubnet = remote.address.v6s.map{|i| i.to_s }.first #.join(',')
                   gt = "gt6"
                 else
                   # local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(service.remote.first_ipv4) }
-                  transport_left=local.endpoint_address.get_local_address.first_ipv4.to_s
-                  transport_right=remote.endpoint_address.get_service_address.first_ipv4.to_s
+                  transport_left=local_address.first_ipv4.to_s #local.endpoint_address.get_local_address.first_ipv6.to_s
+                  transport_right=remote_service_address.first_ipv4.to_s #local.endpoint_address.get_local_address.first_ipv6.to_s
                   # binding.pry
                   leftsubnet = local.address.v4s.map{|i| i.to_s }.first # join(',')
                   rightsubnet = remote.address.v4s.map{|i| i.to_s }.first #.join(',')

@@ -9,18 +9,24 @@ module Construqt
           #   end
           # end
 
-          class Container
-            def self.i_ma_the_mother?(host)
-              host.region.hosts.get_hosts.find { |h| host.eq(h.mother) }
-            end
-          end
+          # class Container
+          #   def self.i_ma_the_mother?(host)
+          #     host.region.hosts.get_hosts.find { |h| host.eq(h.mother) }
+          #   end
+          # end
 
           class OncePerHost
-            attr_reader :packages
+            #attr_reader :packages
             def initialize
               @packages = Packages::Builder.new
               @components = Set.new
             end
+
+            # def packages
+            #   Packages::Builder.new.merge(
+            #     @context.find_by_service_type(Packages::Builder)
+            #       .service_producers.map{|i| i.srv_inst } + [@packages])
+            # end
 
             def merge_builder_has(cname)
               return true if @packages.has(cname)
@@ -37,6 +43,7 @@ module Construqt
             def add_component(component_name)
               name = component_name
               name = component_name.name unless name.kind_of?(String) or name.kind_of?(Symbol)
+              #puts name
               # @packages.register(a)
               unless merge_builder_has(name.to_sym)
                 binding.pry
@@ -89,7 +96,7 @@ module Construqt
             end
 
             def package_list(host, plist)
-              if Container.i_ma_the_mother?(host)
+              if Util.i_ma_the_mother?(host)
                 host.region.hosts.get_hosts.select do |h|
                   host.eq(h.mother)
                 end.each do |h|
@@ -98,20 +105,45 @@ module Construqt
                     Packages::Package::BOTH], plist)
                 end
               end
+              # binding.pry if host.name == 'rt-reg02-figo-stage-8'
               plist
             end
 
             def get_packages
               match = [Packages::Package::ME, Packages::Package::BOTH]
-              match << Packages::Package::MOTHER if Container.i_ma_the_mother?(@host)
+              match << Packages::Package::MOTHER if Util.i_ma_the_mother?(@host)
               plist = {}
               result_package_list(match, plist)
               package_list(@host, plist).keys
             end
 
+
+            def get_commands
+              match = [Packages::Package::ME, Packages::Package::BOTH]
+              match << Packages::Package::MOTHER if Util.i_ma_the_mother?(@host)
+              plist = {}
+              result_package_list(match, plist)
+              cmds = []
+              package_list(@host, plist).values.each do |artefacts|
+                artefacts.each do |artefact|
+                    cmds = cmds + artefact.commands
+                end
+              end
+              cmds.sort.uniq
+            end
+
           end
 
           class Action
+            def initialize(host, srv_inst)
+              @host = host
+              @srv_inst = srv_inst
+            end
+
+            def activate(ctx)
+              @context = ctx
+            end
+
           end
 
           class Factory
@@ -125,7 +157,7 @@ module Construqt
             end
 
             def produce(host, srv_inst, ret)
-              Action.new
+              Action.new(host, srv_inst)
             end
           end
         end
