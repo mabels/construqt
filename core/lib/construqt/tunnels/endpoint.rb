@@ -85,10 +85,14 @@ module Construqt
           iname = "#{cfg.gt}-#{self.local.host.name}--#{self.remote.host.name}"
           # Util.clean_if(cfg.gt, self.tunnel.name)
           ips = self.local.endpoint_address.get_address.by_family(cfg[:transport_family])
+          local_ifaces = []
           local_iface = host.interfaces.values.find do |iface|
             iface.address && ips.find{ |i| iface.address.match_network(i) }
           end
-          throw "need a interface with address #{host.name}:#{cfg.remote.ipaddr}" unless local_iface
+          if local_iface
+            local_ifaces.push local_iface
+          end
+          # throw "need a interface with address #{host.name}:#{cfg.remote.ipaddr}" unless local_iface
           # binding.pry if iname == "gt4rtwlmgt"
           #binding.pry
           addrs = host.region.network.addresses.create
@@ -108,7 +112,7 @@ module Construqt
             "description" => "tunnel endpoint for #{cfg.transport_family}",
             # "name_prefix" => cfg.gt,
             # "connection_name" => "#{self.local.host.name}--#{self.remote.host.name}",
-            "interfaces" => [local_iface],
+            "interfaces" => local_ifaces,
             "firewalls" => self.firewalls.map{|i| i.name},
             "services" => self.services.map{|i| i},
             "endpoint" => self,
