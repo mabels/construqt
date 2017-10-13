@@ -133,17 +133,18 @@ module Construqt
               # binding.pry
                 if tunnel.transport_family == Construqt::Addresses::IPV6
                   # local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(service.remote.first_ipv6) }
-                  transport_left=remote.endpoint_address.get_active_address.first_ipv6.to_s
-                  transport_right=local.endpoint_address.get_active_address.first_ipv6.to_s
-                  leftsubnet = local.endpoint_address.get_active_address.v6s.map{|i| i.to_s }.first # join(',')
-                  rightsubnet = remote.endpoint_address.get_active_address.v6s.map{|i| i.to_s }.first #.join(',')
+                  transport_left=local.endpoint_address.get_active_address.first_ipv6.to_s
+                  transport_right=remote.endpoint_address.get_active_address.first_ipv6.to_s
+                  leftsubnet = local.address.v6s.map{|i| i.to_s }.first # join(',')
+                  rightsubnet = remote.address.v6s.map{|i| i.to_s }.first #.join(',')
                   gt = "gt6"
                 else
                   # local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(service.remote.first_ipv4) }
-                  transport_left=remote.endpoint_address.get_active_address.first_ipv4.to_s
-                  transport_right=local.endpoint_address.get_active_address.first_ipv4.to_s
-                  leftsubnet = local.endpoint_address.get_active_address.v4s.map{|i| i.to_s }.first # join(',')
-                  rightsubnet = remote.endpoint_address.get_active_address.v4s.map{|i| i.to_s }.first #.join(',')
+                  transport_left=local.endpoint_address.get_active_address.first_ipv4.to_s
+                  transport_right=remote.endpoint_address.get_active_address.first_ipv4.to_s
+                  # binding.pry
+                  leftsubnet = local.address.v4s.map{|i| i.to_s }.first # join(',')
+                  rightsubnet = remote.address.v6s.map{|i| i.to_s }.first #.join(',')
                   gt = "gt4"
                 end
 
