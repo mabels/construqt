@@ -9,12 +9,21 @@ module Construqt
           class Wlan
             include BaseDevice
             include Construqt::Cables::Plugin::Single
-            attr_reader :master_if, :ssid, :psk
+            attr_reader :master_if, :ssid, :psk, :vlan_id, :band, :channel_width
+            attr_reader :country, :mode, :rx_chain, :tx_chain, :hide_ssid
             def initialize(cfg)
               base_device(cfg)
               @ssid = cfg['ssid']
               @psk = cfg['psk']
+              @vlan_id = cfg['vlan_id']
+              @band = cfg['band']
               @master_if = cfg['master_if']
+              @channel_width = cfg['channel_width']
+              @country = cfg['country']
+              @mode = cfg['mode']
+              @rx_chain = cfg['rx_chain']
+              @tx_chain = cfg['tx_chain']
+              @hide_ssid = cfg['hide_ssid']
             end
 
             def build_config(host, wlan, node)

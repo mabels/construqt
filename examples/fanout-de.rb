@@ -57,22 +57,22 @@ module FanoutDe
                         "vpn-server-net", "block"])
       end
 
-      region.interfaces.add_ipsecvpn(host, "roadrunner",
-                                     "mtu" => 1380,
-                                     "users" => ipsec_users,
-                                     "auth_method" => :internal,
-                                     "left_interface" => left_if,
-                                     "leftpsk" => IPSEC_LEFT_PSK,
-                                     "leftcert" => region.network.cert_store.find_package("fanout-de"),
-                                     "right_address" => region.network.addresses.add_ip("192.168.72.64/26#IPSECVPN-DE")
-                                                        .add_ip("#{fanout[:net6]}::cafe:0/112#IPSECVPN-DE"),
-                                     "ipv6_proxy" => true)
-      region.interfaces.add_bridge(host, "br12",
-                                   "mtu" => 1500,
-                                   "interfaces" => [],
-                                   "address" => region.network.addresses.add_ip("169.254.12.1/24#FANOUT-DE-BACKEND#FANOUT-DE-BR12")
-        .add_ip("#{fanout[:net6]}:169:254:12:1/120#FANOUT-DE-BACKEND"))
-    end
+#      region.interfaces.add_ipsecvpn(host, "roadrunner",
+#                                     "mtu" => 1380,
+#                                     "users" => ipsec_users,
+#                                     "auth_method" => :internal,
+#                                     "left_interface" => left_if,
+#                                     "leftpsk" => IPSEC_LEFT_PSK,
+#                                     "leftcert" => region.network.cert_store.find_package("fanout-de"),
+#                                     "right_address" => region.network.addresses.add_ip("192.168.72.64/26#IPSECVPN-DE")
+#                                                        .add_ip("#{fanout[:net6]}::cafe:0/112#IPSECVPN-DE"),
+#                                     "ipv6_proxy" => true)
+#      region.interfaces.add_bridge(host, "br12",
+#                                   "mtu" => 1500,
+#                                   "interfaces" => [],
+#                                   "address" => region.network.addresses.add_ip("169.254.12.1/24#FANOUT-DE-BACKEND#FANOUT-DE-BR12")
+#        .add_ip("#{fanout[:net6]}:169:254:12:1/120#FANOUT-DE-BACKEND"))
+#    end
 
     {'smtp-de' => nil,
      'bind-de' => nil,

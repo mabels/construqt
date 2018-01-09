@@ -326,8 +326,11 @@ module Construqt
     end
 
     def self.short_ifname(iface)
-      return iface.name if iface.name.length < 12
-      throw "shortname not buildable #{iface.class.name} #{iface.name}" unless iface.respond_to?(:shortname)
+      return iface.name if iface.name.length < 16
+      unless iface.respond_to?(:shortname)
+        binding.pry
+        throw "shortname not buildable #{iface.class.name} #{iface.name}"
+      end
       prefix, ident = iface.shortname
       digest = Base64.encode64(OpenSSL::Digest::SHA256.new(ident).to_s)
       "#{prefix}#{digest[0,12 - prefix.length]}"

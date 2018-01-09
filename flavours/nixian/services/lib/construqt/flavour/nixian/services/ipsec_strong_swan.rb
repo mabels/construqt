@@ -257,7 +257,7 @@ module Construqt
                 ioph.add_connection(conn_name, conn)
                 #binding.pry
                 up_downer = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)
-                up_downer.add(@host, Tastes::Entities::IpSecConnect.new(conn_name))
+                up_downer.add(@host, Tastes::Entities::IpSecConnect.new(conn_name, local))
               end
 
             def commit

@@ -7,7 +7,8 @@ module Construqt
             def on_add(ud, taste, iface, me)
               #binding.pry if iface.nil? or iface.name == "etcbind-2"
               eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
-              writer = eni.get(iface)
+              writer = eni.get(iface.interfaces.values.first)
+              # binding.pry
               ipt = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::IpTables::OncePerHost)
               unless ipt.etc_network_iptables.commitv4.empty?
                 writer.lines.up("/sbin/iptables-restore /etc/network/iptables.cfg")

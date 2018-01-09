@@ -44,27 +44,27 @@ module MamWl
       right_addr.add_ip("2602:ffea:1:7dd:#{vlan}::6/126#SERVICE-TRANSIT-#{fw_suffix}#GW-#{left.name}")
     end
     puts "#{left.name}<=>#{right.name} #{fws}"
-    Construqt::Ipsecs.connection("#{left.name}<=>#{right.name}",
-                                 "password" => IPSEC_PASSWORDS.call(left.name,right.name),
-                                 "transport_family" => Construqt::Addresses::IPV4,
-                                 "mtu_v4" => 1360,
-                                 "mtu_v6" => 1360,
-                                 "keyexchange" => "ikev2",
-                                 "left" => {
-                                   "my" => left_addr,
-                                   "host" => right,
-                                   "remote" => region.interfaces.find(right, "eth0").address,
-                                   "auto" => "add",
-                                   "sourceip" => true
-                                 },
-                                 "right" => {
-                                   "my" => right_addr,
-                                   'firewalls' => fws+['net-forward', 'ssh-srv', 'icmp-ping', 'block'],
-                                   "host" => left,
-                                   "remote" => region.interfaces.find(left, "v24").address,
-                                   "any" => true
-                                 }
-                                )
+#    Construqt::Ipsecs.connection("#{left.name}<=>#{right.name}",
+#                                 "password" => IPSEC_PASSWORDS.call(left.name,right.name),
+#                                 "transport_family" => Construqt::Addresses::IPV4,
+#                                 "mtu_v4" => 1360,
+#                                 "mtu_v6" => 1360,
+#                                 "keyexchange" => "ikev2",
+#                                 "left" => {
+#                                   "my" => left_addr,
+#                                   "host" => right,
+#                                   "remote" => region.interfaces.find(right, "eth0").address,
+#                                   "auto" => "add",
+#                                   "sourceip" => true
+#                                 },
+#                                 "right" => {
+#                                   "my" => right_addr,
+#                                   'firewalls' => fws+['net-forward', 'ssh-srv', 'icmp-ping', 'block'],
+#                                   "host" => left,
+#                                   "remote" => region.interfaces.find(left, "v24").address,
+#                                   "any" => true
+#                                 }
+#                                )
   end
 
   def self.mam_actions(region)

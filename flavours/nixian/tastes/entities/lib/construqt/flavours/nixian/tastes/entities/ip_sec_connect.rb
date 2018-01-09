@@ -6,9 +6,10 @@ module Construqt
       module Tastes
         module Entities
           class IpSecConnect
-            attr_reader :name
-            def initialize(name)
+            attr_reader :name, :endpoint
+            def initialize(name, endpoint)
               @name = name
+              @endpoint = endpoint
             end
           end
           add(IpSecConnect)

@@ -1,28 +1,26 @@
 module Scott
   def self.run(region)
-    scott = region.hosts.add("scott", "flavour" => "nixian", "dialect" => "ubuntu",
+    scott = region.hosts.add("scott", "flavour" => "nixian", "dialect" => "arch",
                              "services" => [Construqt::Flavour::Nixian::Services::Vagrant::Service.new
                                           .box("ubuntu/xenial64").root_passwd("/.")
                                           .add_cfg('config.vm.network "public_network", bridge: "bridge0"')]) do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
-      eth0 = region.interfaces.add_device(host, "eth0", "mtu" => 1500)
+      eth0 = region.interfaces.add_device(host, "enp0s25", "mtu" => 1500)
       region.cables.add(eth0, region.interfaces.find("sw-hp03", "ge4"))
-      host.configip = host.id ||= Construqt::HostId.create do |my|
-        my.interfaces << region.interfaces.add_bridge(host, "br0", "mtu" => 1500,
-                                                      "interfaces" => [eth0],
-                                                      "address" => region.network.addresses.add_ip("192.168.176.1/24")
-          .add_route("0.0.0.0/0", "192.168.176.4"))
-      end
 
       [24,66,67,68,202].each do |vlan|
         region.interfaces.add_bridge(host, "br#{vlan}", "mtu" => 1500,
                                      "interfaces" => [
-                                       region.interfaces.add_vlan(host, "eth0.#{vlan}",
+                                       region.interfaces.add_vlan(host, "#{eth0.name}.#{vlan}",
                                                                   "vlan_id" => vlan,
                                                                   "mtu" => 1500,
                                                                   "interface" => eth0)])
+      end
+      host.configip = host.id ||= Construqt::HostId.create do |my|
+        my.interfaces << hostif = region.interfaces.find(host, 'br202')
+        hostif.address.add_ip("192.168.202.4/24").add_route("0.0.0.0/0", "192.168.202.1")
       end
     end
 
@@ -55,7 +53,7 @@ module Scott
           my.interfaces << my = region.interfaces.add_device(host, "vtnet0", "mtu" => 1500,
                                                              'address' => region.network.addresses.add_ip("192.168.176.19/24")
             .add_route_from_tags("#INTERNET", "192.168.176.4"))
-          region.cables.add(my, region.interfaces.find("scott", "br0"))
+          #region.cables.add(my, region.interfaces.find("scott", "enp0s25"))
         end
       end
     end

@@ -11,6 +11,7 @@ CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../../'
   "#{CONSTRUQT_PATH}/construqt/flavours/gojs/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/core/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/entities/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/arch/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/coreos/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/ubuntu/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/docker/lib",
@@ -31,6 +32,7 @@ require 'construqt'
 require 'construqt/flavour/nixian'
 require 'construqt/flavour/nixian/dialect/ubuntu'
 require 'construqt/flavour/nixian/dialect/coreos'
+require 'construqt/flavour/nixian/dialect/arch'
 require 'construqt/flavour/nixian/dialect/docker'
 require 'construqt/flavour/unknown'
 require 'construqt/flavour/mikrotik'
@@ -55,6 +57,7 @@ def setup_region(name, network)
   nixian.services_factory.add(Aiccu::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::CoreOs::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Ubuntu::Factory.new)
+  nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Arch::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Docker::Factory.new)
   region.flavour_factory.add(nixian)
   region.flavour_factory.add(Construqt::Flavour::Unknown::Factory.new)
@@ -162,6 +165,9 @@ Scott.run(region)
 require_relative "./thieso.rb"
 Thieso.run(region)
 
+require_relative "./wl-ccu.rb"
+WlCcu.run(region)
+
 require_relative "./ooble.rb"
 Ooble.run(region)
 
@@ -172,8 +178,8 @@ Clavator.run(region)
 
 Construqt.produce(region)
 
-require_relative 'always-connected'
-AlwaysConnected.run(network)
+#require_relative 'always-connected'
+#AlwaysConnected.run(network)
 
 
 

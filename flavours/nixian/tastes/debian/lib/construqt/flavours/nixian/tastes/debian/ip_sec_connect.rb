@@ -5,11 +5,17 @@ module Construqt
         module Debian
           class IpSecConnect
             def on_add(ud, taste, iface, me)
+              # binding.pry
               eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
-              writer = eni.get(iface)
-              writer.lines.up("/usr/sbin/ipsec start &", :extra) # no down this is also global
-              writer.lines.up("/usr/sbin/ipsec up #{me.name} &", -1000, :extra)
-              writer.lines.down("/usr/sbin/ipsec down #{me.name} &", 1000, :extra)
+              me.endpoint.local.interfaces.each do |iface|
+                writer = eni.get(iface)
+                writer.lines.up("/usr/sbin/ipsec start &", 1000) # no down this is also global
+                writer.lines.up("/usr/sbin/ipsec up #{me.name} &", 1000)
+                writer.lines.down("/usr/sbin/ipsec down #{me.name} &", -1000)
+              end
+              #writer.lines.up("/usr/sbin/ipsec start &", :extra) # no down this is also global
+              #writer.lines.up("/usr/sbin/ipsec up #{me.name} &", -1000, :extra)
+              #writer.lines.down("/usr/sbin/ipsec down #{me.name} &", 1000, :extra)
             end
             def activate(ctx)
               @context = ctx

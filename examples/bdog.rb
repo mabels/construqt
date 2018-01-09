@@ -211,16 +211,16 @@ def self.run(region)
           .add_route("2000::/3", "#{bdog_cfg[:net6]}:169:254:12:1"))
       end
 
-      region.interfaces.add_ipsecvpn(host, "roadrunner",
-                                     "mtu" => 1380,
-                                     "users" => ipsec_users,
-                                     "auth_method" => :internal,
-                                     "left_interface" => iface,
-                                     "leftpsk" => IPSEC_LEFT_PSK,
-                                     "leftcert" => region.network.cert_store.find_package("fanout-de"),
-                                     "right_address" => region.network.addresses.add_ip("192.168.72.64/26#IPSECVPN-DE")
-        .add_ip("#{bdog_cfg[:net6]}::cafe:0/112#IPSECVPN-DE"),
-      "ipv6_proxy" => true)
+#      region.interfaces.add_ipsecvpn(host, "roadrunner",
+#                                     "mtu" => 1380,
+#                                     "users" => ipsec_users,
+#                                     "auth_method" => :internal,
+#                                     "left_interface" => iface,
+#                                     "leftpsk" => IPSEC_LEFT_PSK,
+#                                     "leftcert" => region.network.cert_store.find_package("fanout-de"),
+#                                     "right_address" => region.network.addresses.add_ip("192.168.72.64/26#IPSECVPN-DE")
+#        .add_ip("#{bdog_cfg[:net6]}::cafe:0/112#IPSECVPN-DE"),
+#      "ipv6_proxy" => true)
     end
   end
 

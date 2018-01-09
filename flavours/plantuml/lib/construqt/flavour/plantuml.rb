@@ -181,7 +181,13 @@ module Construqt
           end
 
           address.routes.each_with_index do |route, idx|
-            out << "route(#{idx}) = \"#{route.dst.to_string} via #{route.via.to_s}\""
+            if route.respond_to?(:dst)
+              out << "route(#{idx}) = \"#{route.dst.to_string} via #{route.via.to_s}\""
+            elsif route.instance_of?(Construqt::Addresses::RejectRoute)
+              out << "route(#{idx}) = \"#{route.dst_addr_or_tag.to_string} to RejectRoute\""
+            else
+              binding.pry
+            end
           end
         end
 

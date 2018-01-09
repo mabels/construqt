@@ -47,34 +47,34 @@ module Hgw
       region.interfaces.find(kuckpi, 'br70'))
     end
 
-    Construqt::Ipsecs.connection("#{fanout_de.name}<=>#{service_de_hgw.name}",
-                                 "password" => IPSEC_PASSWORDS.call(fanout_de.name, service_de_hgw.name),
-                                 "transport_family" => Construqt::Addresses::IPV4,
-                                 "mtu_v4" => 1360,
-                                 "mtu_v6" => 1360,
-                                 "keyexchange" => "ikev2",
-                                 "left" => {
-                                   "my" => region.network.addresses.add_ip("169.254.70.1/30#SERVICE-IPSEC")
-                                     .add_ip("169.254.70.5/30#SERVICE-TRANSIT-DE#FANOUT-DE-HGW-GW")
-                                     .add_ip("#{cfg[:net6]}::9/126#SERVICE-TRANSIT-DE#FANOUT-DE-HGW-GW")
-                                     .add_route_from_tags("#SERVICE-NET-DE-HGW", "#SERVICE-DE-HGW"),
-                                   "host" => fanout_de,
-                                   "remote" => region.interfaces.find(fanout_de, "eth0").address,
-                                   "auto" => "add",
-                                   "sourceip" => true
-                                 },
-                                 "right" => {
-                                   "my" => region.network.addresses.add_ip("169.254.70.2/30")
-                                     .add_ip("169.254.70.6/30#SERVICE-DE-HGW#SERVICE-NET-DE")
-                                     .add_ip("#{cfg[:net6]}::a/126#SERVICE-TRANSIT-DE#SERVICE-DE-HGW#SERVICE-NET-DE")
-                                     .add_route_from_tags("#INTERNET", "#FANOUT-DE-HGW-GW"),
-                                   'firewalls' => ['host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit', 'block'],
-                                   "host" => service_de_hgw,
-                                   "remote" => region.interfaces.find(service_de_hgw, "br0").address,
-                                   "any" => true
-                                 }
-                                )
-
+    #Construqt::Ipsecs.connection("#{fanout_de.name}<=>#{service_de_hgw.name}",
+    #                             "password" => IPSEC_PASSWORDS.call(fanout_de.name, service_de_hgw.name),
+    #                             "transport_family" => Construqt::Addresses::IPV4,
+    #                             "mtu_v4" => 1360,
+    #                             "mtu_v6" => 1360,
+    #                             "keyexchange" => "ikev2",
+    #                             "left" => {
+    #                               "my" => region.network.addresses.add_ip("169.254.70.1/30#SERVICE-IPSEC")
+    #                                 .add_ip("169.254.70.5/30#SERVICE-TRANSIT-DE#FANOUT-DE-HGW-GW")
+    #                                 .add_ip("#{cfg[:net6]}::9/126#SERVICE-TRANSIT-DE#FANOUT-DE-HGW-GW")
+    #                                 .add_route_from_tags("#SERVICE-NET-DE-HGW", "#SERVICE-DE-HGW"),
+    #                               "host" => fanout_de,
+    #                               "remote" => region.interfaces.find(fanout_de, "eth0").address,
+    #                               "auto" => "add",
+    #                               "sourceip" => true
+    #                             },
+    #                             "right" => {
+    #                               "my" => region.network.addresses.add_ip("169.254.70.2/30")
+    #                                 .add_ip("169.254.70.6/30#SERVICE-DE-HGW#SERVICE-NET-DE")
+    #                                 .add_ip("#{cfg[:net6]}::a/126#SERVICE-TRANSIT-DE#SERVICE-DE-HGW#SERVICE-NET-DE")
+    #                                 .add_route_from_tags("#INTERNET", "#FANOUT-DE-HGW-GW"),
+    #                               'firewalls' => ['host-outbound', 'icmp-ping', 'ssh-srv', 'service-transit', 'block'],
+    #                               "host" => service_de_hgw,
+    #                               "remote" => region.interfaces.find(service_de_hgw, "br0").address,
+    #                               "any" => true
+    #                             }
+    #                            )
+#
     kucksdu = region.hosts.add("kucksdu", "flavour" => "nixian", "dialect" => "ubuntu") do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",

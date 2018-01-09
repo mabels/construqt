@@ -73,8 +73,8 @@ INTERNAL_PSK = "wifi for free"
 
 def ipsec_users()
   [
-    Construqt::Ipsecs::User.new("abels", "weg"),
-    Construqt::Ipsecs::User.new("martina", "weg")
+    #Construqt::Ipsecs::User.new("abels", "weg"),
+    #Construqt::Ipsecs::User.new("martina", "weg")
   ]
 end
 

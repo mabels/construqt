@@ -19,9 +19,9 @@ module Construqt
           "Wlan_#{self.host.name}_#{self.name}"
         end
 
-        def stereo_type
-          self.delegate.stereo_type
-        end
+        #def stereo_type
+        #  self.delegate.stereo_type
+        #end
 
         def master_if
           self.delegate.master_if

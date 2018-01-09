@@ -75,7 +75,7 @@ module Construqt
                 "bridge" => Construqt::Flavour::Nixian::Dialect::Ubuntu::Bridge,
                 "bond" => Construqt::Flavour::Nixian::Dialect::Ubuntu::Bond,
                 "wlan" => Construqt::Flavour::Nixian::Dialect::Ubuntu::Wlan,
-                "tunnel" => Construqt::Flavour::Nixian::Dialect::Ubuntu::Tunnel,
+                #"tunnel" => Construqt::Flavour::Nixian::Dialect::Ubuntu::Tunnel,
                 "vlan" => Construqt::Flavour::Nixian::Dialect::Ubuntu::Vlan,
                 "ipsecvpn" => Construqt::Flavour::Nixian::Dialect::Ubuntu::IpsecVpn,
                 "template" => Construqt::Flavour::Nixian::Dialect::Ubuntu::Template
