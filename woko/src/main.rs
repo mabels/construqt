@@ -272,16 +272,22 @@ _ => res.with_status(StatusCode::MethodNotAllowed);
 // const MAX_BODY_LENGTH: usize = 1024 * 1024 * 1;
 
 fn load_certs(filename: String) -> Vec<rustls::Certificate> {
+    println!("-1:{}", filename);
     let certfile = std::fs::File::open(filename).expect("cannot open certificate file");
     let mut reader = std::io::BufReader::new(certfile);
-    pemfile::certs(&mut reader).unwrap()
+    let certs = pemfile::certs(&mut reader).unwrap();
+    println!("-2:{}", certs.len());
+    certs
 }
 
 fn load_private_key(filename: String) -> rustls::PrivateKey {
-    let keyfile = std::fs::File::open(filename).expect("cannot open private key file");
+    println!("-3:{}", filename);
+    let keyfile = std::fs::File::open(&filename).expect("cannot open private key file");
     let mut reader = std::io::BufReader::new(keyfile);
-    let keys = pemfile::rsa_private_keys(&mut reader).unwrap();
+    let keys = pemfile::pkcs8_private_keys(&mut reader).unwrap();
+    println!("-4:{}", keys.len());
     assert!(keys.len() == 1);
+    println!("-5");
     keys[0].clone()
 }
 
@@ -291,10 +297,10 @@ fn main() {
     let key = std::env::args().nth(1);
     let cert = std::env::args().nth(2);
     if key.is_some() && cert.is_some() {
-        let key_file = key.unwrap();
-        let key = load_private_key(key_file);
         let cert_file = cert.unwrap();
         let certs = load_certs(cert_file);
+        let key_file = key.unwrap();
+        let key = load_private_key(key_file);
         let mut cfg = rustls::ServerConfig::new(NoClientAuth::new());
         cfg.set_single_cert(certs, key);
         let tls = tokio_rustls::proto::Server::new(Http::new(), std::sync::Arc::new(cfg));
