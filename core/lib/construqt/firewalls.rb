@@ -1,4 +1,3 @@
-require 'resolv'
 require_relative 'firewalls/i_c_m_p.rb'
 require_relative 'firewalls/actions.rb'
 require_relative 'firewalls/ipv4_ipv6.rb'

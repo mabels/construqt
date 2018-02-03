@@ -40,6 +40,7 @@ module Construqt
             chainable_attr :aa_profile_unconfined
 
             chainable_attr_value :release
+            chainable_attr_value :arch
             chainable_attr_value :template
             attr_reader :host, :ship
 
@@ -184,11 +185,25 @@ module Construqt
               releases.first
             end
 
+            def self.get_arch(hosts)
+              archs = hosts.select(&:lxc_deploy).map do |h|
+                h.lxc_deploy.get_arch
+              end.sort.uniq
+              if archs.length > 1
+                throw "a template must have the same archs #{archs.join(':')}"
+              end
+
+              archs.first
+            end
+
+
             def self.create_template(name, hosts)
               lxc_base = File.join('/var', 'lib', 'lxc')
               package_list = merge_package_list(hosts).join(',')
-              release = " -- --packages #{package_list}"
-              release += " -r #{get_release(hosts)}" if get_release(hosts)
+              release = " -- "
+              release += " --release=#{get_release(hosts)}" if get_release(hosts)
+              release += " --arch=#{get_arch(hosts)}" if get_arch(hosts)
+              release += " --packages #{package_list}"
 
               [Construqt::Util.render(binding, 'lxc/lxc_create_template.sh.erb')]
             end
@@ -237,10 +252,10 @@ module Construqt
             def deploy_standalone(host)
               base_dir = File.join('/var', 'lib', 'lxc', host.name)
               lxc_rootfs = File.join(base_dir, 'rootfs')
-              release = " -- --packages $(bash #{File.dirname(base_dir)}/#{host.name}.deployer.sh package_list)"
-              if get_release
-                release += " -r #{get_release}"
-              end
+              release = " -- "
+              release += " --release=#{get_release}" if get_release
+              release += " --arch=#{get_arch}" if get_arch
+              release += " --packages $(bash #{File.dirname(base_dir)}/#{host.name}.deployer.sh package_list)"
               Construqt::Util.render(binding, 'lxc/lxc_deploy_standalone.sh.erb')
             end
 

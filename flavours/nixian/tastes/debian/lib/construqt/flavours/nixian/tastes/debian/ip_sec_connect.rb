@@ -6,6 +6,9 @@ module Construqt
           class IpSecConnect
             def on_add(ud, taste, iface, me)
               # binding.pry
+              pbuilder = @context.find_instances_from_type Construqt::Flavour::Nixian::Services::Packager::OncePerHost
+              pbuilder.add_component(Construqt::Resources::Component::IPSEC)
+
               eni = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkInterfaces::OncePerHost)
               me.endpoint.local.interfaces.each do |iface|
                 writer = eni.get(iface)

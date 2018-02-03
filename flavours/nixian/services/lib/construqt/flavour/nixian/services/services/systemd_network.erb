@@ -2,6 +2,7 @@
 Name=<%= Util.short_ifname(systemd_network.interface) %>
 
 [Network]
+LinkLocalAddressing=no
 DHCP=<%=  if systemd_network.interface.address.dhcpv4? &&
              systemd_network.interface.address.dhcpv6?
            "yes"
@@ -15,10 +16,31 @@ DHCP=<%=  if systemd_network.interface.address.dhcpv4? &&
             "no"
           end
 %>
+<%-
+  if systemd_network.interface.respond_to?(:endpoint) &&
+     systemd_network.interface.endpoint.endpoint_address
+    family = systemd_network.interface.endpoint.tunnel.transport_family
+    systemd_network.interface.endpoint.endpoint_address.get_address.by_family(family).each do |ip|
+      next if systemd_network.interface.address.by_family(family).empty?
+  -%>
+Address=<%= ip.to_string %>
+<%- end; end -%>
 <%- systemd_network.interface.address &&
     systemd_network.interface.address.ips.each do |ip| -%>
 Address=<%= ip.to_string %>
 <%- end -%>
+<%-
+if systemd_network.interface.host.configip.interfaces.first == systemd_network.interface
+  systemd_network.interface.host.tunnels.each do |tunnel|
+    [tunnel.right_endpoint,tunnel.left_endpoint].find { |ep|
+      ep.host == systemd_network.interface.host
+    }.interfaces.each do |iface|
+if iface.kind_of?(Construqt::Flavour::Delegate::VxlanDelegate)
+-%>
+VXLAN=<%= Util.short_ifname(iface) %>
+<%- else -%>
+Tunnel=<%= Util.short_ifname(iface) %>
+<%- end; end ; end; end -%>
 <%- systemd_network.tunnels.each do |tunnel| -%>
 Tunnel=<%= tunnel.name %>
 <%- end -%>

@@ -43,7 +43,7 @@ module Construqt
               'docker'
             end
 
-            def add_host_services(srvs)
+            def add_host_services(srvs, cfg)
               @services_factory.merge(srvs, [
                 Construqt::Packages::Builder.new,
                 Construqt::Flavour::Nixian::Services::Result::Service.new,
@@ -53,7 +53,7 @@ module Construqt
               ])
             end
 
-            def add_interface_services(srvs)
+            def add_interface_services(srvs, cfg)
               srvs || []
             end
 

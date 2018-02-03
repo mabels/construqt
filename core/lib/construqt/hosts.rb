@@ -66,7 +66,7 @@ module Construqt
       #		cfg['clazz'] = cfg['flavour'].clazz("host")
       throw "flavour #{cfg['flavour']} for host #{name} not found" unless cfg['flavour']
       # binding.pry if name == "bdog"
-      cfg['services'] = Services.create(flavour.add_host_services(cfg['services']))
+      cfg['services'] = Services.create(flavour.add_host_services(cfg['services'], cfg))
       cfg['region'] = @region
       host = cfg['flavour'].create_host(name, cfg)
       block.call(host)

@@ -26,11 +26,12 @@ module Construqt
 
             def build_config(host, iface, node)
               #puts ">>>>>>>>>>>>>>>>>>>>>>#{host.name} #{iface.name}"
+              render_ipv6_proxy(iface)
+
               ipsec = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::IpsecStrongSwan::OncePerHost)
               # binding.pry if host.name == "fanout-de"
 
               Device.build_config(host, iface, node, nil, nil, nil, true)
-              render_ipv6_proxy(iface)
               if iface.leftpsk
                 comment = "#{host.name}-#{iface.name}"
                 iface.left_interface.address.ips.each do |ip|
@@ -40,10 +41,14 @@ module Construqt
               end
               ipsec.ipsec_secret.add_users_psk(host)
 
-              result = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
 
-              result.add(:ipsec, render_ikev1(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
-              result.add(:ipsec, render_ikev2(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
+              ipsec.add_connection("#{host.name}-#{iface.name}-ikev1", render_ikev1(host, iface), 1000)
+              ipsec.add_connection("#{host.name}-#{iface.name}-ikev2", render_ikev2(host, iface), 1001)
+
+              #result = host.result_types.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
+
+              #result.add(:ipsec, render_ikev1(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
+              #result.add(:ipsec, render_ikev2(host, iface), Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
             end
 
             def render_ipv6_proxy(iface)
@@ -77,7 +82,7 @@ module Construqt
 
               conn.rightsendcert = "never"
               conn.auto = "add"
-              render_conn(host, iface, conn)
+              conn
             end
 
             def render_ikev2(host, iface)
@@ -102,16 +107,9 @@ module Construqt
               conn.rightauth = "eap-mschapv2"
               conn.eap_identity = "%any"
               conn.auto = "add"
-              render_conn(host, iface, conn)
+              conn
             end
 
-            def render_conn(host, iface, conn)
-              out = ["conn #{host.name}-#{iface.name}-#{conn.keyexchange}"]
-              conn.to_h.each do |k,v|
-                out << Util.indent("#{k}=#{v}", 3)
-              end
-              out.join("\n")
-            end
           end
         end
       end

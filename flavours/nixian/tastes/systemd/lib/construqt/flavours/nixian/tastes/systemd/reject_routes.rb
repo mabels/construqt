@@ -12,7 +12,9 @@ module Construqt
                    .type("oneshot")
                    .remain_after_exit
                    .after("systemd-networkd.socket")
+                   .after("network-online.target")
                    .requires("systemd-networkd.socket")
+                   .requires("network-online.target")
                    .exec_start("/bin/sh /etc/network/RejectRoutes-up.sh")
                    .exec_stop("/bin/sh /etc/network/RejectRoutes-down.sh")
                    .wanted_by("multi-user.target")

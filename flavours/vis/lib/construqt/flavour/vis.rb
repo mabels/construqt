@@ -1,24 +1,15 @@
-require 'rexml/document'
-require 'rexml/element'
-require 'rexml/cdata'
-
 module Construqt
   module Flavour
-    class Plantuml
+    class Vis
 
       DIRECTORY = File.dirname(__FILE__)
 
       def name
-        'plantuml'
+        'vis'
       end
 
       def initialize
         @tree_view = Construqt::TreeView.new
-        @formats = ['svg']
-      end
-
-      def add_format(format)
-        @formats.include?(format) || @formats << format
       end
 
       def connect(node, out, path)
@@ -26,9 +17,10 @@ module Construqt
         #    Construqt.logger.debug("planuml.draw:#{node.reference.name} #{node.ident} ")
         node.out_links.each do |n|
           #      Construqt.logger.debug("planuml.draw:Out:#{node.reference.name} #{node.ident}:#{n.ident}")
-          unless TreeView.simple(node.reference.class) == "Host"
-            out << "#{node.ident} .. #{n.ident}"
+          if TreeView.simple(node.reference.class) == "Host"
+            out << { from: node.object_id, to: n.object_id }
           end
+          # end
 
           connect(n, out, path + [n.reference.name])
         end
@@ -36,7 +28,7 @@ module Construqt
           key = [node.ident,n.ident].sort.join('..')
           unless @tree_view.single_wire[key]
             @tree_view.single_wire[key] = true
-            out << "#{node.ident} .. #{n.ident}"
+            out << { from: node.object_id, to: n.object_id }
           end
         end
       end
@@ -50,17 +42,39 @@ module Construqt
           # if my in_links contains my mother i'm ready to paint
           return false if !node.in_links.empty? and !node.in_links.include?(parent)
           return false if node.drawed! #ugly
+
+
           color = 192 + (level * 32)
           color = "#{"%02x"%color}#{"%02x"%color}#{"%02x"%color}"
-          out << TreeView.ident(path, "package \"#{node.ident}(#{node.reference.flavour.name})\" <<Node>> ##{color} {")
-        elsif n_kind == 'xxxEndpoint'
-          return false if node.drawed! #ugly
-          color = 128 + (level * 32)
-          color = "#{"%02x"%color}#{"%02x"%color}#{"%02x"%color}"
-          out << TreeView.ident(path, "package \"#{node.ident}\" <<Endpoint>> ##{color} {")
+          out << {
+              id: node.object_id,
+              label:"#{node.ident}(#{node.reference.flavour.name})",
+              shape: 'box',
+              color: {
+                background:"green",
+                border:'black',
+                highlight:{background:"green",border:'blue'},
+                hover:{background:"green",border:'red'}
+              },
+              cid: parent.object_id || node.object_id,
+              group: (!parent.nil? && parent.ident) || node.ident
+          }
         else
           return false if node.drawed! #ugly
-          out << TreeView.ident(path, Construqt::Util.render(binding, "object.erb"))
+          out << {
+            id: node.object_id,
+            # \n
+            label: "#{node.ident}(#{TreeView.get_stereo_type(node, n_kind)})",
+            title: "#{render_object_address(node.reference).join("<br/>")}",
+            color: {
+              background:'gray',
+              border:'black',
+              highlight:{background:'gray',border:'blue'},
+              hover:{background:'gray',border:'red'}
+            },
+            cid: parent.object_id || node.object_id,
+            group: (!parent.nil? && parent.ident) || node.ident
+          }
         end
         #binding.pry if node.ident == 'Host_scott'
 
@@ -68,12 +82,8 @@ module Construqt
         !flat && n_kind != 'Device' && node.out_links.each do |n|
           #binding.pry if n.reference.name == "ad-de"
           last = TreeView.layout_helper(out, last, node,
-                   draw(n, out, path + [n.reference.name], flat, level+1, node)
+                   draw(n, out, path + [n.reference.name], flat, level + 1, node)
                  )
-        end
-
-        if n_kind == "Host"
-          out << TreeView.ident(path, "}")
         end
         true
       end
@@ -184,26 +194,18 @@ module Construqt
 
         out += self.render_services(iface)
 
-        out.join("\n")
+        out
       end
 
       def self.render_services(iface)
         out = []
         iface.services && iface.services.map{|i| i}.each_with_index do |service, idx|
           out << "service(#{idx}) = \"#{service.class.name}\""
-          if service.respond_to?(:render_plantuml)
-            out << service.render_plantuml
+          if service.respond_to?(:render_vis)
+            out << service.render_vis
           end
         end
         out
-      end
-
-      def self.patch_connection_highlight(fname)
-        xml = REXML::Document.new(IO.read(fname))
-        js = REXML::Element.new "script"
-        js.text = REXML::CData.new(Construqt::Util.render(binding, "line_highlight.js"))
-        xml.root.elements.add(js)
-        File.open(fname, 'w') { |o| xml.write( o ) }
       end
 
       def call(type, host_or_region, *args)
@@ -212,54 +214,30 @@ module Construqt
         factory = {
           "completed" => lambda do |type, *args|
             @tree_view.build_tree
-            out = []
+            nodes = []
             last = nil
             @tree_view.tree.values.each do |node|
               #           next unless node.in_links.empty?
-              last = TreeView.layout_helper(out, last, node,
-                         Plantuml.draw(node, out, [node.reference.name],
+              last = TreeView.layout_helper(nodes, last, node,
+                         Vis.draw(node, nodes, [node.reference.name],
                          ['Vrrp', 'Ipsec', 'Bgp'].include?(TreeView.simple(node.reference.class))))
             end
 
             @tree_view.tree.values.each { |n| n.drawed = false }
+            edges = []
             @tree_view.tree.values.each do |node|
               #           next unless node.in_links.empty?
-              connect(node, out, [node.reference.name])
+              connect(node, edges, [node.reference.name])
             end
 
             dst_path = Construqt::Util.dst_path(host_or_region)
-            File.open(File.join(dst_path, "world.puml"), 'w') do |file|
-              file.puts(Construqt::Util.render(binding, "startuml.res"))
-              file.write(out.join("\n") + "\n")
-              file.puts("@enduml")
+            File.open(File.join(dst_path, "world.vis.html"), 'w') do |file|
+              file.write(Construqt::Util.render(binding, "vis.html.erb"))
             end
-
-            if File.exists?("/cygdrive/c/Program Files/cygwin/bin/dot.exe")
-              dot = "C:\\Program Files\\cygwin\\bin\\dot.exe"
-            elsif File.exists?("/usr/bin/dot")
-              dot = "/usr/bin/dot"
-            else
-              dot = "$(which dot)"
-            end
-
-            if  File.exists?("#{ENV['HOMEPATH']}/Downloads/plantuml.jar")
-              plantuml_jar = "#{ENV['HOMEPATH']}/Downloads/plantuml.jar"
-            else
-              plantuml_jar = "$HOME/Downloads/plantuml.jar"
-            end
-
-            @formats.each do |format|
-              Construqt.logger.debug "Planuml:Creating world #{File.join(dst_path,"world.puml")} to #{format}"
-              cmd = "java -Xmx2048m -jar \"#{plantuml_jar}\" -Djava.awt.headless=true -graphvizdot \"#{dot}\""+
-                     " -t#{format} #{File.join(dst_path,"world.puml")}"
-              Construqt.logger.debug "Planuml:Creating running: #{cmd}"
-              system(cmd)
-            end
-            Plantuml.patch_connection_highlight(File.join(dst_path, "world.svg"))
           end
 
         }
-        Construqt.logger.debug "Planuml:#{type}"
+        # Construqt.logger.debug "Planuml:#{type}"
         action = factory[type]
         if action
           action.call(type, *args)

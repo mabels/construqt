@@ -27,6 +27,8 @@ module Construqt
 
             def on_add(ud, taste, iface, me)
               # binding.pry
+              etc_systemd_netlink = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcSystemdNetlink::OncePerHost)
+              etc_systemd_netlink.add(iface)
               etc_systemd_netdev = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::OncePerHost)
               etc_systemd_netdev.add(iface)
               etc_systemd_network = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcSystemdNetwork::OncePerHost)

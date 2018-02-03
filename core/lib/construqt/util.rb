@@ -1,6 +1,7 @@
 require 'zlib'
 require 'erb'
 require 'shellwords'
+require 'resolv'
 module Construqt
   module Util
     module Chainable
@@ -291,6 +292,23 @@ module Construqt
         ns.pop
         get_directories(ns)
       end
+    end
+
+    DNS_CACHE = {}
+    DNS_RESOLVER = Resolv::DNS.open
+    def self.cached_resolv(name, family, dns = nil)
+      DNS_CACHE[family] ||= {}
+      ret = DNS_CACHE[family][name]
+      return ret if ret
+      #puts ">>resolv:extern:#{name}:#{family}"
+      if family == Construqt::Addresses::IPV6
+        dns_family = Resolv::DNS::Resource::IN::AAAA
+      else
+        dns_family = Resolv::DNS::Resource::IN::A
+      end
+      dns = dns || DNS_RESOLVER
+      # binding.pry
+      DNS_CACHE[family][name] = dns.getresources(name, dns_family)
     end
 
     TEMPLATE_CACHE = {}

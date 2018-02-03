@@ -1,6 +1,6 @@
 module Construqt
   module Flavour
-
+    
     class Node
       attr_accessor :reference
       def initialize(reference)

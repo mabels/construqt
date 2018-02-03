@@ -8,12 +8,14 @@ CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../../'
   "#{CONSTRUQT_PATH}/ipaddress/ruby/lib",
   "#{CONSTRUQT_PATH}/construqt/core/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/plantuml/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/vis/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/gojs/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/core/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/entities/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/arch/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/coreos/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/ubuntu/lib",
+  "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/debian/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/dialects/docker/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/services/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/nixian/tastes/systemd/lib",
@@ -31,6 +33,7 @@ require 'rubygems'
 require 'construqt'
 require 'construqt/flavour/nixian'
 require 'construqt/flavour/nixian/dialect/ubuntu'
+require 'construqt/flavour/nixian/dialect/debian'
 require 'construqt/flavour/nixian/dialect/coreos'
 require 'construqt/flavour/nixian/dialect/arch'
 require 'construqt/flavour/nixian/dialect/docker'
@@ -57,6 +60,7 @@ def setup_region(name, network)
   nixian.services_factory.add(Aiccu::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::CoreOs::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Ubuntu::Factory.new)
+  nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Debian::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Arch::Factory.new)
   nixian.add_dialect(Construqt::Flavour::Nixian::Dialect::Docker::Factory.new)
   region.flavour_factory.add(nixian)
@@ -70,6 +74,10 @@ def setup_region(name, network)
   if ARGV.include?("plantuml")
     require 'construqt/flavour/plantuml.rb'
     region.add_aspect(Construqt::Flavour::Plantuml.new)
+  end
+  if ARGV.include?("vis")
+    require 'construqt/flavour/vis.rb'
+    region.add_aspect(Construqt::Flavour::Vis.new)
   end
 
   region.network.ntp.add_server(region.network.addresses.add_ip("5.9.110.236").add_ip("178.23.124.2")).timezone("MET")
@@ -166,7 +174,7 @@ require_relative "./thieso.rb"
 Thieso.run(region)
 
 require_relative "./wl-ccu.rb"
-WlCcu.run(region)
+WlCcu.run(region, region.hosts.find("iscaac"))
 
 require_relative "./ooble.rb"
 Ooble.run(region)

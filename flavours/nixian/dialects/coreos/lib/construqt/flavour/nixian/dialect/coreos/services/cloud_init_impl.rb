@@ -112,6 +112,11 @@ module Construqt
 
                   add_usr_share_oem_cloud_init(result)
 
+                  etc_systemd_netlink = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcSystemdNetlink::OncePerHost)
+                  etc_systemd_netlink.netdevs.each do |netlink|
+                    add_units(netlink)
+                  end
+
                   etc_systemd_netdev = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::OncePerHost)
                   etc_systemd_netdev.netdevs.each do |netdev|
                     add_units(netdev)

@@ -15,9 +15,13 @@ MACAddress=<%= iface.delegate.mac_address %>
 [VLAN]
 Id=<%= systemd_netdev.vlan_id %>
 <%- end -%>
-<%- if iface.delegate.respond_to?(:tunnel)
-  local = iface.delegate.tunnel.my.address.first_by_family(iface.delegate.tunnel.transport_family).to_s
-  remote = iface.delegate.tunnel.other.address.first_by_family(iface.delegate.tunnel.transport_family).to_s
+<%-
+  # binding.pry if iface.name == 'gt4-wl-ccu-ipsec--iscaac'
+  if iface.delegate.respond_to?(:endpoint)
+    # binding.pry
+    local = iface.delegate.endpoint.local.endpoint_address.get_address.first_by_family(iface.delegate.endpoint.local.tunnel.transport_family).to_s
+    remote = iface.delegate.endpoint.remote.endpoint_address.get_address.first_by_family(iface.delegate.endpoint.remote.tunnel.transport_family).to_s
+    # binding.pry
   -%>
 [Tunnel]
 Local=<%= local %>
@@ -26,3 +30,23 @@ Remote=<%= remote %>
 Mode=<%= systemd_netdev.tunnel_mode %>
 <%- end -%>
 <%- end -%>
+
+<%-
+  if iface.kind_of?(Construqt::Flavour::Delegate::VxlanDelegate)
+    iface.host.tunnels.each do |tunnel|
+      [tunnel.right_endpoint,tunnel.left_endpoint].find do |ep|
+        ep.host == iface.host
+      end.interfaces.select { |ifi| ifi == iface }.each do |_|
+        family = tunnel.transport_family
+        # binding.pry
+ -%>
+[VXLAN]
+Id=<%= iface.vxlan_id %>
+DestinationPort=<%= iface.dstport %>
+Local=<%= iface.local.address.first_by_family(family) %>
+Remote=<%= iface.remote.address.first_by_family(family) %>
+<%-
+      end
+    end
+  end
+-%>

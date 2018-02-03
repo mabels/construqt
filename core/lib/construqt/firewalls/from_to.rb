@@ -164,15 +164,6 @@ module Construqt
         addrs.map { |addr| to_host_addr(addr) }.compact
       end
 
-      DNS_CACHE={}
-      def self.cached_resolv(dns, name, family)
-        DNS_CACHE[family] ||={}
-        ret = DNS_CACHE[family][name]
-        return ret if ret
-        #puts ">>resolv:extern:#{name}:#{family}"
-        DNS_CACHE[family][name] = dns.getresources(name, family)
-      end
-
       def self.resolver(str, family)
         return [] if str.nil? || str.strip.empty?
         # first char is not a # or @ add first char #
@@ -183,7 +174,6 @@ module Construqt
         fwtokens << FwToken.new('#', parsed[:first]) if parsed[:first]
         #puts "#{str} #{parsed.inspect} => #{fwtokens.inspect}"
         ret = []
-        dns = Resolv::DNS.open
         fwtokens.each do |fwtoken|
           if fwtoken.is_tag?
             ips = Construqt::Tags.ips_adr(fwtoken.str, family)
@@ -204,7 +194,7 @@ module Construqt
               end
 
             rescue Exception => e
-              ress = cached_resolv(dns, fwtoken.str, family == Construqt::Addresses::IPV6 ? Resolv::DNS::Resource::IN::AAAA : Resolv::DNS::Resource::IN::A)
+              ress = Util.cached_resolv(fwtoken.str, family)
               unless ress.empty?
                 FwIpAddress.create([fwtoken], ress.map{|i| IPAddress.parse(i.address.to_s) }, ret)
               else

@@ -29,7 +29,9 @@ module Construqt
                 "ip6table_filter",
                 "ip6_tables",
                 "bonding",
-                "8021q"
+                "8021q",
+                "vxlan",
+                "dummy"
               ])
             end
             def get_path

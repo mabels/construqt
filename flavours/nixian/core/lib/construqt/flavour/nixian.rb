@@ -23,12 +23,12 @@ module Construqt
           cfg['host'].flavour.flavour.dialect.clazz(cfg['clazz']).new(cfg)
         end
 
-        def add_host_services(srvs)
-          @dialect.add_host_services(srvs)
+        def add_host_services(srvs, cfg)
+          @dialect.add_host_services(srvs, cfg)
         end
 
-        def add_interface_services(srvs)
-          @dialect.add_interface_services(srvs)
+        def add_interface_services(srvs, cfg)
+          @dialect.add_interface_services(srvs, cfg)
         end
 
         def services_factory

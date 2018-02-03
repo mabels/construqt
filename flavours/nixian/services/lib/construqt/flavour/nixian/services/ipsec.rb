@@ -95,6 +95,7 @@ module Construqt
                             conn.rekeymargin="3m"
                             conn.closeaction="restart"
                             conn.auto=locapt.get_auto || "start"
+
                             result.add(:ipsec, render_conn(conn, service),
                                        Construqt::Resources::Rights::root_0644(
                                          Construqt::Resources::Component::IPSEC),

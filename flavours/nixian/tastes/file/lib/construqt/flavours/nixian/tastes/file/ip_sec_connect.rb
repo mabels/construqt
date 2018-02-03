@@ -7,6 +7,9 @@ module Construqt
             def on_add(ud, taste, iface, me)
               # binding.pry
               # binding.pry if iface.name == "etcbind-2"
+              pbuilder = @context.find_instances_from_type Construqt::Flavour::Nixian::Services::Packager::OncePerHost
+              pbuilder.add_component(Construqt::Resources::Component::IPSEC)
+
               fsrv = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::EtcNetworkNetworkUd::OncePerHost)
               fsrv.up("/usr/sbin/ipsec start &") # no down this is also global
               fsrv.up("/usr/sbin/ipsec up #{me.name} &")

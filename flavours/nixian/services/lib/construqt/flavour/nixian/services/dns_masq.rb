@@ -4,7 +4,6 @@ module Construqt
       module Services
         module DnsMasq
           class Service
-
           end
 
           class Action
@@ -33,6 +32,7 @@ module Construqt
             def build_config_interface(iface)
               iface.address.ips && iface.address.ips.each do |ip|
                 if ip.options && ip.options['dhcp']
+                  # binding.pry if iface.host.name == 'wl-ccu-ipsec'
                   result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Packager::OncePerHost)
                   result.add_component(Construqt::Resources::Component::DNSMASQ)
                   up_downer = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::UpDowner::OncePerHost)

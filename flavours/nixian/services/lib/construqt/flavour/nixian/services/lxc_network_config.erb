@@ -8,3 +8,16 @@ lxc.network.hwaddr = <%= get_mac %>
 <% if @name -%>
 lxc.network.name = <%= @name%>
 <% end -%>
+#2.1 # should be used from version 2.1 of lxc
+#2.1 # reset
+#2.1 lxc.net
+#2.1 # Network configuration [<%= @name||"" %>]:[<%= @link %>]
+#2.1 lxc.net.<%= idx %>.type = <%= @iface.plug_in.get_type %>
+#2.1 lxc.net.<%= idx %>.flags = <%= @flags %>
+#2.1 lxc.net.<%= idx %>.link = <%= @link %>
+#2.1 <% if @iface.plug_in.get_type != "phys" -%>
+#2.1 lxc.net.<%= idx %>.hwaddr = <%= get_mac %>
+#2.1 <% end -%>
+#2.1 <% if @name -%>
+#2.1 lxc.net.<%= idx %>.name = <%= @name%>
+#2.1 <% end -%>

@@ -42,6 +42,8 @@ require_relative 'ubuntu/host.rb'
 require_relative 'ubuntu/ipsecvpn.rb'
 require_relative 'ubuntu/template.rb'
 require_relative 'ubuntu/vlan.rb'
+require_relative 'ubuntu/dummy.rb'
+require_relative 'ubuntu/vxlan.rb'
 require_relative 'ubuntu/wlan.rb'
 require_relative 'ubuntu/systemd.rb'
 
@@ -75,7 +77,7 @@ module Construqt
               'ubuntu'
             end
 
-            def add_host_services(srvs)
+            def add_host_services(srvs, cfg)
               @services_factory.merge(srvs, [
                 Construqt::Flavour::Nixian::Dialect::Ubuntu::Services::PackagerService.create,
                 Construqt::Flavour::Nixian::Services::Result::Service.new,
@@ -89,6 +91,7 @@ module Construqt
                 Construqt::Flavour::Nixian::Services::Docker::Service.new,
                 Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
                 Construqt::Flavour::Nixian::Services::Ssh::Service.new,
+                Construqt::Flavour::Nixian::Services::EtcSystemdNetlink::Service.new,
                 Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
                 Construqt::Flavour::Nixian::Services::EtcSystemdNetwork::Service.new,
                 Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
@@ -102,7 +105,7 @@ module Construqt
               ])
             end
 
-            def add_interface_services(srvs)
+            def add_interface_services(srvs, cfg)
               @services_factory.merge(srvs, [
                 Construqt::Flavour::Nixian::Services::IpTables::Service.new,
                 Construqt::Flavour::Nixian::Services::IpProxyNeigh::Service.new(),
@@ -130,6 +133,8 @@ module Construqt
                 "bond" => Bond,
                 "wlan" => Wlan,
                 "vlan" => Vlan,
+                "vxlan" => Vxlan,
+                "dummy" => Dummy,
                 "ipsecvpn" => IpsecVpn,
                 #"tunnel" => Tunnel,
                 #"result" => Result,

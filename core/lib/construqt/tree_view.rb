@@ -94,6 +94,12 @@ module Construqt
           # "IpsecDelegate.build_config" => lambda do |type, host, *args|
           #   args.first.cfg
           # end,
+          "VxlanDelegate.build_config" => lambda do |type, host, *args|
+            args.first
+          end,
+          "DummyDelegate.build_config" => lambda do |type, host, *args|
+            args.first
+          end,
           "IpsecVpnDelegate.build_config" => lambda do |type, host, *args|
             args.first
           end,

@@ -18,7 +18,8 @@ module Bdog
         net6: "2a01:4f8:c17:186"
       },
       nx: {
-        ipe: "5.9.87.41",
+        #ipe: "5.9.87.41",
+        ipe: "@iscaac.adviser.com",
         ip: "5.9.87.41/27",
         gw: "5.9.87.33",
         ip6: "2a01:4f8:162:116a::2/64",
@@ -199,11 +200,13 @@ def self.run(region)
 
       iface = nil
       host.configip = host.id ||= Construqt::HostId.create do |my|
-        my.interfaces << iface = region.interfaces.add_device(host, "eth0",
-                                                              "plug_in" => Construqt::Cables::Plugin.new.iface(bdog.interfaces.find_by_name("br12")),
-                                                              "mtu" => 1500,
-                                                              "firewalls" => ["ipsec-nat"],
-                                                              'address' => region.network.addresses
+        my.interfaces << iface = region.interfaces.add_bridge(host, 'brvx',
+          "interfaces" => [
+          region.interfaces.add_device(host, "eth0",
+            "plug_in" => Construqt::Cables::Plugin.new.iface(bdog.interfaces.find_by_name("br12")),
+            "mtu" => 1500)],
+          "firewalls" => ["ipsec-nat"],
+          'address' => region.network.addresses
           .add_ip("169.254.12.99/24#HOST-#{name}#SERVICE-NET-DE")
           .add_service_ip("#{bdog_cfg[:ipe]}#ISCAAC")
           .add_route("0.0.0.0/0", "169.254.12.1")
@@ -211,16 +214,17 @@ def self.run(region)
           .add_route("2000::/3", "#{bdog_cfg[:net6]}:169:254:12:1"))
       end
 
-#      region.interfaces.add_ipsecvpn(host, "roadrunner",
-#                                     "mtu" => 1380,
-#                                     "users" => ipsec_users,
-#                                     "auth_method" => :internal,
-#                                     "left_interface" => iface,
-#                                     "leftpsk" => IPSEC_LEFT_PSK,
-#                                     "leftcert" => region.network.cert_store.find_package("fanout-de"),
-#                                     "right_address" => region.network.addresses.add_ip("192.168.72.64/26#IPSECVPN-DE")
-#        .add_ip("#{bdog_cfg[:net6]}::cafe:0/112#IPSECVPN-DE"),
-#      "ipv6_proxy" => true)
+     region.interfaces.add_ipsecvpn(host, "roadrunner",
+        "mtu" => 1380,
+        "users" => ipsec_users,
+        "auth_method" => :internal,
+        "left_interface" => iface,
+        "leftpsk" => IPSEC_LEFT_PSK,
+        "leftcert" => region.network.cert_store.find_package("iscaac"),
+        "right_address" => region.network.addresses
+          .add_ip("192.168.72.64/26#IPSECVPN-DE")
+          .add_ip("#{bdog_cfg[:net6]}::cafe:0/112#IPSECVPN-DE"),
+        "ipv6_proxy" => true)
     end
   end
 

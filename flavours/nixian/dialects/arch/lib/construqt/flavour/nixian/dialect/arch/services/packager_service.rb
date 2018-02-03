@@ -19,6 +19,8 @@ module Construqt
                 cps.register(Construqt::Flavour::Delegate::VlanDelegate).add('vlan')
                 cps.register(Construqt::Flavour::Nixian::Dialect::Ubuntu::Gre)
                 cps.register(Construqt::Flavour::Delegate::GreDelegate)
+                cps.register(Construqt::Flavour::Delegate::DummyDelegate)
+                cps.register(Construqt::Flavour::Delegate::VxlanDelegate)
                 cps.register(Construqt::Flavour::Delegate::OpvnDelegate).add('openvpn')
                 cps.register(Construqt::Flavour::Delegate::BridgeDelegate).add('bridge-utils')
                 cps.register(cp::NTP).add('openntpd')

@@ -4,8 +4,10 @@ module Construqt
       attr_reader :transport_family, :left_endpoint, :right_endpoint
       attr_reader :name, :description, :services
       attr_reader :delegate, :tags, :mtu_v4, :mtu_v6
+      # attr_reader :tunnel
       def initialize(cfg)
         @cfg = cfg
+        # @tunnel = true # this is a tunnel
         # @rights = @cfg['rights']
         # @lefts = @cfg['lefts']
         # (@lefts + @rights).each{ |ep| ep.tunnel = self }

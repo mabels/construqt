@@ -2,7 +2,6 @@ module Construqt
   module Flavour
     module Delegate
 
-
       class VlanDelegate
         include Delegate
         # include Member

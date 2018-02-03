@@ -1,22 +1,35 @@
 module Construqt
   module Tunnels
     class Endpoint
+      include Flavour::Delegate::InterfaceNode
+
       attr_accessor :remote
       attr_reader :tunnel, :description
       attr_reader :host, :local, :address, :endpoint_address, :name
-      attr_reader :firewalls, :interfaces, :services
+      attr_reader :firewalls, :interfaces, :services, :iface
       def initialize(tunnel, cfg)
         # binding.pry
         @tunnel = tunnel
-        throw "endpoint_address missing" unless cfg['endpoint_address'].valid?
-        throw "address missing" unless cfg['address']
-        throw "host missing" unless cfg['host']
+        if cfg['iface']
+          cfg['host'] = cfg['host'] || cfg['iface'].host
+          cfg['endpoint_address'] = cfg['endpoint_address'] ||
+            cfg['iface'].address.first_ipv4 || cfg['iface'].address.first_ipv6
+          cfg['address'] = cfg['address'] || cfg['iface'].address
+          cfg['interfaces'] = [cfg['iface']]
+          # binding.pry
+        else
+          throw "endpoint_address missing" unless cfg['endpoint_address'].valid?
+          throw "address missing" unless cfg['address']
+          throw "host missing" unless cfg['host']
+        end
         # throw "tunnel missing" unless cfg['tunnel']
         # throw "my not found #{cfg.keys.inspect}" unless cfg['my']
         # throw "host not found #{cfg.keys.inspect}" unless cfg['host']
         # throw "remote not found #{cfg.keys.inspect}" unless cfg['remote']
         # binding.pry if cfg['host'].name.start_with?("na-ct-r0")
+        @cfg = cfg
         @host = cfg['host']
+        @iface = cfg['iface']
         @local = self
         @firewalls = cfg['firewalls'] || []
         @interfaces = cfg['interfaces'] || []
@@ -29,7 +42,14 @@ module Construqt
         else
           @name = "Endpoint-#{host.name}-#{tunnel.name}"
         end
+        if cfg['iface']
+          cfg['iface'].init_node().parents([self])
+        end
         @services = Services.create(cfg['services'] || [])
+      end
+
+      def clazz
+        'Endpoint'
       end
 
       def _ident
@@ -79,7 +99,16 @@ module Construqt
         prepare
       end
 
+      def get_password
+        @services.map{|i| i.respond_to?(:get_password) && i.get_password }.select{|i| i}.first
+      end
+
+      def get_id
+        @services.map{|i| i.respond_to?(:get_id) && i.get_id }.select{|i| i}.first
+      end
+
       def create_interfaces
+        return if @cfg['iface']
         prepare = self.get_prepare()
         prepare.values.map do |cfg|
           iname = "#{cfg.gt}-#{self.local.host.name}--#{self.remote.host.name}"
@@ -140,7 +169,7 @@ module Construqt
         end
 
         def build_config(host, iface, _)
-          # binding.pry
+          binding.pry if host.name == 'wl-ccu-ipsec'
           host.region.flavour_factory.call_aspects("Endpoint.build_config", nil, self)
         end
 

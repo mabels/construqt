@@ -2,16 +2,17 @@ module Construqt
   class Addresses
     # hier frieht die hoelle zu!!!
     class CqIpAddress
-      attr_reader :ipaddr, :container, :options, :routing_table
-      def initialize(ipaddr, container, options, routing_table)
+      attr_reader :ipaddr, :container, :options, :routing_table, :fqdn
+      def initialize(ipaddr, container, options, routing_table, fqdn)
         @ipaddr = ipaddr
         @container = container
         @options = options
         @routing_table = routing_table
+        @fqdn = fqdn
       end
 
       def inspect
-        "@<#{self.class.name}:#{"%x"%object_id} ipaddr=#{ipaddr.to_string} options=#{options.inspect} routing_table=#{routing_table.inspect}>"
+        "@<#{self.class.name}:#{"%x"%object_id} ipaddr=#{ipaddr.to_string} options=#{options.inspect} routing_table=#{routing_table.inspect} fqdn=#{fqdn}>"
       end
 
       def <=>(oth)
@@ -71,6 +72,10 @@ module Construqt
         @ipaddr.to_s
       end
 
+      def to_fqdn
+        @fqdn || @ipaddr.to_s
+      end
+
       def to_string
         @ipaddr.to_string
       end
@@ -118,7 +123,7 @@ module Construqt
       def subnet(num)
         @ipaddr.subnet(num)
       end
-      
+
       def inc
         @ipaddr.inc
       end

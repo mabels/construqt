@@ -57,7 +57,7 @@ module Construqt
       cfg['clazz'] ||= "device"
       cfg['address'] ||= region.network.addresses.create
       cfg['plug_in'] ||= nil
-      cfg['services'] = Services.create(host.flavour.add_interface_services(cfg['services']))
+      cfg['services'] = Services.create(host.flavour.add_interface_services(cfg['services'], cfg))
       delegates['firewalls'] = cfg.delete('firewalls')||[]
       (dev_name, iface) = Construqt::Tags.add("#{dev_name_tag}##{host.name}-#{dev_name}") do |name|
         host.flavour.create_interface(name, cfg)
@@ -134,6 +134,25 @@ module Construqt
       cfg['interfaces'] = interfaces
       #    throw "we need an interface #{cfg['interfaces']}" if cfg['interfaces'].empty?
       cfg['clazz'] = "vlan"
+      dev = add_device(host, name, cfg)
+      dev.address.interface = host.interfaces[name] if dev.address
+      dev
+    end
+
+    def add_vxlan(host, name, cfg)
+      throw 'vxlan_id needed' unless cfg['vxlan_id']
+      cfg['dstport'] ||= 4789
+      throw 'local needed' unless cfg['local']
+      throw 'remote needed' unless cfg['local']
+
+      cfg['clazz'] = "vxlan"
+      dev = add_device(host, name, cfg)
+      dev.address.interface = host.interfaces[name] if dev.address
+      dev
+    end
+
+    def add_dummy(host, name, cfg)
+      cfg['clazz'] = "dummy"
       dev = add_device(host, name, cfg)
       dev.address.interface = host.interfaces[name] if dev.address
       dev

@@ -2,6 +2,21 @@
 if [ -e  $(/usr/bin/which systemctl) ]
 then
   systemctl daemon-reload
+  #systemctl disable systemd-ask-password-console.service
+  systemctl stop NetworkManager.service
+  systemctl disable NetworkManager.service
+  systemctl stop dhcpcd.service
+  systemctl disable dhcpcd.service
+
+  systemctl enable systemd-networkd
+  systemctl start systemd-networkd
+  #systemctl enable systemd-resolved
+  #systemctl start systemd-resolved
+  <% services.values.map{|srv| srv.system_disable_services }
+       .flatten.sort.uniq.each do |name| -%>
+  systemctl stop <%= name %>
+  systemctl disable <%= name %>
+  <% end -%>
   for i in $(systemctl list-unit-files | grep '^construqt-' | awk '{print $1}' | \
       grep \
 <% services.values.each do |srv| -%>

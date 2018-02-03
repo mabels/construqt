@@ -48,8 +48,8 @@ module Construqt
   require_relative 'construqt/addresses.rb'
   require_relative 'construqt/routing_table.rb'
   require_relative 'construqt/bgps.rb'
-  require_relative 'construqt/dhcp.rb'
   require_relative 'construqt/dns.rb'
+  require_relative 'construqt/dhcp.rb'
   require_relative 'construqt/packages.rb'
   require_relative 'construqt/ntp.rb'
   require_relative 'construqt/users.rb'
@@ -73,8 +73,10 @@ module Construqt
   require_relative 'construqt/flavour/dialect_factory_base.rb'
   require_relative 'construqt/flavour/node.rb'
   require_relative 'construqt/spanning_tree.rb'
+  require_relative 'construqt/ipsecs/user.rb'
 
   require_relative 'construqt/services_result.rb'
+  require_relative 'construqt/tree_view.rb'
 #  [ 'onstruqt/flavour/unknown/unknown.rb',
 #    'construqt/flavour/ciscian/ciscian.rb',
 #    'construqt/flavour/plantuml/plantuml.rb',

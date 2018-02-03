@@ -31,7 +31,7 @@ module Construqt
               .scan(/../)[0,4]).join(":").downcase
           end
 
-          def render
+          def render(idx)
             return unless @iface.plug_in
             return Construqt::Util.render(binding, "lxc_network_config.erb")
           end
@@ -49,7 +49,7 @@ module Construqt
           def self.render(result, host, lxc, networks)
             #binding.pry
             return if networks.empty?
-            result.add(lxc, networks.map{|n| n.render}.join("\n"),
+            result.add(lxc, networks.map.with_index{|n, idx| n.render(idx) }.join("\n"),
                             Construqt::Resources::Rights.root_0644,
                             "var", "lib", "lxc",
                             "#{networks.first.iface.host.name}.network.config")

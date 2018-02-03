@@ -46,7 +46,47 @@ module Hgw
         .add_ip("#{cfg[:net6]}:192:168:70:1/123#SERVICE-NET-DE-HGW#SERVICE-NET-DE")),
       region.interfaces.find(kuckpi, 'br70'))
     end
-
+    left = fanout_de
+    right = service_de_hgw
+    ipsec = Construqt::Flavour::Nixian::Services::IpsecStrongSwan::Tunnel.new
+        .keyexchange("ikev2")
+        .left_endpoint
+          .password(IPSEC_PASSWORDS.call(left.name,right.name))
+          .id(left.fqdn)
+          .remote_address(left.fqdn)
+          .local_address(region.interfaces.find(left, "eth0").address.first_ipv4)
+        .tunnel
+        .right_endpoint
+          .password(IPSEC_PASSWORDS.call(right.name,left.name))
+          .id(right.fqdn)
+          .remote_address_any
+          .local_address(region.interfaces.find(right, "br0").address.first_ipv4)
+        .tunnel
+    left_addr_ipsec = region.network.addresses.add_ip("169.254.70.1/30#SERVICE-IPSEC")
+                                        .add_ip("169.254.70.5/30#SERVICE-TRANSIT-DE#FANOUT-DE-HGW-GW")
+                                        .add_ip("#{cfg[:net6]}::9/126#SERVICE-TRANSIT-DE#FANOUT-DE-HGW-GW")
+                                        .add_route_from_tags("#SERVICE-NET-DE-HGW", "#SERVICE-DE-HGW")
+    left_addr = region.interfaces.find(fanout_de, "brvx").address
+    right_addr_ipsec = region.network.addresses.add_ip("169.254.70.2/30")
+                                    .add_ip("169.254.70.6/30#SERVICE-DE-HGW#SERVICE-NET-DE")
+                                    .add_ip("#{cfg[:net6]}::a/126#SERVICE-TRANSIT-DE#SERVICE-DE-HGW#SERVICE-NET-DE")
+                                    .add_route_from_tags("#INTERNET", "#FANOUT-DE-HGW-GW")
+    right_addr = region.interfaces.find(service_de_hgw, "br0").address
+    Construqt::Tunnels.connection("#{left.name}<=>#{right.name}",
+          "transport_family" => Construqt::Addresses::IPV4,
+          "mtu_v4" => 1360,
+          "mtu_v6" => 1360,
+          "services" => [ipsec],
+          "left" => {
+            "address" => left_addr_ipsec,
+            "endpoint_address" => left.create_endpoint_address.address(left_addr.first_ipv4.to_string),
+            "host" => left
+          },
+          "right" => {
+            "address" => right_addr_ipsec,
+            "endpoint_address" => right.create_endpoint_address.address(right_addr.first_ipv4.to_string),
+            "host" => right
+          })
     #Construqt::Ipsecs.connection("#{fanout_de.name}<=>#{service_de_hgw.name}",
     #                             "password" => IPSEC_PASSWORDS.call(fanout_de.name, service_de_hgw.name),
     #                             "transport_family" => Construqt::Addresses::IPV4,

@@ -61,7 +61,7 @@ module Construqt
                        Construqt::Flavour::Nixian::Services::Vagrant::Service.new,
                        Construqt::Flavour::Nixian::Dialect::CoreOs::Services::SshAuthorizedKeysD::Service.new,
                        Construqt::Flavour::Nixian::Services::Ssh::Service.new,
-                       Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
+                       Construqt::Flavour::Nixian::Services::EtcSystemdNetlink::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdNetdev::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdNetwork::Service.new,
                        Construqt::Flavour::Nixian::Services::EtcSystemdService::Service.new,
@@ -72,7 +72,7 @@ module Construqt
              ])
             end
 
-            def add_interface_services(srvs)
+            def add_interface_services(srvs, cfg)
               @services_factory.merge(srvs, [
                 Construqt::Flavour::Nixian::Services::IpTables::Service.new(),
                 Construqt::Flavour::Nixian::Services::IpProxyNeigh::Service.new(),

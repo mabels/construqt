@@ -5,6 +5,7 @@ module Construqt
         module Ubuntu
           module BaseDevice
             attr_accessor :delegate
+            attr_reader :cfg
             attr_reader :host, :name, :address, :template, :plug_in
             attr_reader :services, :clazz, :mtu, :flavour, :proxy_neigh
             attr_reader :mac_address, :vagrant, :firewalls, :network

@@ -5,6 +5,7 @@ module Construqt
       chainable_attr :tcp
       chainable_attr :udp
       chainable_attr :esp
+      chainable_attr :gre
       chainable_attr :ah
       chainable_attr :icmp
       chainable_attr :type, nil
@@ -50,6 +51,7 @@ module Construqt
           'tcp' => self.tcp?,
           'udp' => self.udp?,
           'esp' => self.esp?,
+          'gre' => self.gre?,
           'ah' => self.ah?
         }
         protocols[family == Construqt::Addresses::IPV6 ? 'icmpv6' : 'icmp'] = self.icmp?

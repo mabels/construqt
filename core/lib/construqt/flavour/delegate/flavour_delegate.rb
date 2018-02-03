@@ -35,12 +35,12 @@ module Construqt
           @flavour.bgp
         end
 
-        def add_host_services(services)
-          @flavour.add_host_services(services)
+        def add_host_services(services, cfg)
+          @flavour.add_host_services(services, cfg)
         end
 
-        def add_interface_services(services)
-          @flavour.add_interface_services(services)
+        def add_interface_services(services, cfg)
+          @flavour.add_interface_services(services, cfg)
         end
 
         def clazzes
@@ -52,6 +52,8 @@ module Construqt
             'vrrp' => VrrpDelegate,
             'bridge' => BridgeDelegate,
             'bond' => BondDelegate,
+            'vxlan' => VxlanDelegate,
+            'dummy' => DummyDelegate,
             'wlan' => WlanDelegate,
             'vlan' => VlanDelegate,
             'ipsecvpn' => IpsecVpnDelegate,

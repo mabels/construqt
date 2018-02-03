@@ -18,9 +18,11 @@ then
     <%= update_config(base_dir, 'lxc.aa_profile', 'unconfined') %>
   <% end -%>
 
-  lxc-execute -n '<%= host.name %>' --  /bin/bash -c 'echo <%= host.name %> > /etc/hostname'
-  lxc-execute -n '<%= host.name %>' --  \
+  lxc-start  -n '<%= host.name %>'
+  lxc-attach -n '<%= host.name %>' --  /bin/bash -c 'echo <%= host.name %> > /etc/hostname'
+  lxc-attach -n '<%= host.name %>' --  \
     /bin/bash -c 'cat > /root/deployer.sh' < <%= base_dir %>/../<%= host.name %>.deployer.sh
-  lxc-execute -n '<%= host.name %>' --  /bin/bash /root/deployer.sh
+  lxc-attach -n '<%= host.name %>' --  /bin/bash /root/deployer.sh
+  lxc-stop  -k -n '<%= host.name %>'
   lxc-start -d -n '<%= host.name %>'
 fi

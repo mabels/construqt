@@ -11,6 +11,8 @@ require_relative 'delegate/ipsec_vpn_delegate'
 require_relative 'delegate/ovpn_delegate'
 require_relative 'delegate/template_delegate'
 require_relative 'delegate/vlan_delegate'
+require_relative 'delegate/vxlan_delegate'
+require_relative 'delegate/dummy_delegate'
 require_relative 'delegate/vrrp_delegate'
 require_relative 'delegate/wlan_delegate'
 

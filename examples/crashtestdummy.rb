@@ -7,24 +7,33 @@ IPSEC_PASSWORDS = lambda do |left, right|
       "scable-2" => "weg"
     },
     "iscaac" => {
-      "fanout-us" => "weg",
-      "service-de-hgw" => "weg",
-      "scable-1" => "weg",
-      "scable-2" => "weg",
-      "rt-mam-wl-de-6" => "weg"
+      "fanout-us" => "iscaac-weg",
+      "service-de-hgw" => "iscaac-weg",
+      "scable-1" => "iscaac-weg",
+      "scable-2" => "iscaac-weg",
+      "wl-ccu-ipsec" => "iscaac-weg",
+      "rt-mam-wl-de-6" => "iscaac-weg",
+      "rt-wl-mgt" => "iscaac-weg",
+      "rt-ab-de" => "iscaac-weg"
+    },
+    "wl-ccu-ipsec" => {
+      "iscaac" => "wl-ccu-weg"
+    },
+    "service-de-hgw" => {
+      "iscaac" => "wl-ccu-weg"
     },
     "rt-mam-wl-de-6" => {
       "iscaac" => "weg"
     },
     "rt-ab-us" => {
-      "fanout-us" => "weg"
+      "fanout-us" => "rt-ab-us-weg"
     },
     "rt-mam-wl-us" => {
       "fanout-us" => "weg"
     },
     "rt-wl-mgt" => {
       "fanout-de" => "weg",
-      "iscaac" => "weg"
+      "iscaac" => "rt-wl-mgt-weg"
     },
     "rt-ab-de" => {
       "fanout-de" => "weg",
@@ -73,8 +82,8 @@ INTERNAL_PSK = "wifi for free"
 
 def ipsec_users()
   [
-    #Construqt::Ipsecs::User.new("abels", "weg"),
-    #Construqt::Ipsecs::User.new("martina", "weg")
+    Construqt::Ipsecs::User.new("abels", "weg"),
+    Construqt::Ipsecs::User.new("martina", "weg")
   ]
 end
 
@@ -242,71 +251,6 @@ C6tp4oQ+rz8VsKt9X3IGF+g=
 -----END PRIVATE KEY-----
 KEY
 
-network.cert_store.create_package("fanout-de", fanout_de_key, fanout_de_cert, c3+c2+c1)
-
-fanout_us_cert = network.cert_store.add_cert("fanout-us_adviser_com.crt", <<CERT)
------BEGIN CERTIFICATE-----
-MIIFDjCCA/agAwIBAgISA90h2wbdtgWSGrw/swaqaOgxMA0GCSqGSIb3DQEBCwUA
-MEoxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MSMwIQYDVQQD
-ExpMZXQncyBFbmNyeXB0IEF1dGhvcml0eSBYMzAeFw0xNzAxMTIxNTE1MDBaFw0x
-NzA0MTIxNTE1MDBaMCAxHjAcBgNVBAMTFWV0Y2JpbmQtMS5hZHZpc2VyLmNvbTCC
-ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANfwJ1Mw/6zqJJhRaxIXE1Rp
-kJ2JWUgv4Ow4lGPmlUH/lBIxm/p4A5KGtOg8DMxA9TQG5QFzo01h91bmFM3R8xzD
-+A+H5lEdsX4fJXB27h31e8lahju84V5PSL5XAn2XRoOqs4ZUQJxavz4m7WPCxWRy
-UJwGHMq54uAUNpHHK5KJD0Y2Fg3IAayv/ATkjJ4D82Q+Kcoss0q7y6kUrPt6HyiV
-g4Qhr78QESO+cTF368mMajHUTdOa4t4tCNKRwJOI+zjO9ES2ncpBtDKSDVp8h7KW
-c0KYVGfrt0eNVHYDgHUE9UQf8xwoYYg/o4douEoQUSXP7Z8yVbDr9mSuWAynkWkC
-AwEAAaOCAhYwggISMA4GA1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcD
-AQYIKwYBBQUHAwIwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUN1wv5HsF/zsyq62B
-IyUE+oaqW4UwHwYDVR0jBBgwFoAUqEpqYwR93brm0Tm3pkVl7/Oo7KEwcAYIKwYB
-BQUHAQEEZDBiMC8GCCsGAQUFBzABhiNodHRwOi8vb2NzcC5pbnQteDMubGV0c2Vu
-Y3J5cHQub3JnLzAvBggrBgEFBQcwAoYjaHR0cDovL2NlcnQuaW50LXgzLmxldHNl
-bmNyeXB0Lm9yZy8wIAYDVR0RBBkwF4IVZXRjYmluZC0xLmFkdmlzZXIuY29tMIH+
-BgNVHSAEgfYwgfMwCAYGZ4EMAQIBMIHmBgsrBgEEAYLfEwEBATCB1jAmBggrBgEF
-BQcCARYaaHR0cDovL2Nwcy5sZXRzZW5jcnlwdC5vcmcwgasGCCsGAQUFBwICMIGe
-DIGbVGhpcyBDZXJ0aWZpY2F0ZSBtYXkgb25seSBiZSByZWxpZWQgdXBvbiBieSBS
-ZWx5aW5nIFBhcnRpZXMgYW5kIG9ubHkgaW4gYWNjb3JkYW5jZSB3aXRoIHRoZSBD
-ZXJ0aWZpY2F0ZSBQb2xpY3kgZm91bmQgYXQgaHR0cHM6Ly9sZXRzZW5jcnlwdC5v
-cmcvcmVwb3NpdG9yeS8wDQYJKoZIhvcNAQELBQADggEBAFCOF7mS2GoyiHZLP5X/
-1O/2NJzqjUx0fB3oVGvKnjNqTmj7FyXr0x84iTMZkFEgUGJBvVrFyIKhKt/gxKCq
-aC0D/lH9AkhdC3mi2zmZzYmgKtflOlTzOntEqeFfAjz/9pl7RQI9nO3o9R3uzyWM
-mXQ8yOpbA843GYc9lxlxqSKYpQxd4SE/hVUawDm8MPv5nao/b3q6qO/mwBrRIiSQ
-UsaYlARgh2bvQevv5ScaZGMr1IfVNj6HN2+SdisvFsKU0uPVV2QNVSSsEKTxAMZ/
-JeBvgJfd18YlPgzEHtWEM6T9Ilj2TvKVbhQy5H+FBEAXnYMuzhgCdvVUsvzfFeL6
-45Y=
------END CERTIFICATE-----
-CERT
-
-fanout_us_key = network.cert_store.add_private("fanout-us.adviser.com.key", <<KEY)
------BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDX8CdTMP+s6iSY
-UWsSFxNUaZCdiVlIL+DsOJRj5pVB/5QSMZv6eAOShrToPAzMQPU0BuUBc6NNYfdW
-5hTN0fMcw/gPh+ZRHbF+HyVwdu4d9XvJWoY7vOFeT0i+VwJ9l0aDqrOGVECcWr8+
-Ju1jwsVkclCcBhzKueLgFDaRxyuSiQ9GNhYNyAGsr/wE5IyeA/NkPinKLLNKu8up
-FKz7eh8olYOEIa+/EBEjvnExd+vJjGox1E3TmuLeLQjSkcCTiPs4zvREtp3KQbQy
-kg1afIeylnNCmFRn67dHjVR2A4B1BPVEH/McKGGIP6OHaLhKEFElz+2fMlWw6/Zk
-rlgMp5FpAgMBAAECggEAMd5NRqIXObitENwkrP3VQfZLJoaUrt4XxJXgdx3GNIKw
-kG8ShYp30Lv5RXSww+7wcb5x3p71BKbuNwxVm56z1V3QiM2qu+rulaDdxZZBsXuC
-xeJ5A4zAQ0ZuFz8C3Tw1VazzXr9QWIuAhPr6ccKGUYcw5Ido2MyK/5LLc2kav/Eo
-hnA8q6pDO6xgWwZZH11DfhEE8aSaLWk4l3k8jaKPxh0hT2KkegwC4ncro9vRgh+X
-k6MGb+NlEG9d3/To84nLrPWan5wOEwVMBkIo0UDDSMK+uWwpe7TpQWaXhizWadbU
-W2aSAjFavm/Mw8vUEbpEZljN6ckTMbRkvioEG+kWLQKBgQDymdoGQJ32OI6fTMZK
-PpXN3YWCk9f3Qj7L0txwoQNExGzDfFJl0vhNos1y1Ew7EoIjej/lvf2eNjNQ11TM
-6otU8kgPnlSxGKdfOXJHHel8O0cOQ+3mM8DwJLlEDrR5d6xd5VkkNsaThohf9DxN
-iqcy14bquLviUOn2SwqBOjOjRwKBgQDj3VBjkDj/sv2wbAZw9cJdsYo9YmJE4zxn
-MG1hZe4pHdSgoOuFcwt8JohkmCS/yWhTWSuJK6gcdBMecY7nX2Z/nP0h02oILa5O
-nu7oQvD6ffT+3NJmoNpECzw9yfbo+NNnWKNMQL9pB/K2/SqPBQ7/APLt6pcLjtV9
-ri/I2hydzwKBgFwxHUps+dpcyc49tcj3GaSe/yKNHnAnK4f3fLAMcBqM7qwnLYTm
-dFfEe4Ccrs9wDCaBSZD770pVXJDnE6G/q+0/GSVeTN7z+H7WbNgbxOPh/vGr3Ncz
-aamYuxLi57CVStpv0r1RV4suf9q/DL+G5l0KzImcZEHv78kZ4UcUoBT3AoGAEL2+
-3UHIXkj5SI/3PS9hM18K6A2laKhFVNODBcfmYpD1gUOxaiGUs29lT/a5pHmYt57y
-iuZxOH3ytabkN+2Ta0bOdkDBJo6soswcg2X/rHe6m0sADlg9EQi+SU/gWyeE6K/j
-d4O+TGowE++vw8g8XNHmB0LYDBpXZx94FUqpFZMCgYEAiKpaMISAK+uSuG0wqF7u
-4goR0f5VslKm2PFWUJpPJe35DKtmFV/u8t8mDta4+uADo9MC4qODkEOTgpm2Yst9
-ypiIgPZhY8TtDiG7deIS1x3XR2dekpG+j0ioiS+tSF+jF3a86Czh+7z3MZOmDQVv
-C6tp4oQ+rz8VsKt9X3IGF+g=
------END PRIVATE KEY-----
-KEY
-network.cert_store.create_package("fanout-us", fanout_us_key, fanout_us_cert, c3+c2+c1)
+network.cert_store.create_package("iscaac", fanout_de_key, fanout_de_cert, c3+c2+c1)
 
 end

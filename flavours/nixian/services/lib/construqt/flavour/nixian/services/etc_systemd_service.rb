@@ -39,6 +39,16 @@ module Construqt
               @wantses = []
               @drop_ins = {}
               @default_dependencies = nil
+              @system_disable_services = []
+            end
+
+            def system_disable_service(service)
+              @system_disable_services.push(service)
+              self
+            end
+
+            def system_disable_services
+              @system_disable_services
             end
 
             def default_dependencies(v)

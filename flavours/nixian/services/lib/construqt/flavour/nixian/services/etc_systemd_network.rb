@@ -50,6 +50,7 @@ module Construqt
             end
 
             def get_name
+              # idx = @interface.host.interfaces.values.find_index(@interface)
               "#{name}.network"
             end
 
@@ -63,8 +64,8 @@ module Construqt
 
             def commit(result)
               result.add(self, as_string,
-                                         Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::SYSTEMD),
-                                         "etc", "systemd", "network", "#{self.name}.network")
+                 Construqt::Resources::Rights.root_0644(Construqt::Resources::Component::SYSTEMD),
+                 "etc", "systemd", "network", self.get_name)
             end
           end
 

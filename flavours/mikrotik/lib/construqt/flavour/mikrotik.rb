@@ -24,11 +24,11 @@ module Construqt
         "mikrotik"
       end
 
-      def add_host_services(srvs)
+      def add_host_services(srvs, cfg)
         srvs || []
       end
 
-      def add_interface_services(srvs)
+      def add_interface_services(srvs, cfg)
         srvs || []
       end
 

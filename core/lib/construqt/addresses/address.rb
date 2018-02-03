@@ -47,19 +47,65 @@ module Construqt
         "tags=#{tags.inspect} loopback=#{@loopback}>"
       end
 
-      def add_service_ip(addr)
+      def cq_ip_address_with_tags(ip, options, routing_table, tags, fqdn)
+        _ip = CqIpAddress.new(IPAddress.parse(ip), self, options, routing_table, fqdn)
+        Construqt::Tags.join(tags, _ip)
+        return _ip
+      end
+
+      def resolve_to_cq_ip_address(name, options, routing_table, tags)
+        ret = []
+        [Construqt::Addresses::IPV4, Construqt::Addresses::IPV6].each do |family|
+          Util.cached_resolv(name, family).each do |rdns|
+            ret << cq_ip_address_with_tags(rdns.address.to_s, options, routing_table, tags, name)
+          end
+        end
+        ret
+      end
+
+      # unless parsed[:first]
+      #   binding.pry
+      #   throw "add_service_ip needs a addr" unless parsed[:first]
+      # end
+      # ip = IPAddress.parse(parsed[:first])
+      # Construqt::Tags.join(parsed['#']||[], ip)
+      # @service_ip << ip
+      def add_service_ip(addr, options = {})
         parsed = Construqt::Tags.parse(addr)
-        throw "add_service_ip needs a addr" unless parsed[:first]
-        ip = IPAddress.parse(parsed[:first])
-        Construqt::Tags.join(parsed['#']||[], ip)
-        @service_ip << ip
+        tags = self.tags
+        tags << name! if name!
+        tags = tags + parsed['#'] if parsed['#'] && !parsed['#'].empty?
+        ips = []
+        ips << parsed[:first] if parsed[:first]
+        (parsed['@'] || []).each do |name|
+          @service_ip += resolve_to_cq_ip_address(name, options, nil, tags)
+        end
+        # binding.pry if parsed['@']
+        ips.each do |ip|
+          @service_ip << cq_ip_address_with_tags(ip, options, nil, tags, nil)
+        end
         self
       end
 
       def service_ip
         addr = @network.addresses.create()
-        addr.add_ip((@service_ip.find{|i| i.ipv4? } || first_ipv4).to_s)
-        addr.add_ip((@service_ip.find{|i| i.ipv6? } || first_ipv6).to_s)
+        found_ipv4 = found_ipv6 = false
+        [@service_ip, ips].find do |iparray|
+          ipv4 = (iparray.find{|i| i.ipv4? && i.fqdn } ||
+                  iparray.find{|i| i.ipv4? } ||
+                  first_ipv4)
+          ipv6 = (iparray.find{|i| i.ipv6? && i.fqdn } ||
+                  iparray.find{|i| i.ipv6? } ||
+                  first_ipv6)
+          if !found_ipv4 && ipv4
+            addr.ips << ipv4
+            found_ipv4 = true
+          end
+          if !found_ipv6 && ipv6
+            addr.ips << ipv6
+            found_ipv6 = true
+          end
+        end
         addr.host = self.host
         addr.interface = self.interface
         addr
@@ -187,7 +233,9 @@ module Construqt
         tags = tags + parsed['#'] if parsed['#'] && !parsed['#'].empty?
         ips = []
         ips << parsed[:first] if parsed[:first]
-        ips << parsed['@'] if parsed['@']
+        (parsed['@'] || []).each do |name|
+          self.ips += resolve_to_cq_ip_address(name, options, nil, tags)
+        end
         ips.each do |ip|
           if DHCPV4 == ip
             @dhcpv4 = true
@@ -196,13 +244,9 @@ module Construqt
           elsif LOOOPBACK == ip
             @loopback = true
           else
-            _ip = CqIpAddress.new(IPAddress.parse(ip), self, options, routing_table)
-            #puts "_ip=#{_ip} #{tags}"
-            Construqt::Tags.join(tags, _ip)
-            self.ips << _ip
+            self.ips << cq_ip_address_with_tags(ip, options, routing_table, tags, nil)
           end
         end
-
         self
       end
 
@@ -268,18 +312,21 @@ module Construqt
         throw "only one routing_table per ip allowed" if via_parsed['!'] and via_parsed['!'].length > 1
         via_s = []
         via_s << via_parsed[:first] if via_parsed[:first]
-        via_s << via_parsed['@'] if via_parsed['@']
+
         routing_table = nil
         routing_table = @network.routing_tables.find(via_parsed['!'].first) if via_parsed['!']
-        via_ips = via_s.map do |ip|
+        via_ips = []
+        (via_parsed['@'] || []).each do |name|
+          via_ips += resolve_to_cq_ip_address(name, options, routing_table, nil)
+        end
+        via_ips += via_s.map do |ip|
           (unused, ret) = self.merge_tag(([ip]+(via_parsed['#']||[])).join('#')) do |ip|
             if ip == UNREACHABLE
               ip
             else
-              CqIpAddress.new(IPAddress.parse(ip), self, options, routing_table)
+              CqIpAddress.new(IPAddress.parse(ip), self, options, routing_table, nil)
             end
           end
-
           ret
         end
 
@@ -287,11 +334,15 @@ module Construqt
         throw "routing_table only allow on via #{dst}" if dst_parsed['!'] and dst_parsed['!'].length > 1
         dst_s = []
         dst_s << dst_parsed[:first] if dst_parsed[:first]
-        dst_s << dst_parsed['@'] if dst_parsed['@']
         dst_parsed['#'] ||= []
-        dst_ips = dst_s.map do |ip|
+
+        dst_ips = []
+        (dst_parsed['@'] || []).each do |name|
+          dst_ips += resolve_to_cq_ip_address(name, options, routing_table, nil)
+        end
+        dst_ips += dst_s.map do |ip|
           (unused, ret) = self.merge_tag(([ip]+(dst_parsed['#']||[])).join('#')) do |ip|
-            CqIpAddress.new(IPAddress.parse(ip), self, options, routing_table)
+            CqIpAddress.new(IPAddress.parse(ip), self, options, routing_table, nil)
           end
 
           ret

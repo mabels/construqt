@@ -9,6 +9,7 @@ module Construqt
                 @users = {}
                 @lines = []
                 @any_lines = []
+                @psks = {}
               end
 
               def render_line(left, right, code, password)
@@ -16,8 +17,12 @@ module Construqt
               end
 
               def add_psk(key, password, comment = nil)
-                @lines << "# #{comment}" if comment
-                @lines << render_line(key, nil, "PSK", password)
+                sykey = "#{key}:PSK:#{password}"
+                unless @psks.has_key?(sykey)
+                  @psks[sykey] = true
+                  @lines << "# #{comment}" if comment
+                  @lines << render_line(key, nil, "PSK", password)
+                end
               end
 
               def add_any_psk(key, password, comment = nil)
@@ -35,6 +40,7 @@ module Construqt
                 host.interfaces.values.each do |iface|
                   next unless iface.kind_of?(Construqt::Flavour::Delegate::IpsecVpnDelegate)
                   next unless iface.users
+                  #binding.pry
                   iface.users.each do |user|
                     @users[user.name] = user.psk
                   end

@@ -22,6 +22,7 @@ require_relative 'services/ip_proxy_neigh'
 require_relative 'services/etc_network_interfaces'
 require_relative 'services/etc_network_network_ud'
 require_relative 'services/etc_network_application_ud'
+require_relative 'services/etc_systemd_netlink'
 require_relative 'services/etc_systemd_netdev'
 require_relative 'services/etc_systemd_network'
 require_relative 'services/etc_systemd_service'
@@ -63,6 +64,7 @@ module Construqt
             EtcNetworkInterfaces::Factory,
             EtcNetworkNetworkUd::Factory,
             EtcNetworkApplicationUd::Factory,
+            EtcSystemdNetlink::Factory,
             EtcSystemdNetdev::Factory,
             EtcSystemdNetwork::Factory,
             EtcSystemdService::Factory,

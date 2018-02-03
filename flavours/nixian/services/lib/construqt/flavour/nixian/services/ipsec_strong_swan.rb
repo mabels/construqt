@@ -36,6 +36,11 @@ module Construqt
               out.join("\n")
             end
 
+            def attach_host(host)
+              binding.pry
+              @host = host
+            end
+
             def attach_endpoint(direction, endpoint)
               if (direction == 'left')
                 @left_endpoint.endpoint = endpoint
@@ -50,9 +55,15 @@ module Construqt
 
           class Endpoint
             include Construqt::Util::Chainable
+            chainable_attr_value :id
             chainable_attr_value :password
             chainable_attr_value :all
             chainable_attr_value :auto
+            chainable_attr_value :local_address
+            chainable_attr_value :remote_address
+            chainable_attr :remote_address_any
+            chainable_attr :local_address_any
+            # chainable_attr :any_address_to_other
             chainable_attr :any
             chainable_attr :sourceip
 
@@ -61,17 +72,28 @@ module Construqt
             def initialize(tunnel)
               @tunnel = tunnel
               @local = self
-              @service_addresses = []
-              @addresses = []
+              @id = nil
+              @password = nil
+              @remote_address_any = false
+              @remote_address = nil
+              @local_address = nil
+              @service_address = nil
+              @address = nil
               @subnets = []
             end
 
             def attach_host(host)
+              binding.pry unless host
               @host = host
             end
 
             def service_address(str_ip)
-              @service_addresses << str_ip
+              throw 'double set service_address' if @service_address
+              unless str_ip.kind_of?(Construqt::Addresses::CqIpAddress)
+                binding.pry
+                throw 'is Address'
+              end
+              @service_address = str_ip
               self
             end
 
@@ -80,24 +102,41 @@ module Construqt
               self
             end
 
+            def get_id
+              #binding.pry if !@id and !@host
+              @id || local.endpoint.host.name
+            end
+
+            def get_password
+              #binding.pry
+              @password || @tunnel.get_password
+            end
+
             def address(sn)
-              @addresses << sn
+              throw 'double set address' if @address
+              # unless sn.kind_of?(Construqt::Addresses::Address)
+              #   binding.pry
+              #   throw 'is not Address'
+              # end
+              @address = sn
               self
             end
 
-            def get_addresses
-              @addresses
+            def get_address
+              @address
             end
 
             def get_subnets
               @subnets
             end
 
-            def get_service_addresses
-              if @service_addresses.length
-                @service_addresses
+            def get_service_address
+              if @service_address
+                @service_address
               else
-                get_addresses
+                binding.pry
+                throw 'get_service_address'
+                get_address
               end
             end
 
@@ -130,24 +169,25 @@ module Construqt
               result = ctx.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
               @ipsec_secret = Ipsec::IpsecSecret.new(result)
               @ipsec_cert_store = Ipsec::IpsecCertStore.new(result)
+              # binding.pry if @host.name == 'wl-ccu-ipsec'
               result.add(:ipsec, Construqt::Util.render(binding, "strongswan_header.erb"),
-                Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC), "etc", "ipsec.conf")
+                Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC),
+                "etc", "ipsec.conf")
             end
 
             #def add(*a)
             #  @result.add(*a)
             #end
 
-            def add_connection(service, conn)
-              @connections.add([service, conn])
+            def add_connection(service, conn, order = 0)
+              @connections.add([order, service, conn])
             end
 
             def render_conn(conn, service)
-              out = ["conn #{service}"]
+              out = ["\nconn #{service}"]
               conn.to_h.each do |k,v|
                 out << Util.indent("#{k}=#{v}", 3)
               end
-
               out.join("\n")
             end
 
@@ -157,9 +197,11 @@ module Construqt
               @ipsec_cert_store.commit
               result = @context.find_instances_from_type(Construqt::Flavour::Nixian::Services::Result::OncePerHost)
 
-              result.add(:ipsec, @connections.map{|c| render_conn(c.last, c.first) }.join("\n"),
-                         Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC),
-                         "etc", "ipsec.conf")
+              result.add(:ipsec, @connections.sort{|a,b| a.first <=> b.first }
+                  .map{|c| c.drop(1) }
+                  .map{|c| render_conn(c.last, c.first) }.join("\n"),
+                 Construqt::Resources::Rights::root_0644(Construqt::Resources::Component::IPSEC),
+                 "etc", "ipsec.conf")
             end
           end
 
@@ -175,32 +217,42 @@ module Construqt
               @context = ctx
             end
 
+            def get_side_address(local)
+              if local.any_address_to_other?
+                "%any"
+              elsif local.get_address_to_other
+                local.get_address_to_other
+              else
+                (local.get_address.first_ipv4 ||
+                 local.get_address.first_ipv6).to_s
+              end
+            end
+
             def build_config_host#(host, service)
               tunnel = @service_instance_producer.iface.endpoint.tunnel
               remote = @service_instance_producer.iface.endpoint.remote
               local = @service_instance_producer.iface.endpoint.local
               ipsec_endpoint = @service_instance_producer.iface.endpoint.services.by_type_of(Construqt::Flavour::Nixian::Services::IpsecStrongSwan::Endpoint).first
-              local_address = ipsec_endpoint.local.get_addresses.inject(
-                  @host.region.network.addresses.create
-              ){|r, i| r.add_ip(i) }
-              remote_service_address = ipsec_endpoint.remote.get_service_addresses.inject(
-                  @host.region.network.addresses.create
-              ){|r, i| r.add_ip(i) }
+              puts "build_config_host:#{ipsec_endpoint.local.get_address.class.name}"
+              local_address = ipsec_endpoint.local.get_address
+              # remote_service_address = ipsec_endpoint.remote.get_service_address
               #binding.pry
+                # binding.pry
                 if tunnel.transport_family == Construqt::Addresses::IPV6
                   # local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(service.remote.first_ipv6) }
-                  transport_left=local_address.first_ipv6.to_s #local.endpoint_address.get_local_address.first_ipv6.to_s
-                  transport_right=remote_service_address.first_ipv6.to_s #remote.endpoint_address.get_service_address.first_ipv6.to_s
-                  leftsubnet = local.address.v6s.map{|i| i.to_s }.first # join(',')
-                  rightsubnet = remote.address.v6s.map{|i| i.to_s }.first #.join(',')
+                  # transport_left=local_address.first_ipv6.to_s #local.endpoint_address.get_local_address.first_ipv6.to_s
+                  # transport_right=remote_service_address.to_fqdn #remote.endpoint_address.get_service_address.first_ipv6.to_s
+                  leftsubnet = local.endpoint_address.get_address.v6s.map{|i| i.to_s }.first # join(',')
+                  rightsubnet = remote.endpoint_address.get_address.v6s.map{|i| i.to_s }.first #.join(',')
                   gt = "gt6"
                 else
                   # local_if = host.interfaces.values.find { |iface| iface.address && iface.address.match_address(service.remote.first_ipv4) }
-                  transport_left=local_address.first_ipv4.to_s #local.endpoint_address.get_local_address.first_ipv6.to_s
-                  transport_right=remote_service_address.first_ipv4.to_s #local.endpoint_address.get_local_address.first_ipv6.to_s
+                  #binding.pry
+                  # transport_left=local_address.first_ipv4.to_s #local.endpoint_address.get_local_address.first_ipv6.to_s
+                  # transport_right=remote_service_address.to_fqdn #local.endpoint_address.get_local_address.first_ipv6.to_s
                   # binding.pry
-                  leftsubnet = local.address.v4s.map{|i| i.to_s }.first # join(',')
-                  rightsubnet = remote.address.v4s.map{|i| i.to_s }.first #.join(',')
+                  leftsubnet = local.endpoint_address.get_address.v4s.map{|i| i.to_s }.first # join(',')
+                  rightsubnet = remote.endpoint_address.get_address.v4s.map{|i| i.to_s }.first #.join(',')
                   gt = "gt4"
                 end
 
@@ -218,15 +270,16 @@ module Construqt
                 # end
 
                 ioph = @context.find_instances_from_type(OncePerHost)
-                password = @service.get_password || @service.tunnel.get_password
-                ioph.ipsec_secret.add_psk(transport_right, password, tunnel.name)
-                ioph.ipsec_secret.add_psk(remote.host.name, password, tunnel.name)
+                # password = @service.get_password || @service.tunnel.get_password
+                # binding.pry
+                ioph.ipsec_secret.add_psk(local.get_id, local.get_password, tunnel.name)
+                ioph.ipsec_secret.add_psk(remote.get_id, local.get_password, tunnel.name)
 
                 conn = OpenStruct.new
-                conn.leftid=local.host.name
-                conn.rightid=remote.host.name
-                conn.left=(@service.any? && "%any") || transport_left
-                conn.right=(@service.remote.any? && "%any") || transport_right
+                conn.leftid=local.get_id
+                conn.rightid=remote.get_id
+                conn.left=ipsec_endpoint.local.local_address_any? ? '%any' : ipsec_endpoint.local.get_local_address
+                conn.right=ipsec_endpoint.remote.remote_address_any? ? '%any' : ipsec_endpoint.remote.get_remote_address
                 conn.leftsubnet=leftsubnet
                 if (@service.remote.sourceip?)
                   conn.leftsourceip="%config"

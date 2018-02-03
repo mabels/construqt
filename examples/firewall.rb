@@ -22,6 +22,14 @@ def firewall(region)
       fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).connection.from_is_inside
     end
   end
+
+  Construqt::Firewalls.add("gre-forward") do |fw|
+    fw.host do |fwd|
+      fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).from_host('#GRE-FORWARD-SRC').to_host('#GRE-FORWARD-DST').gre.from_is_inside
+      # fwd.add.action(Construqt::Firewalls::Actions::ACCEPT).from_host('#GRE-FORWARD-DST').to_host('#GRE-FORWARD-SRC').gre.from_is_inside
+    end
+  end
+
   Construqt::Firewalls.add("border-masq") do |fw|
     fw.nat do |nat|
       nat.add.postrouting.action(Construqt::Firewalls::Actions::SNAT).to_source.from_is_inside

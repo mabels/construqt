@@ -170,7 +170,7 @@ module Construqt
 
             def initialize
               @hosts = []
-              @docker_pkg = "docker.io"
+              @docker_pkg = "docker-ce"
               # binding.pry
             end
 

@@ -9,7 +9,9 @@ module Construqt
             include BaseDevice
             include Construqt::Cables::Plugin::Single
             attr_reader :interfaces, :endpoint, :cfg, :mode, :name_prefix
+            # attr_reader :tunnel
             def initialize(cfg)
+              # binding.pry
               base_device(cfg)
               @interfaces = cfg['interfaces']
               @endpoint = cfg['endpoint']
@@ -18,6 +20,7 @@ module Construqt
               @mode = cfg['mode']
               @cfg = cfg['cfg']
             end
+
 
             def shortname
               [name_prefix, self.endpoint.tunnel.ident]
