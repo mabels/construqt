@@ -16,6 +16,7 @@ module Construqt
             cfg['iface'].address.first_ipv4 || cfg['iface'].address.first_ipv6
           cfg['address'] = cfg['address'] || cfg['iface'].address
           cfg['interfaces'] = [cfg['iface']]
+          # cfg['iface'].
           # binding.pry
         else
           throw "endpoint_address missing" unless cfg['endpoint_address'].valid?

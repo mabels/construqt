@@ -3,6 +3,11 @@ Name=<%= Util.short_ifname(systemd_network.interface) %>
 
 [Network]
 LinkLocalAddressing=no
+<%- systemd_network.interface.host.region.network
+    .dns_resolver.nameservers.ips.each do |i|
+-%>
+DNS=<%= i.to_s %>
+<%- end -%>
 DHCP=<%=  if systemd_network.interface.address.dhcpv4? &&
              systemd_network.interface.address.dhcpv6?
            "yes"

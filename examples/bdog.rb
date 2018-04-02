@@ -127,7 +127,8 @@ def self.run(region)
      'jabber' => nil,
      'posco' => nil,
      'trusty' => nil,
-     'sniproxy' => nil
+     'sniproxy' => nil,
+     'iobroker' => nil
     }.each_with_index do |name_action, idx|
       name, action = name_action
       region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu", "mother" => bdog,
