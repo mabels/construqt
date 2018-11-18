@@ -145,6 +145,7 @@ module Construqt
       def build_tree
         #binding.pry
         @tree.each do |ident, node|
+          puts TreeView.simple(node.reference.class)
           #binding.pry
           #Construqt.logger.debug "Planuml:build_tree=#{node.reference.class.name}=#{simple(node.reference.class)}"
           {
@@ -198,6 +199,10 @@ module Construqt
                 node.wire_connect @tree[c.iface.ident]
               end
               binding.pry if node.reference.cable.nil?
+            end,
+            "Dummy" => lambda do |node|
+            end,
+            "Vxlan" => lambda do |node|
             end,
             "Template" => lambda do |node|
               #                iface.interface.delegate.vlans.each do |i|

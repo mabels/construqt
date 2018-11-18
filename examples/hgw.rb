@@ -1,29 +1,35 @@
 module Hgw
-  def self.run(region, fanout_de, cfg)
-    kuckpi = region.hosts.add("kuckpi", "flavour" => "nixian", "dialect" => "ubuntu") do |host|
+  def self.kuckpi(region, name, ifname, offset)  
+    region.hosts.add(name, "flavour" => "nixian", "dialect" => "ubuntu") do |host|
       region.interfaces.add_device(host, "lo", "mtu" => "9000",
                                    :description=>"#{host.name} lo",
                                    "address" => region.network.addresses.add_ip(Construqt::Addresses::LOOOPBACK))
-      eth0 = region.interfaces.add_device(host, "enxb827eb32a400", "mtu" => 1500)
-      wlan0 = region.interfaces.add_wlan(host, "wlan0", "mtu" => 1500, "ssid" => "VALADON-2", "psk" => VALADON_PSK)
+      eth0 = region.interfaces.add_device(host, ifname, "mtu" => 1500)
+      #wlan0 = region.interfaces.add_wlan(host, "wlan0", "mtu" => 1500, "ssid" => "VALADON-2", "psk" => VALADON_PSK)
       host.configip = host.id ||= Construqt::HostId.create do |my|
         my.interfaces << region.interfaces.add_bridge(host, "br0", "mtu" => 1500,
-                                                      "interfaces" => [eth0, wlan0],
+                                                      "interfaces" => [eth0],
                                                       "address" => region.network.addresses
-          .add_ip("192.168.178.14/24")
+          .add_ip("192.168.178.#{offset}/24")
           .add_route("0.0.0.0/0", "192.168.178.1"))
       end
 
-      [{:vlan=>24} ,{:vlan=>70, :address=>region.network.addresses.add_ip("192.168.70.14/24")}].each do |vlan|
-        region.interfaces.add_bridge(host, "br#{vlan[:vlan]}", "mtu" => 1500,
-                                     "interfaces" => [
-                                       region.interfaces.add_vlan(host, "eth0.#{vlan[:vlan]}",
-                                                                  "vlan_id" => vlan[:vlan],
-                                                                  "mtu" => 1500,
-                                                                  "address" => vlan[:address],
-                                                                  "interface" => eth0)])
-      end
+      #[{:vlan=>24} ,{:vlan=>70, :address=>region.network.addresses.add_ip("192.168.70.#{offset}/24")}].each do |vlan|
+      #  region.interfaces.add_bridge(host, "br#{vlan[:vlan]}", "mtu" => 1500,
+      #                               "interfaces" => [
+      #                                 region.interfaces.add_vlan(host, "eth0.#{vlan[:vlan]}",
+      #                                                            "vlan_id" => vlan[:vlan],
+      #                                                            "mtu" => 1500,
+      #                                                            "address" => vlan[:address],
+      #                                                            "interface" => eth0)])
+      #end
     end
+  end
+	   
+
+  def self.run(region, fanout_de, cfg)
+    kuckpi = self.kuckpi(region , "kuckpi", "enxb827eb32a400", "14")	   
+    kuckord = self.kuckpi(region , "kuckord", "eth0", "54")	   
 
     service_de_hgw = region.hosts.add("service-de-hgw", "flavour" => "nixian", "dialect" => "ubuntu",
                                       "mother" => kuckpi, "services" => [Construqt::Flavour::Nixian::Services::Lxc::Service.new]) do |host|
@@ -40,11 +46,11 @@ module Hgw
         region.cables.add(iface, region.interfaces.find(kuckpi, 'br0'))
       end
 
-      region.cables.add(region.interfaces.add_device(host, "br70", "mtu" => 1500,
-                                                     'address' => region.network.addresses
-        .add_ip("192.168.70.1/24#SERVICE-NET-DE-HGW#SERVICE-NET-DE")
-        .add_ip("#{cfg[:net6]}:192:168:70:1/123#SERVICE-NET-DE-HGW#SERVICE-NET-DE")),
-      region.interfaces.find(kuckpi, 'br70'))
+      #region.cables.add(region.interfaces.add_device(host, "br70", "mtu" => 1500,
+      #                                               'address' => region.network.addresses
+      #  .add_ip("192.168.70.1/24#SERVICE-NET-DE-HGW#SERVICE-NET-DE")
+      #  .add_ip("#{cfg[:net6]}:192:168:70:1/123#SERVICE-NET-DE-HGW#SERVICE-NET-DE")),
+      #region.interfaces.find(kuckpi, 'br70'))
     end
     left = fanout_de
     right = service_de_hgw

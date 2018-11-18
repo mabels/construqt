@@ -1,9 +1,10 @@
+#!/usr/bin/env ruby
 begin
   require 'pry'
 rescue LoadError
 end
 
-CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../../'
+CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../..'
 [
   "#{CONSTRUQT_PATH}/ipaddress/ruby/lib",
   "#{CONSTRUQT_PATH}/construqt/core/lib",
@@ -29,6 +30,7 @@ CONSTRUQT_PATH=ENV['CONSTRUQT_PATH']||'../../'
   "#{CONSTRUQT_PATH}/construqt/flavours/ciscian/dialects/hp/lib",
   "#{CONSTRUQT_PATH}/construqt/flavours/unknown/lib"
 ].each{|path| $LOAD_PATH.unshift(path) }
+puts $LOAD_PATH.inspect
 require 'rubygems'
 require 'construqt'
 require 'construqt/flavour/nixian'
@@ -163,6 +165,8 @@ bdog = Bdog.run(region)
 require_relative "./hgw.rb"
 Hgw.run(region, region.hosts.find("iscaac"), Bdog.cfg)
 
+require_relative "./kicker.rb"
+Kicker.run(region)
 
 require_relative "./mam-wl-rt.rb"
 MamWl.run(region, {:de => region.hosts.find("iscaac") }, Bdog.cfg) # :us => fanout_us})
